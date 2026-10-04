@@ -2,29 +2,58 @@
 *{box-sizing:border-box}body{margin:0;font-family:system-ui;background:#f5f7fa;color:#18212f}header{background:#17263a;color:#fff;padding:20px}.wrap{max-width:1180px;margin:auto;padding:18px}.grid{display:grid;grid-template-columns:320px 1fr;gap:18px}.card{background:#fff;border:1px solid #d7dde5;border-radius:14px;padding:16px}.inputs{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{font-size:13px;color:#687386}input{width:100%;padding:10px;border:1px solid #d7dde5;border-radius:8px;font-size:16px;margin-top:4px}.calc{margin-top:14px;background:#eef3f8;padding:12px;border-radius:10px;line-height:1.6}svg{width:100%;max-height:520px}.partBtns{display:flex;flex-wrap:wrap;gap:8px}.partBtns button{padding:9px 12px;border:1px solid #d7dde5;background:#fff;border-radius:8px}.partBtns button.active{border-color:#1565c0;background:#e8f1fc;font-weight:700}.edge{stroke:transparent;stroke-width:20;cursor:pointer;pointer-events:stroke}.edge.on{stroke:#e53935;stroke-width:10}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #d7dde5}th{background:#eef3f8}@media(max-width:780px){.grid{grid-template-columns:1fr}.wrap{padding:10px}}</style></head><body>
 <header><div class="wrap" style="padding:0"><h1 style="margin:0">Kitchen Calculator</h1><div>Долен кухненски шкаф — v0.4</div></div></header><main class="wrap"><div class="grid"><section class="card"><h2>Размери</h2><div class="inputs">
 <label>Ширина шкаф<input id="w" type="number" value="600"></label><label>Обща височина<input id="h" type="number" value="900"></label><label>Крака<input id="legs" type="number" value="100"></label><label>Плот — дебелина<input id="top" type="number" value="39"></label><label>ПДЧ<input id="t" type="number" value="18"></label><label>Крайна дълбочина<input id="d" type="number" value="555"></label><label>Гръб<input id="back" type="number" value="3"></label><label>Ширина царги<input id="rail" type="number" value="60"></label><label>Брой рафтове<input id="shelves" type="number" value="1"></label></div><div id="calc" class="calc"></div></section>
-<section class="card"><h2>Конструкция — 3D модел</h2><p style="color:#687386;margin-top:-8px">Корпус с две горни царги, рафт, дъно, 4 крака и отделен плот</p>
-<div class="scene3d"><div class="cab3d" id="cab3d">
-<div class="board worktop"><span>Кухненски плот</span></div>
-<div class="board side leftside"></div><div class="board side rightside"></div>
-<div class="board bottom3"></div><div class="board shelf3"></div>
-<div class="board rail rearrail"><span>задна царга</span></div><div class="board rail frontrail"><span>предна царга</span></div>
-<div class="leg l1"></div><div class="leg l2"></div><div class="leg l3"></div><div class="leg l4"></div>
-<div id="wL" class="dim widthdim"></div><div id="bodyL" class="dim heightdim"></div><div id="legsL" class="dim legdim"></div><div id="topL" class="dim topdim"></div>
-</div></div>
-<style>
-.scene3d{height:610px;display:flex;align-items:center;justify-content:center;overflow:hidden;perspective:1100px;background:linear-gradient(#fff,#f7f8fa)}
-.cab3d{position:relative;width:360px;height:455px;transform-style:preserve-3d;transform:rotateX(-7deg) rotateY(-18deg);margin-top:60px}
-.board{position:absolute;background:linear-gradient(100deg,#e5c18c,#c9955d);border:2px solid #4c3929;box-shadow:inset 0 0 0 1px #ffffff55;transform-style:preserve-3d}
-.side{top:70px;width:18px;height:340px}.leftside{left:25px;transform:translateZ(0)}.rightside{right:25px;transform:translateZ(0)}
-.bottom3{left:25px;right:25px;height:18px;top:392px;transform:rotateX(72deg);transform-origin:bottom}
-.shelf3{left:43px;right:43px;height:190px;top:207px;transform:rotateX(72deg);transform-origin:bottom;clip-path:polygon(0 88%,100% 88%,100% 100%,0 100%)}
-.rail{left:43px;right:43px;height:60px}.frontrail{top:70px;transform:rotateX(72deg);transform-origin:top}.rearrail{top:20px;transform:rotateX(72deg);transform-origin:bottom}
-.rail span{position:absolute;right:-100px;top:18px;font-size:12px;white-space:nowrap}
-.worktop{left:-10px;right:-10px;height:235px;top:-165px;transform:rotateX(72deg);transform-origin:bottom;z-index:5}.worktop span{position:absolute;left:50%;top:85px;transform:translateX(-50%);white-space:nowrap;font-size:14px}
-.leg{position:absolute;width:18px;height:70px;background:#38251c;border:1px solid #1e1510;top:408px}.l1{left:35px}.l2{right:35px}.l3{left:70px;transform:translateZ(-90px);opacity:.7}.l4{right:70px;transform:translateZ(-90px);opacity:.7}
-.dim{position:absolute;font-weight:600;font-size:14px;white-space:nowrap}.widthdim{bottom:-55px;left:50%;transform:translateX(-50%)}.heightdim{left:-85px;top:230px;transform:rotate(-90deg)}.legdim{right:-90px;bottom:-20px}.topdim{right:-75px;top:-90px}
-@media(max-width:700px){.scene3d{height:520px}.cab3d{transform:scale(.82) rotateX(-7deg) rotateY(-18deg)}}
-</style></section></div>
+<section class="card"><h2>Конструкция — истински 3D модел</h2><p style="color:#687386;margin-top:-8px">Влачи с мишката за завъртане · колелце за приближаване</p><div id="threeCabinet" style="height:610px;border-radius:10px;overflow:hidden;background:#f7f8fa"></div></section></div>
 <section class="card" style="margin-top:18px"><h2>Кантиране</h2><div id="buttons" class="partBtns"></div><p>Натисни ръб — червено означава кант.</p><div style="display:grid;grid-template-columns:minmax(260px,500px) 1fr;gap:20px;align-items:center"><svg viewBox="0 0 430 280"><rect x="70" y="45" width="290" height="180" fill="#f3f5f7" stroke="#7b8794" stroke-width="2"/><line data-edge="top" x1="70" y1="45" x2="360" y2="45" class="edge"/><line data-edge="right" x1="360" y1="45" x2="360" y2="225" class="edge"/><line data-edge="bottom" x1="70" y1="225" x2="360" y2="225" class="edge"/><line data-edge="left" x1="70" y1="45" x2="70" y2="225" class="edge"/><text id="aL" x="215" y="258" text-anchor="middle"></text><text id="bL" x="30" y="140" text-anchor="middle" transform="rotate(-90 30 140)"></text></svg><div><h3 id="pname"></h3><div id="psize" style="font-size:24px;font-weight:800"></div><p id="etxt"></p><p id="meters" style="font-weight:800"></p></div></div></section>
 <section class="card" style="margin-top:18px;overflow:auto"><h2>Списък за разкрой</h2><table><thead><tr><th>Детайл</th><th>Брой</th><th>Краен размер</th><th>Кантирани ръбове</th><th>Кант</th></tr></thead><tbody id="tbody"></tbody><tfoot><tr style="font-weight:800"><td colspan="4">ОБЩО КАНТ</td><td id="total"></td></tr></tfoot></table></section></main>
-<script>const $=i=>document.getElementById(i),v=i=>Math.max(0,Number($(i).value)||0),N={top:'горе',right:'дясно',bottom:'долу',left:'ляво'};let sel='side';const E={side:new Set(),bottom:new Set(),shelf:new Set(),rail:new Set(),back:new Set()};function D(){let w=v('w'),total=v('h'),legs=v('legs'),top=v('top'),t=v('t'),d=v('d'),back=v('back'),rail=v('rail'),shelves=Math.round(v('shelves')),body=Math.max(0,total-legs-top),pd=Math.max(0,d-back),sideH=Math.max(0,body-t),inner=Math.max(0,w-2*t);return{w,total,legs,top,t,d,back,rail,shelves,body,pd,sideH,inner}}function P(x){return{side:{n:'Страница',q:2,a:x.sideH,b:x.pd},bottom:{n:'Дъно',q:1,a:x.w,b:x.pd},shelf:{n:'Рафт',q:x.shelves,a:x.inner,b:x.pd},rail:{n:'Царга',q:2,a:x.inner,b:x.rail},back:{n:'Гръб '+x.back+' mm',q:1,a:x.w,b:x.body}}}function M(k,p){let m=0;E[k].forEach(e=>m+=(e==='top'||e==='bottom'?p.a:p.b));return m*p.q/1000}function T(k){let a=[...E[k]].map(e=>N[e]);return a.length?a.join(', '):'няма'}function R(){let x=D(),p=P(x),q=p[sel];$('calc').innerHTML='<b>Корпус:</b> '+x.w+' × '+x.body+' × '+x.d+' mm<br><b>ПДЧ дълбочина:</b> '+x.pd+' mm<br><b>Страница:</b> '+x.sideH+' × '+x.pd+' mm<br><b>4 крака:</b> '+x.legs+' mm · <b>Плот:</b> '+x.top+' mm';$('topL').textContent=x.top+' mm';$('wL').textContent=x.w+' mm';$('bodyL').textContent='корпус '+x.body+' mm';$('legsL').textContent='4 × '+x.legs+' mm';let c=$('cab3d');if(c){let sw=Math.max(.72,Math.min(1.35,x.w/600));c.style.width=(360*sw)+'px';let bh=Math.max(260,Math.min(430,x.body*.447));c.style.height=(bh+115)+'px';document.querySelectorAll('.side').forEach(e=>e.style.height=bh+'px');document.querySelectorAll('.bottom3').forEach(e=>e.style.top=(70+bh-18)+'px');document.querySelectorAll('.shelf3').forEach(e=>e.style.top=(70+bh*.5-85)+'px');document.querySelectorAll('.leg').forEach(e=>e.style.top=(70+bh)+'px');}$('buttons').innerHTML='';Object.entries(p).forEach(([k,z])=>{let b=document.createElement('button');b.textContent=z.n;b.className=k===sel?'active':'';b.onclick=()=>{sel=k;R()};$('buttons').appendChild(b)});$('pname').textContent=q.n;$('psize').textContent=q.a+' × '+q.b+' mm';$('aL').textContent=q.a+' mm';$('bL').textContent=q.b+' mm';$('etxt').textContent='Кант: '+T(sel);$('meters').textContent='Кант за '+q.q+' бр.: '+M(sel,q).toFixed(3)+' m';document.querySelectorAll('.edge').forEach(e=>e.classList.toggle('on',E[sel].has(e.dataset.edge)));let total=0;$('tbody').innerHTML='';Object.entries(p).forEach(([k,z])=>{if(z.q<1)return;let m=M(k,z);total+=m;$('tbody').insertAdjacentHTML('beforeend','<tr><td>'+z.n+'</td><td>'+z.q+'</td><td>'+z.a+' × '+z.b+' mm</td><td>'+T(k)+'</td><td>'+m.toFixed(3)+' m</td></tr>')});$('total').textContent=total.toFixed(3)+' m'}document.querySelectorAll('input').forEach(e=>e.oninput=R);document.querySelectorAll('.edge').forEach(e=>e.onclick=()=>{let s=E[sel],k=e.dataset.edge;s.has(k)?s.delete(k):s.add(k);R()});R();</script></body></html>
+<script>const $=i=>document.getElementById(i),v=i=>Math.max(0,Number($(i).value)||0),N={top:'горе',right:'дясно',bottom:'долу',left:'ляво'};let sel='side';const E={side:new Set(),bottom:new Set(),shelf:new Set(),rail:new Set(),back:new Set()};function D(){let w=v('w'),total=v('h'),legs=v('legs'),top=v('top'),t=v('t'),d=v('d'),back=v('back'),rail=v('rail'),shelves=Math.round(v('shelves')),body=Math.max(0,total-legs-top),pd=Math.max(0,d-back),sideH=Math.max(0,body-t),inner=Math.max(0,w-2*t);return{w,total,legs,top,t,d,back,rail,shelves,body,pd,sideH,inner}}function P(x){return{side:{n:'Страница',q:2,a:x.sideH,b:x.pd},bottom:{n:'Дъно',q:1,a:x.w,b:x.pd},shelf:{n:'Рафт',q:x.shelves,a:x.inner,b:x.pd},rail:{n:'Царга',q:2,a:x.inner,b:x.rail},back:{n:'Гръб '+x.back+' mm',q:1,a:x.w,b:x.body}}}function M(k,p){let m=0;E[k].forEach(e=>m+=(e==='top'||e==='bottom'?p.a:p.b));return m*p.q/1000}function T(k){let a=[...E[k]].map(e=>N[e]);return a.length?a.join(', '):'няма'}function R(){let x=D(),p=P(x),q=p[sel];$('calc').innerHTML='<b>Корпус:</b> '+x.w+' × '+x.body+' × '+x.d+' mm<br><b>ПДЧ дълбочина:</b> '+x.pd+' mm<br><b>Страница:</b> '+x.sideH+' × '+x.pd+' mm<br><b>4 крака:</b> '+x.legs+' mm · <b>Плот:</b> '+x.top+' mm';$('topL').textContent=x.top+' mm';$('wL').textContent=x.w+' mm';$('bodyL').textContent='корпус '+x.body+' mm';$('legsL').textContent='4 × '+x.legs+' mm';let c=$('cab3d');if(c){let sw=Math.max(.72,Math.min(1.35,x.w/600));c.style.width=(360*sw)+'px';let bh=Math.max(260,Math.min(430,x.body*.447));c.style.height=(bh+115)+'px';document.querySelectorAll('.side').forEach(e=>e.style.height=bh+'px');document.querySelectorAll('.bottom3').forEach(e=>e.style.top=(70+bh-18)+'px');document.querySelectorAll('.shelf3').forEach(e=>e.style.top=(70+bh*.5-85)+'px');document.querySelectorAll('.leg').forEach(e=>e.style.top=(70+bh)+'px');}$('buttons').innerHTML='';Object.entries(p).forEach(([k,z])=>{let b=document.createElement('button');b.textContent=z.n;b.className=k===sel?'active':'';b.onclick=()=>{sel=k;R()};$('buttons').appendChild(b)});$('pname').textContent=q.n;$('psize').textContent=q.a+' × '+q.b+' mm';$('aL').textContent=q.a+' mm';$('bL').textContent=q.b+' mm';$('etxt').textContent='Кант: '+T(sel);$('meters').textContent='Кант за '+q.q+' бр.: '+M(sel,q).toFixed(3)+' m';document.querySelectorAll('.edge').forEach(e=>e.classList.toggle('on',E[sel].has(e.dataset.edge)));let total=0;$('tbody').innerHTML='';Object.entries(p).forEach(([k,z])=>{if(z.q<1)return;let m=M(k,z);total+=m;$('tbody').insertAdjacentHTML('beforeend','<tr><td>'+z.n+'</td><td>'+z.q+'</td><td>'+z.a+' × '+z.b+' mm</td><td>'+T(k)+'</td><td>'+m.toFixed(3)+' m</td></tr>')});$('total').textContent=total.toFixed(3)+' m'}document.querySelectorAll('input').forEach(e=>e.oninput=R);document.querySelectorAll('.edge').forEach(e=>e.onclick=()=>{let s=E[sel],k=e.dataset.edge;s.has(k)?s.delete(k):s.add(k);R()});R();</script><script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/OrbitControls.js';
+
+const host=document.getElementById('threeCabinet');
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0xf7f8fa);
+const camera=new THREE.PerspectiveCamera(36,1,1,5000);
+camera.position.set(900,700,1100);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.shadowMap.enabled=true; host.appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.target.set(0,400,0);
+scene.add(new THREE.HemisphereLight(0xffffff,0x777777,2.2));
+const dl=new THREE.DirectionalLight(0xffffff,2.2);dl.position.set(600,1000,700);dl.castShadow=true;scene.add(dl);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(3000,3000),new THREE.MeshStandardMaterial({color:0xf1f1f1,roughness:1}));
+floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+const wood=new THREE.MeshStandardMaterial({color:0xd7ad75,roughness:.7});
+const edge=new THREE.MeshStandardMaterial({color:0xb77d48,roughness:.75});
+const dark=new THREE.MeshStandardMaterial({color:0x3b2a22,roughness:.8});
+let group=new THREE.Group();scene.add(group);
+function box(w,h,d,x,y,z,mat=wood){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;group.add(m);return m}
+function n(id){return Math.max(0,Number(document.getElementById(id)?.value)||0)}
+function rebuild(){
+ while(group.children.length)group.remove(group.children[0]);
+ const W=n('w'), total=n('h'), L=n('legs'), top=n('top'), T=n('t'), D=n('d'), B=n('back'), R=n('rail'), shelves=Math.round(n('shelves'));
+ const H=Math.max(0,total-L-top), PD=Math.max(0,D-B), sideH=Math.max(0,H-T), inner=Math.max(0,W-2*T);
+ // coordinate: x width, y vertical, z depth; front is +z
+ const bottomY=L+T/2;
+ box(W,T,PD,0,bottomY,0); // bottom under sides
+ const sideY=L+T+sideH/2;
+ box(T,sideH,PD,-W/2+T/2,sideY,0);
+ box(T,sideH,PD,W/2-T/2,sideY,0);
+ // shelves between sides
+ for(let i=1;i<=shelves;i++){const y=L+T+(sideH*(i/(shelves+1)));box(inner,T,PD,0,y,0);}
+ // two top rails: flat horizontal strips, one front, one rear
+ const railY=L+H-T/2;
+ box(inner,T,R,0,railY,PD/2-R/2,edge);
+ box(inner,T,R,0,railY,-PD/2+R/2,edge);
+ // 3mm nailed back
+ if(B>0)box(W,H,B,0,L+H/2,-PD/2-B/2,new THREE.MeshStandardMaterial({color:0xc9a879,roughness:.85}));
+ // 4 legs, inset
+ const legW=42, inset=55;
+ [[-1,1],[1,1],[-1,-1],[1,-1]].forEach(([sx,sz])=>box(legW,L,legW,sx*(W/2-inset),L/2,sz*(PD/2-inset),dark));
+ // worktop exploded upward 55mm so rails stay visible
+ const over=35, gap=55;
+ box(W+over*2,top,D+over,0,L+H+gap+top/2,10,wood);
+ controls.target.set(0,L+H*.52,0);
+}
+function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(host);resize();rebuild();
+['w','h','legs','top','t','d','back','rail','shelves'].forEach(id=>document.getElementById(id)?.addEventListener('input',rebuild));
+function loop(){requestAnimationFrame(loop);controls.update();renderer.render(scene,camera)}loop();
+</script></body></html>
