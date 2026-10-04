@@ -4,7 +4,7 @@
 <style>
 :root{font-family:Arial,sans-serif;color:#13233a;background:#f3f6f9}*{box-sizing:border-box}body{margin:0}header{background:#14263d;color:#fff;padding:18px max(18px,calc((100% - 1200px)/2))}header h1{margin:0;font-size:28px}header p{margin:5px 0 0}.wrap{max-width:1200px;margin:18px auto;padding:0 14px}.top{display:grid;grid-template-columns:320px 1fr;gap:18px}.card{background:#fff;border:1px solid #d5dde7;border-radius:14px;padding:16px;margin-bottom:18px}h2{margin:4px 0 16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}.field label{display:block;font-size:13px;color:#617086;margin-bottom:4px}.field input{width:100%;padding:10px;border:1px solid #ccd5df;border-radius:9px;font-size:16px}.calc{margin-top:14px;background:#edf3f8;padding:12px;border-radius:10px;line-height:1.55}.hint{color:#65758b;margin-top:-8px}.viewer{height:590px;border-radius:10px;overflow:hidden;background:#eef2f5;position:relative}.viewer canvas{display:block;width:100%;height:100%;touch-action:none}.viewer .msg{position:absolute;left:12px;bottom:12px;background:#ffffffdd;padding:7px 10px;border-radius:7px;font-size:12px}.lower{display:grid;grid-template-columns:360px 1fr;gap:18px}.tabs button{margin:0 5px 6px 0;padding:7px 9px;border:0;border-radius:7px}.tabs .active{background:#173b66;color:#fff}.part{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:center;margin-top:10px}.rect{width:170px;height:120px;background:#e5e8eb;position:relative}.edge{position:absolute;background:#777;cursor:pointer}.edge.on{background:#d22}.edge[data-edge=top],.edge[data-edge=bottom]{left:0;width:100%;height:8px}.edge[data-edge=top]{top:0}.edge[data-edge=bottom]{bottom:0}.edge[data-edge=left],.edge[data-edge=right]{top:0;height:100%;width:8px}.edge[data-edge=left]{left:0}.edge[data-edge=right]{right:0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px;border-bottom:1px solid #d8dee6;text-align:left}tfoot{font-weight:bold}@media(max-width:760px){.top,.lower{grid-template-columns:1fr}.viewer{height:460px}.part{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}header h1{font-size:23px}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Долен кухненски шкаф — v0.5</p></header>
+<header><h1>Kitchen Calculator</h1><p>Долен кухненски шкаф — v0.6</p></header>
 <div class="wrap"><div class="top">
 <section class="card"><h2>Размери</h2><div class="fields">
 <div class="field"><label>Ширина шкаф</label><input id="w" type="number" value="600"></div>
@@ -38,7 +38,7 @@ document.querySelectorAll('.edge').forEach(e=>e.onclick=()=>{const s=edges[selec
 const host=$('viewer');if(!window.THREE){host.innerHTML='<b style="padding:20px;display:block">Three.js не се зареди.</b>';return}
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xeef2f5);const camera=new THREE.PerspectiveCamera(38,1,1,10000);const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,2));host.prepend(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xffffff,0x59636d,2.5));const sun=new THREE.DirectionalLight(0xffffff,2.4);sun.position.set(800,1200,900);scene.add(sun);
-const wood=new THREE.MeshStandardMaterial({color:0xd7aa70,roughness:.7}),topMat=new THREE.MeshStandardMaterial({color:0x55585d,roughness:.5}),railMat=new THREE.MeshStandardMaterial({color:0xc98f50,roughness:.7}),legMat=new THREE.MeshStandardMaterial({color:0x30241f,roughness:.85}),backMat=new THREE.MeshStandardMaterial({color:0xc8a77b,roughness:.85,side:THREE.DoubleSide});
+const wood=new THREE.MeshStandardMaterial({color:0xd7aa70,roughness:.7}),topMat=new THREE.MeshStandardMaterial({color:0xff1744,roughness:.35}),railMat=new THREE.MeshStandardMaterial({color:0xc98f50,roughness:.7}),legMat=new THREE.MeshStandardMaterial({color:0x30241f,roughness:.85}),backMat=new THREE.MeshStandardMaterial({color:0xc8a77b,roughness:.85,side:THREE.DoubleSide});
 let model=new THREE.Group();scene.add(model);
 function addBox(w,h,d,x,y,z,mat=wood){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);mesh.position.set(x,y,z);model.add(mesh);const line=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color:0x5a422f}));line.position.copy(mesh.position);model.add(line)}
 function build(){while(model.children.length){const o=model.children.pop();o.geometry?.dispose()}const x=dims(),{w:W,legs:L,top,Tp,t:T,pd:PD,back:B,rail:R,body:H,sideH:SH,inner:I,shelves:S,d:D}=x;
@@ -48,10 +48,10 @@ const ry=L+H-T/2;addBox(I,T,R,0,ry,PD/2-R/2,railMat);addBox(I,T,R,0,ry,-PD/2+R/2
 if(B)addBox(W,H,B,0,L+H/2,-PD/2-B/2,backMat);
 const lw=42,ix=Math.max(45,W/2-60),iz=Math.max(45,PD/2-60);[[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([sx,sz])=>addBox(lw,L,lw,sx*ix,L/2,sz*iz,legMat));
 {
- const vh=Math.max(Tp,45);
- const g=new THREE.BoxGeometry(W+70,vh,D+45);
+ const vh=80;
+ const g=new THREE.BoxGeometry(W+120,80,D+80);
  const m=new THREE.Mesh(g,topMat);
- m.position.set(0,L+H+55+vh/2,12);
+ m.position.set(0,L+H-40,20);
  m.renderOrder=10;
  model.add(m);
  const eg=new THREE.EdgesGeometry(g);
