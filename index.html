@@ -48,7 +48,7 @@ const ry=L+H-T/2;addBox(I,T,R,0,ry,PD/2-R/2,railMat);addBox(I,T,R,0,ry,-PD/2+R/2
 if(B)addBox(W,H,B,0,L+H/2,-PD/2-B/2,backMat);
 const lw=42,ix=Math.max(45,W/2-60),iz=Math.max(45,PD/2-60);[[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([sx,sz])=>addBox(lw,L,lw,sx*ix,L/2,sz*iz,legMat));
 addBox(W+70,Tp,D+45,0,L+H+75+Tp/2,12);
-camera.position.set(W*1.35,L+H*.92,Math.max(900,D*1.9));camera.lookAt(0,L+H*.52,0)}
+camera.position.set(W*1.45,L+H*1.02,Math.max(1050,D*2.15));camera.lookAt(0,L+(H+75+Tp)*.58,0)}
 let down=false,lx=0,ly=0,rx=-.08,ry=-.42,scale=1,pinch=0;function pose(){model.rotation.x=rx;model.rotation.y=ry;model.scale.setScalar(scale)}
 const c=renderer.domElement;c.addEventListener('pointerdown',e=>{down=true;lx=e.clientX;ly=e.clientY;c.setPointerCapture(e.pointerId)});c.addEventListener('pointermove',e=>{if(!down)return;ry+=(e.clientX-lx)*.008;rx=Math.max(-.65,Math.min(.45,rx+(e.clientY-ly)*.006));lx=e.clientX;ly=e.clientY;pose()});c.addEventListener('pointerup',()=>down=false);c.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.55,Math.min(1.7,scale*(e.deltaY>0?.92:1.08)));pose()},{passive:false});
 function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}new ResizeObserver(resize).observe(host);
