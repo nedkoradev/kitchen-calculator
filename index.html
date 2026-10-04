@@ -11,7 +11,7 @@
 const host=document.getElementById('threeCabinet');
 if(!host||!window.THREE){host.innerHTML='<div style="padding:30px;color:#b91c1c">3D библиотеката не се зареди.</div>';return;}
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xf7f8fa);
-const camera=new THREE.PerspectiveCamera(36,1,1,5000);camera.position.set(900,650,1050);
+const camera=new THREE.PerspectiveCamera(36,1,1,5000);camera.position.set(900,650,1050);camera.lookAt(0,430,0);
 const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;host.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xffffff,0x777777,2.4));const dl=new THREE.DirectionalLight(0xffffff,2);dl.position.set(600,1000,700);scene.add(dl);
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(3000,3000),new THREE.MeshStandardMaterial({color:0xf1f1f1}));floor.rotation.x=-Math.PI/2;scene.add(floor);
