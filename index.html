@@ -2,11 +2,18 @@
 <html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kitchen Calculator</title>
 <style>
-:root{font-family:Arial,sans-serif;color:#13233a;background:#f3f6f9}*{box-sizing:border-box}body{margin:0}header{background:#14263d;color:#fff;padding:18px max(18px,calc((100% - 1200px)/2))}header h1{margin:0;font-size:28px}header p{margin:5px 0 0}.wrap{max-width:1200px;margin:18px auto;padding:0 14px}.top{display:grid;grid-template-columns:320px 1fr;gap:18px}.card{background:#fff;border:1px solid #d5dde7;border-radius:14px;padding:16px;margin-bottom:18px}h2{margin:4px 0 16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}.field label{display:block;font-size:13px;color:#617086;margin-bottom:4px}.field input{width:100%;padding:10px;border:1px solid #ccd5df;border-radius:9px;font-size:16px}.calc{margin-top:14px;background:#edf3f8;padding:12px;border-radius:10px;line-height:1.55}.hint{color:#65758b;margin-top:-8px}.viewer{height:590px;border-radius:10px;overflow:hidden;background:#eef2f5;position:relative}.viewer canvas{display:block;width:100%;height:100%;touch-action:none}.viewer .msg{position:absolute;left:12px;bottom:12px;background:#ffffffdd;padding:7px 10px;border-radius:7px;font-size:12px}.lower{display:grid;grid-template-columns:360px 1fr;gap:18px}.tabs button{margin:0 5px 6px 0;padding:7px 9px;border:0;border-radius:7px}.tabs .active{background:#173b66;color:#fff}.part{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:center;margin-top:10px}.rect{width:170px;height:120px;background:#e5e8eb;position:relative}.edge{position:absolute;background:#777;cursor:pointer}.edge.on{background:#d22}.edge[data-edge=top],.edge[data-edge=bottom]{left:0;width:100%;height:8px}.edge[data-edge=top]{top:0}.edge[data-edge=bottom]{bottom:0}.edge[data-edge=left],.edge[data-edge=right]{top:0;height:100%;width:8px}.edge[data-edge=left]{left:0}.edge[data-edge=right]{right:0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px;border-bottom:1px solid #d8dee6;text-align:left}tfoot{font-weight:bold}@media(max-width:760px){.top,.lower{grid-template-columns:1fr}.viewer{height:460px}.part{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}header h1{font-size:23px}}
+:root{font-family:Arial,sans-serif;color:#13233a;background:#f3f6f9}*{box-sizing:border-box}body{margin:0}header{background:#14263d;color:#fff;padding:18px max(18px,calc((100% - 1200px)/2))}header h1{margin:0;font-size:28px}header p{margin:5px 0 0}.wrap{max-width:1200px;margin:18px auto;padding:0 14px}.top{display:grid;grid-template-columns:320px 1fr;gap:18px}.card{background:#fff;border:1px solid #d5dde7;border-radius:14px;padding:16px;margin-bottom:18px}h2{margin:4px 0 16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}.field label{display:block;font-size:13px;color:#617086;margin-bottom:4px}.field input{width:100%;padding:10px;border:1px solid #ccd5df;border-radius:9px;font-size:16px}.config{margin-bottom:16px;padding:12px;background:#f6f8fb;border:1px solid #d8e0e9;border-radius:10px}.config-title{font-weight:bold;margin-bottom:9px}.opts{display:grid;grid-template-columns:1fr 1fr;gap:7px}.opt{display:flex;align-items:center;gap:7px;font-size:14px}.opt input{accent-color:#173b66}.calc{margin-top:14px;background:#edf3f8;padding:12px;border-radius:10px;line-height:1.55}.hint{color:#65758b;margin-top:-8px}.viewer{height:590px;border-radius:10px;overflow:hidden;background:#eef2f5;position:relative}.viewer canvas{display:block;width:100%;height:100%;touch-action:none}.viewer .msg{position:absolute;left:12px;bottom:12px;background:#ffffffdd;padding:7px 10px;border-radius:7px;font-size:12px}.lower{display:grid;grid-template-columns:360px 1fr;gap:18px}.tabs button{margin:0 5px 6px 0;padding:7px 9px;border:0;border-radius:7px}.tabs .active{background:#173b66;color:#fff}.part{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:center;margin-top:10px}.rect{width:170px;height:120px;background:#e5e8eb;position:relative}.edge{position:absolute;background:#777;cursor:pointer}.edge.on{background:#d22}.edge[data-edge=top],.edge[data-edge=bottom]{left:0;width:100%;height:8px}.edge[data-edge=top]{top:0}.edge[data-edge=bottom]{bottom:0}.edge[data-edge=left],.edge[data-edge=right]{top:0;height:100%;width:8px}.edge[data-edge=left]{left:0}.edge[data-edge=right]{right:0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px;border-bottom:1px solid #d8dee6;text-align:left}tfoot{font-weight:bold}@media(max-width:760px){.top,.lower{grid-template-columns:1fr}.viewer{height:460px}.part{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}header h1{font-size:23px}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Долен кухненски шкаф — v3.3</p></header>
+<header><h1>Kitchen Calculator</h1><p>Долен кухненски шкаф — v3.4</p></header>
 <div class="wrap"><div class="top">
-<section class="card"><h2>Размери</h2><div class="fields">
+<section class="card"><h2>Размери</h2>
+<div class="config"><div class="config-title">Конфигурация</div><div class="opts">
+<label class="opt"><input type="radio" name="cfg" value="s1" checked> 1 рафт</label>
+<label class="opt"><input type="radio" name="cfg" value="s2"> 2 рафта</label>
+<label class="opt"><input type="radio" name="cfg" value="d1"> 1 чекмедже</label>
+<label class="opt"><input type="radio" name="cfg" value="d2"> 2 чекмеджета</label>
+<label class="opt"><input type="radio" name="cfg" value="d3"> 3 чекмеджета</label>
+</div></div><div class="fields">
 <div class="field"><label>Ширина шкаф</label><input id="w" type="number" value="600"></div>
 <div class="field"><label>Обща височина</label><input id="h" type="number" value="900"></div>
 <div class="field"><label>Крака</label><input id="legs" type="number" value="100"></div>
@@ -15,7 +22,7 @@
 <div class="field"><label>Крайна дълбочина</label><input id="d" type="number" value="555"></div>
 <div class="field"><label>Гръб</label><input id="back" type="number" value="3"></div>
 <div class="field"><label>Ширина царги</label><input id="rail" type="number" value="60"></div>
-<div class="field"><label>Брой рафтове</label><input id="shelves" type="number" value="1"></div>
+<input id="shelves" type="hidden" value="1">
 </div><div id="calc" class="calc"></div></section>
 <section class="card"><h2>Конструкция — 3D модел</h2><p class="hint">Плъзни за завъртане · колелце/щипване за приближаване</p><div id="viewer" class="viewer"><div class="msg">Интерактивен модел</div></div></section>
 </div>
@@ -28,11 +35,12 @@
 (()=>{'use strict';
 const $=id=>document.getElementById(id), num=id=>Math.max(0,Number($(id).value)||0);
 let selected='side';const edges={side:new Set(),bottom:new Set(),shelf:new Set(),rail:new Set(),back:new Set(),worktop:new Set()},names={top:'горе',right:'дясно',bottom:'долу',left:'ляво'};
+function cfg(){return document.querySelector('input[name="cfg"]:checked')?.value||'s1'}
 function dims(){const w=num('w'),total=num('h'),legs=num('legs'),top=num('top'),t=num('t'),d=num('d'),back=num('back'),rail=num('rail'),shelves=Math.round(num('shelves')),body=Math.max(0,total-legs-top),pd=Math.max(0,d-back),sideH=Math.max(0,body-t),inner=Math.max(0,w-2*t);return{w,total,legs,top,t,d,back,rail,shelves,body,pd,sideH,inner}}
 function parts(x){return{
  side:{n:'Страница',q:2,a:x.sideH,b:x.pd,ids:['S1-1']},
  bottom:{n:'Дъно',q:1,a:x.w,b:x.pd,ids:['S1-2']},
- shelf:{n:'Рафт',q:x.shelves,a:x.inner,b:x.pd,ids:['S1-3']},
+ shelf:{n:'Рафт',q:(cfg()==='s2'?2:cfg()==='s1'?1:0),a:x.inner,b:x.pd,ids:['S1-3']},
  rail:{n:'Царга',q:2,a:x.inner,b:x.rail,ids:['S1-4']},
  back:{n:'Гръб '+x.back+' mm',q:1,a:x.w,b:x.body,ids:['S1-5']},
  worktop:{n:'Плот',q:1,a:x.w,b:600,ids:['S1-6']}
@@ -45,7 +53,7 @@ document.querySelectorAll('.edge').forEach(e=>e.onclick=()=>{const s=edges[selec
 const host=$('viewer');if(!window.THREE){host.innerHTML='<b style="padding:20px;display:block">Three.js не се зареди.</b>';return}
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xeef2f5);const camera=new THREE.PerspectiveCamera(38,1,1,10000);const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,2));host.prepend(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xffffff,0x59636d,2.5));const sun=new THREE.DirectionalLight(0xffffff,2.4);sun.position.set(800,1200,900);scene.add(sun);
-const wood=new THREE.MeshStandardMaterial({color:0xd7aa70,roughness:.7}),topMat=new THREE.MeshStandardMaterial({color:0x55585d,roughness:.72,metalness:0}),railMat=new THREE.MeshStandardMaterial({color:0xc98f50,roughness:.7}),legMat=new THREE.MeshStandardMaterial({color:0x30241f,roughness:.85}),backMat=new THREE.MeshStandardMaterial({color:0xc8a77b,roughness:.85,side:THREE.DoubleSide});
+const wood=new THREE.MeshStandardMaterial({color:0xd7aa70,roughness:.7}),topMat=new THREE.MeshStandardMaterial({color:0x55585d,roughness:.72,metalness:0}),railMat=new THREE.MeshStandardMaterial({color:0xc98f50,roughness:.7}),legMat=new THREE.MeshStandardMaterial({color:0x30241f,roughness:.85}),backMat=new THREE.MeshStandardMaterial({color:0xc8a77b,roughness:.85,side:THREE.DoubleSide}),drawerMat=new THREE.MeshStandardMaterial({color:0xb9824d,roughness:.72});
 let model=new THREE.Group();scene.add(model);
 function addBox(w,h,d,x,y,z,mat=wood){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);mesh.position.set(x,y,z);model.add(mesh);const line=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color:0x5a422f}));line.position.copy(mesh.position);model.add(line)}
 function addLabel(text,x,y,z){
@@ -79,10 +87,26 @@ function build(){
  addLabel('S1-1', W/2-T-8,carcassBottom+T+SH*.72,PD/2+8);
 
  // Shelves between the sides.
- for(let i=1;i<=S;i++){
-   const sy=carcassBottom+T+(SH-T)*i/(S+1);
+ const mode=cfg();
+ const shelfCount=mode==='s2'?2:(mode==='s1'?1:0);
+ for(let i=1;i<=shelfCount;i++){
+   const sy=carcassBottom+T+(SH-T)*i/(shelfCount+1);
    addBox(I,T,PD,0,sy,0);
    addLabel('S1-3',0,sy+T+12,PD/2-80);
+ }
+
+ // Drawer visualization. For now these are schematic drawer boxes/fronts;
+ // detailed drawer mechanism dimensions will be added later.
+ const drawerCount=mode==='d1'?1:mode==='d2'?2:mode==='d3'?3:0;
+ if(drawerCount){
+   const clearH=SH-T-36;
+   const dh=Math.min(170,clearH/drawerCount-18);
+   for(let i=0;i<drawerCount;i++){
+     const cy=carcassBottom+T+clearH-(i+.5)*(clearH/drawerCount);
+     addBox(I-24,dh,PD-70,0,cy,-5,drawerMat);
+     addBox(I-8,Math.max(70,dh*.72),T,0,cy,PD/2+T/2+2,drawerMat);
+     addLabel('Ч'+(i+1),0,cy,PD/2+35);
+   }
  }
 
  // Two top rails, INSIDE the carcass, immediately below the worktop.
@@ -129,6 +153,9 @@ function build(){
 let down=false,lx=0,ly=0,rx=-.10,ry=.38,scale=.58,pinch=0;function pose(){model.position.set(0,0,0);model.rotation.x=rx;model.rotation.y=ry;model.scale.setScalar(scale)}
 const c=renderer.domElement;c.addEventListener('pointerdown',e=>{down=true;lx=e.clientX;ly=e.clientY;c.setPointerCapture(e.pointerId)});c.addEventListener('pointermove',e=>{if(!down)return;ry+=(e.clientX-lx)*.008;rx=Math.max(-.65,Math.min(.45,rx+(e.clientY-ly)*.006));lx=e.clientX;ly=e.clientY;pose()});c.addEventListener('pointerup',()=>down=false);c.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.45,Math.min(1.5,scale*(e.deltaY>0?.92:1.08)));pose()},{passive:false});
 function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}new ResizeObserver(resize).observe(host);
-document.querySelectorAll('input').forEach(e=>e.addEventListener('input',()=>{ui();build()}));resize();ui();build();pose();(function draw(){requestAnimationFrame(draw);renderer.render(scene,camera)})();
+document.querySelectorAll('input').forEach(e=>e.addEventListener('input',()=>{ui();build()}));
+document.querySelectorAll('input[name="cfg"]').forEach(e=>e.addEventListener('change',()=>{
+ const m=cfg();$('shelves').value=m==='s2'?2:m==='s1'?1:0;ui();build();
+}));resize();ui();build();pose();(function draw(){requestAnimationFrame(draw);renderer.render(scene,camera)})();
 })();
 </script></body></html>
