@@ -27,9 +27,9 @@
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id), num=id=>Math.max(0,Number($(id).value)||0);
-let selected='side';const edges={side:new Set(),bottom:new Set(),shelf:new Set(),rail:new Set(),back:new Set()},names={top:'горе',right:'дясно',bottom:'долу',left:'ляво'};
+let selected='side';const edges={side:new Set(),bottom:new Set(),shelf:new Set(),rail:new Set(),back:new Set(),worktop:new Set()},names={top:'горе',right:'дясно',bottom:'долу',left:'ляво'};
 function dims(){const w=num('w'),total=num('h'),legs=num('legs'),top=num('top'),t=num('t'),d=num('d'),back=num('back'),rail=num('rail'),shelves=Math.round(num('shelves')),body=Math.max(0,total-legs-top),pd=Math.max(0,d-back),sideH=Math.max(0,body-t),inner=Math.max(0,w-2*t);return{w,total,legs,top,t,d,back,rail,shelves,body,pd,sideH,inner}}
-function parts(x){return{side:{n:'Страница',q:2,a:x.sideH,b:x.pd},bottom:{n:'Дъно',q:1,a:x.w,b:x.pd},shelf:{n:'Рафт',q:x.shelves,a:x.inner,b:x.pd},rail:{n:'Царга',q:2,a:x.inner,b:x.rail},back:{n:'Гръб '+x.back+' mm',q:1,a:x.w,b:x.body}}}
+function parts(x){return{side:{n:'Страница',q:2,a:x.sideH,b:x.pd},bottom:{n:'Дъно',q:1,a:x.w,b:x.pd},shelf:{n:'Рафт',q:x.shelves,a:x.inner,b:x.pd},rail:{n:'Царга',q:2,a:x.inner,b:x.rail},back:{n:'Гръб '+x.back+' mm',q:1,a:x.w,b:x.body},worktop:{n:'Плот',q:1,a:x.w+70,b:x.d+45}}}
 function band(k,p){let m=0;edges[k].forEach(e=>m+=(e==='top'||e==='bottom'?p.a:p.b));return m*p.q/1000}
 function edgeText(k){const a=[...edges[k]].map(e=>names[e]);return a.length?a.join(', '):'няма'}
 function ui(){const x=dims(),p=parts(x),q=p[selected];$('calc').innerHTML='<b>Корпус:</b> '+x.w+' × '+x.body+' × '+x.d+' mm<br><b>ПДЧ дълбочина:</b> '+x.pd+' mm<br><b>Страница:</b> '+x.sideH+' × '+x.pd+' mm<br><b>4 крака:</b> '+x.legs+' mm · <b>Плот:</b> '+x.top+' mm';$('tabs').innerHTML='';Object.entries(p).forEach(([k,z])=>{const b=document.createElement('button');b.textContent=z.n;b.className=k===selected?'active':'';b.onclick=()=>{selected=k;ui()};$('tabs').appendChild(b)});$('pname').textContent=q.n;$('psize').textContent=q.a+' × '+q.b+' mm';$('etxt').textContent='Кант: '+edgeText(selected);$('meters').textContent='Кант за '+q.q+' бр.: '+band(selected,q).toFixed(3)+' m';document.querySelectorAll('.edge').forEach(e=>e.classList.toggle('on',edges[selected].has(e.dataset.edge)));let total=0;$('tbody').innerHTML='';Object.entries(p).forEach(([k,z])=>{if(!z.q)return;const m=band(k,z);total+=m;$('tbody').insertAdjacentHTML('beforeend','<tr><td>'+z.n+'</td><td>'+z.q+'</td><td>'+z.a+' × '+z.b+' mm</td><td>'+edgeText(k)+'</td><td>'+m.toFixed(3)+' m</td></tr>')});$('total').textContent=total.toFixed(3)+' m'}
@@ -38,7 +38,7 @@ document.querySelectorAll('.edge').forEach(e=>e.onclick=()=>{const s=edges[selec
 const host=$('viewer');if(!window.THREE){host.innerHTML='<b style="padding:20px;display:block">Three.js не се зареди.</b>';return}
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xeef2f5);const camera=new THREE.PerspectiveCamera(38,1,1,10000);const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,2));host.prepend(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xffffff,0x59636d,2.5));const sun=new THREE.DirectionalLight(0xffffff,2.4);sun.position.set(800,1200,900);scene.add(sun);
-const wood=new THREE.MeshStandardMaterial({color:0xd7aa70,roughness:.7}),railMat=new THREE.MeshStandardMaterial({color:0xc98f50,roughness:.7}),legMat=new THREE.MeshStandardMaterial({color:0x30241f,roughness:.85}),backMat=new THREE.MeshStandardMaterial({color:0xc8a77b,roughness:.85,side:THREE.DoubleSide});
+const wood=new THREE.MeshStandardMaterial({color:0xd7aa70,roughness:.7}),topMat=new THREE.MeshStandardMaterial({color:0x8b633f,roughness:.62}),railMat=new THREE.MeshStandardMaterial({color:0xc98f50,roughness:.7}),legMat=new THREE.MeshStandardMaterial({color:0x30241f,roughness:.85}),backMat=new THREE.MeshStandardMaterial({color:0xc8a77b,roughness:.85,side:THREE.DoubleSide});
 let model=new THREE.Group();scene.add(model);
 function addBox(w,h,d,x,y,z,mat=wood){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);mesh.position.set(x,y,z);model.add(mesh);const line=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color:0x5a422f}));line.position.copy(mesh.position);model.add(line)}
 function build(){while(model.children.length){const o=model.children.pop();o.geometry?.dispose()}const x=dims(),{w:W,legs:L,top,Tp,t:T,pd:PD,back:B,rail:R,body:H,sideH:SH,inner:I,shelves:S,d:D}=x;
@@ -47,7 +47,7 @@ for(let i=1;i<=S;i++)addBox(I,T,PD,0,L+T+SH*i/(S+1),0);
 const ry=L+H-T/2;addBox(I,T,R,0,ry,PD/2-R/2,railMat);addBox(I,T,R,0,ry,-PD/2+R/2,railMat);
 if(B)addBox(W,H,B,0,L+H/2,-PD/2-B/2,backMat);
 const lw=42,ix=Math.max(45,W/2-60),iz=Math.max(45,PD/2-60);[[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([sx,sz])=>addBox(lw,L,lw,sx*ix,L/2,sz*iz,legMat));
-addBox(W+70,Tp,D+45,0,L+H+Tp/2,12);
+addBox(W+70,Tp,D+45,0,L+H+Tp/2,12,topMat);
 camera.position.set(W*1.35,L+H*.92,Math.max(900,D*1.9));camera.lookAt(0,L+H*.52,0)}
 let down=false,lx=0,ly=0,rx=-.08,ry=-.42,scale=.82,pinch=0;function pose(){model.rotation.x=rx;model.rotation.y=ry;model.scale.setScalar(scale)}
 const c=renderer.domElement;c.addEventListener('pointerdown',e=>{down=true;lx=e.clientX;ly=e.clientY;c.setPointerCapture(e.pointerId)});c.addEventListener('pointermove',e=>{if(!down)return;ry+=(e.clientX-lx)*.008;rx=Math.max(-.65,Math.min(.45,rx+(e.clientY-ly)*.006));lx=e.clientX;ly=e.clientY;pose()});c.addEventListener('pointerup',()=>down=false);c.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.45,Math.min(1.5,scale*(e.deltaY>0?.92:1.08)));pose()},{passive:false});
