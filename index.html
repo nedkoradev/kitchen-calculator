@@ -4,7 +4,7 @@
 <style>
 :root{font-family:Arial,sans-serif;color:#13233a;background:#f3f6f9}*{box-sizing:border-box}body{margin:0}header{background:#14263d;color:#fff;padding:18px max(18px,calc((100% - 1200px)/2))}header h1{margin:0;font-size:28px}header p{margin:5px 0 0}.wrap{max-width:1200px;margin:18px auto;padding:0 14px}.top{display:grid;grid-template-columns:320px 1fr;gap:18px}.card{background:#fff;border:1px solid #d5dde7;border-radius:14px;padding:16px;margin-bottom:18px}h2{margin:4px 0 16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}.field label{display:block;font-size:13px;color:#617086;margin-bottom:4px}.field input{width:100%;padding:10px;border:1px solid #ccd5df;border-radius:9px;font-size:16px}.calc{margin-top:14px;background:#edf3f8;padding:12px;border-radius:10px;line-height:1.55}.hint{color:#65758b;margin-top:-8px}.viewer{height:590px;border-radius:10px;overflow:hidden;background:#eef2f5;position:relative}.viewer canvas{display:block;width:100%;height:100%;touch-action:none}.viewer .msg{position:absolute;left:12px;bottom:12px;background:#ffffffdd;padding:7px 10px;border-radius:7px;font-size:12px}.lower{display:grid;grid-template-columns:360px 1fr;gap:18px}.tabs button{margin:0 5px 6px 0;padding:7px 9px;border:0;border-radius:7px}.tabs .active{background:#173b66;color:#fff}.part{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:center;margin-top:10px}.rect{width:170px;height:120px;background:#e5e8eb;position:relative}.edge{position:absolute;background:#777;cursor:pointer}.edge.on{background:#d22}.edge[data-edge=top],.edge[data-edge=bottom]{left:0;width:100%;height:8px}.edge[data-edge=top]{top:0}.edge[data-edge=bottom]{bottom:0}.edge[data-edge=left],.edge[data-edge=right]{top:0;height:100%;width:8px}.edge[data-edge=left]{left:0}.edge[data-edge=right]{right:0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px;border-bottom:1px solid #d8dee6;text-align:left}tfoot{font-weight:bold}@media(max-width:760px){.top,.lower{grid-template-columns:1fr}.viewer{height:460px}.part{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}header h1{font-size:23px}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Долен кухненски шкаф — v3.1</p></header>
+<header><h1>Kitchen Calculator</h1><p>Долен кухненски шкаф — v3.2</p></header>
 <div class="wrap"><div class="top">
 <section class="card"><h2>Размери</h2><div class="fields">
 <div class="field"><label>Ширина шкаф</label><input id="w" type="number" value="600"></div>
@@ -29,7 +29,14 @@
 const $=id=>document.getElementById(id), num=id=>Math.max(0,Number($(id).value)||0);
 let selected='side';const edges={side:new Set(),bottom:new Set(),shelf:new Set(),rail:new Set(),back:new Set(),worktop:new Set()},names={top:'горе',right:'дясно',bottom:'долу',left:'ляво'};
 function dims(){const w=num('w'),total=num('h'),legs=num('legs'),top=num('top'),t=num('t'),d=num('d'),back=num('back'),rail=num('rail'),shelves=Math.round(num('shelves')),body=Math.max(0,total-legs-top),pd=Math.max(0,d-back),sideH=Math.max(0,body-t),inner=Math.max(0,w-2*t);return{w,total,legs,top,t,d,back,rail,shelves,body,pd,sideH,inner}}
-function parts(x){let n=1;const mk=(name,q,a,b)=>({n:name,q,a,b,ids:Array.from({length:q},()=>`S1-${n++}`)});return{side:mk('Страница',2,x.sideH,x.pd),bottom:mk('Дъно',1,x.w,x.pd),shelf:mk('Рафт',x.shelves,x.inner,x.pd),rail:mk('Царга',2,x.inner,x.rail),back:mk('Гръб '+x.back+' mm',1,x.w,x.body),worktop:mk('Плот',1,x.w,600)}}
+function parts(x){return{
+ side:{n:'Страница',q:2,a:x.sideH,b:x.pd,ids:['S1-1']},
+ bottom:{n:'Дъно',q:1,a:x.w,b:x.pd,ids:['S1-2']},
+ shelf:{n:'Рафт',q:x.shelves,a:x.inner,b:x.pd,ids:['S1-3']},
+ rail:{n:'Царга',q:2,a:x.inner,b:x.rail,ids:['S1-4']},
+ back:{n:'Гръб '+x.back+' mm',q:1,a:x.w,b:x.body,ids:['S1-5']},
+ worktop:{n:'Плот',q:1,a:x.w,b:600,ids:['S1-6']}
+}}
 function band(k,p){let m=0;edges[k].forEach(e=>m+=(e==='top'||e==='bottom'?p.a:p.b));return m*p.q/1000}
 function edgeText(k){const a=[...edges[k]].map(e=>names[e]);return a.length?a.join(', '):'няма'}
 function ui(){const x=dims(),p=parts(x),q=p[selected];$('calc').innerHTML='<b>Корпус:</b> '+x.w+' × '+x.body+' × '+x.d+' mm<br><b>ПДЧ дълбочина:</b> '+x.pd+' mm<br><b>Страница:</b> '+x.sideH+' × '+x.pd+' mm<br><b>4 крака:</b> '+x.legs+' mm · <b>Плот:</b> '+x.top+' mm';$('tabs').innerHTML='';Object.entries(p).forEach(([k,z])=>{const b=document.createElement('button');b.textContent=z.n;b.className=k===selected?'active':'';b.onclick=()=>{selected=k;ui()};$('tabs').appendChild(b)});$('pname').textContent=q.n;$('psize').textContent=q.a+' × '+q.b+' mm';$('etxt').textContent='Кант: '+edgeText(selected);$('meters').textContent='Кант за '+q.q+' бр.: '+band(selected,q).toFixed(3)+' m';document.querySelectorAll('.edge').forEach(e=>e.classList.toggle('on',edges[selected].has(e.dataset.edge)));let total=0;$('tbody').innerHTML='';Object.entries(p).forEach(([k,z])=>{if(!z.q)return;const m=band(k,z);total+=m;$('tbody').insertAdjacentHTML('beforeend','<tr><td><b>'+z.ids.join(', ')+'</b></td><td>'+z.n+'</td><td>'+z.q+'</td><td>'+z.a+' × '+z.b+' mm</td><td>'+edgeText(k)+'</td><td>'+m.toFixed(3)+' m</td></tr>')});$('total').textContent=total.toFixed(3)+' m'}
@@ -44,9 +51,9 @@ function addBox(w,h,d,x,y,z,mat=wood){const mesh=new THREE.Mesh(new THREE.BoxGeo
 function addLabel(text,x,y,z){
  const c=document.createElement('canvas');c.width=256;c.height=96;
  const ctx=c.getContext('2d');ctx.fillStyle='rgba(20,24,30,.88)';ctx.roundRect(8,8,240,80,14);ctx.fill();
- ctx.fillStyle='#fff';ctx.font='bold 38px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,128,48);
+ ctx.fillStyle='#fff';ctx.font='bold 44px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,128,48);
  const tex=new THREE.CanvasTexture(c);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false}));
- sp.position.set(x,y,z);sp.scale.set(105,39,1);sp.renderOrder=50;model.add(sp);
+ sp.position.set(x,y,z);sp.scale.set(135,50,1);sp.renderOrder=50;model.add(sp);
 }
 function build(){
  while(model.children.length){
@@ -63,32 +70,31 @@ function build(){
 
  // Bottom under the sides.
  addBox(W,T,PD,0,carcassBottom+T/2,0);
- addLabel('S1-3',0,carcassBottom+T+12,PD/2-80);
+ addLabel('S1-2',0,carcassBottom+T+12,PD/2-80);
 
  // Sides stand on the bottom.
  addBox(T,SH,PD,-W/2+T/2,carcassBottom+T+SH/2,0);
  addBox(T,SH,PD, W/2-T/2,carcassBottom+T+SH/2,0);
  addLabel('S1-1',-W/2+T+8,carcassBottom+T+SH*.72,PD/2+8);
- addLabel('S1-2', W/2-T-8,carcassBottom+T+SH*.72,PD/2+8);
+ addLabel('S1-1', W/2-T-8,carcassBottom+T+SH*.72,PD/2+8);
 
  // Shelves between the sides.
  for(let i=1;i<=S;i++){
    const sy=carcassBottom+T+(SH-T)*i/(S+1);
    addBox(I,T,PD,0,sy,0);
-   addLabel('S1-'+(3+i),0,sy+T+12,PD/2-80);
+   addLabel('S1-3',0,sy+T+12,PD/2-80);
  }
 
  // Two top rails, INSIDE the carcass, immediately below the worktop.
  const railY=carcassTop-T/2;
  addBox(I,T,R,0,railY, PD/2-R/2,railMat);
  addBox(I,T,R,0,railY,-PD/2+R/2,railMat);
- const railBase=4+S;
- addLabel('S1-'+railBase,0,railY+T+12,PD/2-R/2);
- addLabel('S1-'+(railBase+1),0,railY+T+12,-PD/2+R/2);
+ addLabel('S1-4',0,railY+T+12,PD/2-R/2);
+ addLabel('S1-4',0,railY+T+12,-PD/2+R/2);
 
  // 3 mm nailed-on back.
  if(B){addBox(W,H,B,0,carcassBottom+H/2,-PD/2-B/2,backMat);
- addLabel('S1-'+(6+S),0,carcassBottom+H*.55,-PD/2-B-8);}
+ addLabel('S1-5',0,carcassBottom+H*.55,-PD/2-B-8);}
 
  // Four legs.
  const lw=42,ix=Math.max(45,W/2-60),iz=Math.max(45,PD/2-60);
@@ -113,7 +119,7 @@ function build(){
  const el=new THREE.LineSegments(eg,new THREE.LineBasicMaterial({color:0x222222}));
  el.position.copy(m.position);
  model.add(el);
- addLabel('S1-'+(7+S),0,carcassTop+Tp+18,topZ);
+ addLabel('S1-6',0,carcassTop+Tp+18,topZ);
 
  // Camera framed from the actual overall model dimensions.
  const totalY=carcassTop+Tp;
