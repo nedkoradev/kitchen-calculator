@@ -4,7 +4,7 @@
 <style>
 :root{font-family:Arial,sans-serif;color:#13233a;background:#f3f6f9}*{box-sizing:border-box}body{margin:0}header{background:#14263d;color:#fff;padding:18px max(18px,calc((100% - 1200px)/2))}header h1{margin:0;font-size:28px}header p{margin:5px 0 0}.wrap{max-width:1200px;margin:18px auto;padding:0 14px}.top{display:grid;grid-template-columns:320px 1fr;gap:18px}.card{background:#fff;border:1px solid #d5dde7;border-radius:14px;padding:16px;margin-bottom:18px}h2{margin:4px 0 16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}.field label{display:block;font-size:13px;color:#617086;margin-bottom:4px}.field input{width:100%;padding:10px;border:1px solid #ccd5df;border-radius:9px;font-size:16px}.config{margin-bottom:16px;padding:12px;background:#f6f8fb;border:1px solid #d8e0e9;border-radius:10px}.config-title{font-weight:bold;margin-bottom:9px}.opts{display:grid;grid-template-columns:1fr 1fr;gap:7px}.opt{display:flex;align-items:center;gap:7px;font-size:14px}.opt input{accent-color:#173b66}.calc{margin-top:14px;background:#edf3f8;padding:12px;border-radius:10px;line-height:1.55}.hint{color:#65758b;margin-top:-8px}.viewer{height:590px;border-radius:10px;overflow:hidden;background:#eef2f5;position:relative}.viewer canvas{display:block;width:100%;height:100%;touch-action:none}.viewer .msg{position:absolute;left:12px;bottom:12px;background:#ffffffdd;padding:7px 10px;border-radius:7px;font-size:12px}.lower{display:grid;grid-template-columns:360px 1fr;gap:18px}.tabs button{margin:0 5px 6px 0;padding:7px 9px;border:0;border-radius:7px}.tabs .active{background:#173b66;color:#fff}.part{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:center;margin-top:10px}.rect{width:170px;height:120px;background:#e5e8eb;position:relative}.edge{position:absolute;background:#777;cursor:pointer}.edge.on{background:#d22}.edge[data-edge=top],.edge[data-edge=bottom]{left:0;width:100%;height:8px}.edge[data-edge=top]{top:0}.edge[data-edge=bottom]{bottom:0}.edge[data-edge=left],.edge[data-edge=right]{top:0;height:100%;width:8px}.edge[data-edge=left]{left:0}.edge[data-edge=right]{right:0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px;border-bottom:1px solid #d8dee6;text-align:left}tfoot{font-weight:bold}@media(max-width:760px){.top,.lower{grid-template-columns:1fr}.viewer{height:460px}.part{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}header h1{font-size:23px}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Долен кухненски шкаф — v3.5</p></header>
+<header><h1>Kitchen Calculator</h1><p>Долен кухненски шкаф — v3.6</p></header>
 <div class="wrap"><div class="top">
 <section class="card"><h2>Размери</h2>
 <div class="config"><div class="config-title">Конфигурация</div><div class="opts">
@@ -13,6 +13,9 @@
 <label class="opt"><input type="radio" name="cfg" value="d1"> 1 чекмедже</label>
 <label class="opt"><input type="radio" name="cfg" value="d2"> 2 чекмеджета</label>
 <label class="opt"><input type="radio" name="cfg" value="d3"> 3 чекмеджета</label>
+</div>
+<div style="margin-top:10px;padding-top:10px;border-top:1px solid #d8e0e9">
+<label class="opt"><input type="checkbox" id="withTop"> Добави плот към този шкаф</label>
 </div></div><div class="fields">
 <div class="field"><label>Ширина шкаф</label><input id="w" type="number" value="600"></div>
 <div class="field"><label>Обща височина</label><input id="h" type="number" value="900"></div>
@@ -36,6 +39,7 @@
 const $=id=>document.getElementById(id), num=id=>Math.max(0,Number($(id).value)||0);
 let selected='side';const edges={side:new Set(),bottom:new Set(),shelf:new Set(),rail:new Set(),back:new Set(),worktop:new Set()},names={top:'горе',right:'дясно',bottom:'долу',left:'ляво'};
 function cfg(){return document.querySelector('input[name="cfg"]:checked')?.value||'s1'}
+function hasTop(){return $('withTop')?.checked||false}
 function dims(){const w=num('w'),total=num('h'),legs=num('legs'),top=num('top'),t=num('t'),d=num('d'),back=num('back'),rail=num('rail'),shelves=Math.round(num('shelves')),body=Math.max(0,total-legs-top),pd=Math.max(0,d-back),sideH=Math.max(0,body-t),inner=Math.max(0,w-2*t);return{w,total,legs,top,t,d,back,rail,shelves,body,pd,sideH,inner}}
 function parts(x){return{
  side:{n:'Страница',q:2,a:x.sideH,b:x.pd,ids:['S1-1']},
@@ -43,7 +47,7 @@ function parts(x){return{
  shelf:{n:'Рафт',q:(cfg()==='s2'?2:cfg()==='s1'?1:0),a:x.inner,b:x.pd,ids:['S1-3']},
  rail:{n:'Царга',q:2,a:x.inner,b:x.rail,ids:['S1-4']},
  back:{n:'Гръб '+x.back+' mm',q:1,a:x.w,b:x.body,ids:['S1-5']},
- worktop:{n:'Плот',q:1,a:x.w,b:600,ids:['S1-6']}
+ worktop:{n:'Плот',q:hasTop()?1:0,a:x.w,b:600,ids:['S1-6']}
 }}
 function band(k,p){let m=0;edges[k].forEach(e=>m+=(e==='top'||e==='bottom'?p.a:p.b));return m*p.q/1000}
 function edgeText(k){const a=[...edges[k]].map(e=>names[e]);return a.length?a.join(', '):'няма'}
@@ -131,6 +135,7 @@ function build(){
 
  // Worktop: REAL dimensions. Same cabinet width, standard 600 mm depth, real Tp thickness.
  // Its bottom face sits exactly on carcassTop.
+ if(hasTop()){
  const topDepth=600;
  const g=new THREE.BoxGeometry(W,Tp,topDepth);
  const topSideMat=new THREE.MeshStandardMaterial({color:0x777a80,roughness:.72});
@@ -147,9 +152,10 @@ function build(){
  el.position.copy(m.position);
  model.add(el);
  addLabel('S1-6',0,carcassTop+Tp+18,topZ);
+ }
 
  // Camera framed from the actual overall model dimensions.
- const totalY=carcassTop+Tp;
+ const totalY=carcassTop+(hasTop()?Tp:0);
  camera.position.set(W*1.45,totalY*1.28,Math.max(1050,topDepth*1.9));
  camera.lookAt(0,L+H*.52,20);
 }
