@@ -5,7 +5,7 @@
 :root{font-family:Arial,sans-serif;color:#13233a;background:#f3f6f9}*{box-sizing:border-box}body{margin:0}header{background:#14263d;color:#fff;padding:18px max(18px,calc((100% - 1200px)/2))}header h1{margin:0;font-size:28px}header p{margin:5px 0 0}.wrap{max-width:1200px;margin:18px auto;padding:0 14px}.project{margin-bottom:18px}.projectbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.projectbar .field{width:150px}.projectbar button{padding:10px 14px;border:0;border-radius:9px;background:#173b66;color:#fff;font-weight:bold;cursor:pointer}.projectbar button.secondary{background:#e7edf4;color:#173b66}.cabrow{display:flex;gap:8px;align-items:stretch;overflow-x:auto;padding:12px 2px 4px}.cabitem{min-width:150px;background:#f6f8fb;border:2px solid #cbd5e1;border-radius:10px;padding:10px;cursor:pointer;position:relative}.cabitem.active{border-color:#173b66;background:#edf4fb}.cabitem b{display:block}.cabitem small{color:#64748b}.cabitem .del{position:absolute;right:5px;top:5px;border:0;background:transparent;color:#a33;padding:2px 5px;font-size:16px}.projectsum{margin-top:10px;padding:10px 12px;background:#edf3f8;border-radius:9px}.projectviz{margin-top:14px;border:1px solid #d8e0e9;border-radius:10px;background:#eef2f5;overflow:hidden}.projectviz-title{padding:10px 12px 0;font-weight:bold}.projectcanvas{height:430px;position:relative;overflow:hidden;background:#eef2f5}.projectcanvas canvas{display:block;width:100%;height:100%;touch-action:none}.pv-cab{position:relative;height:78%;min-width:44px;max-width:360px;background:#d7aa70;border:2px solid #6d5138;border-bottom:0;box-shadow:inset 0 0 0 1px #c3925b;display:flex;align-items:center;justify-content:center}.pv-cab:before,.pv-cab:after{content:'';position:absolute;top:0;bottom:0;width:7px;background:#c98f50;border-left:1px solid #6d5138;border-right:1px solid #6d5138}.pv-cab:before{left:0}.pv-cab:after{right:0}.pv-mid{position:absolute;top:0;bottom:0;left:50%;width:7px;transform:translateX(-50%);background:#c98f50;border-left:1px solid #6d5138;border-right:1px solid #6d5138}.pv-shelf{position:absolute;left:7px;right:7px;height:6px;background:#c98f50;border:1px solid #6d5138}.pv-drawer{position:absolute;left:9px;right:9px;height:24%;background:#b9824d;border:1px solid #6d5138}.pv-label{position:absolute;bottom:-22px;font-weight:bold;font-size:13px}.pv-legs{position:absolute;bottom:-14%;left:9%;right:9%;height:14%;border-left:8px solid #30241f;border-right:8px solid #30241f}.pv-top{position:absolute;height:14px;background:#666a70;border:2px solid #333;top:8%;z-index:10}.pv-empty{align-self:center;color:#65758b;font-size:15px}.project-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:12px}.project-actions label{display:flex;gap:7px;align-items:center}.cablist{margin-top:14px;overflow:auto}.cablist table{min-width:620px}.cablist .empty{padding:12px;color:#65758b}.top{display:grid;grid-template-columns:320px 1fr;gap:18px}.card{background:#fff;border:1px solid #d5dde7;border-radius:14px;padding:16px;margin-bottom:18px}h2{margin:4px 0 16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}.field label{display:block;font-size:13px;color:#617086;margin-bottom:4px}.field input{width:100%;padding:10px;border:1px solid #ccd5df;border-radius:9px;font-size:16px}.config{margin-bottom:16px;padding:12px;background:#f6f8fb;border:1px solid #d8e0e9;border-radius:10px}.config-title{font-weight:bold;margin-bottom:9px}.opts{display:grid;grid-template-columns:1fr 1fr;gap:7px}.opt{display:flex;align-items:center;gap:7px;font-size:14px}.opt input{accent-color:#173b66}.calc{margin-top:14px;background:#edf3f8;padding:12px;border-radius:10px;line-height:1.55}.hint{color:#65758b;margin-top:-8px}.viewer{height:590px;border-radius:10px;overflow:hidden;background:#eef2f5;position:relative}.viewer canvas{display:block;width:100%;height:100%;touch-action:none}.viewer .msg{position:absolute;left:12px;bottom:12px;background:#ffffffdd;padding:7px 10px;border-radius:7px;font-size:12px}.lower{display:grid;grid-template-columns:360px 1fr;gap:18px}.tabs button{margin:0 5px 6px 0;padding:7px 9px;border:0;border-radius:7px}.tabs .active{background:#173b66;color:#fff}.part{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:center;margin-top:10px}.rect{width:170px;height:120px;background:#e5e8eb;position:relative}.edge{position:absolute;background:#777;cursor:pointer}.edge.on{background:#d22}.edge[data-edge=top],.edge[data-edge=bottom]{left:0;width:100%;height:8px}.edge[data-edge=top]{top:0}.edge[data-edge=bottom]{bottom:0}.edge[data-edge=left],.edge[data-edge=right]{top:0;height:100%;width:8px}.edge[data-edge=left]{left:0}.edge[data-edge=right]{right:0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px;border-bottom:1px solid #d8dee6;text-align:left}tfoot{font-weight:bold}@media(max-width:760px){.top,.lower{grid-template-columns:1fr}.viewer{height:460px}.part{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}header h1{font-size:23px}}
 .size-label{position:absolute;font-size:11px;font-weight:700;white-space:nowrap;background:rgba(255,255,255,.88);padding:1px 4px;border-radius:4px;color:#263238;pointer-events:none;z-index:3}.size-a{left:50%;bottom:5px;transform:translateX(-50%)}.size-b{right:5px;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:center}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.15.1</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.15.2</p></header>
 <div class="wrap">
 <section class="card"><h2>Материали</h2>
 <div class="config" style="margin-bottom:14px">
@@ -229,28 +229,51 @@ function renderProjectVisual(){
 }
 function renderProjectCosts(){
  const box=$('projectCosts');if(!box)return;
- const areas={body:0,back3:0,splash:0,worktop:0,plinth:0};
+ const areas={body:0,back3:0,splash:0,plinth:0};
  cabinets.forEach(c=>cabParts(c).forEach(p=>{if(!p[2])return;const role=p[0]==='S1-5'?'back3':'body';areas[role]+=p[2]*p[3]*p[4]/1000000}));
- if(cabinets.length&&$('projectTop')?.checked){const W=cabinets.reduce((a,c)=>a+c.w,0);areas.worktop=W*600/1000000}
  if(cabinets.length&&$('projectPlinth')?.checked)splitAtCabinetJoints().forEach(seg=>areas.plinth+=(seg[1]-seg[0])*98/1000000);
  if(cabinets.length&&$('projectSplash')?.checked)splitAtCabinetJoints().forEach(seg=>areas.splash+=(seg[1]-seg[0])*600/1000000);
  if(!cabinets.length){box.innerHTML='Добави шкафове, за да се изчислят материалите.';return}
- const calc=(role,no)=>{
+ const calcSheet=(role,no)=>{
   const m=projectMaterials[role],area=areas[role];
   if(area<=0)return '';
   if(!m||!m.fullW||!m.fullH)return '<div style="margin-bottom:14px"><b>'+no+'. '+materialRoles[role].title+'</b><br>Не е въведен материал.</div>';
-  const usableFull=m.fullW*m.fullH/1000000*.8,usableHalf=m.halfW*m.halfH/1000000*.8;
+  const fullArea=m.fullW*m.fullH/1000000,halfArea=m.halfW*m.halfH/1000000,usableFull=fullArea*.8,usableHalf=halfArea*.8;
   let full=Math.floor(area/usableFull),half=0,rem=area-full*usableFull;
   if(rem>1e-9){if(usableHalf&&rem<=usableHalf)half=1;else full++}
+  const boughtArea=full*fullArea+half*halfArea;
+  const usableBought=full*usableFull+half*usableHalf;
+  const reserve=Math.max(0,usableBought-area);
   const cost=full*(m.fullPrice||0)+half*(m.halfPrice||0);
-  const plateText=full+(half?'.5':'');
+  const pieces=full+half*.5;
   return '<div style="margin-bottom:14px"><b>'+no+'. '+materialRoles[role].title+' — '+m.name+'</b><br>'+
    'Необходима площ: <b>'+area.toFixed(3)+' m²</b><br>'+
-   'Използваема площ на цяла плоча (80%): '+usableFull.toFixed(3)+' m²<br>'+
-   'Необходими плочи: <b>'+plateText+' плочи</b> ('+full+' цели'+(half?' + 1 половинка':'')+')<br>'+
+   'Влиза в: <b>'+pieces.toFixed(1).replace('.0','')+' плочи</b> ('+full+' цели'+(half?' + 1 половинка':'')+')<br>'+
+   'Закупена площ: '+boughtArea.toFixed(3)+' m² · използваемост 80%<br>'+
+   'Остатък от използваемата площ: <b>'+reserve.toFixed(3)+' m²</b><br>'+
    'Материал: <b>'+cost.toFixed(2)+' €</b></div>';
  };
- let html='',n=1;['body','back3','splash','worktop','plinth'].forEach(role=>{if(areas[role]>0)html+=calc(role,n++)});
+ const calcWorktop=(no)=>{
+  if(!$('projectTop')?.checked)return '';
+  const m=projectMaterials.worktop,W=cabinets.reduce((a,c)=>a+c.w,0);
+  if(!m||!m.fullW)return '<div style="margin-bottom:14px"><b>'+no+'. Плот</b><br>Не е въведен материал.</div>';
+  const need=W/1000,fullLen=m.fullW/1000,halfLen=m.halfW/1000;
+  let full=0,half=0;
+  if(need<=halfLen)half=1;
+  else if(need<=fullLen)full=1;
+  else {full=Math.floor(need/fullLen);const rem=need-full*fullLen;if(rem>1e-9){if(rem<=halfLen)half=1;else full++}}
+  const bought=full*fullLen+half*halfLen,rest=Math.max(0,bought-need),cost=full*(m.fullPrice||0)+half*(m.halfPrice||0);
+  return '<div style="margin-bottom:14px"><b>'+no+'. Плот — '+m.name+'</b><br>'+
+   'Необходима дължина: <b>'+need.toFixed(3)+' л.м</b><br>'+
+   'Влиза в: <b>'+(full+half*.5).toFixed(1).replace('.0','')+' плота</b> ('+full+' цели'+(half?' + 1 половинка':'')+')<br>'+
+   'Закупена дължина: '+bought.toFixed(3)+' л.м<br>'+
+   'Остатък: <b>'+rest.toFixed(3)+' л.м</b><br>'+
+   'Материал: <b>'+cost.toFixed(2)+' €</b></div>';
+ };
+ let html='',n=1;
+ ['body','back3','splash'].forEach(role=>{if(areas[role]>0)html+=calcSheet(role,n++)});
+ if($('projectTop')?.checked)html+=calcWorktop(n++);
+ if(areas.plinth>0)html+=calcSheet('plinth',n++);
  box.innerHTML=html||'Няма материали за изчисляване.';
 }
 function loadCab(c){
