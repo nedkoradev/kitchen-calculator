@@ -2,9 +2,9 @@
 <html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kitchen Calculator</title>
 <style>
-:root{font-family:Arial,sans-serif;color:#13233a;background:#f3f6f9}*{box-sizing:border-box}body{margin:0}header{background:#14263d;color:#fff;padding:18px max(18px,calc((100% - 1200px)/2))}header h1{margin:0;font-size:28px}header p{margin:5px 0 0}.wrap{max-width:1200px;margin:18px auto;padding:0 14px}.project{margin-bottom:18px}.projectbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.projectbar .field{width:150px}.projectbar button{padding:10px 14px;border:0;border-radius:9px;background:#173b66;color:#fff;font-weight:bold;cursor:pointer}.projectbar button.secondary{background:#e7edf4;color:#173b66}.cabrow{display:flex;gap:8px;align-items:stretch;overflow-x:auto;padding:12px 2px 4px}.cabitem{min-width:150px;background:#f6f8fb;border:2px solid #cbd5e1;border-radius:10px;padding:10px;cursor:pointer;position:relative}.cabitem.active{border-color:#173b66;background:#edf4fb}.cabitem b{display:block}.cabitem small{color:#64748b}.cabitem .del{position:absolute;right:5px;top:5px;border:0;background:transparent;color:#a33;padding:2px 5px;font-size:16px}.projectsum{margin-top:10px;padding:10px 12px;background:#edf3f8;border-radius:9px}.projectviz{margin-top:14px;border:1px solid #d8e0e9;border-radius:10px;background:#eef2f5;overflow:hidden}.projectviz-title{padding:10px 12px 0;font-weight:bold}.projectcanvas{height:330px;position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;padding:28px 24px 22px;background:linear-gradient(#eef2f5 0 72%,#d9dde1 72% 100%)}.kitchen-stage{width:100%;height:100%;display:flex;align-items:flex-end;justify-content:center;gap:0;position:relative;perspective:1200px}.pv-cab{position:relative;height:78%;min-width:44px;max-width:360px;background:#d7aa70;border:2px solid #6d5138;border-bottom:0;box-shadow:inset 0 0 0 1px #c3925b;display:flex;align-items:center;justify-content:center}.pv-cab:before,.pv-cab:after{content:'';position:absolute;top:0;bottom:0;width:7px;background:#c98f50;border-left:1px solid #6d5138;border-right:1px solid #6d5138}.pv-cab:before{left:0}.pv-cab:after{right:0}.pv-mid{position:absolute;top:0;bottom:0;left:50%;width:7px;transform:translateX(-50%);background:#c98f50;border-left:1px solid #6d5138;border-right:1px solid #6d5138}.pv-shelf{position:absolute;left:7px;right:7px;height:6px;background:#c98f50;border:1px solid #6d5138}.pv-drawer{position:absolute;left:9px;right:9px;height:24%;background:#b9824d;border:1px solid #6d5138}.pv-label{position:absolute;bottom:-22px;font-weight:bold;font-size:13px}.pv-legs{position:absolute;bottom:-14%;left:9%;right:9%;height:14%;border-left:8px solid #30241f;border-right:8px solid #30241f}.pv-top{position:absolute;height:14px;background:#666a70;border:2px solid #333;top:8%;z-index:10}.pv-empty{align-self:center;color:#65758b;font-size:15px}.project-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:12px}.project-actions label{display:flex;gap:7px;align-items:center}.cablist{margin-top:14px;overflow:auto}.cablist table{min-width:620px}.cablist .empty{padding:12px;color:#65758b}.top{display:grid;grid-template-columns:320px 1fr;gap:18px}.card{background:#fff;border:1px solid #d5dde7;border-radius:14px;padding:16px;margin-bottom:18px}h2{margin:4px 0 16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}.field label{display:block;font-size:13px;color:#617086;margin-bottom:4px}.field input{width:100%;padding:10px;border:1px solid #ccd5df;border-radius:9px;font-size:16px}.config{margin-bottom:16px;padding:12px;background:#f6f8fb;border:1px solid #d8e0e9;border-radius:10px}.config-title{font-weight:bold;margin-bottom:9px}.opts{display:grid;grid-template-columns:1fr 1fr;gap:7px}.opt{display:flex;align-items:center;gap:7px;font-size:14px}.opt input{accent-color:#173b66}.calc{margin-top:14px;background:#edf3f8;padding:12px;border-radius:10px;line-height:1.55}.hint{color:#65758b;margin-top:-8px}.viewer{height:590px;border-radius:10px;overflow:hidden;background:#eef2f5;position:relative}.viewer canvas{display:block;width:100%;height:100%;touch-action:none}.viewer .msg{position:absolute;left:12px;bottom:12px;background:#ffffffdd;padding:7px 10px;border-radius:7px;font-size:12px}.lower{display:grid;grid-template-columns:360px 1fr;gap:18px}.tabs button{margin:0 5px 6px 0;padding:7px 9px;border:0;border-radius:7px}.tabs .active{background:#173b66;color:#fff}.part{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:center;margin-top:10px}.rect{width:170px;height:120px;background:#e5e8eb;position:relative}.edge{position:absolute;background:#777;cursor:pointer}.edge.on{background:#d22}.edge[data-edge=top],.edge[data-edge=bottom]{left:0;width:100%;height:8px}.edge[data-edge=top]{top:0}.edge[data-edge=bottom]{bottom:0}.edge[data-edge=left],.edge[data-edge=right]{top:0;height:100%;width:8px}.edge[data-edge=left]{left:0}.edge[data-edge=right]{right:0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px;border-bottom:1px solid #d8dee6;text-align:left}tfoot{font-weight:bold}@media(max-width:760px){.top,.lower{grid-template-columns:1fr}.viewer{height:460px}.part{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}header h1{font-size:23px}}
+:root{font-family:Arial,sans-serif;color:#13233a;background:#f3f6f9}*{box-sizing:border-box}body{margin:0}header{background:#14263d;color:#fff;padding:18px max(18px,calc((100% - 1200px)/2))}header h1{margin:0;font-size:28px}header p{margin:5px 0 0}.wrap{max-width:1200px;margin:18px auto;padding:0 14px}.project{margin-bottom:18px}.projectbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.projectbar .field{width:150px}.projectbar button{padding:10px 14px;border:0;border-radius:9px;background:#173b66;color:#fff;font-weight:bold;cursor:pointer}.projectbar button.secondary{background:#e7edf4;color:#173b66}.cabrow{display:flex;gap:8px;align-items:stretch;overflow-x:auto;padding:12px 2px 4px}.cabitem{min-width:150px;background:#f6f8fb;border:2px solid #cbd5e1;border-radius:10px;padding:10px;cursor:pointer;position:relative}.cabitem.active{border-color:#173b66;background:#edf4fb}.cabitem b{display:block}.cabitem small{color:#64748b}.cabitem .del{position:absolute;right:5px;top:5px;border:0;background:transparent;color:#a33;padding:2px 5px;font-size:16px}.projectsum{margin-top:10px;padding:10px 12px;background:#edf3f8;border-radius:9px}.projectviz{margin-top:14px;border:1px solid #d8e0e9;border-radius:10px;background:#eef2f5;overflow:hidden}.projectviz-title{padding:10px 12px 0;font-weight:bold}.projectcanvas{height:430px;position:relative;overflow:hidden;background:#eef2f5}.projectcanvas canvas{display:block;width:100%;height:100%;touch-action:none}.pv-cab{position:relative;height:78%;min-width:44px;max-width:360px;background:#d7aa70;border:2px solid #6d5138;border-bottom:0;box-shadow:inset 0 0 0 1px #c3925b;display:flex;align-items:center;justify-content:center}.pv-cab:before,.pv-cab:after{content:'';position:absolute;top:0;bottom:0;width:7px;background:#c98f50;border-left:1px solid #6d5138;border-right:1px solid #6d5138}.pv-cab:before{left:0}.pv-cab:after{right:0}.pv-mid{position:absolute;top:0;bottom:0;left:50%;width:7px;transform:translateX(-50%);background:#c98f50;border-left:1px solid #6d5138;border-right:1px solid #6d5138}.pv-shelf{position:absolute;left:7px;right:7px;height:6px;background:#c98f50;border:1px solid #6d5138}.pv-drawer{position:absolute;left:9px;right:9px;height:24%;background:#b9824d;border:1px solid #6d5138}.pv-label{position:absolute;bottom:-22px;font-weight:bold;font-size:13px}.pv-legs{position:absolute;bottom:-14%;left:9%;right:9%;height:14%;border-left:8px solid #30241f;border-right:8px solid #30241f}.pv-top{position:absolute;height:14px;background:#666a70;border:2px solid #333;top:8%;z-index:10}.pv-empty{align-self:center;color:#65758b;font-size:15px}.project-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:12px}.project-actions label{display:flex;gap:7px;align-items:center}.cablist{margin-top:14px;overflow:auto}.cablist table{min-width:620px}.cablist .empty{padding:12px;color:#65758b}.top{display:grid;grid-template-columns:320px 1fr;gap:18px}.card{background:#fff;border:1px solid #d5dde7;border-radius:14px;padding:16px;margin-bottom:18px}h2{margin:4px 0 16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}.field label{display:block;font-size:13px;color:#617086;margin-bottom:4px}.field input{width:100%;padding:10px;border:1px solid #ccd5df;border-radius:9px;font-size:16px}.config{margin-bottom:16px;padding:12px;background:#f6f8fb;border:1px solid #d8e0e9;border-radius:10px}.config-title{font-weight:bold;margin-bottom:9px}.opts{display:grid;grid-template-columns:1fr 1fr;gap:7px}.opt{display:flex;align-items:center;gap:7px;font-size:14px}.opt input{accent-color:#173b66}.calc{margin-top:14px;background:#edf3f8;padding:12px;border-radius:10px;line-height:1.55}.hint{color:#65758b;margin-top:-8px}.viewer{height:590px;border-radius:10px;overflow:hidden;background:#eef2f5;position:relative}.viewer canvas{display:block;width:100%;height:100%;touch-action:none}.viewer .msg{position:absolute;left:12px;bottom:12px;background:#ffffffdd;padding:7px 10px;border-radius:7px;font-size:12px}.lower{display:grid;grid-template-columns:360px 1fr;gap:18px}.tabs button{margin:0 5px 6px 0;padding:7px 9px;border:0;border-radius:7px}.tabs .active{background:#173b66;color:#fff}.part{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:center;margin-top:10px}.rect{width:170px;height:120px;background:#e5e8eb;position:relative}.edge{position:absolute;background:#777;cursor:pointer}.edge.on{background:#d22}.edge[data-edge=top],.edge[data-edge=bottom]{left:0;width:100%;height:8px}.edge[data-edge=top]{top:0}.edge[data-edge=bottom]{bottom:0}.edge[data-edge=left],.edge[data-edge=right]{top:0;height:100%;width:8px}.edge[data-edge=left]{left:0}.edge[data-edge=right]{right:0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px;border-bottom:1px solid #d8dee6;text-align:left}tfoot{font-weight:bold}@media(max-width:760px){.top,.lower{grid-template-columns:1fr}.viewer{height:460px}.part{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}header h1{font-size:23px}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.3</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.4</p></header>
 <div class="wrap">
 <section class="card project"><h2>Проект кухня</h2>
 <div class="projectbar">
@@ -16,8 +16,10 @@
 <div class="project-actions">
  <label><input type="checkbox" id="projectTop"> Общ плот над добавените шкафове</label>
 </div>
-<div class="projectviz"><div class="projectviz-title">Обща визуализация</div><div id="projectViewer" class="projectcanvas"><div id="kitchenStage" class="kitchen-stage"></div></div></div>
+<div class="projectviz"><div class="projectviz-title">Обща 3D визуализация</div><div id="projectViewer" class="projectcanvas"></div></div>
 <div class="cablist"><table><thead><tr><th>Шкаф</th><th>Модел</th><th>Ширина</th><th>Конфигурация</th><th>Позиция</th></tr></thead><tbody id="cabinetList"></tbody></table></div>
+<h3 style="margin:18px 0 8px">Общ списък за разкрой</h3>
+<div class="cablist"><table><thead><tr><th>Шкаф</th><th>Етикет</th><th>Детайл</th><th>Брой</th><th>Краен размер</th></tr></thead><tbody id="projectCutList"></tbody></table></div>
 </section>
 <div class="top">
 <section class="card"><h2>Размери</h2>
@@ -77,21 +79,19 @@ function renderProject(){
  renderProjectVisual();
 
 }
+function cabParts(c){
+ const W=c.w,T=c.t||18,L=c.legs||100,Tp=c.top||39,D=c.d||555,B=c.back||3,R=c.rail||60,H=Math.max(0,(c.h||900)-L-Tp),PD=Math.max(0,D-B),SH=Math.max(0,H-T),dbl=c.type==='double',bay=dbl?Math.max(0,(W-3*T)/2):Math.max(0,W-2*T),sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;
+ return[
+  ['S1-1','Страница',dbl?3:2,SH,PD],
+  ['S1-2','Дъно',1,W,PD],
+  ['S1-3','Рафт',sc*(dbl?2:1),bay,PD],
+  ['S1-4','Царга',dbl?4:2,bay,R],
+  ['S1-5','Гръб '+B+' mm',1,W,H]
+ ];
+}
 function renderProjectVisual(){
- const st=$('kitchenStage');if(!st)return;st.innerHTML='';
- if(!cabinets.length){st.innerHTML='<div class="pv-empty">Добави шкаф, за да се появи тук.</div>';return}
- const total=cabinets.reduce((a,c)=>a+c.w,0);
- cabinets.forEach((c,i)=>{
-  const el=document.createElement('div');el.className='pv-cab';el.style.width=Math.max(44,(c.w/total)*100)+'%';el.style.flex=(c.w)+' 1 0';
-  if(c.type==='double')el.insertAdjacentHTML('beforeend','<i class="pv-mid"></i>');
-  const sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;
-  for(let j=1;j<=sc;j++){const sh=document.createElement('i');sh.className='pv-shelf';sh.style.bottom=(j*100/(sc+1))+'%';el.appendChild(sh)}
-  const dc=c.cfg==='d1'?1:c.cfg==='d2'?2:c.cfg==='d3'?3:0;
-  for(let j=0;j<dc;j++){const dr=document.createElement('i');dr.className='pv-drawer';dr.style.top=(8+j*(84/dc))+'%';dr.style.height=(76/dc)+'%';el.appendChild(dr)}
-  el.insertAdjacentHTML('beforeend','<i class="pv-legs"></i><span class="pv-label">Ш'+(i+1)+' · '+c.w+' mm</span>');
-  st.appendChild(el);
- });
- if($('projectTop').checked){const tp=document.createElement('div');tp.className='pv-top';tp.style.left='0';tp.style.right='0';st.appendChild(tp)}
+ const tb=$('projectCutList');if(tb){tb.innerHTML='';cabinets.forEach((c,i)=>cabParts(c).forEach(p=>{if(p[2])tb.insertAdjacentHTML('beforeend','<tr><td><b>Ш'+(i+1)+'</b></td><td><b>Ш'+(i+1)+'-'+p[0]+'</b></td><td>'+p[1]+'</td><td>'+p[2]+'</td><td>'+p[3]+' × '+p[4]+' mm</td></tr>')}));if($('projectTop').checked&&cabinets.length){const W=cabinets.reduce((a,c)=>a+c.w,0);tb.insertAdjacentHTML('beforeend','<tr><td><b>Общо</b></td><td><b>ПЛОТ-1</b></td><td>Общ плот</td><td>1</td><td>'+W+' × 600 mm</td></tr>')}if(!cabinets.length)tb.innerHTML='<tr><td colspan="5" class="empty">Добави шкафове, за да се създаде общият разкрой.</td></tr>'}
+ if(window.drawKitchen3D)window.drawKitchen3D();
 }
 function loadCab(c){
  $('w').value=c.w;['h','legs','top','t','d','back','rail'].forEach(id=>{if(c[id]!=null)$(id).value=c[id]});
@@ -137,6 +137,35 @@ function addLabel(text,x,y,z){
  const tex=new THREE.CanvasTexture(c);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false}));
  sp.position.set(x,y,z);sp.scale.set(155,58,1);sp.renderOrder=50;model.add(sp);
 }
+// Combined kitchen 3D uses the same Three.js library and geometry rules as the cabinet model.
+const projectHost=$('projectViewer'),projectScene=new THREE.Scene(),projectCamera=new THREE.PerspectiveCamera(38,1,1,20000),projectRenderer=new THREE.WebGLRenderer({antialias:true});
+projectScene.background=new THREE.Color(0xeef2f5);projectRenderer.setPixelRatio(Math.min(devicePixelRatio,2));projectHost.appendChild(projectRenderer.domElement);
+projectScene.add(new THREE.HemisphereLight(0xffffff,0x59636d,2.5));const projectSun=new THREE.DirectionalLight(0xffffff,2.4);projectSun.position.set(1000,1500,1100);projectScene.add(projectSun);
+const projectModel=new THREE.Group();projectScene.add(projectModel);let prx=-.10,pry=.32;
+function projectBox(w,h,d,x,y,z,mat=wood){const g=new THREE.BoxGeometry(Math.max(1,w),Math.max(1,h),Math.max(1,d)),m=new THREE.Mesh(g,mat);m.position.set(x,y,z);projectModel.add(m);const e=new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:0x5a422f}));e.position.copy(m.position);projectModel.add(e)}
+window.drawKitchen3D=function(){
+ while(projectModel.children.length){const o=projectModel.children.pop();o.geometry?.dispose()}
+ let cursor=0,maxH=900,maxD=600;
+ cabinets.forEach(c=>{
+  const W=c.w,T=c.t||18,L=c.legs||100,Tp=c.top||39,D=c.d||555,B=c.back||3,R=c.rail||60,PD=Math.max(1,D-B),H=Math.max(1,(c.h||900)-L-Tp),SH=Math.max(1,H-T),dbl=c.type==='double',bay=dbl?Math.max(1,(W-3*T)/2):Math.max(1,W-2*T),cx=cursor+W/2;
+  maxH=Math.max(maxH,L+H+Tp);maxD=Math.max(maxD,D);
+  projectBox(W,T,PD,cx,L+T/2,0);projectBox(T,SH,PD,cursor+T/2,L+T+SH/2,0);projectBox(T,SH,PD,cursor+W-T/2,L+T+SH/2,0);if(dbl)projectBox(T,SH,PD,cx,L+T+SH/2,0);
+  const centers=dbl?[cx-(bay+T)/2,cx+(bay+T)/2]:[cx],sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;
+  for(let j=1;j<=sc;j++){const sy=L+T+(SH-T)*j/(sc+1);centers.forEach(q=>projectBox(bay,T,PD,q,sy,0))}
+  const dc=c.cfg==='d1'?1:c.cfg==='d2'?2:c.cfg==='d3'?3:0;if(dc){const clear=SH-T-36,dh=Math.min(170,clear/dc-18);centers.forEach(q=>{for(let j=0;j<dc;j++){const cy=L+T+clear-(j+.5)*(clear/dc);projectBox(Math.max(20,bay-24),dh,PD-70,q,cy,-5,drawerMat);projectBox(Math.max(20,bay-8),Math.max(70,dh*.72),T,q,cy,PD/2+T/2+2,drawerMat)}})}
+  const railY=L+H-T/2;centers.forEach(q=>{projectBox(bay,T,R,q,railY,PD/2-R/2,railMat);projectBox(bay,T,R,q,railY,-PD/2+R/2,railMat)});
+  if(B)projectBox(W,H,B,cx,L+H/2,-PD/2-B/2,backMat);
+  const ix=Math.max(45,W/2-60),iz=Math.max(45,PD/2-60);[-1,1].forEach(a=>[-1,1].forEach(b=>projectBox(42,L,42,cx+a*ix,L/2,b*iz,legMat)));if(dbl)[-1,1].forEach(b=>projectBox(42,L,42,cx,L/2,b*iz,legMat));
+  cursor+=W;
+ });
+ if(cabinets.length&&$('projectTop').checked){const c=cabinets[0],Tp=c.top||39,L=c.legs||100,H=Math.max(1,(c.h||900)-L-Tp),depth=600,rear=-(Math.max(1,(c.d||555)-(c.back||3))+(c.back||3))/2,topZ=rear+depth/2;projectBox(cursor,Tp,depth,cursor/2,L+H+Tp/2,topZ,topMat)}
+ const total=Math.max(cursor,600),fit=Math.min(1,1200/total);projectModel.position.x=-cursor/2;projectModel.rotation.set(prx,pry,0);projectModel.scale.setScalar(fit);
+ projectCamera.position.set(total*.72,maxH*1.18,Math.max(1450,total*.82));projectCamera.lookAt(0,maxH*.47,0);
+};
+let pp=false,plx=0,ply=0;const pcan=projectRenderer.domElement;pcan.addEventListener('pointerdown',e=>{pp=true;plx=e.clientX;ply=e.clientY;pcan.setPointerCapture(e.pointerId)});pcan.addEventListener('pointermove',e=>{if(!pp)return;pry+=(e.clientX-plx)*.008;prx=Math.max(-.65,Math.min(.45,prx+(e.clientY-ply)*.006));plx=e.clientX;ply=e.clientY;projectModel.rotation.set(prx,pry,0)});pcan.addEventListener('pointerup',()=>pp=false);
+function resizeProject(){const w=Math.max(300,projectHost.clientWidth),h=Math.max(300,projectHost.clientHeight);projectRenderer.setSize(w,h,false);projectCamera.aspect=w/h;projectCamera.updateProjectionMatrix()}new ResizeObserver(resizeProject).observe(projectHost);resizeProject();
+(function projectLoop(){requestAnimationFrame(projectLoop);projectRenderer.render(projectScene,projectCamera)})();
+
 function build(){
  while(model.children.length){
   const o=model.children.pop();o.geometry?.dispose();
@@ -226,6 +255,6 @@ document.querySelectorAll('input[name="cfg"]').forEach(e=>e.addEventListener('ch
 $('wall').addEventListener('input',renderProject);$('projectTop').addEventListener('change',renderProject);
 document.querySelectorAll('#w,#h,#legs,#top,#t,#d,#back,#rail,input[name="modelType"],input[name="cfg"]').forEach(e=>e.addEventListener('change',syncActiveCab));
 renderProject();
-resize();ui();build();pose();(function draw(){requestAnimationFrame(draw);renderer.render(scene,camera)})();
+resize();ui();build();pose();renderProject();(function draw(){requestAnimationFrame(draw);renderer.render(scene,camera)})();
 })();
 </script></body></html>
