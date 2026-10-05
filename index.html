@@ -4,7 +4,7 @@
 <style>
 :root{font-family:Arial,sans-serif;color:#13233a;background:#f3f6f9}*{box-sizing:border-box}body{margin:0}header{background:#14263d;color:#fff;padding:18px max(18px,calc((100% - 1200px)/2))}header h1{margin:0;font-size:28px}header p{margin:5px 0 0}.wrap{max-width:1200px;margin:18px auto;padding:0 14px}.project{margin-bottom:18px}.projectbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.projectbar .field{width:150px}.projectbar button{padding:10px 14px;border:0;border-radius:9px;background:#173b66;color:#fff;font-weight:bold;cursor:pointer}.projectbar button.secondary{background:#e7edf4;color:#173b66}.cabrow{display:flex;gap:8px;align-items:stretch;overflow-x:auto;padding:12px 2px 4px}.cabitem{min-width:150px;background:#f6f8fb;border:2px solid #cbd5e1;border-radius:10px;padding:10px;cursor:pointer;position:relative}.cabitem.active{border-color:#173b66;background:#edf4fb}.cabitem b{display:block}.cabitem small{color:#64748b}.cabitem .del{position:absolute;right:5px;top:5px;border:0;background:transparent;color:#a33;padding:2px 5px;font-size:16px}.projectsum{margin-top:10px;padding:10px 12px;background:#edf3f8;border-radius:9px}.projectviz{margin-top:14px;border:1px solid #d8e0e9;border-radius:10px;background:#eef2f5;overflow:hidden}.projectviz-title{padding:10px 12px 0;font-weight:bold}.projectcanvas{height:430px;position:relative;overflow:hidden;background:#eef2f5}.projectcanvas canvas{display:block;width:100%;height:100%;touch-action:none}.pv-cab{position:relative;height:78%;min-width:44px;max-width:360px;background:#d7aa70;border:2px solid #6d5138;border-bottom:0;box-shadow:inset 0 0 0 1px #c3925b;display:flex;align-items:center;justify-content:center}.pv-cab:before,.pv-cab:after{content:'';position:absolute;top:0;bottom:0;width:7px;background:#c98f50;border-left:1px solid #6d5138;border-right:1px solid #6d5138}.pv-cab:before{left:0}.pv-cab:after{right:0}.pv-mid{position:absolute;top:0;bottom:0;left:50%;width:7px;transform:translateX(-50%);background:#c98f50;border-left:1px solid #6d5138;border-right:1px solid #6d5138}.pv-shelf{position:absolute;left:7px;right:7px;height:6px;background:#c98f50;border:1px solid #6d5138}.pv-drawer{position:absolute;left:9px;right:9px;height:24%;background:#b9824d;border:1px solid #6d5138}.pv-label{position:absolute;bottom:-22px;font-weight:bold;font-size:13px}.pv-legs{position:absolute;bottom:-14%;left:9%;right:9%;height:14%;border-left:8px solid #30241f;border-right:8px solid #30241f}.pv-top{position:absolute;height:14px;background:#666a70;border:2px solid #333;top:8%;z-index:10}.pv-empty{align-self:center;color:#65758b;font-size:15px}.project-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:12px}.project-actions label{display:flex;gap:7px;align-items:center}.cablist{margin-top:14px;overflow:auto}.cablist table{min-width:620px}.cablist .empty{padding:12px;color:#65758b}.top{display:grid;grid-template-columns:320px 1fr;gap:18px}.card{background:#fff;border:1px solid #d5dde7;border-radius:14px;padding:16px;margin-bottom:18px}h2{margin:4px 0 16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}.field label{display:block;font-size:13px;color:#617086;margin-bottom:4px}.field input{width:100%;padding:10px;border:1px solid #ccd5df;border-radius:9px;font-size:16px}.config{margin-bottom:16px;padding:12px;background:#f6f8fb;border:1px solid #d8e0e9;border-radius:10px}.config-title{font-weight:bold;margin-bottom:9px}.opts{display:grid;grid-template-columns:1fr 1fr;gap:7px}.opt{display:flex;align-items:center;gap:7px;font-size:14px}.opt input{accent-color:#173b66}.calc{margin-top:14px;background:#edf3f8;padding:12px;border-radius:10px;line-height:1.55}.hint{color:#65758b;margin-top:-8px}.viewer{height:590px;border-radius:10px;overflow:hidden;background:#eef2f5;position:relative}.viewer canvas{display:block;width:100%;height:100%;touch-action:none}.viewer .msg{position:absolute;left:12px;bottom:12px;background:#ffffffdd;padding:7px 10px;border-radius:7px;font-size:12px}.lower{display:grid;grid-template-columns:360px 1fr;gap:18px}.tabs button{margin:0 5px 6px 0;padding:7px 9px;border:0;border-radius:7px}.tabs .active{background:#173b66;color:#fff}.part{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:center;margin-top:10px}.rect{width:170px;height:120px;background:#e5e8eb;position:relative}.edge{position:absolute;background:#777;cursor:pointer}.edge.on{background:#d22}.edge[data-edge=top],.edge[data-edge=bottom]{left:0;width:100%;height:8px}.edge[data-edge=top]{top:0}.edge[data-edge=bottom]{bottom:0}.edge[data-edge=left],.edge[data-edge=right]{top:0;height:100%;width:8px}.edge[data-edge=left]{left:0}.edge[data-edge=right]{right:0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px;border-bottom:1px solid #d8dee6;text-align:left}tfoot{font-weight:bold}@media(max-width:760px){.top,.lower{grid-template-columns:1fr}.viewer{height:460px}.part{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}header h1{font-size:23px}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.6</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.7</p></header>
 <div class="wrap">
 <section class="card project"><h2>Проект кухня</h2>
 <div class="projectbar">
@@ -124,7 +124,7 @@ function ui(){const x=dims(),p=parts(x),q=p[selected];$('calc').innerHTML='<b>К
  const len=(e==='top'||e==='bottom')?q.a:q.b;
  return len+' mm';
 }).join(' + ')||'няма');$('meters').textContent='Кант за '+q.q+' бр.: '+band(selected,q).toFixed(3)+' m';document.querySelectorAll('.edge').forEach(e=>e.classList.toggle('on',edges[selected].has(e.dataset.edge)));let total=0;$('tbody').innerHTML='';Object.entries(p).forEach(([k,z])=>{if(!z.q)return;const m=band(k,z);total+=m;$('tbody').insertAdjacentHTML('beforeend','<tr><td><b>'+z.ids.join(', ')+'</b></td><td>'+z.n+'</td><td>'+z.q+'</td><td>'+z.a+' × '+z.b+' mm</td><td>'+edgeText(k)+'</td><td>'+m.toFixed(3)+' m</td></tr>')});$('total').textContent=total.toFixed(3)+' m'}
-document.querySelectorAll('.edge').forEach(e=>e.onclick=()=>{const es=edges[selected],k=e.dataset.edge;es.has(k)?es.delete(k):es.add(k);if(activeCab>=0&&cabinets[activeCab])cabinets[activeCab].bands=Object.fromEntries(Object.entries(edges).map(([pk,pv])=>[pk,[...pv]]));ui();renderProjectVisual()});
+document.querySelectorAll('.edge').forEach(e=>e.onclick=()=>{const es=edges[selected],k=e.dataset.edge;es.has(k)?es.delete(k):es.add(k);if(activeCab>=0&&cabinets[activeCab])cabinets[activeCab].bands=Object.fromEntries(Object.entries(edges).map(([pk,pv])=>[pk,[...pv]]));ui();build();renderProjectVisual()});
 
 const host=$('viewer');if(!window.THREE){host.innerHTML='<b style="padding:20px;display:block">Three.js не се зареди.</b>';return}
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xeef2f5);const camera=new THREE.PerspectiveCamera(38,1,1,10000);const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,2));host.prepend(renderer.domElement);
@@ -132,6 +132,16 @@ scene.add(new THREE.HemisphereLight(0xffffff,0x59636d,2.5));const sun=new THREE.
 const wood=new THREE.MeshStandardMaterial({color:0xd7aa70,roughness:.7}),topMat=new THREE.MeshStandardMaterial({color:0x55585d,roughness:.72,metalness:0}),railMat=new THREE.MeshStandardMaterial({color:0xc98f50,roughness:.7}),legMat=new THREE.MeshStandardMaterial({color:0x30241f,roughness:.85}),backMat=new THREE.MeshStandardMaterial({color:0xc8a77b,roughness:.85,side:THREE.DoubleSide}),drawerMat=new THREE.MeshStandardMaterial({color:0xb9824d,roughness:.72});
 let model=new THREE.Group();scene.add(model);
 function addBox(w,h,d,x,y,z,mat=wood){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);mesh.position.set(x,y,z);model.add(mesh);const line=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color:0x5a422f}));line.position.copy(mesh.position);model.add(line)}
+const singleBandMat=new THREE.MeshBasicMaterial({color:0xd71920,depthTest:false});
+function addSingleBandForBox(w,h,d,x,y,z,key){
+ if(!$('showBandingSingle')?.checked||!edges[key])return;
+ const es=edges[key],bw=4,front=z+d/2+2.2;
+ const strip=(sw,sh,sx,sy)=>{const g=new THREE.BoxGeometry(Math.max(1,sw),Math.max(1,sh),2),m=new THREE.Mesh(g,singleBandMat);m.position.set(sx,sy,front);m.renderOrder=40;model.add(m)};
+ if(es.has('top'))strip(w,bw,x,y+h/2-bw/2);
+ if(es.has('bottom'))strip(w,bw,x,y-h/2+bw/2);
+ if(es.has('left'))strip(bw,h,x-w/2+bw/2,y);
+ if(es.has('right'))strip(bw,h,x+w/2-bw/2,y);
+}
 function addLabel(text,x,y,z){
  const c=document.createElement('canvas');c.width=256;c.height=96;
  const ctx=c.getContext('2d');ctx.fillStyle='rgba(20,24,30,.88)';ctx.roundRect(8,8,240,80,14);ctx.fill();
@@ -146,12 +156,12 @@ projectScene.add(new THREE.HemisphereLight(0xffffff,0x59636d,2.5));const project
 const projectModel=new THREE.Group();projectScene.add(projectModel);let projectZoom=1;
 const bandMat3D=new THREE.MeshBasicMaterial({color:0xd71920});
 function projectBox(w,h,d,x,y,z,mat=wood,bandSet=null){const g=new THREE.BoxGeometry(Math.max(1,w),Math.max(1,h),Math.max(1,d)),m=new THREE.Mesh(g,mat);m.position.set(x,y,z);projectModel.add(m);const e=new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:0x5a422f}));e.position.copy(m.position);projectModel.add(e);
- if($('showBanding')?.checked&&bandSet){const es=bandSet instanceof Set?bandSet:new Set(bandSet),bw=5,front=z+d/2+3;
-  const strip=(sw,sh,sx,sy)=>{const sg=new THREE.BoxGeometry(Math.max(1,sw),Math.max(1,sh),3),sm=new THREE.Mesh(sg,bandMat3D);sm.position.set(sx,sy,front);projectModel.add(sm)};
-  if(es.has('top'))strip(w,bw,x,y+h/2);
-  if(es.has('bottom'))strip(w,bw,x,y-h/2);
-  if(es.has('left'))strip(bw,h,x-w/2,y);
-  if(es.has('right'))strip(bw,h,x+w/2,y);
+ if($('showBanding')?.checked&&bandSet){const es=bandSet instanceof Set?bandSet:new Set(bandSet),bw=4,front=z+d/2+2.2;
+  const strip=(sw,sh,sx,sy)=>{const sg=new THREE.BoxGeometry(Math.max(1,sw),Math.max(1,sh),2),sm=new THREE.Mesh(sg,bandMat3D);sm.position.set(sx,sy,front);sm.renderOrder=20;projectModel.add(sm)};
+  if(es.has('top'))strip(w,bw,x,y+h/2-bw/2);
+  if(es.has('bottom'))strip(w,bw,x,y-h/2+bw/2);
+  if(es.has('left'))strip(bw,h,x-w/2+bw/2,y);
+  if(es.has('right'))strip(bw,h,x+w/2-bw/2,y);
  }}
 window.drawKitchen3D=function(){
  while(projectModel.children.length){const o=projectModel.children.pop();o.geometry?.dispose()}
@@ -193,17 +203,17 @@ function build(){
  const bay=dbl?Math.max(0,(W-3*T)/2):I;
 
  // bottom
- addBox(W,T,PD,0,carcassBottom+T/2,0);addLabel('S1-2',0,carcassBottom+T+12,PD/2-80);
+ addBox(W,T,PD,0,carcassBottom+T/2,0);addSingleBandForBox(W,T,PD,0,carcassBottom+T/2,0,'bottom');addLabel('S1-2',0,carcassBottom+T+12,PD/2-80);
 
  // outer sides
- addBox(T,SH,PD,-W/2+T/2,carcassBottom+T+SH/2,0);
- addBox(T,SH,PD, W/2-T/2,carcassBottom+T+SH/2,0);
+ addBox(T,SH,PD,-W/2+T/2,carcassBottom+T+SH/2,0);addSingleBandForBox(T,SH,PD,-W/2+T/2,carcassBottom+T+SH/2,0,'side');
+ addBox(T,SH,PD, W/2-T/2,carcassBottom+T+SH/2,0);addSingleBandForBox(T,SH,PD,W/2-T/2,carcassBottom+T+SH/2,0,'side');
  addLabel('S1-1',-W/2+T+8,carcassBottom+T+SH*.72,PD/2+8);
  addLabel('S1-1', W/2-T-8,carcassBottom+T+SH*.72,PD/2+8);
 
  // middle side for double model
  if(dbl){
-  addBox(T,SH,PD,0,carcassBottom+T+SH/2,0);
+  addBox(T,SH,PD,0,carcassBottom+T+SH/2,0);addSingleBandForBox(T,SH,PD,0,carcassBottom+T+SH/2,0,'side');
   addLabel('S1-1',0,carcassBottom+T+SH*.72,PD/2+8);
  }
 
@@ -213,7 +223,7 @@ function build(){
  // shelves per bay
  for(let i=1;i<=shelfCount;i++){
   const sy=carcassBottom+T+(SH-T)*i/(shelfCount+1);
-  centers.forEach(cx=>{addBox(bay,T,PD,cx,sy,0);addLabel('S1-3',cx,sy+T+12,PD/2-80)});
+  centers.forEach(cx=>{addBox(bay,T,PD,cx,sy,0);addSingleBandForBox(bay,T,PD,cx,sy,0,'shelf');addLabel('S1-3',cx,sy+T+12,PD/2-80)});
  }
 
  // schematic drawers per bay
@@ -231,8 +241,8 @@ function build(){
  // front/rear rails for each bay
  const railY=carcassTop-T/2;
  centers.forEach(cx=>{
-  addBox(bay,T,R,cx,railY, PD/2-R/2,railMat);
-  addBox(bay,T,R,cx,railY,-PD/2+R/2,railMat);
+  addBox(bay,T,R,cx,railY, PD/2-R/2,railMat);addSingleBandForBox(bay,T,R,cx,railY,PD/2-R/2,'rail');
+  addBox(bay,T,R,cx,railY,-PD/2+R/2,railMat);addSingleBandForBox(bay,T,R,cx,railY,-PD/2+R/2,'rail');
   addLabel('S1-4',cx,railY+T+12,PD/2-R/2);
  });
 
@@ -269,7 +279,7 @@ document.querySelectorAll('input[name="modelType"]').forEach(e=>e.addEventListen
 document.querySelectorAll('input[name="cfg"]').forEach(e=>e.addEventListener('change',()=>{
  const m=cfg();$('shelves').value=m==='s2'?2:m==='s1'?1:0;ui();build();
 }));$('addCab').onclick=()=>{cabinets.push(currentSnapshot());activeCab=cabinets.length-1;renderProject()};
-$('wall').addEventListener('input',renderProject);$('projectTop').addEventListener('change',renderProject);$('showBanding').addEventListener('change',renderProjectVisual);
+$('wall').addEventListener('input',renderProject);$('projectTop').addEventListener('change',renderProject);$('showBanding').addEventListener('change',renderProjectVisual);$('showBandingSingle').addEventListener('change',build);
 document.querySelectorAll('#w,#h,#legs,#top,#t,#d,#back,#rail,input[name="modelType"],input[name="cfg"]').forEach(e=>e.addEventListener('change',syncActiveCab));
 renderProject();
 resize();ui();build();pose();renderProject();(function draw(){requestAnimationFrame(draw);renderer.render(scene,camera)})();
