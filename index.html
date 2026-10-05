@@ -2,10 +2,19 @@
 <html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kitchen Calculator</title>
 <style>
-:root{font-family:Arial,sans-serif;color:#13233a;background:#f3f6f9}*{box-sizing:border-box}body{margin:0}header{background:#14263d;color:#fff;padding:18px max(18px,calc((100% - 1200px)/2))}header h1{margin:0;font-size:28px}header p{margin:5px 0 0}.wrap{max-width:1200px;margin:18px auto;padding:0 14px}.top{display:grid;grid-template-columns:320px 1fr;gap:18px}.card{background:#fff;border:1px solid #d5dde7;border-radius:14px;padding:16px;margin-bottom:18px}h2{margin:4px 0 16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}.field label{display:block;font-size:13px;color:#617086;margin-bottom:4px}.field input{width:100%;padding:10px;border:1px solid #ccd5df;border-radius:9px;font-size:16px}.config{margin-bottom:16px;padding:12px;background:#f6f8fb;border:1px solid #d8e0e9;border-radius:10px}.config-title{font-weight:bold;margin-bottom:9px}.opts{display:grid;grid-template-columns:1fr 1fr;gap:7px}.opt{display:flex;align-items:center;gap:7px;font-size:14px}.opt input{accent-color:#173b66}.calc{margin-top:14px;background:#edf3f8;padding:12px;border-radius:10px;line-height:1.55}.hint{color:#65758b;margin-top:-8px}.viewer{height:590px;border-radius:10px;overflow:hidden;background:#eef2f5;position:relative}.viewer canvas{display:block;width:100%;height:100%;touch-action:none}.viewer .msg{position:absolute;left:12px;bottom:12px;background:#ffffffdd;padding:7px 10px;border-radius:7px;font-size:12px}.lower{display:grid;grid-template-columns:360px 1fr;gap:18px}.tabs button{margin:0 5px 6px 0;padding:7px 9px;border:0;border-radius:7px}.tabs .active{background:#173b66;color:#fff}.part{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:center;margin-top:10px}.rect{width:170px;height:120px;background:#e5e8eb;position:relative}.edge{position:absolute;background:#777;cursor:pointer}.edge.on{background:#d22}.edge[data-edge=top],.edge[data-edge=bottom]{left:0;width:100%;height:8px}.edge[data-edge=top]{top:0}.edge[data-edge=bottom]{bottom:0}.edge[data-edge=left],.edge[data-edge=right]{top:0;height:100%;width:8px}.edge[data-edge=left]{left:0}.edge[data-edge=right]{right:0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px;border-bottom:1px solid #d8dee6;text-align:left}tfoot{font-weight:bold}@media(max-width:760px){.top,.lower{grid-template-columns:1fr}.viewer{height:460px}.part{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}header h1{font-size:23px}}
+:root{font-family:Arial,sans-serif;color:#13233a;background:#f3f6f9}*{box-sizing:border-box}body{margin:0}header{background:#14263d;color:#fff;padding:18px max(18px,calc((100% - 1200px)/2))}header h1{margin:0;font-size:28px}header p{margin:5px 0 0}.wrap{max-width:1200px;margin:18px auto;padding:0 14px}.project{margin-bottom:18px}.projectbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.projectbar .field{width:150px}.projectbar button{padding:10px 14px;border:0;border-radius:9px;background:#173b66;color:#fff;font-weight:bold;cursor:pointer}.projectbar button.secondary{background:#e7edf4;color:#173b66}.cabrow{display:flex;gap:8px;align-items:stretch;overflow-x:auto;padding:12px 2px 4px}.cabitem{min-width:150px;background:#f6f8fb;border:2px solid #cbd5e1;border-radius:10px;padding:10px;cursor:pointer;position:relative}.cabitem.active{border-color:#173b66;background:#edf4fb}.cabitem b{display:block}.cabitem small{color:#64748b}.cabitem .del{position:absolute;right:5px;top:5px;border:0;background:transparent;color:#a33;padding:2px 5px;font-size:16px}.projectsum{margin-top:10px;padding:10px 12px;background:#edf3f8;border-radius:9px}.top{display:grid;grid-template-columns:320px 1fr;gap:18px}.card{background:#fff;border:1px solid #d5dde7;border-radius:14px;padding:16px;margin-bottom:18px}h2{margin:4px 0 16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}.field label{display:block;font-size:13px;color:#617086;margin-bottom:4px}.field input{width:100%;padding:10px;border:1px solid #ccd5df;border-radius:9px;font-size:16px}.config{margin-bottom:16px;padding:12px;background:#f6f8fb;border:1px solid #d8e0e9;border-radius:10px}.config-title{font-weight:bold;margin-bottom:9px}.opts{display:grid;grid-template-columns:1fr 1fr;gap:7px}.opt{display:flex;align-items:center;gap:7px;font-size:14px}.opt input{accent-color:#173b66}.calc{margin-top:14px;background:#edf3f8;padding:12px;border-radius:10px;line-height:1.55}.hint{color:#65758b;margin-top:-8px}.viewer{height:590px;border-radius:10px;overflow:hidden;background:#eef2f5;position:relative}.viewer canvas{display:block;width:100%;height:100%;touch-action:none}.viewer .msg{position:absolute;left:12px;bottom:12px;background:#ffffffdd;padding:7px 10px;border-radius:7px;font-size:12px}.lower{display:grid;grid-template-columns:360px 1fr;gap:18px}.tabs button{margin:0 5px 6px 0;padding:7px 9px;border:0;border-radius:7px}.tabs .active{background:#173b66;color:#fff}.part{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:center;margin-top:10px}.rect{width:170px;height:120px;background:#e5e8eb;position:relative}.edge{position:absolute;background:#777;cursor:pointer}.edge.on{background:#d22}.edge[data-edge=top],.edge[data-edge=bottom]{left:0;width:100%;height:8px}.edge[data-edge=top]{top:0}.edge[data-edge=bottom]{bottom:0}.edge[data-edge=left],.edge[data-edge=right]{top:0;height:100%;width:8px}.edge[data-edge=left]{left:0}.edge[data-edge=right]{right:0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px;border-bottom:1px solid #d8dee6;text-align:left}tfoot{font-weight:bold}@media(max-width:760px){.top,.lower{grid-template-columns:1fr}.viewer{height:460px}.part{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}header h1{font-size:23px}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Долен кухненски шкаф — v4.0</p></header>
-<div class="wrap"><div class="top">
+<header><h1>Kitchen Calculator</h1><p>Долен кухненски шкаф — v4.1</p></header>
+<div class="wrap">
+<section class="card project"><h2>Проект кухня</h2>
+<div class="projectbar">
+ <div class="field"><label>Дължина на стената</label><input id="wall" type="number" value="3200"></div>
+ <button id="addCab" type="button">+ Добави шкаф</button>
+</div>
+<div id="cabrow" class="cabrow"></div>
+<div id="projectsum" class="projectsum"></div>
+</section>
+<div class="top">
 <section class="card"><h2>Размери</h2>
 <div class="config"><div class="config-title">Модел шкаф</div><div class="opts">
 <label class="opt"><input type="radio" name="modelType" value="single" checked> Единичен корпус</label>
@@ -45,6 +54,32 @@ let selected='side';const edges={side:new Set(),bottom:new Set(),shelf:new Set()
 function modelType(){return document.querySelector('input[name="modelType"]:checked')?.value||'single'}
 function cfg(){return document.querySelector('input[name="cfg"]:checked')?.value||'s1'}
 function hasTop(){return $('withTop')?.checked||false}
+let cabinets=[],activeCab=-1;
+function currentSnapshot(){
+ return {type:modelType(),cfg:cfg(),w:num('w')};
+}
+function renderProject(){
+ const row=$('cabrow');if(!row)return;row.innerHTML='';
+ cabinets.forEach((c,i)=>{
+  const el=document.createElement('div');el.className='cabitem'+(i===activeCab?' active':'');
+  el.innerHTML='<button class="del" title="Изтрий">×</button><b>Ш'+(i+1)+'</b><small>'+(c.type==='double'?'Двоен':'Единичен')+' · '+c.w+' mm</small><br><small>'+({s1:'1 рафт',s2:'2 рафта',d1:'1 чекмедже',d2:'2 чекмеджета',d3:'3 чекмеджета'}[c.cfg]||'')+'</small>';
+  el.onclick=e=>{if(e.target.classList.contains('del')){cabinets.splice(i,1);activeCab=Math.min(activeCab,cabinets.length-1);renderProject();return}activeCab=i;loadCab(c);renderProject()};
+  row.appendChild(el);
+ });
+ const used=cabinets.reduce((a,c)=>a+c.w,0),wall=num('wall'),left=wall-used;
+ $('projectsum').innerHTML='<b>Шкафове:</b> '+cabinets.length+' · <b>Общо:</b> '+used+' mm · <b>Стена:</b> '+wall+' mm · <b>'+(left>=0?'Остават':'Надвишение')+':</b> '+Math.abs(left)+' mm';
+}
+function loadCab(c){
+ $('w').value=c.w;
+ const mt=document.querySelector('input[name="modelType"][value="'+c.type+'"]');if(mt)mt.checked=true;
+ const cf=document.querySelector('input[name="cfg"][value="'+c.cfg+'"]');if(cf)cf.checked=true;
+ $('shelves').value=c.cfg==='s2'?2:c.cfg==='s1'?1:0;
+ ui();build();pose();
+}
+function syncActiveCab(){
+ if(activeCab<0||!cabinets[activeCab])return;
+ cabinets[activeCab]=currentSnapshot();renderProject();
+}
 function dims(){const w=num('w'),total=num('h'),legs=num('legs'),top=num('top'),t=num('t'),d=num('d'),back=num('back'),rail=num('rail'),shelves=Math.round(num('shelves')),body=Math.max(0,total-legs-top),pd=Math.max(0,d-back),sideH=Math.max(0,body-t),inner=Math.max(0,w-2*t);return{w,total,legs,top,t,d,back,rail,shelves,body,pd,sideH,inner}}
 function parts(x){
  const dbl=modelType()==='double';
@@ -163,6 +198,10 @@ document.querySelectorAll('input[name="modelType"]').forEach(e=>e.addEventListen
 }));
 document.querySelectorAll('input[name="cfg"]').forEach(e=>e.addEventListener('change',()=>{
  const m=cfg();$('shelves').value=m==='s2'?2:m==='s1'?1:0;ui();build();
-}));resize();ui();build();pose();(function draw(){requestAnimationFrame(draw);renderer.render(scene,camera)})();
+}));$('addCab').onclick=()=>{cabinets.push(currentSnapshot());activeCab=cabinets.length-1;renderProject()};
+$('wall').addEventListener('input',renderProject);
+document.querySelectorAll('#w,input[name="modelType"],input[name="cfg"]').forEach(e=>e.addEventListener('change',syncActiveCab));
+renderProject();
+resize();ui();build();pose();(function draw(){requestAnimationFrame(draw);renderer.render(scene,camera)})();
 })();
 </script></body></html>
