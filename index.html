@@ -7,8 +7,9 @@
 .mainnav{position:sticky;top:0;z-index:100;background:#f3f6f9;padding:10px 0 12px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.mainnav button{border:1px solid #cbd5e1;background:#fff;color:#173b66;padding:12px 8px;border-radius:10px;font-weight:700;cursor:pointer}.mainnav button.active{background:#173b66;color:#fff;border-color:#173b66}.app-panel{display:none}.app-panel.active{display:block}.editor-title{margin:18px 0 10px;padding:12px 14px;background:#173b66;color:#fff;border-radius:10px;font-size:18px;font-weight:700}.future-row{margin-top:10px;padding:10px 12px;border:1px dashed #b7c4d3;border-radius:9px;color:#64748b;background:#f8fafc}@media(max-width:760px){.mainnav{grid-template-columns:1fr 1fr}.mainnav button{font-size:13px}}
 .cost-table{width:100%;min-width:900px;border-collapse:collapse}.cost-table th{background:#edf3f8;color:#173b66;font-weight:700;white-space:nowrap}.cost-table td,.cost-table th{padding:9px 10px;border:1px solid #d8dee6}.cost-table td:not(:first-child){text-align:right}.cost-table .section td{background:#f6f8fb;font-weight:700;text-align:left}.cost-table .grand td{font-size:17px;font-weight:800;background:#e8f0f8}.cost-wrap{overflow:auto}
 .material-summary{width:100%;border-collapse:collapse;margin:0}.material-summary th,.material-summary td{border:1px solid #d8dee6;padding:7px 9px;text-align:left}.material-summary th{font-size:12px;color:#617086;background:#f8fafc;font-weight:600}.material-summary td{font-weight:700}.material-summary .edit-cell{width:90px;text-align:center}.material-summary button{margin:0!important;padding:6px 9px!important}
+.legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.19.0</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.20.0</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект кухня</button>
 <button class="main-tab" data-panel="materialsPanel">Материали</button>
@@ -24,8 +25,8 @@
 <div id="projectsum" class="projectsum"></div>
 <div class="project-actions">
  <label><input type="checkbox" id="projectTop"> Общ плот над добавените шкафове</label>
- <label style="margin-left:18px"><input type="checkbox" id="projectPlinth"> Преден перваз 98 mm</label>
- <label style="margin-left:18px"><input type="checkbox" id="projectSplash"> Гръб ПДЧ 18 mm × 600 mm</label>
+ <label style="margin-left:18px"><input type="checkbox" id="projectPlinth"> Преден перваз 98 mm</label> <select id="plinthPdc"></select>
+ <label style="margin-left:18px"><input type="checkbox" id="projectSplash"> Гръб ПДЧ 18 mm × 600 mm</label> <select id="splashPdc"></select>
 </div>
 <div class="projectviz"><div class="projectviz-title">Обща 3D визуализация</div><div id="projectViewer" class="projectcanvas"></div></div>
 <div class="project-actions"><label><input type="checkbox" id="showBanding"> Покажи кантиране</label></div>
@@ -60,11 +61,29 @@
 <section class="card"><h2>Конструкция — 3D модел</h2><p class="hint">Плъзни за завъртане · колелце/щипване за приближаване</p><div id="viewer" class="viewer"><div class="msg">Интерактивен модел</div></div><div class="project-actions"><label><input type="checkbox" id="showBandingSingle"> Покажи кантиране</label></div></section>
 </div>
 <div class="lower">
-<section class="card"><h2>Кантиране</h2><div id="tabs" class="tabs"></div><p>Натисни ръб — червено означава кант.</p><div class="part"><div class="rect"><i class="edge" data-edge="top"></i><i class="edge" data-edge="right"></i><i class="edge" data-edge="bottom"></i><i class="edge" data-edge="left"></i></div><div><b id="pname"></b><div id="psize"></div><div id="etxt"></div><div id="meters"></div></div></div></section>
+<section class="card"><h2>Кантиране</h2><div id="tabs" class="tabs"></div><p>Натисни ръб — червено означава кант.</p><div class="part"><div class="rect"><i class="edge" data-edge="top"></i><i class="edge" data-edge="right"></i><i class="edge" data-edge="bottom"></i><i class="edge" data-edge="left"></i></div><div><b id="pname"></b><div id="psize"></div><div class="part-material"><label>ПДЧ: <select id="partPdc"></select></label></div><div id="etxt"></div><div id="meters"></div></div></div></section>
 <section style="display:none"><table><tbody id="tbody"></tbody><tfoot><tr><td id="total"></td></tr></tfoot></table></section>
 </div></div>
 <div id="materialsPanel" class="app-panel"><section class="card"><h2>Материали</h2>
 <div class="config" style="margin-bottom:14px">
+ <div class="config-title">ПДЧ материали</div>
+ <div id="pdcList"></div>
+ <button id="addPdcMaterial" type="button" style="margin-top:10px;padding:9px 13px;border:0;border-radius:8px;background:#173b66;color:#fff;font-weight:bold;cursor:pointer">+ Нов материал ПДЧ</button>
+ <div id="pdcForm" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #d8e0e9">
+  <div class="field" style="margin-bottom:10px"><label>Наименование</label><input id="pdcName" type="text" placeholder="Напр. Бяло W960"></div>
+  <div class="fields">
+   <div class="field"><label>Цяла плоча — дължина</label><input id="pdcFullW" type="number" value="2800"></div>
+   <div class="field"><label>Цяла плоча — ширина</label><input id="pdcFullH" type="number" value="2070"></div>
+   <div class="field"><label>Половин плоча — дължина</label><input id="pdcHalfW" type="number" value="1400"></div>
+   <div class="field"><label>Половин плоча — ширина</label><input id="pdcHalfH" type="number" value="2070"></div>
+   <div class="field"><label>Цена цяла плоча (€)</label><input id="pdcFullPrice" type="number" step="0.01"></div>
+   <div class="field"><label>Цена половин плоча (€)</label><input id="pdcHalfPrice" type="number" step="0.01"></div>
+  </div>
+  <button id="pdcConfirm" type="button" style="margin-top:10px;padding:9px 13px;border:0;border-radius:8px;background:#173b66;color:#fff;font-weight:bold;cursor:pointer">Потвърди</button>
+  <button id="pdcCancel" type="button" style="margin-top:10px;padding:9px 13px;border:0;border-radius:8px;background:#e1e8f0;color:#173b66;font-weight:bold;cursor:pointer">Отказ</button>
+ </div>
+</div>
+<div class="config legacy-pdc-role" style="margin-bottom:14px">
  <div class="config-title">Корпус</div>
  <div id="bodyMaterialForm">
   <div class="field" style="margin-bottom:10px"><label>Наименование на материала</label><input id="bodyMatName" type="text" placeholder="Наименование"></div>
@@ -96,7 +115,7 @@
  </div>
  <div id="back3MaterialConfirmed" style="display:none" class="calc"></div>
 </div>
-<div class="config" style="margin-bottom:14px">
+<div class="config legacy-pdc-role" style="margin-bottom:14px">
  <div class="config-title">Гръб кухня ПДЧ 18 mm</div>
  <div id="splashMaterialForm">
   <div class="field" style="margin-bottom:10px"><label>Наименование на материала</label><input id="splashMatName" type="text" placeholder="Наименование"></div>
@@ -128,7 +147,7 @@
  </div>
  <div id="worktopMaterialConfirmed" style="display:none" class="calc"></div>
 </div>
-<div class="config" style="margin-bottom:14px">
+<div class="config legacy-pdc-role" style="margin-bottom:14px">
  <div class="config-title">Преден перваз</div>
  <div id="plinthMaterialForm">
   <div class="field" style="margin-bottom:10px"><label>Наименование на материала</label><input id="plinthMatName" type="text" placeholder="Наименование"></div>
@@ -173,6 +192,15 @@
 document.querySelectorAll('.main-tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.main-tab').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('.app-panel').forEach(p=>p.classList.toggle('active',p.id===btn.dataset.panel));setTimeout(()=>window.dispatchEvent(new Event('resize')),20)}));
 
 const $=id=>document.getElementById(id), num=id=>Math.max(0,Number($(id).value)||0);
+let pdcMaterials=[],editingPdc=-1;
+function pdcLabel(i){const m=pdcMaterials[i];return m?'ПДЧ'+(i+1)+' — '+m.name:'ПДЧ'+(i+1)}
+function pdcOptions(selected=0){return pdcMaterials.map((m,i)=>'<option value="'+i+'" '+(Number(selected)===i?'selected':'')+'>'+pdcLabel(i)+'</option>').join('')}
+function refreshPdcSelects(){['plinthPdc','splashPdc'].forEach(id=>{const e=$(id);if(!e)return;const old=e.value;e.innerHTML=pdcOptions(old);if(old!==''&&pdcMaterials[old])e.value=old});ui();renderProjectVisual()}
+function renderPdcList(){const box=$('pdcList');if(!box)return;if(!pdcMaterials.length){box.innerHTML='<div class="hint">Все още няма въведен ПДЧ материал.</div>';return}box.innerHTML='<table class="pdc-table"><thead><tr><th>Материал</th><th>Цяла плоча</th><th>Половин плоча</th><th>Цена</th><th></th></tr></thead><tbody>'+pdcMaterials.map((m,i)=>'<tr><td><b>ПДЧ'+(i+1)+'</b> — '+m.name+'</td><td>'+m.fullW+'×'+m.fullH+'</td><td>'+m.halfW+'×'+m.halfH+'</td><td>'+m.fullPrice.toFixed(2)+' € / '+m.halfPrice.toFixed(2)+' €</td><td><button type="button" data-pdc-edit="'+i+'">Промени</button></td></tr>').join('')+'</tbody></table>';box.querySelectorAll('[data-pdc-edit]').forEach(b=>b.onclick=()=>openPdcForm(Number(b.dataset.pdcEdit)))}
+function openPdcForm(i=-1){editingPdc=i;const m=i>=0?pdcMaterials[i]:null;$('pdcName').value=m?.name||'';$('pdcFullW').value=m?.fullW||2800;$('pdcFullH').value=m?.fullH||2070;$('pdcHalfW').value=m?.halfW||1400;$('pdcHalfH').value=m?.halfH||2070;$('pdcFullPrice').value=m?.fullPrice||'';$('pdcHalfPrice').value=m?.halfPrice||'';$('pdcForm').style.display='block'}
+function savePdc(){const m={name:$('pdcName').value.trim()||'Материал без име',fullW:num('pdcFullW'),fullH:num('pdcFullH'),halfW:num('pdcHalfW'),halfH:num('pdcHalfH'),fullPrice:Number($('pdcFullPrice').value)||0,halfPrice:Number($('pdcHalfPrice').value)||0};if(editingPdc>=0)pdcMaterials[editingPdc]=m;else pdcMaterials.push(m);localStorage.setItem('kitchenPdcMaterials',JSON.stringify(pdcMaterials));$('pdcForm').style.display='none';renderPdcList();refreshPdcSelects()}
+function initPdc(){try{pdcMaterials=JSON.parse(localStorage.getItem('kitchenPdcMaterials')||'[]')||[]}catch(e){pdcMaterials=[]}if(!pdcMaterials.length){try{const old=JSON.parse(localStorage.getItem('kitchenMaterial_body')||'null');if(old)pdcMaterials=[old]}catch(e){}}$('addPdcMaterial').onclick=()=>openPdcForm(-1);$('pdcConfirm').onclick=savePdc;$('pdcCancel').onclick=()=>{$('pdcForm').style.display='none'};renderPdcList();['plinthPdc','splashPdc'].forEach(id=>$(id)?.addEventListener('change',renderProjectVisual));refreshPdcSelects()}
+const partMaterials={side:0,bottom:0,shelf:0,rail:0};
 const materialRoles={
  body:{title:'Корпус',defaults:[2800,2070,1400,2070]},
  back3:{title:'Гръб 3 mm',defaults:[2800,2070,1400,2070]},
@@ -215,7 +243,7 @@ function hasTop(){return $('withTop')?.checked||false}
 let cabinets=[],activeCab=-1;
 function currentSnapshot(){
  const mt=modelType(),upper=mt==='upper';
- return {type:mt,cfg:cfg(),w:num('w'),h:upper?900:num('h'),legs:upper?0:num('legs'),top:upper?0:num('top'),t:num('t'),d:upper?300:num('d'),back:num('back'),rail:num('rail'),bands:Object.fromEntries(Object.entries(edges).map(([k,v])=>[k,[...v]]))};
+ return {type:mt,cfg:cfg(),w:num('w'),h:upper?900:num('h'),legs:upper?0:num('legs'),top:upper?0:num('top'),t:num('t'),d:upper?300:num('d'),back:num('back'),rail:num('rail'),bands:Object.fromEntries(Object.entries(edges).map(([k,v])=>[k,[...v]])),partMaterials:{...partMaterials}};
 }
 function updateEditorTitle(){const e=$('cabEditorTitle');if(!e)return;if(activeCab>=0&&cabinets[activeCab]){const c=cabinets[activeCab],same=cabinets.filter((x,j)=>j<=activeCab&&((x.type==='upper')===(c.type==='upper'))).length;e.textContent='Редактираш: '+(c.type==='upper'?'Г':'Д')+same+' — '+(c.type==='upper'?'горен':'долен')+' шкаф'}else e.textContent=modelType()==='upper'?'Нов горен шкаф':'Нов долен шкаф'}
 function renderProject(){
@@ -236,7 +264,7 @@ function renderProject(){
 function cabParts(c){
  const W=c.w,T=c.t||18,D=c.d||555,B=c.back||3,upper=c.type==='upper';
  if(upper){const H=c.h||900,PD=Math.max(0,D-B),inner=Math.max(0,W-2*T),sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;return[
-  ['S1-1','Страница',2,H,PD],['S1-2','Дъно',1,inner,PD],['S1-3','Рафт',sc,inner,PD],['S1-4','Таван',1,inner,PD],['S1-5','Гръб '+B+' mm',1,W,H]
+  ['S1-1','Страница',2,Math.max(0,H-2*T),PD],['S1-2','Дъно',1,W,PD],['S1-3','Рафт',sc,inner,PD],['S1-4','Таван',1,W,PD],['S1-5','Гръб '+B+' mm',1,W,H]
  ]}
  const L=c.legs||100,Tp=c.top||39,R=c.rail||60,H=Math.max(0,(c.h||900)-L-Tp),PD=Math.max(0,D-B),SH=Math.max(0,H-T),dbl=c.type==='double',bay=dbl?Math.max(0,(W-3*T)/2):Math.max(0,W-2*T),sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;
  return[['S1-1','Страница',dbl?3:2,SH,PD],['S1-2','Дъно',1,W,PD],['S1-3','Рафт',sc*(dbl?2:1),bay,PD],['S1-4','Царга',dbl?4:2,bay,R],['S1-5','Гръб '+B+' mm',1,W,H]];
@@ -256,10 +284,10 @@ function renderProjectVisual(){
  const tb=$('projectCutList');if(tb){tb.innerHTML='';let projectBand=0;
  const matName=role=>projectMaterials[role]?.name||'—';
  const keyByCode={'S1-1':'side','S1-2':'bottom','S1-3':'shelf','S1-4':'rail','S1-5':'back'};
- let dn=0,gn=0;cabinets.forEach((c,i)=>{const prefix=c.type==='upper'?'Г'+(++gn):'Д'+(++dn);cabParts(c).forEach(p=>{if(!p[2])return;const k=keyByCode[p[0]],es=new Set(k?(c.bands?.[k]||[]):[]),edgeNames=[...es].map(e=>names[e]).join(', ')||'няма';let one=0;es.forEach(e=>one+=(e==='top'||e==='bottom'?p[3]:p[4]));const bm=one*p[2]/1000;projectBand+=bm;const role=k==='back'?'back3':'body';tb.insertAdjacentHTML('beforeend','<tr><td><b>'+prefix+'-'+p[0].split('-')[1]+'</b></td><td>'+p[1]+'</td><td><strong>'+matName(role)+'</strong></td><td>'+p[2]+'</td><td>'+p[3]+' × '+p[4]+' mm</td><td>'+edgeNames+'</td><td>'+bm.toFixed(3)+' m</td></tr>')})});
+ let dn=0,gn=0;cabinets.forEach((c,i)=>{const prefix=c.type==='upper'?'Г'+(++gn):'Д'+(++dn);cabParts(c).forEach(p=>{if(!p[2])return;const k=keyByCode[p[0]],es=new Set(k?(c.bands?.[k]||[]):[]),edgeNames=[...es].map(e=>names[e]).join(', ')||'няма';let one=0;es.forEach(e=>one+=(e==='top'||e==='bottom'?p[3]:p[4]));const bm=one*p[2]/1000;projectBand+=bm;const materialName=k==='back'?matName('back3'):(pdcMaterials[c.partMaterials?.[k]||0]?pdcLabel(c.partMaterials?.[k]||0):'—');tb.insertAdjacentHTML('beforeend','<tr><td><b>'+prefix+'-'+p[0].split('-')[1]+'</b></td><td>'+p[1]+'</td><td><strong>'+matName(role)+'</strong></td><td>'+p[2]+'</td><td>'+p[3]+' × '+p[4]+' mm</td><td>'+edgeNames+'</td><td>'+bm.toFixed(3)+' m</td></tr>')})});
  if($('projectTop').checked&&cabinets.length){const W=cabinets.filter(c=>c.type!=='upper').reduce((a,c)=>a+c.w,0),es=edges.worktop,edgeNames=[...es].map(e=>names[e]).join(', ')||'няма';let bm=0;es.forEach(e=>bm+=(e==='top'||e==='bottom'?W:600));bm/=1000;projectBand+=bm;tb.insertAdjacentHTML('beforeend','<tr><td><b>ПЛОТ-1</b></td><td>Общ плот</td><td><strong>'+matName('worktop')+'</strong></td><td>1</td><td>'+W+' × 600 mm</td><td>'+edgeNames+'</td><td>'+bm.toFixed(3)+' m</td></tr>')}
- if(cabinets.length&&$('projectPlinth')?.checked){splitAtCabinetJoints().forEach((seg,j)=>{const W=seg[1]-seg[0],bm=2*(W+98)/1000;projectBand+=bm;tb.insertAdjacentHTML('beforeend','<tr><td><b>ПЕРВАЗ-'+(j+1)+'</b></td><td>Преден перваз</td><td><strong>'+matName('plinth')+'</strong></td><td>1</td><td>'+W+' × 98 mm</td><td>всички страни</td><td>'+bm.toFixed(3)+' m</td></tr>')})}
- if(cabinets.length&&$('projectSplash')?.checked){splitAtCabinetJoints().forEach((seg,j)=>{const W=seg[1]-seg[0],bm=2*(W+600)/1000;projectBand+=bm;tb.insertAdjacentHTML('beforeend','<tr><td><b>ГРЪБ-'+(j+1)+'</b></td><td>Гръб кухня ПДЧ 18 mm</td><td><strong>'+matName('splash')+'</strong></td><td>1</td><td>'+W+' × 600 mm</td><td>всички страни</td><td>'+bm.toFixed(3)+' m</td></tr>')})}
+ if(cabinets.length&&$('projectPlinth')?.checked){splitAtCabinetJoints().forEach((seg,j)=>{const W=seg[1]-seg[0],bm=2*(W+98)/1000;projectBand+=bm;tb.insertAdjacentHTML('beforeend','<tr><td><b>ПЕРВАЗ-'+(j+1)+'</b></td><td>Преден перваз</td><td><strong>'+(pdcMaterials[Number($('plinthPdc')?.value)||0]?pdcLabel(Number($('plinthPdc')?.value)||0):'—')+'</strong></td><td>1</td><td>'+W+' × 98 mm</td><td>всички страни</td><td>'+bm.toFixed(3)+' m</td></tr>')})}
+ if(cabinets.length&&$('projectSplash')?.checked){splitAtCabinetJoints().forEach((seg,j)=>{const W=seg[1]-seg[0],bm=2*(W+600)/1000;projectBand+=bm;tb.insertAdjacentHTML('beforeend','<tr><td><b>ГРЪБ-'+(j+1)+'</b></td><td>Гръб кухня ПДЧ 18 mm</td><td><strong>'+(pdcMaterials[Number($('splashPdc')?.value)||0]?pdcLabel(Number($('splashPdc')?.value)||0):'—')+'</strong></td><td>1</td><td>'+W+' × 600 mm</td><td>всички страни</td><td>'+bm.toFixed(3)+' m</td></tr>')})}
  if(!cabinets.length)tb.innerHTML='<tr><td colspan="7" class="empty">Добави шкафове, за да се създаде общият разкрой.</td></tr>';
  if($('projectBandTotal'))$('projectBandTotal').textContent=projectBand.toFixed(3)+' m'}
  renderProjectCosts();
@@ -310,7 +338,7 @@ function loadCab(c){
  const mt=document.querySelector('input[name="modelType"][value="'+c.type+'"]');if(mt)mt.checked=true;updateEditorTitle();
  const cf=document.querySelector('input[name="cfg"][value="'+c.cfg+'"]');if(cf)cf.checked=true;
  $('shelves').value=c.cfg==='s2'?2:c.cfg==='s1'?1:0;
- Object.keys(edges).forEach(k=>{edges[k].clear();(c.bands?.[k]||[]).forEach(e=>edges[k].add(e))});
+ Object.keys(edges).forEach(k=>{edges[k].clear();(c.bands?.[k]||[]).forEach(e=>edges[k].add(e))});Object.keys(partMaterials).forEach(k=>partMaterials[k]=Number(c.partMaterials?.[k]||0));
  ui();build();pose();
 }
 function syncActiveCab(){
@@ -323,10 +351,11 @@ function parts(x){const dbl=modelType()==='double';if(x.upper)return{side:{n:'С
 }
 function band(k,p){let m=0;edges[k].forEach(e=>m+=(e==='top'||e==='bottom'?p.a:p.b));return m*p.q/1000}
 function edgeText(k){const a=[...edges[k]].map(e=>names[e]);return a.length?a.join(', '):'няма'}
-function ui(){const x=dims(),p=parts(x),q=p[selected];$('calc').innerHTML=x.upper?'<b>Горен шкаф:</b> '+x.w+' × '+x.body+' × '+x.d+' mm<br><b>ПДЧ дълбочина:</b> '+x.pd+' mm<br><b>Страница:</b> '+x.body+' × '+x.pd+' mm':('<b>Корпус:</b> '+x.w+' × '+x.body+' × '+x.d+' mm<br><b>ПДЧ дълбочина:</b> '+x.pd+' mm<br><b>Страница:</b> '+x.sideH+' × '+x.pd+' mm<br><b>4 крака:</b> '+x.legs+' mm · <b>Плот:</b> '+x.top+' mm');$('tabs').innerHTML='';Object.entries(p).forEach(([k,z])=>{const b=document.createElement('button');b.textContent=z.n;b.className=k===selected?'active':'';b.onclick=()=>{selected=k;ui()};$('tabs').appendChild(b)});$('pname').textContent=q.n;$('psize').textContent=q.a+' × '+q.b+' mm';const r=$('tabs').parentElement.querySelector('.rect'),maxW=180,maxH=150,sc=Math.min(maxW/Math.max(1,q.a),maxH/Math.max(1,q.b));r.style.width=Math.max(28,q.a*sc)+'px';r.style.height=Math.max(28,q.b*sc)+'px';r.style.position='relative';r.querySelectorAll('.size-label').forEach(e=>e.remove());let sa=document.createElement('span');sa.className='size-label size-a';sa.textContent=q.a+' mm';r.appendChild(sa);let sb=document.createElement('span');sb.className='size-label size-b';sb.textContent=q.b+' mm';r.appendChild(sb);$('etxt').textContent='Кант: '+([...edges[selected]].map(e=>{
+function ui(){const x=dims(),p=parts(x),q=p[selected];$('calc').innerHTML=x.upper?'<b>Горен шкаф:</b> '+x.w+' × '+x.body+' × '+x.d+' mm<br><b>ПДЧ дълбочина:</b> '+x.pd+' mm<br><b>Страница:</b> '+x.body+' × '+x.pd+' mm':('<b>Корпус:</b> '+x.w+' × '+x.body+' × '+x.d+' mm<br><b>ПДЧ дълбочина:</b> '+x.pd+' mm<br><b>Страница:</b> '+x.sideH+' × '+x.pd+' mm<br><b>4 крака:</b> '+x.legs+' mm · <b>Плот:</b> '+x.top+' mm');$('tabs').innerHTML='';Object.entries(p).forEach(([k,z])=>{const b=document.createElement('button');b.textContent=z.n;b.className=k===selected?'active':'';b.onclick=()=>{selected=k;ui()};$('tabs').appendChild(b)});$('pname').textContent=q.n;$('psize').textContent=q.a+' × '+q.b+' mm';const pm=$('partPdc');if(pm){pm.style.display=selected==='back'||selected==='worktop'?'none':'';pm.parentElement.style.display=selected==='back'||selected==='worktop'?'none':'';pm.innerHTML=pdcOptions(partMaterials[selected]||0);pm.value=partMaterials[selected]||0}const r=$('tabs').parentElement.querySelector('.rect'),maxW=180,maxH=150,sc=Math.min(maxW/Math.max(1,q.a),maxH/Math.max(1,q.b));r.style.width=Math.max(28,q.a*sc)+'px';r.style.height=Math.max(28,q.b*sc)+'px';r.style.position='relative';r.querySelectorAll('.size-label').forEach(e=>e.remove());let sa=document.createElement('span');sa.className='size-label size-a';sa.textContent=q.a+' mm';r.appendChild(sa);let sb=document.createElement('span');sb.className='size-label size-b';sb.textContent=q.b+' mm';r.appendChild(sb);$('etxt').textContent='Кант: '+([...edges[selected]].map(e=>{
  const len=(e==='top'||e==='bottom')?q.a:q.b;
  return len+' mm';
 }).join(' + ')||'няма');$('meters').textContent='Кант за '+q.q+' бр.: '+band(selected,q).toFixed(3)+' m';document.querySelectorAll('.edge').forEach(e=>e.classList.toggle('on',edges[selected].has(e.dataset.edge)));let total=0;$('tbody').innerHTML='';Object.entries(p).forEach(([k,z])=>{if(!z.q)return;const m=band(k,z);total+=m;$('tbody').insertAdjacentHTML('beforeend','<tr><td><b>'+z.ids.join(', ')+'</b></td><td>'+z.n+'</td><td>'+z.q+'</td><td>'+z.a+' × '+z.b+' mm</td><td>'+edgeText(k)+'</td><td>'+m.toFixed(3)+' m</td></tr>')});$('total').textContent=total.toFixed(3)+' m'}
+$('partPdc').addEventListener('change',()=>{if(partMaterials[selected]!=null){partMaterials[selected]=Number($('partPdc').value)||0;if(activeCab>=0&&cabinets[activeCab]){cabinets[activeCab].partMaterials={...partMaterials};renderProjectVisual()}}});
 document.querySelectorAll('.edge').forEach(e=>e.onclick=()=>{const es=edges[selected],k=e.dataset.edge;es.has(k)?es.delete(k):es.add(k);if(activeCab>=0&&cabinets[activeCab])cabinets[activeCab].bands=Object.fromEntries(Object.entries(edges).map(([pk,pv])=>[pk,[...pv]]));ui();build();renderProjectVisual()});
 
 const host=$('viewer');if(!window.THREE){host.innerHTML='<b style="padding:20px;display:block">Three.js не се зареди.</b>';return}
@@ -395,7 +424,7 @@ window.drawKitchen3D=function(){
  const lowers=cabinets.filter(c=>c.type!=='upper'),uppers=cabinets.filter(c=>c.type==='upper');let cursor=0,maxH=900,maxD=600;
  const drawCab=(c,cx,baseY)=>{
   const bands=k=>new Set(c.bands?.[k]||[]),W=c.w,T=c.t||18,D=c.d||555,B=c.back||3,PD=Math.max(1,D-B),upper=c.type==='upper';
-  if(upper){const H=c.h||900,inner=Math.max(1,W-2*T),sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;projectBox(T,H,PD,cx-W/2+T/2,baseY+H/2,0,wood,bands('side'),'vertical');projectBox(T,H,PD,cx+W/2-T/2,baseY+H/2,0,wood,bands('side'),'vertical');projectBox(inner,T,PD,cx,baseY+T/2,0,wood,bands('bottom'));projectBox(inner,T,PD,cx,baseY+H-T/2,0,wood,bands('rail'));for(let j=1;j<=sc;j++)projectBox(inner,T,PD,cx,baseY+H*j/(sc+1),0,wood,bands('shelf'));if(B)projectBox(W,H,B,cx,baseY+H/2,-PD/2-B/2,backMat,bands('back'));maxH=Math.max(maxH,baseY+H);maxD=Math.max(maxD,D);return}
+  if(upper){const H=c.h||900,inner=Math.max(1,W-2*T),sideH=Math.max(1,H-2*T),sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;projectBox(W,T,PD,cx,baseY+T/2,0,wood,bands('bottom'));projectBox(T,sideH,PD,cx-W/2+T/2,baseY+T+sideH/2,0,wood,bands('side'),'vertical');projectBox(T,sideH,PD,cx+W/2-T/2,baseY+T+sideH/2,0,wood,bands('side'),'vertical');projectBox(W,T,PD,cx,baseY+H-T/2,0,wood,bands('rail'));for(let j=1;j<=sc;j++)projectBox(inner,T,PD,cx,baseY+H*j/(sc+1),0,wood,bands('shelf'));if(B)projectBox(W,H,B,cx,baseY+H/2,-PD/2-B/2,backMat,bands('back'));maxH=Math.max(maxH,baseY+H);maxD=Math.max(maxD,D);return}
   const L=c.legs||100,Tp=c.top||39,R=c.rail||60,H=Math.max(1,(c.h||900)-L-Tp),SH=Math.max(1,H-T),dbl=c.type==='double',bay=dbl?Math.max(1,(W-3*T)/2):Math.max(1,W-2*T);
   projectBox(W,T,PD,cx,L+T/2,0,wood,bands('bottom'));projectBox(T,SH,PD,cx-W/2+T/2,L+T+SH/2,0,wood,bands('side'),'vertical');projectBox(T,SH,PD,cx+W/2-T/2,L+T+SH/2,0,wood,bands('side'),'vertical');if(dbl)projectBox(T,SH,PD,cx,L+T+SH/2,0,wood,bands('side'),'vertical');
   const centers=dbl?[cx-(bay+T)/2,cx+(bay+T)/2]:[cx],sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;for(let j=1;j<=sc;j++){const sy=L+T+(SH-T)*j/(sc+1);centers.forEach(q=>projectBox(bay,T,PD,q,sy,0,wood,bands('shelf')))}
@@ -430,7 +459,7 @@ function build(){
   if(o.material&&Array.isArray(o.material))o.material.forEach(m=>m.dispose?.());
  }
  const x=dims(),{w:W,legs:L,top:Tp,t:T,pd:PD,back:B,rail:R,body:H,sideH:SH,inner:I}=x;
- if(x.upper){const base=0;addBox(T,H,PD,-W/2+T/2,H/2,0);addSingleBandForBox(T,H,PD,-W/2+T/2,H/2,0,'side','vertical');addBox(T,H,PD,W/2-T/2,H/2,0);addSingleBandForBox(T,H,PD,W/2-T/2,H/2,0,'side','vertical');addBox(I,T,PD,0,T/2,0);addSingleBandForBox(I,T,PD,0,T/2,0,'bottom');addBox(I,T,PD,0,H-T/2,0);addSingleBandForBox(I,T,PD,0,H-T/2,0,'rail');const sc=cfg()==='s2'?2:cfg()==='s1'?1:0;for(let j=1;j<=sc;j++){const sy=H*j/(sc+1);addBox(I,T,PD,0,sy,0);addSingleBandForBox(I,T,PD,0,sy,0,'shelf')}if(B)addBox(W,H,B,0,H/2,-PD/2-B/2,backMat);camera.position.set(W*1.45,H*1.15,950);camera.lookAt(0,H*.5,0);return}
+ if(x.upper){const sideH=Math.max(1,H-2*T);addBox(W,T,PD,0,T/2,0);addSingleBandForBox(W,T,PD,0,T/2,0,'bottom');addBox(T,sideH,PD,-W/2+T/2,T+sideH/2,0);addSingleBandForBox(T,sideH,PD,-W/2+T/2,T+sideH/2,0,'side','vertical');addBox(T,sideH,PD,W/2-T/2,T+sideH/2,0);addSingleBandForBox(T,sideH,PD,W/2-T/2,T+sideH/2,0,'side','vertical');addBox(W,T,PD,0,H-T/2,0);addSingleBandForBox(W,T,PD,0,H-T/2,0,'rail');const sc=cfg()==='s2'?2:cfg()==='s1'?1:0;for(let j=1;j<=sc;j++){const sy=H*j/(sc+1);addBox(I,T,PD,0,sy,0);addSingleBandForBox(I,T,PD,0,sy,0,'shelf')}if(B)addBox(W,H,B,0,H/2,-PD/2-B/2,backMat);camera.position.set(W*1.45,H*1.15,950);camera.lookAt(0,H*.5,0);return}
 
  const dbl=modelType()==='double',carcassBottom=L,carcassTop=L+H;
  const bay=dbl?Math.max(0,(W-3*T)/2):I;
@@ -515,7 +544,7 @@ document.querySelectorAll('input[name="cfg"]').forEach(e=>e.addEventListener('ch
 }));$('addCab').onclick=()=>{cabinets.push(currentSnapshot());activeCab=cabinets.length-1;renderProject()};
 $('wall').addEventListener('input',renderProject);$('projectTop').addEventListener('change',renderProject);if($('projectPlinth'))$('projectPlinth').addEventListener('change',renderProject);if($('projectSplash'))$('projectSplash').addEventListener('change',renderProject);$('showBanding').addEventListener('change',renderProjectVisual);if($('showBandingSingle'))$('showBandingSingle').addEventListener('change',build);
 document.querySelectorAll('#w,#h,#legs,#top,#t,#d,#back,#rail,input[name="modelType"],input[name="cfg"]').forEach(e=>e.addEventListener('change',syncActiveCab));
-initMaterials();initEdgeMaterials();initServicePrices();
+initMaterials();initEdgeMaterials();initServicePrices();initPdc();
 renderProject();
 resize();ui();build();pose();renderProject();(function draw(){requestAnimationFrame(draw);renderer.render(scene,camera)})();
 })();
