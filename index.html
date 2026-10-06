@@ -9,7 +9,7 @@
 .material-summary{width:100%;border-collapse:collapse;margin:0}.material-summary th,.material-summary td{border:1px solid #d8dee6;padding:7px 9px;text-align:left}.material-summary th{font-size:12px;color:#617086;background:#f8fafc;font-weight:600}.material-summary td{font-weight:700}.material-summary .edit-cell{width:90px;text-align:center}.material-summary button{margin:0!important;padding:6px 9px!important}
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.25.1</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.25.2</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект кухня</button>
 <button class="main-tab" data-panel="materialsPanel">Материали</button>
@@ -460,12 +460,21 @@ function projectRedFrame(w,h,d,x,y,z,edgeIndex=0){
  add(3,h+2*ov,d+2*ov,x+w/2+ov,y,z);
 }
 window.drawKitchen3D=function(){
- projectHost.querySelectorAll('.part3d-label').forEach(e=>e.remove());const labelPoints=[];
+ projectHost.querySelectorAll('.part3d-label').forEach(e=>e.remove());
+ const makePartLabel=(text,x,y,z)=>{
+  if(!$('showPartLabels')?.checked)return;
+  const cv=document.createElement('canvas'),ctx=cv.getContext('2d');cv.width=256;cv.height=96;
+  ctx.fillStyle='#173b66';ctx.fillRect(8,12,240,72);ctx.strokeStyle='#ffffff';ctx.lineWidth=4;ctx.strokeRect(8,12,240,72);
+  ctx.fillStyle='#ffffff';ctx.font='bold 38px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,128,49);
+  const tx=new THREE.CanvasTexture(cv);tx.minFilter=THREE.LinearFilter;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false,depthWrite:false}));
+  sp.position.set(x,y,z);sp.scale.set(150,56,1);sp.renderOrder=30000;projectModel.add(sp)
+ };
  while(projectModel.children.length){const o=projectModel.children.pop();o.geometry?.dispose()}
  const lowers=cabinets.filter(c=>c.type!=='upper'),uppers=cabinets.filter(c=>c.type==='upper');let cursor=0,maxH=900,maxD=600;
  const drawCab=(c,cx,baseY,cabIndex)=>{
   const before=new Set(projectModel.children);
-  const addLabel=(text,x,y,z)=>{if($('showPartLabels')?.checked)labelPoints.push({text,pos:new THREE.Vector3(x,y,z)})};
+  const addLabel=(text,x,y,z)=>makePartLabel(text,x,y,z);
   const bands=k=>new Set(c.bands?.[k]||[]),pm=k=>matForPdc(c.partMaterials?.[k]||0),ei=k=>c.partEdges?.[k]||0,W=c.w,T=c.t||18,D=c.d||555,B=c.back||3,PD=Math.max(1,D-B),upper=c.type==='upper';
   if(upper){const H=c.h||900,inner=Math.max(1,W-2*T),sideH=Math.max(1,H-2*T),sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0,seq=cabinets.filter((x,j)=>j<=cabIndex&&x.type==='upper').length,pfx='Г'+seq;projectBox(W,T,PD,cx,baseY+T/2,0,pm('bottom'),bands('bottom'),'horizontal',ei('bottom'));addLabel(pfx+'-2',cx,baseY+T/2,PD/2+8);projectBox(T,sideH,PD,cx-W/2+T/2,baseY+T+sideH/2,0,pm('side'),bands('side'),'vertical',ei('side'));addLabel(pfx+'-1',cx-W/2+T/2,baseY+T+sideH/2,PD/2+8);projectBox(T,sideH,PD,cx+W/2-T/2,baseY+T+sideH/2,0,pm('side'),bands('side'),'vertical',ei('side'));addLabel(pfx+'-1',cx+W/2-T/2,baseY+T+sideH/2,PD/2+8);projectBox(W,T,PD,cx,baseY+H-T/2,0,pm('rail'),bands('rail'),'horizontal',ei('rail'));addLabel(pfx+'-4',cx,baseY+H-T/2,PD/2+8);for(let j=1;j<=sc;j++){const yy=baseY+T+sideH*j/(sc+1);projectBox(inner,T,PD,cx,yy,0,pm('shelf'),bands('shelf'),'horizontal',ei('shelf'));addLabel(pfx+'-3',cx,yy,PD/2+8)}if(B){projectBox(W,H,B,cx,baseY+H/2,-PD/2-B/2,new THREE.MeshBasicMaterial({color:backMaterials[c.partMaterials?.back||0]?.color||'#c8a77b'}),bands('back'));addLabel(pfx+'-5',cx,baseY+H/2,PD/2+10)}maxH=Math.max(maxH,baseY+H);maxD=Math.max(maxD,D);projectModel.children.forEach(o=>{if(!before.has(o))o.userData.cabIndex=cabIndex});if(cabIndex===activeCab){const sel=new THREE.Mesh(new THREE.BoxGeometry(W+10,H+10,D+10),new THREE.MeshBasicMaterial({color:0x56616c,transparent:true,opacity:.34,depthWrite:false}));sel.position.set(cx,baseY+H/2,0);sel.userData.cabIndex=cabIndex;sel.renderOrder=500;projectModel.add(sel)}return}
   const L=c.legs||100,Tp=c.top||39,R=c.rail||60,H=Math.max(1,(c.h||900)-L-Tp),SH=Math.max(1,H-T),dbl=c.type==='double',bay=dbl?Math.max(1,(W-3*T)/2):Math.max(1,W-2*T);
@@ -483,7 +492,7 @@ window.drawKitchen3D=function(){
  if(lowers.length&&$('projectTop').checked){const c=lowers[0],Tp=c.top||39,L=c.legs||100,H=Math.max(1,(c.h||900)-L-Tp),depth=worktops[Number($('worktopChoice')?.value)||0]?.depth||600,rear=-(Math.max(1,(c.d||555)-(c.back||3))+(c.back||3))/2,topZ=rear+depth/2;projectBox(lowerW,Tp,depth,lowerW/2,L+H+Tp/2,topZ+3,new THREE.MeshBasicMaterial({color:worktops[Number($('worktopChoice')?.value)||0]?.color||'#777a80',transparent:false,opacity:1,depthTest:true,depthWrite:true}),edges.worktop)}
  if(lowers.length&&$('projectPlinth')?.checked){const D=lowers[0].d||555,z=D/2+10;splitAtCabinetJoints().forEach(seg=>{const W=seg[1]-seg[0],cx=(seg[0]+seg[1])/2;projectBox(W,98,18,cx,49,z,matForPdc(Number($('plinthPdc')?.value)||0));projectRedFrame(W,98,18,cx,49,z,Number($('plinthEdge')?.value)||0)})}
  if(lowers.length&&$('projectSplash')?.checked){const D=lowers[0].d||555,z=-D/2-8;splitAtCabinetJoints().forEach(seg=>{const W=seg[1]-seg[0],cx=(seg[0]+seg[1])/2;projectBox(W,600,18,cx,1200,z,matForPdc(Number($('splashPdc')?.value)||0));projectRedFrame(W,600,18,cx,1200,z,Number($('splashEdge')?.value)||0)})}
- const span=Math.max(spanW,wallW,600);projectModel.rotation.set(0,0,0);projectModel.scale.setScalar(1);let bb=new THREE.Box3().setFromObject(projectModel),bc=new THREE.Vector3(),bs=new THREE.Vector3();bb.getCenter(bc);projectModel.position.x-=bc.x;projectModel.position.y-=bc.y;bb=new THREE.Box3().setFromObject(projectModel);bb.getSize(bs);const aspect=Math.max(.5,projectHost.clientWidth/Math.max(300,projectHost.clientHeight)),vfov=THREE.MathUtils.degToRad(projectCamera.fov),distV=(bs.y/2)/Math.tan(vfov/2),distH=(bs.x/2)/(Math.tan(vfov/2)*aspect),fitDist=Math.max(distV,distH)*1.12+Math.max(50,bs.z/2);projectCamera.position.set(0,0,fitDist/projectZoom);projectCamera.lookAt(0,0,0);if($('showPartLabels')?.checked){projectCamera.updateMatrixWorld();projectModel.updateMatrixWorld(true);labelPoints.forEach(q=>{const wp=q.pos.clone();projectModel.localToWorld(wp);wp.project(projectCamera);if(wp.z<-1||wp.z>1)return;const el=document.createElement('div');el.className='part3d-label';el.textContent=q.text;el.style.left=((wp.x+1)*50)+'%';el.style.top=((-wp.y+1)*50)+'%';projectHost.appendChild(el)})}
+ const span=Math.max(spanW,wallW,600);projectModel.rotation.set(0,0,0);projectModel.scale.setScalar(1);let bb=new THREE.Box3().setFromObject(projectModel),bc=new THREE.Vector3(),bs=new THREE.Vector3();bb.getCenter(bc);projectModel.position.x-=bc.x;projectModel.position.y-=bc.y;bb=new THREE.Box3().setFromObject(projectModel);bb.getSize(bs);const aspect=Math.max(.5,projectHost.clientWidth/Math.max(300,projectHost.clientHeight)),vfov=THREE.MathUtils.degToRad(projectCamera.fov),distV=(bs.y/2)/Math.tan(vfov/2),distH=(bs.x/2)/(Math.tan(vfov/2)*aspect),fitDist=Math.max(distV,distH)*1.12+Math.max(50,bs.z/2);projectCamera.position.set(0,0,fitDist/projectZoom);projectCamera.lookAt(0,0,0);
 };
 const pcan=projectRenderer.domElement;
 pcan.addEventListener('wheel',e=>{
