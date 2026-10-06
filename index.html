@@ -7,9 +7,9 @@
 .mainnav{position:sticky;top:0;z-index:100;background:#f3f6f9;padding:10px 0 12px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.mainnav button{border:1px solid #cbd5e1;background:#fff;color:#173b66;padding:12px 8px;border-radius:10px;font-weight:700;cursor:pointer}.mainnav button.active{background:#173b66;color:#fff;border-color:#173b66}.app-panel{display:none}.app-panel.active{display:block}.editor-title{margin:18px 0 10px;padding:12px 14px;background:#173b66;color:#fff;border-radius:10px;font-size:18px;font-weight:700}.future-row{margin-top:10px;padding:10px 12px;border:1px dashed #b7c4d3;border-radius:9px;color:#64748b;background:#f8fafc}@media(max-width:760px){.mainnav{grid-template-columns:1fr 1fr}.mainnav button{font-size:13px}}
 .cost-table{width:100%;min-width:900px;border-collapse:collapse}.cost-table th{background:#edf3f8;color:#173b66;font-weight:700;white-space:nowrap}.cost-table td,.cost-table th{padding:9px 10px;border:1px solid #d8dee6}.cost-table td:not(:first-child){text-align:right}.cost-table .section td{background:#f6f8fb;font-weight:700;text-align:left}.cost-table .grand td{font-size:17px;font-weight:800;background:#e8f0f8}.cost-wrap{overflow:auto}
 .material-summary{width:100%;border-collapse:collapse;margin:0}.material-summary th,.material-summary td{border:1px solid #d8dee6;padding:7px 9px;text-align:left}.material-summary th{font-size:12px;color:#617086;background:#f8fafc;font-weight:600}.material-summary td{font-weight:700}.material-summary .edit-cell{width:90px;text-align:center}.material-summary button{margin:0!important;padding:6px 9px!important}
-.legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}
+.legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.22.0</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.22.1</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект кухня</button>
 <button class="main-tab" data-panel="materialsPanel">Материали</button>
@@ -23,14 +23,14 @@
 </div>
 <h3 style="margin:16px 0 0">Долни шкафове</h3><div id="cabrow" class="cabrow"></div><h3 style="margin:16px 0 0">Горни шкафове</h3><div id="upperCabrow" class="cabrow"></div>
 <div id="projectsum" class="projectsum"></div>
-<div class="project-actions">
- <label><input type="checkbox" id="projectTop"> Общ плот над добавените шкафове</label> <select id="worktopChoice"></select>
- <label style="margin-left:18px"><input type="checkbox" id="projectPlinth"> Преден перваз 98 mm</label> <select id="plinthPdc"></select> <select id="plinthEdge"></select>
- <label style="margin-left:18px"><input type="checkbox" id="projectSplash"> Гръб ПДЧ 18 mm × 600 mm</label> <select id="splashPdc"></select> <select id="splashEdge"></select>
+<div class="project-options">
+ <div class="project-option"><label><input type="checkbox" id="projectTop"> Общ плот</label><span class="opt-label">Плот</span><select id="worktopChoice"></select></div>
+ <div class="project-option"><label><input type="checkbox" id="projectPlinth"> Преден перваз 98 mm</label><span class="opt-label">ПДЧ</span><select id="plinthPdc"></select><span class="opt-label">Кант</span><select id="plinthEdge"></select></div>
+ <div class="project-option"><label><input type="checkbox" id="projectSplash"> Гръб ПДЧ 18 × 600 mm</label><span class="opt-label">ПДЧ</span><select id="splashPdc"></select><span class="opt-label">Кант</span><select id="splashEdge"></select></div>
 </div>
 <div class="projectviz"><div class="projectviz-title">Обща 3D визуализация</div><div id="projectViewer" class="projectcanvas"></div></div>
 <div class="project-actions"><label><input type="checkbox" id="showBanding"> Покажи кантиране</label></div>
-<div class="cablist"><table><thead><tr><th>Шкаф</th><th>Модел</th><th>Ширина</th><th>Конфигурация</th><th>Позиция</th></tr></thead><tbody id="cabinetList"></tbody></table></div>
+
 </section><div id="cabEditorTitle" class="editor-title">Нов долен шкаф</div><div class="top">
 <section class="card"><h2>Размери</h2>
 <div class="config"><div class="config-title">Модел шкаф</div><div class="opts">
@@ -384,7 +384,7 @@ document.querySelectorAll('.edge').forEach(e=>e.onclick=()=>{const es=edges[sele
 const host=$('viewer');if(!window.THREE){host.innerHTML='<b style="padding:20px;display:block">Three.js не се зареди.</b>';return}
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xeef2f5);const camera=new THREE.PerspectiveCamera(38,1,1,10000);const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,3));renderer.outputColorSpace=THREE.SRGBColorSpace;host.prepend(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xffffff,0x59636d,2.5));const sun=new THREE.DirectionalLight(0xffffff,2.4);sun.position.set(800,1200,900);scene.add(sun);
-const matForPdc=i=>new THREE.MeshStandardMaterial({color:pdcMaterials[Number(i)||0]?.color||'#d7aa70',roughness:.7});
+const matForPdc=i=>new THREE.MeshStandardMaterial({color:pdcMaterials[Number(i)||0]?.color||'#d7aa70',roughness:.7,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});
 const bandForEdge=i=>new THREE.MeshBasicMaterial({color:edgeMaterials[Number(i)||0]?.color||'#d71920',depthTest:false,depthWrite:false});
 const wood=new THREE.MeshStandardMaterial({color:0xd7aa70,roughness:.7}),topMat=new THREE.MeshStandardMaterial({color:0x55585d,roughness:.72,metalness:0}),railMat=new THREE.MeshStandardMaterial({color:0xc98f50,roughness:.7}),legMat=new THREE.MeshStandardMaterial({color:0x30241f,roughness:.85}),backMat=new THREE.MeshStandardMaterial({color:0xc8a77b,roughness:.85,side:THREE.DoubleSide}),drawerMat=new THREE.MeshStandardMaterial({color:0xb9824d,roughness:.72});
 let model=new THREE.Group();scene.add(model);
@@ -427,7 +427,7 @@ const wallMat=new THREE.MeshBasicMaterial({color:0x4b6b88,transparent:true,opaci
 const wallLineMat=new THREE.LineBasicMaterial({color:0x24445f});
 const overflowMat=new THREE.MeshBasicMaterial({color:0xd71920,transparent:true,opacity:.20,side:THREE.DoubleSide});
 function projectBox(w,h,d,x,y,z,mat=wood,bandSet=null,orient='horizontal',edgeIndex=0){const g=new THREE.BoxGeometry(Math.max(1,w),Math.max(1,h),Math.max(1,d)),m=new THREE.Mesh(g,mat);m.position.set(x,y,z);projectModel.add(m);const e=new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:0x5a422f}));e.position.copy(m.position);projectModel.add(e);
- if($('showBanding')?.checked&&bandSet){const es=bandSet instanceof Set?bandSet:new Set(bandSet),th=4,eps=1.5;
+ if($('showBanding')?.checked&&bandSet){const es=bandSet instanceof Set?bandSet:new Set(bandSet),th=2,eps=.8;
   const box=(bw,bh,bd,bx,by,bz)=>{const sg=new THREE.BoxGeometry(Math.max(1,bw),Math.max(1,bh),Math.max(1,bd)),sm=new THREE.Mesh(sg,bandForEdge(edgeIndex));sm.position.set(bx,by,bz);sm.renderOrder=999;projectModel.add(sm)};
   if(orient==='horizontal'){if(es.has('top'))box(w,h,th,x,y,z-d/2-eps);if(es.has('bottom'))box(w,h,th,x,y,z+d/2+eps);if(es.has('left'))box(th,h,d,x-w/2-eps,y,z);if(es.has('right'))box(th,h,d,x+w/2+eps,y,z)}
   else{if(es.has('top'))box(w,h,3,x,y,z-d/2-1.5);if(es.has('bottom'))box(w,h,3,x,y,z+d/2+1.5);if(es.has('left'))box(w,3,d,x,y-h/2-1.5,z);if(es.has('right'))box(w,3,d,x,y+h/2+1.5,z)}
@@ -447,22 +447,23 @@ function projectRedFrame(w,h,d,x,y,z,edgeIndex=0){
 window.drawKitchen3D=function(){
  while(projectModel.children.length){const o=projectModel.children.pop();o.geometry?.dispose()}
  const lowers=cabinets.filter(c=>c.type!=='upper'),uppers=cabinets.filter(c=>c.type==='upper');let cursor=0,maxH=900,maxD=600;
- const drawCab=(c,cx,baseY)=>{
+ const drawCab=(c,cx,baseY,cabIndex)=>{
+  const before=new Set(projectModel.children);
   const bands=k=>new Set(c.bands?.[k]||[]),pm=k=>matForPdc(c.partMaterials?.[k]||0),ei=k=>c.partEdges?.[k]||0,W=c.w,T=c.t||18,D=c.d||555,B=c.back||3,PD=Math.max(1,D-B),upper=c.type==='upper';
-  if(upper){const H=c.h||900,inner=Math.max(1,W-2*T),sideH=Math.max(1,H-2*T),sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;projectBox(W,T,PD,cx,baseY+T/2,0,pm('bottom'),bands('bottom'),'horizontal',ei('bottom'));projectBox(T,sideH,PD,cx-W/2+T/2,baseY+T+sideH/2,0,pm('side'),bands('side'),'vertical',ei('side'));projectBox(T,sideH,PD,cx+W/2-T/2,baseY+T+sideH/2,0,pm('side'),bands('side'),'vertical',ei('side'));projectBox(W,T,PD,cx,baseY+H-T/2,0,pm('rail'),bands('rail'),'horizontal',ei('rail'));for(let j=1;j<=sc;j++)projectBox(inner,T,PD,cx,baseY+T+sideH*j/(sc+1),0,pm('shelf'),bands('shelf'),'horizontal',ei('shelf'));if(B)projectBox(W,H,B,cx,baseY+H/2,-PD/2-B/2,backMat,bands('back'));maxH=Math.max(maxH,baseY+H);maxD=Math.max(maxD,D);return}
+  if(upper){const H=c.h||900,inner=Math.max(1,W-2*T),sideH=Math.max(1,H-2*T),sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;projectBox(W,T,PD,cx,baseY+T/2,0,pm('bottom'),bands('bottom'),'horizontal',ei('bottom'));projectBox(T,sideH,PD,cx-W/2+T/2,baseY+T+sideH/2,0,pm('side'),bands('side'),'vertical',ei('side'));projectBox(T,sideH,PD,cx+W/2-T/2,baseY+T+sideH/2,0,pm('side'),bands('side'),'vertical',ei('side'));projectBox(W,T,PD,cx,baseY+H-T/2,0,pm('rail'),bands('rail'),'horizontal',ei('rail'));for(let j=1;j<=sc;j++)projectBox(inner,T,PD,cx,baseY+T+sideH*j/(sc+1),0,pm('shelf'),bands('shelf'),'horizontal',ei('shelf'));if(B)projectBox(W,H,B,cx,baseY+H/2,-PD/2-B/2,backMat,bands('back'));maxH=Math.max(maxH,baseY+H);maxD=Math.max(maxD,D);projectModel.children.forEach(o=>{if(!before.has(o))o.userData.cabIndex=cabIndex});return}
   const L=c.legs||100,Tp=c.top||39,R=c.rail||60,H=Math.max(1,(c.h||900)-L-Tp),SH=Math.max(1,H-T),dbl=c.type==='double',bay=dbl?Math.max(1,(W-3*T)/2):Math.max(1,W-2*T);
   projectBox(W,T,PD,cx,L+T/2,0,pm('bottom'),bands('bottom'),'horizontal',ei('bottom'));projectBox(T,SH,PD,cx-W/2+T/2,L+T+SH/2,0,pm('side'),bands('side'),'vertical',ei('side'));projectBox(T,SH,PD,cx+W/2-T/2,L+T+SH/2,0,pm('side'),bands('side'),'vertical',ei('side'));if(dbl)projectBox(T,SH,PD,cx,L+T+SH/2,0,pm('side'),bands('side'),'vertical',ei('side'));
   const centers=dbl?[cx-(bay+T)/2,cx+(bay+T)/2]:[cx],sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;for(let j=1;j<=sc;j++){const sy=L+T+(SH-T)*j/(sc+1);centers.forEach(q=>projectBox(bay,T,PD,q,sy,0,pm('shelf'),bands('shelf'),'horizontal',ei('shelf')))}
   const railY=L+H-T/2;centers.forEach(q=>{projectBox(bay,T,R,q,railY,PD/2-R/2,pm('rail'),bands('rail'),'horizontal',ei('rail'));projectBox(bay,T,R,q,railY,-PD/2+R/2,pm('rail'),bands('rail'),'horizontal',ei('rail'))});if(B)projectBox(W,H,B,cx,L+H/2,-PD/2-B/2,backMat,bands('back'));
-  const ix=Math.max(45,W/2-60),iz=Math.max(45,PD/2-60);[-1,1].forEach(a=>[-1,1].forEach(b=>projectBox(42,L,42,cx+a*ix,L/2,b*iz,legMat)));if(dbl)[-1,1].forEach(b=>projectBox(42,L,42,cx,L/2,b*iz,legMat));maxH=Math.max(maxH,L+H+Tp);maxD=Math.max(maxD,D);
+  const ix=Math.max(45,W/2-60),iz=Math.max(45,PD/2-60);[-1,1].forEach(a=>[-1,1].forEach(b=>projectBox(42,L,42,cx+a*ix,L/2,b*iz,legMat)));if(dbl)[-1,1].forEach(b=>projectBox(42,L,42,cx,L/2,b*iz,legMat));maxH=Math.max(maxH,L+H+Tp);maxD=Math.max(maxD,D);projectModel.children.forEach(o=>{if(!before.has(o))o.userData.cabIndex=cabIndex});
  };
- cursor=0;lowers.forEach(c=>{drawCab(c,cursor+c.w/2,0);cursor+=c.w});const lowerW=cursor;
- cursor=0;const upperBase=1500;uppers.forEach(c=>{drawCab(c,cursor+c.w/2,upperBase);cursor+=c.w});const upperW=cursor;
+ cursor=0;lowers.forEach(c=>{const idx=cabinets.indexOf(c);drawCab(c,cursor+c.w/2,0,idx);cursor+=c.w});const lowerW=cursor;
+ cursor=0;const upperBase=1500;uppers.forEach(c=>{const idx=cabinets.indexOf(c);drawCab(c,cursor+c.w/2,upperBase,idx);cursor+=c.w});const upperW=cursor;
  const spanW=Math.max(lowerW,upperW),wallW=Math.max(1,num('wall')),wallH=Math.max(maxH+120,2500),wallZ=-maxD/2-55;
  const wg=new THREE.PlaneGeometry(wallW,wallH),wm=new THREE.Mesh(wg,wallMat);wm.position.set(wallW/2,wallH/2,wallZ);projectModel.add(wm);const we=new THREE.LineSegments(new THREE.EdgesGeometry(wg),wallLineMat);we.position.copy(wm.position);projectModel.add(we);
  const markerG=new THREE.BoxGeometry(8,wallH,8),marker=new THREE.Mesh(markerG,new THREE.MeshBasicMaterial({color:0x24445f}));marker.position.set(wallW,wallH/2,wallZ+5);projectModel.add(marker);
  if(spanW>wallW){const over=spanW-wallW,og=new THREE.PlaneGeometry(over,wallH),om=new THREE.Mesh(og,overflowMat);om.position.set(wallW+over/2,wallH/2,wallZ+2);projectModel.add(om)}
- if(lowers.length&&$('projectTop').checked){const c=lowers[0],Tp=c.top||39,L=c.legs||100,H=Math.max(1,(c.h||900)-L-Tp),depth=600,rear=-(Math.max(1,(c.d||555)-(c.back||3))+(c.back||3))/2,topZ=rear+depth/2;projectBox(lowerW,Tp,depth,lowerW/2,L+H+Tp/2,topZ,new THREE.MeshStandardMaterial({color:worktops[Number($('worktopChoice')?.value)||0]?.color||'#777a80',roughness:.72}),edges.worktop)}
+ if(lowers.length&&$('projectTop').checked){const c=lowers[0],Tp=c.top||39,L=c.legs||100,H=Math.max(1,(c.h||900)-L-Tp),depth=worktops[Number($('worktopChoice')?.value)||0]?.depth||600,rear=-(Math.max(1,(c.d||555)-(c.back||3))+(c.back||3))/2,topZ=rear+depth/2;projectBox(lowerW,Tp,depth,lowerW/2,L+H+Tp/2,topZ,new THREE.MeshStandardMaterial({color:worktops[Number($('worktopChoice')?.value)||0]?.color||'#777a80',roughness:.72,transparent:false,opacity:1}),edges.worktop)}
  if(lowers.length&&$('projectPlinth')?.checked){const D=lowers[0].d||555,z=D/2+10;splitAtCabinetJoints().forEach(seg=>{const W=seg[1]-seg[0],cx=(seg[0]+seg[1])/2;projectBox(W,98,18,cx,49,z,matForPdc(Number($('plinthPdc')?.value)||0));projectRedFrame(W,98,18,cx,49,z,Number($('plinthEdge')?.value)||0)})}
  if(lowers.length&&$('projectSplash')?.checked){const D=lowers[0].d||555,z=-D/2-8;splitAtCabinetJoints().forEach(seg=>{const W=seg[1]-seg[0],cx=(seg[0]+seg[1])/2;projectBox(W,600,18,cx,1200,z,matForPdc(Number($('splashPdc')?.value)||0));projectRedFrame(W,600,18,cx,1200,z,Number($('splashEdge')?.value)||0)})}
  const span=Math.max(spanW,wallW,600),fit=Math.min(1,1200/span);projectModel.rotation.set(0,0,0);projectModel.scale.setScalar(fit);const bb=new THREE.Box3().setFromObject(projectModel),bc=new THREE.Vector3();bb.getCenter(bc);projectModel.position.x-=bc.x;projectModel.position.y-=bc.y;projectCamera.position.set(0,0,Math.max(700,span*.92)/projectZoom);projectCamera.lookAt(0,0,0);
@@ -475,7 +476,10 @@ pcan.addEventListener('wheel',e=>{
  projectCamera.position.set(0,0,Math.max(350,total*.92)/projectZoom);
  projectCamera.lookAt(0,0,0);
 },{passive:false});
-function resizeProject(){const w=Math.max(300,projectHost.clientWidth),h=Math.max(300,projectHost.clientHeight);projectRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,3));projectRenderer.setSize(w,h,false);projectCamera.aspect=w/h;projectCamera.updateProjectionMatrix()}new ResizeObserver(resizeProject).observe(projectHost);resizeProject();
+function resizeProject(){const w=Math.max(300,projectHost.clientWidth),h=Math.max(300,projectHost.clientHeight);projectRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,3));projectRenderer.setSize(w,h,false);projectCamera.aspect=w/h;projectCamera.updateProjectionMatrix()}
+const projectRay=new THREE.Raycaster(),projectMouse=new THREE.Vector2();
+projectRenderer.domElement.style.cursor='pointer';
+projectRenderer.domElement.addEventListener('click',e=>{const r=projectRenderer.domElement.getBoundingClientRect();projectMouse.x=((e.clientX-r.left)/r.width)*2-1;projectMouse.y=-((e.clientY-r.top)/r.height)*2+1;projectRay.setFromCamera(projectMouse,projectCamera);const hits=projectRay.intersectObjects(projectModel.children,false);const hit=hits.find(h=>Number.isInteger(h.object.userData?.cabIndex));if(hit){activeCab=hit.object.userData.cabIndex;loadCab(cabinets[activeCab]);renderProject();$('cabEditorTitle')?.scrollIntoView({behavior:'smooth',block:'start'})}});new ResizeObserver(resizeProject).observe(projectHost);resizeProject();
 (function projectLoop(){requestAnimationFrame(projectLoop);projectRenderer.render(projectScene,projectCamera)})();
 
 function build(){
@@ -484,7 +488,7 @@ function build(){
   if(o.material&&Array.isArray(o.material))o.material.forEach(m=>m.dispose?.());
  }
  const x=dims(),{w:W,legs:L,top:Tp,t:T,pd:PD,back:B,rail:R,body:H,sideH:SH,inner:I}=x;
- if(x.upper){const sideH=Math.max(1,H-2*T);addBox(W,T,PD,0,T/2,0,matForPdc(partMaterials.bottom));addSingleBandForBox(W,T,PD,0,T/2,0,'bottom');addBox(T,sideH,PD,-W/2+T/2,T+sideH/2,0,matForPdc(partMaterials.side));addSingleBandForBox(T,sideH,PD,-W/2+T/2,T+sideH/2,0,'side','vertical');addBox(T,sideH,PD,W/2-T/2,T+sideH/2,0,matForPdc(partMaterials.side));addSingleBandForBox(T,sideH,PD,W/2-T/2,T+sideH/2,0,'side','vertical');addBox(W,T,PD,0,H-T/2,0,matForPdc(partMaterials.rail));addSingleBandForBox(W,T,PD,0,H-T/2,0,'rail');const sc=cfg()==='s2'?2:cfg()==='s1'?1:0;for(let j=1;j<=sc;j++){const sy=H*j/(sc+1);addBox(I,T,PD,0,sy,0,matForPdc(partMaterials.shelf));addSingleBandForBox(I,T,PD,0,sy,0,'shelf')}if(B)addBox(W,H,B,0,H/2,-PD/2-B/2,backMat);camera.position.set(W*1.45,H*1.15,950);camera.lookAt(0,H*.5,0);return}
+ if(x.upper){const sideH=Math.max(1,H-2*T);addBox(W,T,PD,0,T/2,0,matForPdc(partMaterials.bottom));addSingleBandForBox(W,T,PD,0,T/2,0,'bottom');addBox(T,sideH,PD,-W/2+T/2,T+sideH/2,0,matForPdc(partMaterials.side));addSingleBandForBox(T,sideH,PD,-W/2+T/2,T+sideH/2,0,'side','vertical');addBox(T,sideH,PD,W/2-T/2,T+sideH/2,0,matForPdc(partMaterials.side));addSingleBandForBox(T,sideH,PD,W/2-T/2,T+sideH/2,0,'side','vertical');addBox(W,T,PD,0,H-T/2,0,matForPdc(partMaterials.rail));addSingleBandForBox(W,T,PD,0,H-T/2,0,'rail');const sc=cfg()==='s2'?2:cfg()==='s1'?1:0;for(let j=1;j<=sc;j++){const sy=T+sideH*j/(sc+1);addBox(I,T,PD,0,sy,0,matForPdc(partMaterials.shelf));addSingleBandForBox(I,T,PD,0,sy,0,'shelf')}if(B)addBox(W,H,B,0,H/2,-PD/2-B/2,backMat);camera.position.set(W*1.45,H*1.15,950);camera.lookAt(0,H*.5,0);return}
 
  const dbl=modelType()==='double',carcassBottom=L,carcassTop=L+H;
  const bay=dbl?Math.max(0,(W-3*T)/2):I;
