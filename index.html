@@ -8,7 +8,7 @@
 .cost-table{width:100%;min-width:900px;border-collapse:collapse}.cost-table th{background:#edf3f8;color:#173b66;font-weight:700;white-space:nowrap}.cost-table td,.cost-table th{padding:9px 10px;border:1px solid #d8dee6}.cost-table td:not(:first-child){text-align:right}.cost-table .section td{background:#f6f8fb;font-weight:700;text-align:left}.cost-table .grand td{font-size:17px;font-weight:800;background:#e8f0f8}.cost-wrap{overflow:auto}
 .material-summary{width:100%;border-collapse:collapse;margin:0}.material-summary th,.material-summary td{border:1px solid #d8dee6;padding:7px 9px;text-align:left}.material-summary th{font-size:12px;color:#617086;background:#f8fafc;font-weight:600}.material-summary td{font-weight:700}.material-summary .edit-cell{width:90px;text-align:center}.material-summary button{margin:0!important;padding:6px 9px!important}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.18.0</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.18.1</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект кухня</button>
 <button class="main-tab" data-panel="materialsPanel">Материали</button>
@@ -294,7 +294,9 @@ function renderProjectCosts(){
  rows+='<tr class="section"><td colspan="7">Кантове</td></tr>';
  const edgeRow=(title,role,meters)=>{if(meters<=0)return;const m=edgeMaterials[role],cost=m?meters*(m.price||0):0;if(m)grandTotal+=cost;rows+='<tr><td><b>'+title+(m?' — '+m.name:'')+'</b></td><td>'+meters.toFixed(3)+' л.м</td><td>—</td><td>—</td><td>—</td><td>—</td><td><b>'+(m?cost.toFixed(2)+' €':'—')+'</b></td></tr>'};
  edgeRow('Кант корпус','edgeBody',bodyBand);edgeRow('Кант преден перваз','edgePlinth',plinthBand);edgeRow('Кант кухня гръб','edgeSplash',splashBand);
- rows+='<tr class="section"><td colspan="7">Услуги</td></tr><tr><td><b>Разкрой</b></td><td colspan="5">Методът за изчисление ще бъде добавен допълнително.</td><td>—</td></tr><tr><td><b>Кантиране</b></td><td colspan="5">Методът за изчисление ще бъде добавен допълнително.</td><td>—</td></tr>';
+ const totalBandMeters=bodyBand+plinthBand+splashBand;
+ const edgingServiceCost=totalBandMeters*(servicePrices.edging||0);grandTotal+=edgingServiceCost;
+ rows+='<tr class="section"><td colspan="7">Услуги</td></tr><tr><td><b>Разкрой</b></td><td colspan="5">Методът за изчисление ще бъде добавен допълнително.</td><td>—</td></tr><tr><td><b>Кантиране</b></td><td>'+totalBandMeters.toFixed(3)+' л.м</td><td colspan="4">× '+(servicePrices.edging||0).toFixed(2)+' € / л.м</td><td><b>'+edgingServiceCost.toFixed(2)+' €</b></td></tr>';
  rows+='<tr class="grand"><td colspan="6">ОБЩА СУМА</td><td>'+grandTotal.toFixed(2)+' €</td></tr>';
  box.className='cost-wrap';box.innerHTML='<table class="cost-table"><thead><tr><th></th><th>Необходима площ/дължина</th><th>Влиза в</th><th>Използваемост</th><th>Закупена площ/дължина</th><th>Остатък</th><th>Цена</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
