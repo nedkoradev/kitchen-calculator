@@ -8,7 +8,7 @@
 .cost-table{width:100%;min-width:900px;border-collapse:collapse}.cost-table th{background:#edf3f8;color:#173b66;font-weight:700;white-space:nowrap}.cost-table td,.cost-table th{padding:9px 10px;border:1px solid #d8dee6}.cost-table td:not(:first-child){text-align:right}.cost-table .section td{background:#f6f8fb;font-weight:700;text-align:left}.cost-table .grand td{font-size:17px;font-weight:800;background:#e8f0f8}.cost-wrap{overflow:auto}
 .material-summary{width:100%;border-collapse:collapse;margin:0}.material-summary th,.material-summary td{border:1px solid #d8dee6;padding:7px 9px;text-align:left}.material-summary th{font-size:12px;color:#617086;background:#f8fafc;font-weight:600}.material-summary td{font-weight:700}.material-summary .edit-cell{width:90px;text-align:center}.material-summary button{margin:0!important;padding:6px 9px!important}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.18.1</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.18.2</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект кухня</button>
 <button class="main-tab" data-panel="materialsPanel">Материали</button>
@@ -266,7 +266,7 @@ function renderProjectVisual(){
 }
 function renderProjectCosts(){
  const box=$('projectCosts');if(!box)return;let grandTotal=0;
- const areas={body:0,back3:0,splash:0,plinth:0};
+ const areas={body:0,back3:0,splash:0,plinth:0};let cuttingSheets=0,cuttingParts=0;
  cabinets.forEach(c=>cabParts(c).forEach(p=>{if(!p[2])return;const role=p[0]==='S1-5'?'back3':'body';areas[role]+=p[2]*p[3]*p[4]/1000000}));
  if(cabinets.length&&$('projectPlinth')?.checked)splitAtCabinetJoints().forEach(seg=>areas.plinth+=(seg[1]-seg[0])*98/1000000);
  if(cabinets.length&&$('projectSplash')?.checked)splitAtCabinetJoints().forEach(seg=>areas.splash+=(seg[1]-seg[0])*600/1000000);
@@ -278,7 +278,7 @@ function renderProjectCosts(){
   const fullArea=m.fullW*m.fullH/1e6,halfArea=m.halfW*m.halfH/1e6,uf=fullArea*.8,uh=halfArea*.8;
   let full=Math.floor(area/uf),half=0,rem=area-full*uf;if(rem>1e-9){if(uh&&rem<=uh)half=1;else full++}
   const bought=full*fullArea+half*halfArea,usable=full*uf+half*uh,reserve=Math.max(0,usable-area),cost=full*(m.fullPrice||0)+half*(m.halfPrice||0);grandTotal+=cost;
-  const qty=(full+half*.5).toFixed(1).replace('.0','')+' пл.'+(half?' ('+full+' + ½)':'');
+  const sheetEq=full+half*.5;if(role==='body'||role==='splash'||role==='plinth')cuttingSheets+=sheetEq;const qty=sheetEq.toFixed(1).replace('.0','')+' пл.'+(half?' ('+full+' + ½)':'');
   rows+='<tr><td><b>'+n+++'. '+materialRoles[role].title+' — '+m.name+'</b></td><td>'+area.toFixed(3)+' m²</td><td>'+qty+'</td><td>80%</td><td>'+bought.toFixed(3)+' m²</td><td>'+reserve.toFixed(3)+' m²</td><td><b>'+cost.toFixed(2)+' €</b></td></tr>';
  };
  ['body','back3','splash'].forEach(sheetRow);
@@ -288,6 +288,9 @@ function renderProjectCosts(){
   else{const fl=m.fullW/1000,hl=m.halfW/1000;let full=0,half=0;if(need<=hl)half=1;else if(need<=fl)full=1;else{full=Math.floor(need/fl);const rem=need-full*fl;if(rem>1e-9){if(rem<=hl)half=1;else full++}}const bought=full*fl+half*hl,rest=Math.max(0,bought-need),cost=full*(m.fullPrice||0)+half*(m.halfPrice||0);grandTotal+=cost;rows+='<tr><td><b>'+n+++'. Плот — '+m.name+'</b></td><td>'+need.toFixed(3)+' л.м</td><td>'+(full+half*.5).toFixed(1).replace('.0','')+' бр.</td><td>—</td><td>'+bought.toFixed(3)+' л.м</td><td>'+rest.toFixed(3)+' л.м</td><td><b>'+cost.toFixed(2)+' €</b></td></tr>'}
  }
  sheetRow('plinth');
+ cabinets.forEach(c=>cabParts(c).forEach(p=>{if(p[2]&&p[0]!=='S1-5')cuttingParts+=p[2]}));
+ if($('projectPlinth')?.checked)cuttingParts+=splitAtCabinetJoints().length;
+ if($('projectSplash')?.checked)cuttingParts+=splitAtCabinetJoints().length;
  let bodyBand=0;cabinets.forEach(c=>cabParts(c).forEach(p=>{if(!p[2]||p[0]==='S1-5')return;const k=({'S1-1':'side','S1-2':'bottom','S1-3':'shelf','S1-4':'rail'})[p[0]],es=new Set(k?(c.bands?.[k]||[]):[]);es.forEach(e=>bodyBand+=(e==='top'||e==='bottom'?p[3]:p[4])*p[2]/1000)}));
  const plinthBand=$('projectPlinth')?.checked?splitAtCabinetJoints().reduce((a,seg)=>a+2*((seg[1]-seg[0])+98)/1000,0):0;
  const splashBand=$('projectSplash')?.checked?splitAtCabinetJoints().reduce((a,seg)=>a+2*((seg[1]-seg[0])+600)/1000,0):0;
@@ -296,7 +299,8 @@ function renderProjectCosts(){
  edgeRow('Кант корпус','edgeBody',bodyBand);edgeRow('Кант преден перваз','edgePlinth',plinthBand);edgeRow('Кант кухня гръб','edgeSplash',splashBand);
  const totalBandMeters=bodyBand+plinthBand+splashBand;
  const edgingServiceCost=totalBandMeters*(servicePrices.edging||0);grandTotal+=edgingServiceCost;
- rows+='<tr class="section"><td colspan="7">Услуги</td></tr><tr><td><b>Разкрой</b></td><td colspan="5">Методът за изчисление ще бъде добавен допълнително.</td><td>—</td></tr><tr><td><b>Кантиране</b></td><td>'+totalBandMeters.toFixed(3)+' л.м</td><td colspan="4">× '+(servicePrices.edging||0).toFixed(2)+' € / л.м</td><td><b>'+edgingServiceCost.toFixed(2)+' €</b></td></tr>';
+ const cuttingCost=cuttingSheets*(servicePrices.cutStart||0)+cuttingParts*(servicePrices.cutPart||0);grandTotal+=cuttingCost;
+ rows+='<tr class="section"><td colspan="7">Услуги</td></tr><tr><td><b>Разкрой</b></td><td>'+cuttingSheets.toFixed(1).replace('.0','')+' плочи</td><td>'+cuttingParts+' детайла</td><td colspan="3">'+cuttingSheets.toFixed(1).replace('.0','')+' × '+(servicePrices.cutStart||0).toFixed(2)+' € + '+cuttingParts+' × '+(servicePrices.cutPart||0).toFixed(2)+' €</td><td><b>'+cuttingCost.toFixed(2)+' €</b></td></tr><tr><td><b>Кантиране</b></td><td>'+totalBandMeters.toFixed(3)+' л.м</td><td colspan="4">× '+(servicePrices.edging||0).toFixed(2)+' € / л.м</td><td><b>'+edgingServiceCost.toFixed(2)+' €</b></td></tr>';
  rows+='<tr class="grand"><td colspan="6">ОБЩА СУМА</td><td>'+grandTotal.toFixed(2)+' €</td></tr>';
  box.className='cost-wrap';box.innerHTML='<table class="cost-table"><thead><tr><th></th><th>Необходима площ/дължина</th><th>Влиза в</th><th>Използваемост</th><th>Закупена площ/дължина</th><th>Остатък</th><th>Цена</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
