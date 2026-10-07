@@ -9,7 +9,7 @@
 .material-summary{width:100%;border-collapse:collapse;margin:0}.material-summary th,.material-summary td{border:1px solid #d8dee6;padding:7px 9px;text-align:left}.material-summary th{font-size:12px;color:#617086;background:#f8fafc;font-weight:600}.material-summary td{font-weight:700}.material-summary .edit-cell{width:90px;text-align:center}.material-summary button{margin:0!important;padding:6px 9px!important}
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.27.8</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.27.9</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект кухня</button>
 <button class="main-tab" data-panel="materialsPanel">Материали</button>
@@ -526,7 +526,7 @@ function renderProjectPartLabels(){
   const pfx='Г'+(++gn),W=Number(c.w)||600,T=Number(c.t)||18,D=Number(c.d)||300,B=Number(c.back)||3,PD=Math.max(1,D-B),H=Number(c.h)||900,SH=Math.max(1,H-2*T),cx=x+W/2,base=1500,front=PD/2+18,sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;
   add(pfx+'-1',cx-W/2+T/2,base+T+SH*.68,front);add(pfx+'-1',cx+W/2-T/2,base+T+SH*.68,front);add(pfx+'-2',cx,base+T/2,front);
   for(let j=1;j<=sc;j++)add(pfx+'-3',cx,base+T+SH*j/(sc+1),front);
-  add(pfx+'-4',cx,base+H-T/2,front);add(pfx+'-5',cx,base+H*.45,front);x+=W
+  add(pfx+'-4',cx,base+H-T/2,front);add(pfx+'-5',cx,base+H*.45,front);const dc=Number(c.doors||0);if(dc&&c.showDoors3D!==false){const dw=dc===2?(W-6)/2:W-2,doorFront=PD/2+T+24;if(dc===1)add(pfx+'-6',cx,base+H*.5,doorFront);else{const off=(dw+4)/2;add(pfx+'-6',cx-off,base+H*.5,doorFront);add(pfx+'-6',cx+off,base+H*.5,doorFront)}}x+=W
  });
  projectCamera.updateMatrixWorld();projectModel.updateMatrixWorld(true);
  const placed=[];
