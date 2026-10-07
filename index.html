@@ -9,7 +9,7 @@
 .material-summary{width:100%;border-collapse:collapse;margin:0}.material-summary th,.material-summary td{border:1px solid #d8dee6;padding:7px 9px;text-align:left}.material-summary th{font-size:12px;color:#617086;background:#f8fafc;font-weight:600}.material-summary td{font-weight:700}.material-summary .edit-cell{width:90px;text-align:center}.material-summary button{margin:0!important;padding:6px 9px!important}
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.27.6</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.27.7</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект кухня</button>
 <button class="main-tab" data-panel="materialsPanel">Материали</button>
@@ -29,7 +29,7 @@
  <div class="project-option"><label><input type="checkbox" id="projectSplash" checked> Гръб ПДЧ 18 × 600 mm</label><span class="opt-label">ПДЧ</span><select id="splashPdc"></select><span class="opt-label">Кант</span><select id="splashEdge"></select></div>
 </div>
 <div class="projectviz"><div class="projectviz-title">Обща 3D визуализация</div><div id="projectViewer" class="projectcanvas"></div></div>
-<div class="project-actions"><label><input type="checkbox" id="showBanding" checked> Покажи кантиране</label><label><input type="checkbox" id="showPartLabels"> Покажи етикети</label></div>
+<div class="project-actions"><label><input type="checkbox" id="showPartLabels"> Покажи етикети</label></div>
 
 </section><div class="editor-title editor-title-row"><span id="cabEditorTitle">Нов долен шкаф</span><button id="deleteSelectedCab" type="button" title="Изтрий селектирания шкаф" aria-label="Изтрий селектирания шкаф">✕</button></div><div class="top">
 <section class="card"><h2>Размери</h2>
@@ -63,7 +63,7 @@
 <div class="field"><label>Ширина царги</label><input id="rail" type="number" value="60"></div>
 <input id="shelves" type="hidden" value="1">
 </div><div id="calc" class="calc"></div></section>
-<section class="card"><h2>Конструкция — 3D модел</h2><p class="hint">Плъзни за завъртане · колелце/щипване за приближаване</p><div id="viewer" class="viewer"><div class="msg">Интерактивен модел</div></div><div class="project-actions"><label><input type="checkbox" id="showBandingSingle" checked> Покажи кантиране</label></div></section>
+<section class="card"><h2>Конструкция — 3D модел</h2><p class="hint">Плъзни за завъртане · колелце/щипване за приближаване</p><div id="viewer" class="viewer"><div class="msg">Интерактивен модел</div></div></section>
 </div>
 <div class="lower">
 <section class="card"><h2>Кантиране</h2><div id="tabs" class="tabs"></div><div class="part"><div class="rect"><i class="edge" data-edge="top"></i><i class="edge" data-edge="right"></i><i class="edge" data-edge="bottom"></i><i class="edge" data-edge="left"></i></div><div><b id="pname"></b><div id="psize"></div><div class="part-material"><label>ПДЧ: <select id="partPdc"></select></label><br><label id="partEdgeWrap">Кант: <select id="partEdge"></select></label></div></div></div></section>
@@ -427,7 +427,7 @@ let model=new THREE.Group();scene.add(model);
 function addBox(w,h,d,x,y,z,mat=wood){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);mesh.position.set(x,y,z);model.add(mesh);const line=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color:0x5a422f}));line.position.copy(mesh.position);model.add(line)}
 const singleBandMat=new THREE.MeshBasicMaterial({color:0xd71920,depthTest:false});
 function addSingleBandForBox(w,h,d,x,y,z,key,orient='horizontal'){
- if(!$('showBandingSingle')?.checked||!edges[key]||!edges[key].size)return;
+ if(!edges[key]||!edges[key].size)return;
  const es=edges[key],th=4,eps=1.5;
  const box=(bw,bh,bd,bx,by,bz)=>{const g=new THREE.BoxGeometry(Math.max(1,bw),Math.max(1,bh),Math.max(1,bd)),m=new THREE.Mesh(g,bandForEdge(partEdges[key]||0));m.position.set(bx,by,bz);m.renderOrder=40;model.add(m)};
  if(orient==='horizontal'){
@@ -463,13 +463,13 @@ const wallMat=new THREE.MeshBasicMaterial({color:0x4b6b88,transparent:true,opaci
 const wallLineMat=new THREE.LineBasicMaterial({color:0x24445f});
 const overflowMat=new THREE.MeshBasicMaterial({color:0xd71920,transparent:true,opacity:.20,side:THREE.DoubleSide});
 function projectBox(w,h,d,x,y,z,mat=wood,bandSet=null,orient='horizontal',edgeIndex=0){const g=new THREE.BoxGeometry(Math.max(1,w),Math.max(1,h),Math.max(1,d)),m=new THREE.Mesh(g,mat);m.position.set(x,y,z);projectModel.add(m);const e=new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:0x493426,depthTest:true,transparent:false}));e.position.copy(m.position);e.renderOrder=2000;projectModel.add(e);
- if($('showBanding')?.checked&&bandSet){const es=bandSet instanceof Set?bandSet:new Set(bandSet),th=1,eps=.35;
+ if(bandSet&&bandSet.size){const es=bandSet instanceof Set?bandSet:new Set(bandSet),th=1,eps=.35;
   const box=(bw,bh,bd,bx,by,bz)=>{const sg=new THREE.BoxGeometry(Math.max(1,bw),Math.max(1,bh),Math.max(1,bd)),sm=new THREE.Mesh(sg,bandForEdge(edgeIndex));sm.position.set(bx,by,bz);sm.renderOrder=999;projectModel.add(sm)};
   if(orient==='horizontal'){if(es.has('top'))box(w,h,th,x,y,z-d/2-eps);if(es.has('bottom'))box(w,h,th,x,y,z+d/2+eps);if(es.has('left'))box(th,h,d,x-w/2-eps,y,z);if(es.has('right'))box(th,h,d,x+w/2+eps,y,z)}
   else{if(es.has('top'))box(w,h,1,x,y,z-d/2-.35);if(es.has('bottom'))box(w,h,1,x,y,z+d/2+.35);if(es.has('left'))box(w,1,d,x,y-h/2-.35,z);if(es.has('right'))box(w,1,d,x,y+h/2+.35,z)}
  }}
 function projectRedFrame(w,h,d,x,y,z,edgeIndex=0){
- if(!$('showBanding')?.checked)return;
+ if(false)return;
  const ov=1.5;
  const add=(bw,bh,bd,bx,by,bz)=>{const g=new THREE.BoxGeometry(Math.max(1,bw),Math.max(1,bh),Math.max(1,bd)),m=new THREE.Mesh(g,bandForEdge(edgeIndex));m.position.set(bx,by,bz);m.renderOrder=10000;projectModel.add(m)};
  // Real edge faces of the 18 mm vertical board:
@@ -526,7 +526,7 @@ function renderProjectPartLabels(){
   const pfx='Г'+(++gn),W=Number(c.w)||600,T=Number(c.t)||18,D=Number(c.d)||300,B=Number(c.back)||3,PD=Math.max(1,D-B),H=Number(c.h)||900,SH=Math.max(1,H-2*T),cx=x+W/2,base=1500,front=PD/2+18,sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;
   add(pfx+'-1',cx-W/2+T/2,base+T+SH*.68,front);add(pfx+'-1',cx+W/2-T/2,base+T+SH*.68,front);add(pfx+'-2',cx,base+T/2,front);
   for(let j=1;j<=sc;j++)add(pfx+'-3',cx,base+T+SH*j/(sc+1),front);
-  add(pfx+'-4',cx,base+H-T/2,front);add(pfx+'-5',cx,base+H*.45,front);x+=W
+  add(pfx+'-4',cx,base+H-T/2,front);add(pfx+'-5',cx,base+H*.45,front);const dc=Number(c.doors||0);if(dc&&c.showDoors3D!==false){const dw=dc===2?(W-6)/2:W-2,z=PD/2+T+24;if(dc===1)add(pfx+'-6',cx,base+H*.5,z);else{const off=(dw+4)/2;add(pfx+'-6',cx-off,base+H*.5,z);add(pfx+'-6',cx+off,base+H*.5,z)}}x+=W
  });
  projectCamera.updateMatrixWorld();projectModel.updateMatrixWorld(true);
  const placed=[];
@@ -659,7 +659,7 @@ $('addLowerCab').onclick=()=>addCabinetOfType('single');
 $('addUpperCab').onclick=()=>addCabinetOfType('upper');
 $('wall').addEventListener('input',renderProject);$('projectTop').addEventListener('change',renderProject);if($('projectPlinth'))$('projectPlinth').addEventListener('change',renderProject);if($('projectSplash'))$('projectSplash').addEventListener('change',renderProject);$('showBanding').addEventListener('change',renderProjectVisual);$('showPartLabels').addEventListener('change',renderProjectPartLabels);if($('showBandingSingle'))$('showBandingSingle').addEventListener('change',build);
 document.querySelectorAll('#w,#h,#legs,#top,#t,#d,#back,#rail,input[name="modelType"],input[name="cfg"]').forEach(e=>e.addEventListener('change',syncActiveCab));
-initMaterials();initEdgeMaterials();initServicePrices();initPdc();initBacks();initWorktops();updateModelChoices();$('reloadMaterialBase')?.addEventListener('click',()=>loadMaterialBase($('materialBaseChoice')?.value||'default'));$('saveMaterialBase')?.addEventListener('click',saveMaterialBaseFile);['projectTop','projectPlinth','projectSplash','showBanding','showBandingSingle'].forEach(id=>{const el=$(id);if(el)el.checked=true});
+initMaterials();initEdgeMaterials();initServicePrices();initPdc();initBacks();initWorktops();updateModelChoices();$('reloadMaterialBase')?.addEventListener('click',()=>loadMaterialBase($('materialBaseChoice')?.value||'default'));$('saveMaterialBase')?.addEventListener('click',saveMaterialBaseFile);['projectTop','projectPlinth','projectSplash'].forEach(id=>{const el=$(id);if(el)el.checked=true});
 renderProject();
 resize();ui();build();pose();renderProject();(function draw(){requestAnimationFrame(draw);renderer.render(scene,camera)})();
 })();
