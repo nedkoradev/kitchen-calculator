@@ -9,7 +9,7 @@
 .material-summary{width:100%;border-collapse:collapse;margin:0}.material-summary th,.material-summary td{border:1px solid #d8dee6;padding:7px 9px;text-align:left}.material-summary th{font-size:12px;color:#617086;background:#f8fafc;font-weight:600}.material-summary td{font-weight:700}.material-summary .edit-cell{width:90px;text-align:center}.material-summary button{margin:0!important;padding:6px 9px!important}
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.28.13</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.29.0</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект кухня</button>
 <button class="main-tab" data-panel="materialsPanel">Материали</button>
@@ -189,13 +189,13 @@
 </section>
 </div>
 <div id="cutPanel" class="app-panel"><section class="card"><h2>Общ списък за разкрой</h2>
-<div class="cablist"><table><thead><tr><th>Етикет</th><th>Детайл</th><th>Материал</th><th>Брой</th><th>Краен размер</th><th>Кантирани ръбове</th><th>Кант</th></tr></thead><tbody id="projectCutList"></tbody><tfoot><tr><td colspan="6">ОБЩО КАНТ</td><td id="projectBandTotal">0.000 m</td></tr></tfoot></table></div>
+<div class="project-actions" style="margin-bottom:12px"><button id="exportSalexXlsx" type="button">Експорт за Salex (.xlsx)</button></div><div class="cablist"><table><thead><tr><th>Етикет</th><th>Детайл</th><th>Материал</th><th>Брой</th><th>Краен размер</th><th>Кантирани ръбове</th><th>Кант</th></tr></thead><tbody id="projectCutList"></tbody><tfoot><tr><td colspan="6">ОБЩО КАНТ</td><td id="projectBandTotal">0.000 m</td></tr></tfoot></table></div>
 </section></div>
 <div id="costPanel" class="app-panel"><section class="card"><h2>Разходи</h2>
 <div id="projectCosts" class="calc">Добави шкафове и материал за корпус, за да се изчисли разходът.</div>
 </section></div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>\n<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 (()=>{'use strict';
 document.querySelectorAll('.main-tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.main-tab').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('.app-panel').forEach(p=>p.classList.toggle('active',p.id===btn.dataset.panel));setTimeout(()=>window.dispatchEvent(new Event('resize')),20)}));
@@ -336,6 +336,28 @@ function splitAtCabinetJoints(maxLen=2800){
   else{const end=choices[choices.length-1];out.push([start,end]);start=end}
  }
  if(start<total)out.push([start,total]);return out;
+}
+function exportSalexXlsx(){
+ if(!window.XLSX){alert('Библиотеката за Excel не е заредена.');return}
+ if(!cabinets.length){alert('Няма детайли за експорт.');return}
+ const headers=['','Вид материал','дебелина','Размер А (фладер)','Размер Б','брой','забележка','забележка','фладер без значение; 1- ДА; 0 - НЕ ','Етикет','кант А долу','кант А горе','кант Б дясно','кант Б ляво','Sdvoyavane','Blok','Баркод'];
+ const rows=[headers];let seq=1,dn=0,gn=0;
+ const keyByCode={'S1-1':'side','S1-2':'bottom','S1-3':'shelf','S1-4':'rail','S1-5':'back','S1-6':'door'};
+ const pushPart=(material,thick,A,B,qty,label,es,edgeName)=>{
+  rows.push([seq++,material||'',Number(thick)||0,Number(A)||0,Number(B)||0,Number(qty)||1,'','',1,label||'',es?.has('bottom')?edgeName:'',es?.has('top')?edgeName:'',es?.has('right')?edgeName:'',es?.has('left')?edgeName:'','','',''])
+ };
+ cabinets.forEach(cab=>{
+  const prefix=cab.type==='upper'?'Г'+(++gn):'Д'+(++dn);
+  cabParts(cab).forEach(p=>{
+   if(!p[2])return;const k=keyByCode[p[0]],isBack=k==='back',mi=Number(cab.partMaterials?.[k]||0);
+   const mat=isBack?backMaterials[mi]:pdcMaterials[mi],ei=Number(cab.partEdges?.[k]||0),em=edgeMaterials[ei];
+   pushPart(mat?.name||'',isBack?(mat?.thick||cab.back||3):(cab.t||18),p[3],p[4],p[2],prefix+'-'+p[0].split('-')[1],new Set(cab.bands?.[k]||[]),em?.name||'');
+  })
+ });
+ if($('projectPlinth')?.checked)splitAtCabinetJoints().forEach((seg,j)=>{const mi=Number($('plinthPdc')?.value)||0,ei=Number($('plinthEdge')?.value)||0;pushPart(pdcMaterials[mi]?.name||'',18,seg[1]-seg[0],98,1,'ПЕРВАЗ-'+(j+1),new Set(['top','right','bottom','left']),edgeMaterials[ei]?.name||'')});
+ if($('projectSplash')?.checked)splitAtCabinetJoints().forEach((seg,j)=>{const mi=Number($('splashPdc')?.value)||0,ei=Number($('splashEdge')?.value)||0;pushPart(pdcMaterials[mi]?.name||'',18,seg[1]-seg[0],600,1,'ГРЪБ-'+(j+1),new Set(['top','right','bottom','left']),edgeMaterials[ei]?.name||'')});
+ const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:5},{wch:28},{wch:10},{wch:18},{wch:14},{wch:8},{wch:14},{wch:14},{wch:30},{wch:16},{wch:24},{wch:24},{wch:24},{wch:24},{wch:12},{wch:10},{wch:16}];
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'RIK_order');XLSX.writeFile(wb,'Salex_RIK_order.xlsx');
 }
 function renderProjectVisual(){
  const tb=$('projectCutList');if(tb){tb.innerHTML='';let projectBand=0;
@@ -664,7 +686,7 @@ $('wall').addEventListener('input',renderProject);$('projectTop').addEventListen
 document.querySelectorAll('#w,#h,#legs,#top,#t,#d,#back,#rail,input[name="modelType"],input[name="cfg"]').forEach(e=>e.addEventListener('change',syncActiveCab));
 initMaterials();initEdgeMaterials();initServicePrices();initPdc();initBacks();initWorktops();updateModelChoices();$('reloadMaterialBase')?.addEventListener('click',()=>loadMaterialBase($('materialBaseChoice')?.value||'default'));$('saveMaterialBase')?.addEventListener('click',saveMaterialBaseFile);['projectTop','projectPlinth','projectSplash'].forEach(id=>{const el=$(id);if(el)el.checked=true});
 renderProject();
-if($('showProjectDoors3D'))$('showProjectDoors3D').addEventListener('change',function(){projectDoorsVisible=this.checked;window.drawKitchen3D();});
+if($('exportSalexXlsx'))$('exportSalexXlsx').addEventListener('click',exportSalexXlsx);\nif($('showProjectDoors3D'))$('showProjectDoors3D').addEventListener('change',function(){projectDoorsVisible=this.checked;window.drawKitchen3D();});
 resize();ui();build();pose();renderProject();(function draw(){requestAnimationFrame(draw);renderer.render(scene,camera)})();
 })();
 
