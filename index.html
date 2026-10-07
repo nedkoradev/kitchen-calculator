@@ -9,7 +9,7 @@
 .material-summary{width:100%;border-collapse:collapse;margin:0}.material-summary th,.material-summary td{border:1px solid #d8dee6;padding:7px 9px;text-align:left}.material-summary th{font-size:12px;color:#617086;background:#f8fafc;font-weight:600}.material-summary td{font-weight:700}.material-summary .edit-cell{width:90px;text-align:center}.material-summary button{margin:0!important;padding:6px 9px!important}
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.28.3</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.28.4</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект кухня</button>
 <button class="main-tab" data-panel="materialsPanel">Материали</button>
@@ -380,7 +380,7 @@ function renderProjectCosts(){
  let bodyBand=0;cabinets.forEach(c=>cabParts(c).forEach(p=>{if(!p[2]||p[0]==='S1-5')return;const k=({'S1-1':'side','S1-2':'bottom','S1-3':'shelf','S1-4':'rail','S1-6':'door'})[p[0]],es=new Set(k?(c.bands?.[k]||[]):[]);es.forEach(e=>bodyBand+=(e==='top'||e==='bottom'?p[3]:p[4])*p[2]/1000)}));
  const plinthBand=$('projectPlinth')?.checked?splitAtCabinetJoints().reduce((a,seg)=>a+2*((seg[1]-seg[0])+98)/1000,0):0;
  const splashBand=$('projectSplash')?.checked?splitAtCabinetJoints().reduce((a,seg)=>a+2*((seg[1]-seg[0])+600)/1000,0):0;
- rows+='<tr class="grand"><td colspan="6">СУМА ПЛОСКОСТИ</td><td>'+materialsTotal.toFixed(2)+' €</td></tr>';
+ rows+='<tr><td colspan="6">СУМА ПЛОСКОСТИ</td><td>'+materialsTotal.toFixed(2)+' €</td></tr>';
  rows+='<tr class="section"><td colspan="7">Кантове</td></tr>';
  const edgeRow=(title,role,meters)=>{if(meters<=0)return;const m=edgeMaterials[role],cost=m?meters*(m.price||0):0;if(m)grandTotal+=cost;materialsTotal+=cost;rows+='<tr><td><b>'+title+(m?' — '+m.name:'')+'</b></td><td>'+meters.toFixed(3)+' л.м</td><td>—</td><td>—</td><td>—</td><td>—</td><td><b>'+(m?cost.toFixed(2)+' €':'—')+'</b></td></tr>'};
  const edgeMeters={};
@@ -392,7 +392,7 @@ function renderProjectCosts(){
  const edgingServiceCost=totalBandMeters*(servicePrices.edging||0);grandTotal+=edgingServiceCost;
  const cuttingCost=cuttingSheets*(servicePrices.cutStart||0)+cuttingParts*(servicePrices.cutPart||0);grandTotal+=cuttingCost;
  rows+='<tr class="section"><td colspan="7">Услуги</td></tr><tr><td><b>Разкрой</b></td><td>'+cuttingSheets.toFixed(1).replace('.0','')+' плочи</td><td>'+cuttingParts+' детайла</td><td colspan="3">'+cuttingSheets.toFixed(1).replace('.0','')+' × '+(servicePrices.cutStart||0).toFixed(2)+' € + '+cuttingParts+' × '+(servicePrices.cutPart||0).toFixed(2)+' €</td><td><b>'+cuttingCost.toFixed(2)+' €</b></td></tr><tr><td><b>Кантиране</b></td><td>'+totalBandMeters.toFixed(3)+' л.м</td><td colspan="4">× '+(servicePrices.edging||0).toFixed(2)+' € / л.м</td><td><b>'+edgingServiceCost.toFixed(2)+' €</b></td></tr>';
- rows+='<tr class="grand"><td colspan="6">СУМА КАНТОВЕ + УСЛУГИ</td><td>'+(edgeMaterialsTotal+cuttingCost+edgingServiceCost).toFixed(2)+' €</td></tr>';
+ rows+='<tr><td colspan="6">СУМА КАНТОВЕ + УСЛУГИ</td><td>'+(edgeMaterialsTotal+cuttingCost+edgingServiceCost).toFixed(2)+' €</td></tr>';
  rows+='<tr class="grand"><td colspan="6">ОБЩА СУМА</td><td>'+grandTotal.toFixed(2)+' €</td></tr>';
  box.className='cost-wrap';box.innerHTML='<table class="cost-table"><thead><tr><th></th><th>Необходима площ/дължина</th><th>Влиза в</th><th>Използваемост</th><th>Закупена площ/дължина</th><th>Остатък</th><th>Цена</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
