@@ -9,7 +9,7 @@
 .material-summary{width:100%;border-collapse:collapse;margin:0}.material-summary th,.material-summary td{border:1px solid #d8dee6;padding:7px 9px;text-align:left}.material-summary th{font-size:12px;color:#617086;background:#f8fafc;font-weight:600}.material-summary td{font-weight:700}.material-summary .edit-cell{width:90px;text-align:center}.material-summary button{margin:0!important;padding:6px 9px!important}
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.28.12</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.28.13</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект кухня</button>
 <button class="main-tab" data-panel="materialsPanel">Материали</button>
@@ -664,9 +664,9 @@ $('wall').addEventListener('input',renderProject);$('projectTop').addEventListen
 document.querySelectorAll('#w,#h,#legs,#top,#t,#d,#back,#rail,input[name="modelType"],input[name="cfg"]').forEach(e=>e.addEventListener('change',syncActiveCab));
 initMaterials();initEdgeMaterials();initServicePrices();initPdc();initBacks();initWorktops();updateModelChoices();$('reloadMaterialBase')?.addEventListener('click',()=>loadMaterialBase($('materialBaseChoice')?.value||'default'));$('saveMaterialBase')?.addEventListener('click',saveMaterialBaseFile);['projectTop','projectPlinth','projectSplash'].forEach(id=>{const el=$(id);if(el)el.checked=true});
 renderProject();
+if($('showProjectDoors3D'))$('showProjectDoors3D').addEventListener('change',function(){projectDoorsVisible=this.checked;window.drawKitchen3D();});
 resize();ui();build();pose();renderProject();(function draw(){requestAnimationFrame(draw);renderer.render(scene,camera)})();
 })();
 
-if($('showProjectDoors3D'))$('showProjectDoors3D').addEventListener('change',function(){projectDoorsVisible=this.checked;window.drawKitchen3D();});
 </script><!-- pages redeploy 2026-10-05 -->
 </body></html>
