@@ -1,13 +1,22 @@
 {
-  "name": "Default",
+  "name": "default",
   "version": 1,
-  "pdcMaterials": [],
-  "edgeMaterials": [],
-  "backMaterials": [],
-  "worktops": [],
-  "servicePrices": {
-    "cutStart": 2.86,
-    "cutPart": 0.87,
-    "edging": 0
-  }
+  "exportedAt": "2026-10-07T04:58:25.836Z",
+  "pdcMaterials": [
+    {"name":"W960 Класическо Бяло","fullW":2800,"fullH":2070,"halfW":1400,"halfH":2070,"fullPrice":57.25,"halfPrice":31.49,"color":"#ffffff"},
+    {"name":"Дъб Бардолино","fullW":2800,"fullH":2070,"halfW":1400,"halfH":2070,"fullPrice":70.3,"halfPrice":38.67,"color":"#a65407"},
+    {"name":"Дъб Виченца","fullW":2800,"fullH":2070,"halfW":1400,"halfH":2070,"fullPrice":84.15,"halfPrice":46.28}
+  ],
+  "edgeMaterials": [
+    {"name":"черен 2мм","price":1,"color":"#2d2a2a"},
+    {"name":"Бял 2мм","price":1,"color":"#ffffff"}
+  ],
+  "backMaterials": [
+    {"name":"Бяло ХДФ","thick":3,"color":"#ffffff","fullW":2800,"fullH":2070,"halfW":1400,"halfH":2070,"fullPrice":20,"halfPrice":10}
+  ],
+  "worktops": [
+    {"name":"Сахара","color":"#777a80","fullW":4100,"depth":600,"halfW":2050,"fullPrice":110,"halfPrice":60},
+    {"name":"Дъб","color":"#b85e0a","fullW":4100,"depth":600,"halfW":2050,"fullPrice":110,"halfPrice":60}
+  ],
+  "servicePrices":{"cutStart":2.86,"cutPart":0.87,"edging":0.8}
 }
