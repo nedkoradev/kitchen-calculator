@@ -1,0 +1,13 @@
+{
+  "name": "Default",
+  "version": 1,
+  "pdcMaterials": [],
+  "edgeMaterials": [],
+  "backMaterials": [],
+  "worktops": [],
+  "servicePrices": {
+    "cutStart": 2.86,
+    "cutPart": 0.87,
+    "edging": 0
+  }
+}
