@@ -9,7 +9,7 @@
 .material-summary{width:100%;border-collapse:collapse;margin:0}.material-summary th,.material-summary td{border:1px solid #d8dee6;padding:7px 9px;text-align:left}.material-summary th{font-size:12px;color:#617086;background:#f8fafc;font-weight:600}.material-summary td{font-weight:700}.material-summary .edit-cell{width:90px;text-align:center}.material-summary button{margin:0!important;padding:6px 9px!important}
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.26.4</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.27.0</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект кухня</button>
 <button class="main-tab" data-panel="materialsPanel">Материали</button>
@@ -44,6 +44,13 @@
 <label class="opt"><input type="radio" name="cfg" value="d1"> 1 чекмедже</label>
 <label class="opt"><input type="radio" name="cfg" value="d2"> 2 чекмеджета</label>
 <label class="opt"><input type="radio" name="cfg" value="d3"> 3 чекмеджета</label>
+</div>
+<div id="upperDoorOptions" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid #d8e0e9">
+<div class="config-title" style="margin-bottom:7px">Врати</div><div class="opts">
+<label class="opt"><input type="radio" name="doors" value="0" checked> Без врати</label>
+<label class="opt"><input type="radio" name="doors" value="1"> 1 врата</label>
+<label class="opt"><input type="radio" name="doors" value="2"> 2 врати</label>
+</div><label class="opt" style="margin-top:9px"><input type="checkbox" id="showDoors3D" checked> Покажи вратите в 3D</label>
 </div>
 <div style="margin-top:10px;padding-top:10px;border-top:1px solid #d8e0e9">
 <label class="opt"><input type="checkbox" id="withTop"> Добави плот към този шкаф</label>
@@ -284,15 +291,18 @@ function initServicePrices(){try{const v=JSON.parse(localStorage.getItem('kitche
 function modelType(){return document.querySelector('input[name="modelType"]:checked')?.value||'single'}
 function cfg(){return document.querySelector('input[name="cfg"]:checked')?.value||'s1'}
 function hasTop(){return $('withTop')?.checked||false}
+function doorCount(){return Number(document.querySelector('input[name="doors"]:checked')?.value||0)}
+function showDoors3D(){return $('showDoors3D')?.checked!==false}
 let cabinets=[],activeCab=-1;
 function currentSnapshot(){
  const mt=modelType(),upper=mt==='upper';
- return {type:mt,cfg:cfg(),w:num('w'),h:upper?900:num('h'),legs:upper?0:num('legs'),top:upper?0:num('top'),t:num('t'),d:upper?300:num('d'),back:num('back'),rail:num('rail'),bands:Object.fromEntries(Object.entries(edges).map(([k,v])=>[k,[...v]])),partMaterials:{...partMaterials},partEdges:{...partEdges}};
+ return {type:mt,cfg:cfg(),doors:upper?doorCount():0,showDoors3D:upper?showDoors3D():true,w:num('w'),h:upper?900:num('h'),legs:upper?0:num('legs'),top:upper?0:num('top'),t:num('t'),d:upper?300:num('d'),back:num('back'),rail:num('rail'),bands:Object.fromEntries(Object.entries(edges).map(([k,v])=>[k,[...v]])),partMaterials:{...partMaterials},partEdges:{...partEdges}};
 }
 function updateModelChoices(){
  const upper=modelType()==='upper';
  document.querySelectorAll('.model-lower').forEach(e=>e.style.display=upper?'none':'');
  document.querySelectorAll('.model-upper').forEach(e=>e.style.display=upper?'':'none');
+ const d=$('upperDoorOptions');if(d)d.style.display=upper?'block':'none';
 }
 function updateEditorTitle(){const e=$('cabEditorTitle'),del=$('deleteSelectedCab');if(!e)return;if(activeCab>=0&&cabinets[activeCab]){const c=cabinets[activeCab],same=cabinets.filter((x,j)=>j<=activeCab&&((x.type==='upper')===(c.type==='upper'))).length;e.textContent='Редактираш: '+(c.type==='upper'?'Г':'Д')+same+' — '+(c.type==='upper'?'горен':'долен')+' шкаф';if(del)del.style.display='inline-flex'}else{e.textContent=modelType()==='upper'?'Нов горен шкаф':'Нов долен шкаф';if(del)del.style.display='none'}}
 function renderProject(){
@@ -313,7 +323,7 @@ function renderProject(){
 function cabParts(c){
  const W=c.w,T=c.t||18,D=c.d||555,B=c.back||3,upper=c.type==='upper';
  if(upper){const H=c.h||900,PD=Math.max(0,D-B),inner=Math.max(0,W-2*T),sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;return[
-  ['S1-1','Страница',2,Math.max(0,H-2*T),PD],['S1-2','Дъно',1,W,PD],['S1-3','Рафт',sc,inner,PD],['S1-4','Таван',1,W,PD],['S1-5','Гръб '+B+' mm',1,W,H]
+  ['S1-1','Страница',2,Math.max(0,H-2*T),PD],['S1-2','Дъно',1,W,PD],['S1-3','Рафт',sc,inner,PD],['S1-4','Таван',1,W,PD],['S1-5','Гръб '+B+' mm',1,W,H],['S1-6','Врата',Number(c.doors||0),Number(c.doors||0)===2?Math.max(0,(W-6)/2):Math.max(0,W-4),Math.max(0,H-4)]
  ]}
  const L=c.legs||100,Tp=c.top||39,R=c.rail||60,H=Math.max(0,(c.h||900)-L-Tp),PD=Math.max(0,D-B),SH=Math.max(0,H-T),dbl=c.type==='double',bay=dbl?Math.max(0,(W-3*T)/2):Math.max(0,W-2*T),sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;
  return[['S1-1','Страница',dbl?3:2,SH,PD],['S1-2','Дъно',1,W,PD],['S1-3','Рафт',sc*(dbl?2:1),bay,PD],['S1-4','Царга',dbl?4:2,bay,R],['S1-5','Гръб '+B+' mm',1,W,H]];
@@ -332,8 +342,8 @@ function splitAtCabinetJoints(maxLen=2800){
 function renderProjectVisual(){
  const tb=$('projectCutList');if(tb){tb.innerHTML='';let projectBand=0;
  const matName=role=>projectMaterials[role]?.name||'—';
- const keyByCode={'S1-1':'side','S1-2':'bottom','S1-3':'shelf','S1-4':'rail','S1-5':'back'};
- let dn=0,gn=0;cabinets.forEach((c,i)=>{const prefix=c.type==='upper'?'Г'+(++gn):'Д'+(++dn);cabParts(c).forEach(p=>{if(!p[2])return;const k=keyByCode[p[0]],es=new Set(k?(c.bands?.[k]||[]):[]),edgeNames=[...es].map(e=>names[e]).join(', ')||'няма';let one=0;es.forEach(e=>one+=(e==='top'||e==='bottom'?p[3]:p[4]));const bm=one*p[2]/1000;projectBand+=bm;const materialName=k==='back'?(backMaterials[c.partMaterials?.back||0]?backLabel(c.partMaterials?.back||0):'—'):(pdcMaterials[c.partMaterials?.[k]||0]?pdcLabel(c.partMaterials?.[k]||0):'—'),edgeMaterial=k&&edgeMaterials[c.partEdges?.[k]||0]?edgeLabel(c.partEdges?.[k]||0):'—';tb.insertAdjacentHTML('beforeend','<tr><td><b>'+prefix+'-'+p[0].split('-')[1]+'</b></td><td>'+p[1]+'</td><td><strong>'+materialName+'</strong></td><td>'+p[2]+'</td><td>'+p[3]+' × '+p[4]+' mm</td><td>'+edgeNames+'</td><td>'+bm.toFixed(3)+' m</td></tr>')})});
+ const keyByCode={'S1-1':'side','S1-2':'bottom','S1-3':'shelf','S1-4':'rail','S1-5':'back','S1-6':'door'};
+ let dn=0,gn=0;cabinets.forEach((c,i)=>{const prefix=c.type==='upper'?'Г'+(++gn):'Д'+(++dn);cabParts(c).forEach(p=>{if(!p[2])return;const k=keyByCode[p[0]],es=new Set(k?(c.bands?.[k]||[]):[]),edgeNames=[...es].map(e=>names[e]).join(', ')||'няма';let one=0;es.forEach(e=>one+=(e==='top'||e==='bottom'?p[3]:p[4]));const bm=one*p[2]/1000;projectBand+=bm;const materialName=k==='back'?(backMaterials[c.partMaterials?.back||0]?backLabel(c.partMaterials?.back||0):'—'):(pdcMaterials[c.partMaterials?.[k]||0]?pdcLabel(c.partMaterials?.[k]||0):pdcMaterials[0]?pdcLabel(0):'—'),edgeMaterial=k&&edgeMaterials[c.partEdges?.[k]||0]?edgeLabel(c.partEdges?.[k]||0):'—';tb.insertAdjacentHTML('beforeend','<tr><td><b>'+prefix+'-'+p[0].split('-')[1]+'</b></td><td>'+p[1]+'</td><td><strong>'+materialName+'</strong></td><td>'+p[2]+'</td><td>'+p[3]+' × '+p[4]+' mm</td><td>'+edgeNames+'</td><td>'+bm.toFixed(3)+' m</td></tr>')})});
  if($('projectTop').checked&&cabinets.length){const W=cabinets.filter(c=>c.type!=='upper').reduce((a,c)=>a+c.w,0),es=edges.worktop,edgeNames=[...es].map(e=>names[e]).join(', ')||'няма';let bm=0;es.forEach(e=>bm+=(e==='top'||e==='bottom'?W:600));bm/=1000;projectBand+=bm;tb.insertAdjacentHTML('beforeend','<tr><td><b>ПЛОТ-1</b></td><td>Общ плот</td><td><strong>'+matName('worktop')+'</strong></td><td>1</td><td>'+W+' × 600 mm</td><td>'+edgeNames+'</td><td>'+bm.toFixed(3)+' m</td></tr>')}
  if(cabinets.length&&$('projectPlinth')?.checked){splitAtCabinetJoints().forEach((seg,j)=>{const W=seg[1]-seg[0],bm=2*(W+98)/1000;projectBand+=bm;tb.insertAdjacentHTML('beforeend','<tr><td><b>ПЕРВАЗ-'+(j+1)+'</b></td><td>Преден перваз</td><td><strong>'+(pdcMaterials[Number($('plinthPdc')?.value)||0]?pdcLabel(Number($('plinthPdc')?.value)||0):'—')+'</strong></td><td>1</td><td>'+W+' × 98 mm</td><td>всички страни</td><td>'+bm.toFixed(3)+' m</td></tr>')})}
  if(cabinets.length&&$('projectSplash')?.checked){splitAtCabinetJoints().forEach((seg,j)=>{const W=seg[1]-seg[0],bm=2*(W+600)/1000;projectBand+=bm;tb.insertAdjacentHTML('beforeend','<tr><td><b>ГРЪБ-'+(j+1)+'</b></td><td>Гръб кухня ПДЧ 18 mm</td><td><strong>'+(pdcMaterials[Number($('splashPdc')?.value)||0]?pdcLabel(Number($('splashPdc')?.value)||0):'—')+'</strong></td><td>1</td><td>'+W+' × 600 mm</td><td>всички страни</td><td>'+bm.toFixed(3)+' m</td></tr>')})}
@@ -345,7 +355,7 @@ function renderProjectVisual(){
 function renderProjectCosts(){
  const box=$('projectCosts');if(!box)return;let grandTotal=0;
  const areas={body:0,back3:0,splash:0,plinth:0};const pdcAreas={},backAreas={};let cuttingSheets=0,cuttingParts=0;
- cabinets.forEach(c=>cabParts(c).forEach(p=>{if(!p[2])return;if(p[0]==='S1-5'){const bi=Number(c.partMaterials?.back||0);backAreas[bi]=(backAreas[bi]||0)+p[2]*p[3]*p[4]/1000000;return}const k=({'S1-1':'side','S1-2':'bottom','S1-3':'shelf','S1-4':'rail'})[p[0]],idx=Number(c.partMaterials?.[k]||0);pdcAreas[idx]=(pdcAreas[idx]||0)+p[2]*p[3]*p[4]/1000000}));
+ cabinets.forEach(c=>cabParts(c).forEach(p=>{if(!p[2])return;if(p[0]==='S1-5'){const bi=Number(c.partMaterials?.back||0);backAreas[bi]=(backAreas[bi]||0)+p[2]*p[3]*p[4]/1000000;return}const k=({'S1-1':'side','S1-2':'bottom','S1-3':'shelf','S1-4':'rail','S1-6':'door'})[p[0]],idx=Number(c.partMaterials?.[k]||0);pdcAreas[idx]=(pdcAreas[idx]||0)+p[2]*p[3]*p[4]/1000000}));
  if(cabinets.length&&$('projectPlinth')?.checked)splitAtCabinetJoints().forEach(seg=>{const i=Number($('plinthPdc')?.value)||0;pdcAreas[i]=(pdcAreas[i]||0)+(seg[1]-seg[0])*98/1000000});
  if(cabinets.length&&$('projectSplash')?.checked)splitAtCabinetJoints().forEach(seg=>{const i=Number($('splashPdc')?.value)||0;pdcAreas[i]=(pdcAreas[i]||0)+(seg[1]-seg[0])*600/1000000});
  if(!cabinets.length){box.innerHTML='Добави шкафове, за да се изчислят материалите.';return}
@@ -369,7 +379,7 @@ function renderProjectCosts(){
  cabinets.forEach(c=>cabParts(c).forEach(p=>{if(p[2]&&p[0]!=='S1-5')cuttingParts+=p[2]}));
  if($('projectPlinth')?.checked)cuttingParts+=splitAtCabinetJoints().length;
  if($('projectSplash')?.checked)cuttingParts+=splitAtCabinetJoints().length;
- let bodyBand=0;cabinets.forEach(c=>cabParts(c).forEach(p=>{if(!p[2]||p[0]==='S1-5')return;const k=({'S1-1':'side','S1-2':'bottom','S1-3':'shelf','S1-4':'rail'})[p[0]],es=new Set(k?(c.bands?.[k]||[]):[]);es.forEach(e=>bodyBand+=(e==='top'||e==='bottom'?p[3]:p[4])*p[2]/1000)}));
+ let bodyBand=0;cabinets.forEach(c=>cabParts(c).forEach(p=>{if(!p[2]||p[0]==='S1-5')return;const k=({'S1-1':'side','S1-2':'bottom','S1-3':'shelf','S1-4':'rail','S1-6':'door'})[p[0]],es=new Set(k?(c.bands?.[k]||[]):[]);es.forEach(e=>bodyBand+=(e==='top'||e==='bottom'?p[3]:p[4])*p[2]/1000)}));
  const plinthBand=$('projectPlinth')?.checked?splitAtCabinetJoints().reduce((a,seg)=>a+2*((seg[1]-seg[0])+98)/1000,0):0;
  const splashBand=$('projectSplash')?.checked?splitAtCabinetJoints().reduce((a,seg)=>a+2*((seg[1]-seg[0])+600)/1000,0):0;
  rows+='<tr class="section"><td colspan="7">Кантове</td></tr>';
@@ -389,7 +399,7 @@ function renderProjectCosts(){
 function loadCab(c){
  $('w').value=c.w;['h','legs','top','t','d','back','rail'].forEach(id=>{if(c[id]!=null)$(id).value=c[id]});
  const mt=document.querySelector('input[name="modelType"][value="'+c.type+'"]');if(mt)mt.checked=true;updateEditorTitle();
- updateModelChoices();const cf=document.querySelector('input[name="cfg"][value="'+c.cfg+'"]');if(cf)cf.checked=true;
+ updateModelChoices();const cf=document.querySelector('input[name="cfg"][value="'+c.cfg+'"]');if(cf)cf.checked=true;const dr=document.querySelector('input[name="doors"][value="'+Number(c.doors||0)+'"]');if(dr)dr.checked=true;if($('showDoors3D'))$('showDoors3D').checked=c.showDoors3D!==false;
  $('shelves').value=c.cfg==='s2'?2:c.cfg==='s1'?1:0;
  Object.keys(edges).forEach(k=>{edges[k].clear();(c.bands?.[k]||[]).forEach(e=>edges[k].add(e))});Object.keys(partMaterials).forEach(k=>partMaterials[k]=Number(c.partMaterials?.[k]||0));Object.keys(partEdges).forEach(k=>partEdges[k]=Number(c.partEdges?.[k]||0));
  ui();build();pose();
@@ -478,7 +488,7 @@ window.drawKitchen3D=function(){
  const drawCab=(c,cx,baseY,cabIndex)=>{
   const before=new Set(projectModel.children);
   const bands=k=>new Set(c.bands?.[k]||[]),pm=k=>matForPdc(c.partMaterials?.[k]||0),ei=k=>c.partEdges?.[k]||0,W=c.w,T=c.t||18,D=c.d||555,B=c.back||3,PD=Math.max(1,D-B),upper=c.type==='upper';
-  if(upper){const H=c.h||900,inner=Math.max(1,W-2*T),sideH=Math.max(1,H-2*T),sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;projectBox(W,T,PD,cx,baseY+T/2,0,pm('bottom'),bands('bottom'),'horizontal',ei('bottom'));projectBox(T,sideH,PD,cx-W/2+T/2,baseY+T+sideH/2,0,pm('side'),bands('side'),'vertical',ei('side'));projectBox(T,sideH,PD,cx+W/2-T/2,baseY+T+sideH/2,0,pm('side'),bands('side'),'vertical',ei('side'));projectBox(W,T,PD,cx,baseY+H-T/2,0,pm('rail'),bands('rail'),'horizontal',ei('rail'));for(let j=1;j<=sc;j++)projectBox(inner,T,PD,cx,baseY+T+sideH*j/(sc+1),0,pm('shelf'),bands('shelf'),'horizontal',ei('shelf'));if(B)projectBox(W,H,B,cx,baseY+H/2,-PD/2-B/2,new THREE.MeshBasicMaterial({color:backMaterials[c.partMaterials?.back||0]?.color||'#c8a77b'}),bands('back'));maxH=Math.max(maxH,baseY+H);maxD=Math.max(maxD,D);projectModel.children.forEach(o=>{if(!before.has(o))o.userData.cabIndex=cabIndex});if(cabIndex===activeCab){const sel=new THREE.Mesh(new THREE.BoxGeometry(W+10,H+10,D+10),new THREE.MeshBasicMaterial({color:0x56616c,transparent:true,opacity:.34,depthWrite:false}));sel.position.set(cx,baseY+H/2,0);sel.userData.cabIndex=cabIndex;sel.renderOrder=500;projectModel.add(sel)}return}
+  if(upper){const H=c.h||900,inner=Math.max(1,W-2*T),sideH=Math.max(1,H-2*T),sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;projectBox(W,T,PD,cx,baseY+T/2,0,pm('bottom'),bands('bottom'),'horizontal',ei('bottom'));projectBox(T,sideH,PD,cx-W/2+T/2,baseY+T+sideH/2,0,pm('side'),bands('side'),'vertical',ei('side'));projectBox(T,sideH,PD,cx+W/2-T/2,baseY+T+sideH/2,0,pm('side'),bands('side'),'vertical',ei('side'));projectBox(W,T,PD,cx,baseY+H-T/2,0,pm('rail'),bands('rail'),'horizontal',ei('rail'));for(let j=1;j<=sc;j++)projectBox(inner,T,PD,cx,baseY+T+sideH*j/(sc+1),0,pm('shelf'),bands('shelf'),'horizontal',ei('shelf'));if(B)projectBox(W,H,B,cx,baseY+H/2,-PD/2-B/2,new THREE.MeshBasicMaterial({color:backMaterials[c.partMaterials?.back||0]?.color||'#c8a77b'}),bands('back'));if(c.showDoors3D!==false&&Number(c.doors||0)>0){const dc=Number(c.doors),gap=2,dw=dc===2?(W-3*gap)/2:W-2*gap,dh=H-2*gap,z=PD/2+T/2+2,mat=matForPdc(c.partMaterials?.door||0);if(dc===1)projectBox(dw,dh,T,cx,baseY+H/2,z,mat);else{const off=(dw+gap)/2;projectBox(dw,dh,T,cx-off,baseY+H/2,z,mat);projectBox(dw,dh,T,cx+off,baseY+H/2,z,mat)}}maxH=Math.max(maxH,baseY+H);maxD=Math.max(maxD,D);projectModel.children.forEach(o=>{if(!before.has(o))o.userData.cabIndex=cabIndex});if(cabIndex===activeCab){const sel=new THREE.Mesh(new THREE.BoxGeometry(W+10,H+10,D+10),new THREE.MeshBasicMaterial({color:0x56616c,transparent:true,opacity:.34,depthWrite:false}));sel.position.set(cx,baseY+H/2,0);sel.userData.cabIndex=cabIndex;sel.renderOrder=500;projectModel.add(sel)}return}
   const L=c.legs||100,Tp=c.top||39,R=c.rail||60,H=Math.max(1,(c.h||900)-L-Tp),SH=Math.max(1,H-T),dbl=c.type==='double',bay=dbl?Math.max(1,(W-3*T)/2):Math.max(1,W-2*T);
   projectBox(W,T,PD,cx,L+T/2,0,pm('bottom'),bands('bottom'),'horizontal',ei('bottom'));projectBox(T,SH,PD,cx-W/2+T/2,L+T+SH/2,0,pm('side'),bands('side'),'vertical',ei('side'));projectBox(T,SH,PD,cx+W/2-T/2,L+T+SH/2,0,pm('side'),bands('side'),'vertical',ei('side'));if(dbl)projectBox(T,SH,PD,cx,L+T+SH/2,0,pm('side'),bands('side'),'vertical',ei('side'));
   const centers=dbl?[cx-(bay+T)/2,cx+(bay+T)/2]:[cx],sc=c.cfg==='s2'?2:c.cfg==='s1'?1:0;for(let j=1;j<=sc;j++){const sy=L+T+(SH-T)*j/(sc+1);centers.forEach(q=>projectBox(bay,T,PD,q,sy,0,pm('shelf'),bands('shelf'),'horizontal',ei('shelf')))}
@@ -550,7 +560,7 @@ function build(){
   if(o.material&&Array.isArray(o.material))o.material.forEach(m=>m.dispose?.());
  }
  const x=dims(),{w:W,legs:L,top:Tp,t:T,pd:PD,back:B,rail:R,body:H,sideH:SH,inner:I}=x;
- if(x.upper){const sideH=Math.max(1,H-2*T);addBox(W,T,PD,0,T/2,0,matForPdc(partMaterials.bottom));addSingleBandForBox(W,T,PD,0,T/2,0,'bottom');addBox(T,sideH,PD,-W/2+T/2,T+sideH/2,0,matForPdc(partMaterials.side));addSingleBandForBox(T,sideH,PD,-W/2+T/2,T+sideH/2,0,'side','vertical');addBox(T,sideH,PD,W/2-T/2,T+sideH/2,0,matForPdc(partMaterials.side));addSingleBandForBox(T,sideH,PD,W/2-T/2,T+sideH/2,0,'side','vertical');addBox(W,T,PD,0,H-T/2,0,matForPdc(partMaterials.rail));addSingleBandForBox(W,T,PD,0,H-T/2,0,'rail');const sc=cfg()==='s2'?2:cfg()==='s1'?1:0;for(let j=1;j<=sc;j++){const sy=T+sideH*j/(sc+1);addBox(I,T,PD,0,sy,0,matForPdc(partMaterials.shelf));addSingleBandForBox(I,T,PD,0,sy,0,'shelf')}if(B)addBox(W,H,B,0,H/2,-PD/2-B/2,new THREE.MeshBasicMaterial({color:backMaterials[partMaterials.back]?.color||'#c8a77b',side:THREE.DoubleSide}));camera.position.set(W*1.45,H*1.15,950);camera.lookAt(0,H*.5,0);return}
+ if(x.upper){const sideH=Math.max(1,H-2*T);addBox(W,T,PD,0,T/2,0,matForPdc(partMaterials.bottom));addSingleBandForBox(W,T,PD,0,T/2,0,'bottom');addBox(T,sideH,PD,-W/2+T/2,T+sideH/2,0,matForPdc(partMaterials.side));addSingleBandForBox(T,sideH,PD,-W/2+T/2,T+sideH/2,0,'side','vertical');addBox(T,sideH,PD,W/2-T/2,T+sideH/2,0,matForPdc(partMaterials.side));addSingleBandForBox(T,sideH,PD,W/2-T/2,T+sideH/2,0,'side','vertical');addBox(W,T,PD,0,H-T/2,0,matForPdc(partMaterials.rail));addSingleBandForBox(W,T,PD,0,H-T/2,0,'rail');const sc=cfg()==='s2'?2:cfg()==='s1'?1:0;for(let j=1;j<=sc;j++){const sy=T+sideH*j/(sc+1);addBox(I,T,PD,0,sy,0,matForPdc(partMaterials.shelf));addSingleBandForBox(I,T,PD,0,sy,0,'shelf')}if(B)addBox(W,H,B,0,H/2,-PD/2-B/2,new THREE.MeshBasicMaterial({color:backMaterials[partMaterials.back]?.color||'#c8a77b',side:THREE.DoubleSide}));if(showDoors3D()&&doorCount()>0){const dc=doorCount(),gap=2,dw=dc===2?(W-3*gap)/2:W-2*gap,dh=H-2*gap,z=PD/2+T/2+2,mat=matForPdc(partMaterials.door||0);if(dc===1)addBox(dw,dh,T,0,H/2,z,mat);else{const off=(dw+gap)/2;addBox(dw,dh,T,-off,H/2,z,mat);addBox(dw,dh,T,off,H/2,z,mat)}}camera.position.set(W*1.45,H*1.15,950);camera.lookAt(0,H*.5,0);return}
 
  const dbl=modelType()==='double',carcassBottom=L,carcassTop=L+H;
  const bay=dbl?Math.max(0,(W-3*T)/2):I;
@@ -630,6 +640,7 @@ document.querySelectorAll('input[name="modelType"]').forEach(e=>e.addEventListen
  else if(modelType()==='single'){$('w').value=600;$('h').value=900;$('d').value=555;$('legs').value=100;$('top').value=39}
  updateModelChoices();updateEditorTitle();ui();build();pose();
 }));
+document.querySelectorAll('input[name="doors"],#showDoors3D').forEach(e=>e.addEventListener('change',()=>{ui();build();syncActiveCab()}));
 document.querySelectorAll('input[name="cfg"]').forEach(e=>e.addEventListener('change',()=>{
  const m=cfg();$('shelves').value=m==='s2'?2:m==='s1'?1:0;ui();build();
 }));function addCabinetOfType(type){
