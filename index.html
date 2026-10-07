@@ -9,7 +9,7 @@
 .material-summary{width:100%;border-collapse:collapse;margin:0}.material-summary th,.material-summary td{border:1px solid #d8dee6;padding:7px 9px;text-align:left}.material-summary th{font-size:12px;color:#617086;background:#f8fafc;font-weight:600}.material-summary td{font-weight:700}.material-summary .edit-cell{width:90px;text-align:center}.material-summary button{margin:0!important;padding:6px 9px!important}
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.26.2</p></header>
+<header><h1>Kitchen Calculator</h1><p>Кухненски проект — v4.26.3</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект кухня</button>
 <button class="main-tab" data-panel="materialsPanel">Материали</button>
@@ -221,7 +221,6 @@ function initPdc(){try{pdcMaterials=JSON.parse(localStorage.getItem('kitchenPdcM
 const partMaterials={side:0,bottom:0,shelf:0,rail:0,back:0};const partEdges={side:0,bottom:0,shelf:0,rail:0};
 const materialRoles={
  body:{title:'Корпус',defaults:[2800,2070,1400,2070]},
- back3:{title:'Гръб 3 mm',defaults:[2800,2070,1400,2070]},
  splash:{title:'Гръб кухня ПДЧ 18 mm',defaults:[2800,2070,1400,2070]},
  worktop:{title:'Плот',defaults:[4100,600,2050,600]},
  plinth:{title:'Преден перваз',defaults:[2800,2070,1400,2070]}
@@ -243,7 +242,7 @@ function initMaterials(){
  Object.keys(materialRoles).forEach(role=>{
   try{projectMaterials[role]=JSON.parse(localStorage.getItem('kitchenMaterial_'+role)||'null')}catch(e){projectMaterials[role]=null}
   if(role==='body'&&!projectMaterials[role]){try{projectMaterials[role]=JSON.parse(localStorage.getItem('kitchenBodyMaterial')||'null')}catch(e){}}
-  $(role+'ConfirmMaterial').addEventListener('click',()=>saveMaterial(role));renderMaterialRole(role);
+  const btn=$(role+'ConfirmMaterial');if(btn){btn.addEventListener('click',()=>saveMaterial(role));renderMaterialRole(role)}
  });
 }
 let edgeMaterials=[],editingEdge=-1;
