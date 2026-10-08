@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.6</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.7</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -748,7 +748,7 @@ document.querySelectorAll('input[name="cfg"]').forEach(e=>e.addEventListener('ch
 function deleteActiveCabinet(){if(activeCab<0||!cabinets[activeCab])return;cabinets.splice(activeCab,1);activeCab=-1;updateEditorTitle();renderProject()}
 $('deleteSelectedCab').onclick=deleteActiveCabinet;
 document.addEventListener('keydown',e=>{if(e.key!=='Delete')return;const t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;if(activeCab>=0){e.preventDefault();deleteActiveCabinet()}});
-function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.6',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
+function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.7',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
 function saveProjectToFile(){const data=projectFileData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a'),d=new Date(),pad=n=>String(n).padStart(2,'0');a.href=URL.createObjectURL(blob);a.download='kitchen-project-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function applyLoadedProject(data){if(!data||!data.project||!Array.isArray(data.project.cabinets))throw new Error('Невалиден файл на проект');const m=data.materials||{};if(Array.isArray(m.pdc)){pdcMaterials=m.pdc;localStorage.setItem('kitchenPdcMaterials',JSON.stringify(pdcMaterials))}if(Array.isArray(m.edges)){edgeMaterials=m.edges;localStorage.setItem('kitchenEdgeMaterials',JSON.stringify(edgeMaterials))}if(Array.isArray(m.backs)){backMaterials=m.backs;localStorage.setItem('kitchenBackMaterials',JSON.stringify(backMaterials))}if(Array.isArray(m.worktops)){worktops=m.worktops;localStorage.setItem('kitchenWorktops',JSON.stringify(worktops))}if(m.services){Object.assign(servicePrices,m.services);localStorage.setItem('kitchenServicePrices',JSON.stringify(servicePrices))}
  cabinets=JSON.parse(JSON.stringify(data.project.cabinets));activeCab=-1;$('wall').value=data.project.wall||3200;const o=data.project.options||{};['projectTop','projectPlinth','projectSplash','showBanding'].forEach(id=>{if(typeof o[id]==='boolean'&&$(id))$(id).checked=o[id]});renderPdcList();refreshPdcSelects();renderEdgeList();renderBacks();renderWorktops();renderServicePrices();[['worktopChoice','worktopChoice'],['plinthPdc','plinthPdc'],['plinthEdge','plinthEdge'],['splashPdc','splashPdc'],['splashEdge','splashEdge']].forEach(([id,k])=>{if(o[k]!=null&&$(id))$(id).value=String(o[k])});updateEditorTitle();renderProject();renderProjectCosts()}
@@ -765,7 +765,7 @@ function initConstructor(){
  let state={...defaults};
  try{const stored=JSON.parse(localStorage.getItem('nediqConstructorDraft')||'null');if(stored&&typeof stored==='object')state={...state,...stored}}catch(e){}
 
- let mode='body',selectedFront=-1,frontDrag=null,frontFrame=0;
+ let mode='body',selectedFront=-1,frontDrag=null;
  if(!Array.isArray(state.fronts))state.fronts=[];
  state.fronts=state.fronts.filter(p=>p&&['door','drawer'].includes(p.type)).map(p=>({type:p.type,x:Number(p.x)||0,y:Number(p.y)||0,w:Number(p.w)||100,h:Number(p.h)||100}));
  state.frontGap=Number.isFinite(Number(state.frontGap))?Number(state.frontGap):3;
@@ -838,16 +838,15 @@ function initConstructor(){
    if(handle){handle.setAttribute('x',rx+rw-9);handle.setAttribute('y',ry+rh-9)}
   })
  };
- const scheduleFrontUI=()=>{if(frontFrame)return;frontFrame=requestAnimationFrame(()=>{frontFrame=0;updateFrontUI();localStorage.setItem('nediqConstructorDraft',JSON.stringify(state))})};
  svg.addEventListener('pointerdown',e=>{
   if(mode==='front'){
    const resize=e.target.getAttribute('data-resize'),front=e.target.getAttribute('data-front');
    const i=resize!==null?Number(resize):front!==null?Number(front):-1;
    if(i<0){if(selectedFront!==-1){selectedFront=-1;metrics=draw()}return}
    const p=state.fronts[i];if(!p)return;
-   const point=pointerCoords(e);
-   frontDrag={index:i,kind:resize!==null?'resize':'move',startX:point.x,startY:point.y,initial:{...p}};
    if(selectedFront!==i){selectedFront=i;metrics=draw()}
+   const bounds=svg.getBoundingClientRect();
+   frontDrag={index:i,kind:resize!==null?'resize':'move',startX:e.clientX,startY:e.clientY,initial:{...p},pxPerMm:bounds.width*metrics.scale/800};
    svg.setPointerCapture(e.pointerId);e.preventDefault();return
   }
   if(e.target.id!=='ctorDrag')return;
@@ -856,26 +855,26 @@ function initConstructor(){
  svg.addEventListener('pointermove',e=>{
   if(frontDrag&&mode==='front'){
    const d=frontDrag,p=state.fronts[d.index];if(!p)return;
-   const point=pointerCoords(e),dx=Math.round((point.x-d.startX)/metrics.scale),dy=Math.round((point.y-d.startY)/metrics.scale);
+   const dx=Math.round((e.clientX-d.startX)/d.pxPerMm),dy=Math.round((e.clientY-d.startY)/d.pxPerMm);
    const candidate={...d.initial};
    if(d.kind==='resize'){candidate.w=Math.max(30,d.initial.w+dx);candidate.h=Math.max(30,d.initial.h+dy)}
    else{candidate.x=d.initial.x+dx;candidate.y=d.initial.y+dy}
    if(frontFits(candidate,d.index)){
-    Object.assign(p,candidate);updateFrontGraphics();scheduleFrontUI();frontWarning('')
+    Object.assign(p,candidate);updateFrontGraphics()
    }else{
     // Try the two axes independently so the facade slides along neighbouring edges.
     const first=d.kind==='resize'?'w':'x',second=d.kind==='resize'?'h':'y';
     const one={...p,[first]:candidate[first]},two={...p,[second]:candidate[second]};
     if(frontFits(one,d.index))p[first]=one[first];
     if(frontFits(two,d.index))p[second]=two[second];
-    updateFrontGraphics();scheduleFrontUI()
+    updateFrontGraphics()
    }
    return
   }
   if(!dragging)return;
   const vx=pointerCoords(e).x;state.pos=Math.round((vx-metrics.x)/metrics.scale-metrics.T);metrics=draw()
  });
- const end=()=>{dragging=false;if(frontDrag){frontDrag=null;if(frontFrame){cancelAnimationFrame(frontFrame);frontFrame=0}metrics=draw()}};
+ const end=()=>{dragging=false;if(frontDrag){frontDrag=null;metrics=draw()}};
  svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
  $('ctorReset').addEventListener('click',()=>{state={...defaults,fronts:[]};selectedFront=-1;metrics=draw()});
 
