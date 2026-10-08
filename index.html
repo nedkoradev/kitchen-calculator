@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.14</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.15</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -89,13 +89,13 @@
 <label class="opt"><input id="ctorLockLeft" type="checkbox" checked> Запази лявото отделение при промяна на ширината</label>
 <div class="config-title" style="margin-top:12px">Рафтове</div>
 <div class="field"><label for="ctorShelfBay">Отделение</label><select id="ctorShelfBay"><option value="left">Ляво</option><option value="right">Дясно</option></select></div>
-<div class="field"><label for="ctorShelfKind">Вид на новия рафт</label><select id="ctorShelfKind"><option value="adjustable">Подвижен</option><option value="fixed">Фиксиран</option></select></div>
+
 <button type="button" id="ctorAddShelf">+ Рафт</button>
 <div id="ctorShelfList"></div>
 <div id="ctorShelfEditor" style="display:none">
 <div class="field"><label for="ctorShelfHeight">Височина от вътрешното дъно (mm)</label><input id="ctorShelfHeight" type="number" min="0" step="1"></div>
 <div class="field"><label for="ctorShelfReduction">Намаляване на дълбочината (mm)</label><input id="ctorShelfReduction" type="number" min="0" step="1"></div>
-<div class="field"><label for="ctorShelfTypeEdit">Вид рафт</label><select id="ctorShelfTypeEdit"><option value="adjustable">Подвижен</option><option value="fixed">Фиксиран</option></select></div>
+
 <div id="ctorShelfInfo" class="hint"></div>
 <button type="button" id="ctorDeleteShelf">Изтрий избрания рафт</button></div>
 <div id="ctorShelfWarning" role="status" class="hint"></div>
@@ -760,7 +760,7 @@ document.querySelectorAll('input[name="cfg"]').forEach(e=>e.addEventListener('ch
 function deleteActiveCabinet(){if(activeCab<0||!cabinets[activeCab])return;cabinets.splice(activeCab,1);activeCab=-1;updateEditorTitle();renderProject()}
 $('deleteSelectedCab').onclick=deleteActiveCabinet;
 document.addEventListener('keydown',e=>{if(e.key!=='Delete')return;const t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;if(activeCab>=0){e.preventDefault();deleteActiveCabinet()}});
-function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.14',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
+function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.15',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
 function saveProjectToFile(){const data=projectFileData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a'),d=new Date(),pad=n=>String(n).padStart(2,'0');a.href=URL.createObjectURL(blob);a.download='kitchen-project-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function applyLoadedProject(data){if(!data||!data.project||!Array.isArray(data.project.cabinets))throw new Error('Невалиден файл на проект');const m=data.materials||{};if(Array.isArray(m.pdc)){pdcMaterials=m.pdc;localStorage.setItem('kitchenPdcMaterials',JSON.stringify(pdcMaterials))}if(Array.isArray(m.edges)){edgeMaterials=m.edges;localStorage.setItem('kitchenEdgeMaterials',JSON.stringify(edgeMaterials))}if(Array.isArray(m.backs)){backMaterials=m.backs;localStorage.setItem('kitchenBackMaterials',JSON.stringify(backMaterials))}if(Array.isArray(m.worktops)){worktops=m.worktops;localStorage.setItem('kitchenWorktops',JSON.stringify(worktops))}if(m.services){Object.assign(servicePrices,m.services);localStorage.setItem('kitchenServicePrices',JSON.stringify(servicePrices))}
  cabinets=JSON.parse(JSON.stringify(data.project.cabinets));activeCab=-1;$('wall').value=data.project.wall||3200;const o=data.project.options||{};['projectTop','projectPlinth','projectSplash','showBanding'].forEach(id=>{if(typeof o[id]==='boolean'&&$(id))$(id).checked=o[id]});renderPdcList();refreshPdcSelects();renderEdgeList();renderBacks();renderWorktops();renderServicePrices();[['worktopChoice','worktopChoice'],['plinthPdc','plinthPdc'],['plinthEdge','plinthEdge'],['splashPdc','splashPdc'],['splashEdge','splashEdge']].forEach(([id,k])=>{if(o[k]!=null&&$(id))$(id).value=String(o[k])});updateEditorTitle();renderProject();renderProjectCosts()}
@@ -786,7 +786,7 @@ function initConstructor(){
  state.gapRight=Number.isFinite(Number(state.gapRight))?clamp(Number(state.gapRight),0,20):2;
  state.gapTop=Number.isFinite(Number(state.gapTop))?clamp(Number(state.gapTop),0,20):0;
  if(!Array.isArray(state.shelves))state.shelves=[];
- state.shelves=state.shelves.filter(s=>s&&typeof s==='object').map(s=>({bay:s.bay==='right'?'right':'left',height:Number(s.height)||150,reduction:Math.max(0,Number(s.reduction)||0),kind:s.kind==='fixed'?'fixed':'adjustable'}));
+ state.shelves=state.shelves.filter(s=>s&&typeof s==='object').map(s=>({bay:s.bay==='right'?'right':'left',height:Number(s.height)||150,reduction:Math.max(0,Number(s.reduction)||0)}));
  const sideDepth=()=>Math.max(0,state.depth-state.back-(state.fronts.length?state.thick:0));
  const shelfBay=s=>state.enabled?s.bay:'left';
  const shelfWidth=s=>state.enabled?(shelfBay(s)==='left'?state.pos:state.width-3*state.thick-state.pos):state.width-2*state.thick;
@@ -807,7 +807,7 @@ function initConstructor(){
    row.append(btn,del);list.append(row)
   });
   const s=state.shelves[selectedShelf];$('ctorShelfEditor').style.display=s?'grid':'none';$('ctorShelfEditor').style.gap='7px';
-  if(s){$('ctorShelfHeight').value=s.height;$('ctorShelfReduction').value=s.reduction;$('ctorShelfTypeEdit').value=s.kind;
+  if(s){$('ctorShelfHeight').value=s.height;$('ctorShelfReduction').value=s.reduction;
    $('ctorShelfInfo').textContent='Размер: '+Math.round(shelfWidth(s))+' × '+Math.round((sideDepth()-s.reduction)*10)/10+' × '+state.thick+' mm';
   }
  };
@@ -976,15 +976,15 @@ function initConstructor(){
  $('ctorReset').addEventListener('click',()=>{state={...defaults,fronts:[],shelves:[]};selectedFront=-1;selectedShelf=-1;metrics=draw()});
 
  $('ctorAddShelf').onclick=()=>{
-  const bay=state.enabled?$('ctorShelfBay').value:'left',kind=$('ctorShelfKind').value;
+  const bay=state.enabled?$('ctorShelfBay').value:'left';
   const limit=state.height-3*state.thick;
   let found=null;
-  for(let h=Math.round(limit/2);h>=state.thick;h--){const s={bay,kind,height:h,reduction:0};if(shelfFits(s)){found=s;break}}
+  for(let h=Math.round(limit/2);h>=state.thick;h--){const s={bay,height:h,reduction:0};if(shelfFits(s)){found=s;break}}
   if(!found){shelfWarning('Няма свободно място за нов рафт.');return}
   state.shelves.push(found);selectedShelf=state.shelves.length-1;shelfWarning('');metrics=draw()
  };
  $('ctorDeleteShelf').onclick=()=>{if(selectedShelf<0)return;state.shelves.splice(selectedShelf,1);selectedShelf=-1;metrics=draw()};
- [['ctorShelfHeight','height'],['ctorShelfReduction','reduction'],['ctorShelfTypeEdit','kind']].forEach(([id,key])=>$(id).addEventListener('change',()=>{
+ [['ctorShelfHeight','height'],['ctorShelfReduction','reduction']].forEach(([id,key])=>$(id).addEventListener('change',()=>{
   const s=state.shelves[selectedShelf];if(!s)return;
   const next={...s,[key]:key==='kind'?$(id).value:Number($(id).value)};
   if(shelfFits(next,selectedShelf)){Object.assign(s,next);shelfWarning('')}else shelfWarning('Невалиден размер или застъпване с друг рафт.');
