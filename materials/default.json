@@ -1,22 +1,116 @@
 {
   "name": "default",
   "version": 1,
-  "exportedAt": "2026-10-07T04:58:25.836Z",
+  "exportedAt": "2026-10-08T07:09:36.875Z",
   "pdcMaterials": [
-    {"name":"W960 Класическо Бяло","fullW":2800,"fullH":2070,"halfW":1400,"halfH":2070,"fullPrice":57.25,"halfPrice":31.49,"color":"#ffffff"},
-    {"name":"Дъб Бардолино","fullW":2800,"fullH":2070,"halfW":1400,"halfH":2070,"fullPrice":70.3,"halfPrice":38.67,"color":"#a65407"},
-    {"name":"Дъб Виченца","fullW":2800,"fullH":2070,"halfW":1400,"halfH":2070,"fullPrice":84.15,"halfPrice":46.28}
+    {
+      "url": "https://salex.bg/lpdch-2800-2070-18mm-klasichesko-byalo-n-w960-sm-egger-zabelejka-zamestva-908-36422/",
+      "name": "Класическо Бяло н.W960 ST7 EGGER",
+      "fullW": 2800,
+      "fullH": 2070,
+      "halfW": 1400,
+      "halfH": 2070,
+      "fullPrice": 57.25,
+      "halfPrice": 31.49,
+      "color": "#ffffff"
+    },
+    {
+      "name": "Графит н.U961 ST7 EGGER",
+      "fullW": 2800,
+      "fullH": 2070,
+      "halfW": 1400,
+      "halfH": 2070,
+      "fullPrice": 79.05,
+      "halfPrice": 43.48,
+      "color": "#45494e"
+    },
+    {
+      "name": "Дъб Небраска н.H3331 ST10 EGGER",
+      "fullW": 2800,
+      "fullH": 2070,
+      "halfW": 1400,
+      "halfH": 2070,
+      "fullPrice": 84.15,
+      "halfPrice": 46.28,
+      "color": "#d7aa70"
+    },
+    {
+      "url": "https://salex.bg/lpdch-2800-2070-18mm-dab-davos-tryufel-n-h3133-st12-egger-28494/",
+      "name": "Дъб Давос Трюфел н.H3133 ST12 EGGER",
+      "fullW": 2800,
+      "fullH": 2070,
+      "halfW": 1400,
+      "halfH": 2070,
+      "fullPrice": 93,
+      "halfPrice": 51.15,
+      "color": "#7a5e38"
+    }
   ],
   "edgeMaterials": [
-    {"name":"черен 2мм","price":1,"color":"#2d2a2a"},
-    {"name":"Бял 2мм","price":1,"color":"#ffffff"}
+    {
+      "name": "2х22мм Класическо Бяло н.W960 ST7 EGGER",
+      "price": 0.74,
+      "color": "#ffffff"
+    },
+    {
+      "name": "2х22 Дъб Небраска натурален н.H3331 ST10 EGGER",
+      "price": 0.92,
+      "color": "#d7aa70"
+    },
+    {
+      "name": "2х22мм Графит н.U961 ST7 EGGER",
+      "price": 0.74,
+      "color": "#45494e"
+    },
+    {
+      "name": "2x22mm Дъб Давос Трюфел н.H3133 ST12 EGGER",
+      "price": 0.92,
+      "color": "#7a5e38"
+    }
   ],
   "backMaterials": [
-    {"name":"Бяло ХДФ","thick":3,"color":"#ffffff","fullW":2800,"fullH":2070,"halfW":1400,"halfH":2070,"fullPrice":20,"halfPrice":10}
+    {
+      "url": "https://salex.bg/lpdch-2800-2070-18mm-klasichesko-byalo-n-w960-sm-egger-zabelejka-zamestva-908-36422/",
+      "name": "ХДФ лакиран 2850/2070/2.5мм Бял",
+      "thick": 3,
+      "color": "#ffffff",
+      "fullW": 2800,
+      "fullH": 2070,
+      "halfW": 1400,
+      "halfH": 2070,
+      "fullPrice": 20,
+      "halfPrice": 10
+    }
   ],
   "worktops": [
-    {"name":"Сахара","color":"#777a80","fullW":4100,"depth":600,"halfW":2050,"fullPrice":110,"halfPrice":60},
-    {"name":"Дъб","color":"#b85e0a","fullW":4100,"depth":600,"halfW":2050,"fullPrice":110,"halfPrice":60}
+    {
+      "url": "https://salex.bg/plot-4100-600-38mm-dab-arlingtan-natur-n-h3303-st10-egger-27818/",
+      "name": "38мм Дъб Арлингтън натур н.H3303 ST10 EGGER",
+      "color": "#c4923b",
+      "fullW": 4100,
+      "depth": 600,
+      "halfW": 2050,
+      "quarterW": 1300,
+      "quarterPrice": 48.2,
+      "fullPrice": 126.69,
+      "halfPrice": 76.01
+    },
+    {
+      "url": "https://salex.bg/plot-4100-600-38mm-dab-nebraska-n-h3331-st10-egger-25201/",
+      "name": "38мм Дъб Небраска н.H3331 ST10 EGGER",
+      "color": "#d7aa70",
+      "fullW": 4100,
+      "depth": 600,
+      "halfW": 2050,
+      "quarterW": 1300,
+      "quarterPrice": 54.21,
+      "fullPrice": 142.48,
+      "halfPrice": 85.49
+    }
   ],
-  "servicePrices":{"cutStart":2.86,"cutPart":0.87,"edging":0.8}
+  "servicePrices": {
+    "cutStart": 2.86,
+    "cutPart": 0.87,
+    "edging": 0.8
+  }
 }
