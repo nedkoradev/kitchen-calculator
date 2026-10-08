@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.13</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.14</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -74,7 +74,7 @@
 </div></div>
 <div id="constructorPanel" class="app-panel">
 <section class="card"><h2>Конструктор · първи параметричен корпус</h2>
-<p class="hint">Първа стъпка: корпус с гръб и опционална врата, плюс вертикална преграда с точен размер или преместване с мишката. Това е отделен прототип — все още не участва в разкроя и проекта.</p>
+<p class="hint">Корпус с гръб, вертикална преграда и подвижни или фиксирани рафтове; фасадите се редактират отделно. Това е отделен прототип — все още не участва в разкроя и проекта.</p>
 <div class="project-actions" style="margin-bottom:15px"><button type="button" id="ctorModeBody">Корпус</button><button type="button" id="ctorModeFront">Фасади</button></div>
 <div class="constructor-layout">
 <div class="constructor-controls">
@@ -87,6 +87,18 @@
 <div id="ctorBodyControls"><label class="opt"><input id="ctorPartitionEnabled" type="checkbox" checked> Вертикална преграда</label>
 <div class="field"><label for="ctorPartitionPos">Позиция от лявата вътрешна страна (mm)</label><input id="ctorPartitionPos" type="number" min="0" step="1" value="350"></div>
 <label class="opt"><input id="ctorLockLeft" type="checkbox" checked> Запази лявото отделение при промяна на ширината</label>
+<div class="config-title" style="margin-top:12px">Рафтове</div>
+<div class="field"><label for="ctorShelfBay">Отделение</label><select id="ctorShelfBay"><option value="left">Ляво</option><option value="right">Дясно</option></select></div>
+<div class="field"><label for="ctorShelfKind">Вид на новия рафт</label><select id="ctorShelfKind"><option value="adjustable">Подвижен</option><option value="fixed">Фиксиран</option></select></div>
+<button type="button" id="ctorAddShelf">+ Рафт</button>
+<div id="ctorShelfList"></div>
+<div id="ctorShelfEditor" style="display:none">
+<div class="field"><label for="ctorShelfHeight">Височина от вътрешното дъно (mm)</label><input id="ctorShelfHeight" type="number" min="0" step="1"></div>
+<div class="field"><label for="ctorShelfReduction">Намаляване на дълбочината (mm)</label><input id="ctorShelfReduction" type="number" min="0" step="1"></div>
+<div class="field"><label for="ctorShelfTypeEdit">Вид рафт</label><select id="ctorShelfTypeEdit"><option value="adjustable">Подвижен</option><option value="fixed">Фиксиран</option></select></div>
+<div id="ctorShelfInfo" class="hint"></div>
+<button type="button" id="ctorDeleteShelf">Изтрий избрания рафт</button></div>
+<div id="ctorShelfWarning" role="status" class="hint"></div>
 <div id="ctorDimensions" class="calc"></div>
 <button type="button" id="ctorReset">Нов стандартен корпус</button></div>
 <div id="ctorFrontControls" style="display:none"><div class="config-title">Редактор на фасади</div><div class="project-actions"><button type="button" id="ctorAddDoor">+ Врата</button><button type="button" id="ctorAddDrawer">+ Лице на чекмедже</button></div><div class="field"><label for="ctorFrontGap">Фуга (mm)</label><input id="ctorFrontGap" type="number" value="3" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapLeft">Фуга отляво (mm)</label><input id="ctorGapLeft" type="number" value="2" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapRight">Фуга отдясно (mm)</label><input id="ctorGapRight" type="number" value="2" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapTop">Фуга отгоре (mm)</label><input id="ctorGapTop" type="number" value="0" min="0" max="20" step="0.5"></div><div id="ctorFrontWarning" role="status" style="display:none;color:#9a3412;font-weight:600;padding:8px;background:#fff0df;border-radius:7px"></div><div id="ctorFrontList"></div><div id="ctorFrontEditor" style="display:none"><div class="field"><label>Позиция X отляво (mm)</label><input id="ctorFrontX" type="number" step="1"></div><div class="field"><label>Позиция Y отгоре (mm)</label><input id="ctorFrontY" type="number" step="1"></div><div class="field"><label>Ширина (mm)</label><input id="ctorFrontW" type="number" min="1" step="1"></div><div class="field"><label>Височина (mm)</label><input id="ctorFrontH" type="number" min="1" step="1"></div><button type="button" id="ctorDeleteFront">Изтрий избраната фасада</button></div></div>
@@ -748,7 +760,7 @@ document.querySelectorAll('input[name="cfg"]').forEach(e=>e.addEventListener('ch
 function deleteActiveCabinet(){if(activeCab<0||!cabinets[activeCab])return;cabinets.splice(activeCab,1);activeCab=-1;updateEditorTitle();renderProject()}
 $('deleteSelectedCab').onclick=deleteActiveCabinet;
 document.addEventListener('keydown',e=>{if(e.key!=='Delete')return;const t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;if(activeCab>=0){e.preventDefault();deleteActiveCabinet()}});
-function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.13',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
+function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.14',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
 function saveProjectToFile(){const data=projectFileData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a'),d=new Date(),pad=n=>String(n).padStart(2,'0');a.href=URL.createObjectURL(blob);a.download='kitchen-project-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function applyLoadedProject(data){if(!data||!data.project||!Array.isArray(data.project.cabinets))throw new Error('Невалиден файл на проект');const m=data.materials||{};if(Array.isArray(m.pdc)){pdcMaterials=m.pdc;localStorage.setItem('kitchenPdcMaterials',JSON.stringify(pdcMaterials))}if(Array.isArray(m.edges)){edgeMaterials=m.edges;localStorage.setItem('kitchenEdgeMaterials',JSON.stringify(edgeMaterials))}if(Array.isArray(m.backs)){backMaterials=m.backs;localStorage.setItem('kitchenBackMaterials',JSON.stringify(backMaterials))}if(Array.isArray(m.worktops)){worktops=m.worktops;localStorage.setItem('kitchenWorktops',JSON.stringify(worktops))}if(m.services){Object.assign(servicePrices,m.services);localStorage.setItem('kitchenServicePrices',JSON.stringify(servicePrices))}
  cabinets=JSON.parse(JSON.stringify(data.project.cabinets));activeCab=-1;$('wall').value=data.project.wall||3200;const o=data.project.options||{};['projectTop','projectPlinth','projectSplash','showBanding'].forEach(id=>{if(typeof o[id]==='boolean'&&$(id))$(id).checked=o[id]});renderPdcList();refreshPdcSelects();renderEdgeList();renderBacks();renderWorktops();renderServicePrices();[['worktopChoice','worktopChoice'],['plinthPdc','plinthPdc'],['plinthEdge','plinthEdge'],['splashPdc','splashPdc'],['splashEdge','splashEdge']].forEach(([id,k])=>{if(o[k]!=null&&$(id))$(id).value=String(o[k])});updateEditorTitle();renderProject();renderProjectCosts()}
@@ -761,11 +773,11 @@ document.querySelectorAll('#w,#h,#legs,#top,#t,#d,#back,#rail,input[name="modelT
 function initConstructor(){
  const ids=['ctorWidth','ctorHeight','ctorDepth','ctorThick','ctorBack','ctorPartitionEnabled','ctorPartitionPos','ctorLockLeft'];
  const svg=$('ctorSvg');if(!svg)return;
- const defaults={width:900,height:720,depth:555,thick:18,back:3,enabled:true,pos:350,lock:true,fronts:[],frontGap:3,gapLeft:2,gapRight:2,gapTop:0};
+ const defaults={width:900,height:720,depth:555,thick:18,back:3,enabled:true,pos:350,lock:true,shelves:[],fronts:[],frontGap:3,gapLeft:2,gapRight:2,gapTop:0};
  let state={...defaults};
  try{const stored=JSON.parse(localStorage.getItem('nediqConstructorDraft')||'null');if(stored&&typeof stored==='object')state={...state,...stored}}catch(e){}
 
- let mode='body',selectedFront=-1,frontDrag=null;
+ let mode='body',selectedFront=-1,frontDrag=null,selectedShelf=-1,shelfDrag=null;
  if(!Array.isArray(state.fronts))state.fronts=[];
  state.fronts=state.fronts.filter(p=>p&&['door','drawer'].includes(p.type)).map(p=>({type:p.type,x:Number(p.x)||0,y:Number(p.y)||0,w:Number(p.w)||100,h:Number(p.h)||100}));
  state.frontGap=Number.isFinite(Number(state.frontGap))?Number(state.frontGap):3;
@@ -773,6 +785,32 @@ function initConstructor(){
  state.gapLeft=Number.isFinite(Number(state.gapLeft))?clamp(Number(state.gapLeft),0,20):2;
  state.gapRight=Number.isFinite(Number(state.gapRight))?clamp(Number(state.gapRight),0,20):2;
  state.gapTop=Number.isFinite(Number(state.gapTop))?clamp(Number(state.gapTop),0,20):0;
+ if(!Array.isArray(state.shelves))state.shelves=[];
+ state.shelves=state.shelves.filter(s=>s&&typeof s==='object').map(s=>({bay:s.bay==='right'?'right':'left',height:Number(s.height)||150,reduction:Math.max(0,Number(s.reduction)||0),kind:s.kind==='fixed'?'fixed':'adjustable'}));
+ const sideDepth=()=>Math.max(0,state.depth-state.back-(state.fronts.length?state.thick:0));
+ const shelfBay=s=>state.enabled?s.bay:'left';
+ const shelfWidth=s=>state.enabled?(shelfBay(s)==='left'?state.pos:state.width-3*state.thick-state.pos):state.width-2*state.thick;
+ const shelfFits=(s,exclude=-1)=>{
+  const T=state.thick,limit=state.height-2*T;
+  return s.height>=T&&s.height<=limit-2*T&&s.reduction>=0&&s.reduction<=sideDepth()&&shelfWidth(s)>0&&state.shelves.every((q,i)=>i===exclude||shelfBay(s)!==shelfBay(q)||Math.abs(s.height-q.height)>=T);
+ };
+ const shelfWarning=msg=>{$('ctorShelfWarning').textContent=msg};
+ const updateShelvesUI=()=>{
+  const list=$('ctorShelfList');list.innerHTML='';
+  $('ctorShelfBay').querySelector('option[value="right"]').disabled=!state.enabled;
+  state.shelves.forEach((s,i)=>{
+   const row=document.createElement('div');row.style.cssText='display:flex;gap:5px;margin:5px 0';
+   const btn=document.createElement('button');btn.type='button';btn.textContent='Рафт '+(i+1)+' · '+(shelfBay(s)==='left'?'ляво':'дясно')+' · '+Math.round(s.height)+' mm';
+   btn.style.cssText='flex:1;text-align:left;padding:7px;border:1px solid #cbd5e1;border-radius:6px;background:'+(i===selectedShelf?'#cce1f6':'#fff')+';color:#173b66';
+   btn.onclick=()=>{selectedShelf=i;draw()};
+   const del=document.createElement('button');del.type='button';del.textContent='✕';del.title='Изтрий рафт '+(i+1);del.onclick=()=>{state.shelves.splice(i,1);if(selectedShelf===i)selectedShelf=-1;else if(selectedShelf>i)selectedShelf--;draw()};
+   row.append(btn,del);list.append(row)
+  });
+  const s=state.shelves[selectedShelf];$('ctorShelfEditor').style.display=s?'grid':'none';$('ctorShelfEditor').style.gap='7px';
+  if(s){$('ctorShelfHeight').value=s.height;$('ctorShelfReduction').value=s.reduction;$('ctorShelfTypeEdit').value=s.kind;
+   $('ctorShelfInfo').textContent='Размер: '+Math.round(shelfWidth(s))+' × '+Math.round((sideDepth()-s.reduction)*10)/10+' × '+state.thick+' mm';
+  }
+ };
  const frontEditorIds=['ctorFrontX','ctorFrontY','ctorFrontW','ctorFrontH'];
  const frontClamp=p=>{p.w=clamp(Number(p.w)||1,1,state.width);p.h=clamp(Number(p.h)||1,1,state.height);p.x=clamp(Number(p.x)||0,0,state.width-p.w);p.y=clamp(Number(p.y)||0,0,state.height-p.h)};
  const frontFits=(p,exclude=-1,gap=state.frontGap)=>p.w>0&&p.h>0&&p.x>=state.gapLeft&&p.y>=state.gapTop&&p.x+p.w<=state.width-state.gapRight&&p.y+p.h<=state.height&&state.fronts.every((q,i)=>i===exclude||p.x+p.w+gap<=q.x||q.x+q.w+gap<=p.x||p.y+p.h+gap<=q.y||q.y+q.h+gap<=p.y);
@@ -786,6 +824,7 @@ function initConstructor(){
  const frontName=(p,i)=>(p.type==='door'?'Врата ':'Чекмедже ')+(state.fronts.slice(0,i+1).filter(f=>f.type===p.type).length);
  const updateFrontUI=()=>{
   $('ctorBodyControls').style.display=mode==='body'?'block':'none';
+  updateShelvesUI();
   $('ctorFrontControls').style.display=mode==='front'?'grid':'none';
   $('ctorFrontControls').style.gap='12px';
   $('ctorModeBody').style.background=mode==='body'?'#173b66':'#718096';
@@ -817,6 +856,15 @@ function initConstructor(){
  let html=rect(x,y,sw,sh,'#cbd5e1')+rect(x+t,y+t,sw-2*t,sh-2*t,'#f8fafc')+rect(x,y,t,sh,'#d3b48a')+rect(x+sw-t,y,t,sh,'#d3b48a')+rect(x,y,sw,t,'#d3b48a')+rect(x,y+sh-t,sw,t,'#d3b48a');
  if(state.back>0){html+=rect(x+t+3,y+t+3,sw-2*t-6,sh-2*t-6,'#e3eaf2','#b4c4d4')}
  if(E){const px=x+(T+P)*scale;html+=rect(px,y+t,t,sh-2*t,'#e69b32','#b45309');html+='<rect id="ctorDrag" x="'+(px-12)+'" y="'+(y+t)+'" width="'+(t+24)+'" height="'+(sh-2*t)+'" fill="transparent" style="cursor:ew-resize"/>';html+='<text x="'+(px+t/2)+'" y="'+(y-15)+'" font-size="14" text-anchor="middle" fill="#9a580c">↔</text>'}
+ if(mode==='body'){
+  state.shelves.forEach((s,i)=>{
+   const bay=shelfBay(s),leftEdge=bay==='right'&&E?T+P+T:T;
+   const width=shelfWidth(s),sx=x+leftEdge*scale,sy=y+(H-T-s.height)*scale;
+   const selected=i===selectedShelf;
+   html+='<rect data-shelf="'+i+'" x="'+sx+'" y="'+sy+'" width="'+Math.max(1,width*scale)+'" height="'+Math.max(3,t)+'" fill="'+(selected?'#ef9c38':'#b58d5e')+'" stroke="'+(selected?'#a14b08':'#806345')+'" stroke-width="1.4" style="cursor:ns-resize"/>';
+   html+='<text x="'+(sx+width*scale/2)+'" y="'+(sy-5)+'" font-size="12" text-anchor="middle" fill="#79521c" pointer-events="none">Рафт '+(i+1)+'</text>';
+  });
+ }
  html+='<text x="400" y="'+(y+sh+28)+'" text-anchor="middle" font-size="16" fill="#173b66">'+W+' mm</text>';
  html+='<text x="'+(x-15)+'" y="'+(y+sh/2)+'" text-anchor="end" font-size="14" fill="#173b66">'+H+' mm</text>';
  if(E){html+='<text x="'+(x+t+P*scale/2)+'" y="'+(y+sh/2)+'" text-anchor="middle" font-size="14" fill="#173b66">'+esc(left)+' mm</text>';html+='<text x="'+(x+(T+P+T+right/2)*scale)+'" y="'+(y+sh/2)+'" text-anchor="middle" font-size="14" fill="#173b66">'+esc(right)+' mm</text>'}
@@ -855,7 +903,9 @@ function initConstructor(){
    if(selectedFront!==i){selectedFront=i;metrics=draw()}
    svg.setPointerCapture(e.pointerId);e.preventDefault();return
   }
-  if(e.target.id!=='ctorDrag')return;
+  const shelfIndex=e.target.getAttribute('data-shelf');
+  if(shelfIndex!==null){const i=Number(shelfIndex);selectedShelf=i;const pt=pointerCoords(e);shelfDrag={index:i,startY:pt.y,height:state.shelves[i].height,scale:metrics.scale};metrics=draw();svg.setPointerCapture(e.pointerId);e.preventDefault();return}
+  if(e.target.id!=='ctorDrag'){if(selectedShelf!==-1){selectedShelf=-1;metrics=draw()}return}
   dragging=true;svg.setPointerCapture(e.pointerId);e.preventDefault()
  });
  // Move or resize towards the pointer, clamping to the exact configured gap.
@@ -912,13 +962,34 @@ function initConstructor(){
    updateFrontGraphics();
    return
   }
+  if(shelfDrag&&mode==='body'){
+   const s=state.shelves[shelfDrag.index];if(!s)return;
+   const next={...s,height:Math.round(shelfDrag.height-(pointerCoords(e).y-shelfDrag.startY)/shelfDrag.scale)};
+   if(shelfFits(next,shelfDrag.index)){s.height=next.height;metrics=draw();shelfWarning('')}
+   return
+  }
   if(!dragging)return;
   const vx=pointerCoords(e).x;state.pos=Math.round((vx-metrics.x)/metrics.scale-metrics.T);metrics=draw()
  });
- const end=()=>{dragging=false;if(frontDrag){frontDrag=null;metrics=draw()}};
+ const end=()=>{dragging=false;shelfDrag=null;if(frontDrag){frontDrag=null;metrics=draw()}};
  svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
- $('ctorReset').addEventListener('click',()=>{state={...defaults,fronts:[]};selectedFront=-1;metrics=draw()});
+ $('ctorReset').addEventListener('click',()=>{state={...defaults,fronts:[],shelves:[]};selectedFront=-1;selectedShelf=-1;metrics=draw()});
 
+ $('ctorAddShelf').onclick=()=>{
+  const bay=state.enabled?$('ctorShelfBay').value:'left',kind=$('ctorShelfKind').value;
+  const limit=state.height-3*state.thick;
+  let found=null;
+  for(let h=Math.round(limit/2);h>=state.thick;h--){const s={bay,kind,height:h,reduction:0};if(shelfFits(s)){found=s;break}}
+  if(!found){shelfWarning('Няма свободно място за нов рафт.');return}
+  state.shelves.push(found);selectedShelf=state.shelves.length-1;shelfWarning('');metrics=draw()
+ };
+ $('ctorDeleteShelf').onclick=()=>{if(selectedShelf<0)return;state.shelves.splice(selectedShelf,1);selectedShelf=-1;metrics=draw()};
+ [['ctorShelfHeight','height'],['ctorShelfReduction','reduction'],['ctorShelfTypeEdit','kind']].forEach(([id,key])=>$(id).addEventListener('change',()=>{
+  const s=state.shelves[selectedShelf];if(!s)return;
+  const next={...s,[key]:key==='kind'?$(id).value:Number($(id).value)};
+  if(shelfFits(next,selectedShelf)){Object.assign(s,next);shelfWarning('')}else shelfWarning('Невалиден размер или застъпване с друг рафт.');
+  metrics=draw()
+ }));
  $('ctorModeBody').onclick=()=>{mode='body';metrics=draw()};
  $('ctorModeFront').onclick=()=>{mode='front';metrics=draw()};
  ['ctorGapLeft','ctorGapRight','ctorGapTop'].forEach(id=>$(id).addEventListener('change',()=>{
