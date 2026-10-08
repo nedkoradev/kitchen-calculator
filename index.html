@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.23</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.24</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -120,6 +120,7 @@
 <strong id="ctorZoomValue">100%</strong>
 <span class="hint">Мащаб на изгледа, без промяна на размерите</span>
 </div>
+<div style="display:flex;gap:8px;margin:6px 0 10px;align-items:center"><button type="button" id="ctorView2D">2D · редакция</button><button type="button" id="ctorView3D">3D · преглед</button><span class="hint">В 3D виждаш корпуса, рафтовете и фасадите.</span></div>
 <svg id="ctorSvg" viewBox="0 0 800 530" role="img" aria-label="Схематичен корпус с подвижна вертикална преграда" style="display:block;width:100%;height:auto;aspect-ratio:800/530;max-height:560px;touch-action:none;background:#eef2f5;border-radius:12px;border:1px solid #d8e0e9"></svg>
 <p class="hint">Изгледът е схематичен и показва конструкцията в реални пропорции. Разкроят и 3D моделът ще бъдат свързани в следващ етап.</p></div>
 </div></section></div>
@@ -776,7 +777,7 @@ document.querySelectorAll('input[name="cfg"]').forEach(e=>e.addEventListener('ch
 function deleteActiveCabinet(){if(activeCab<0||!cabinets[activeCab])return;cabinets.splice(activeCab,1);activeCab=-1;updateEditorTitle();renderProject()}
 $('deleteSelectedCab').onclick=deleteActiveCabinet;
 document.addEventListener('keydown',e=>{if(e.key!=='Delete')return;const t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;if(activeCab>=0){e.preventDefault();deleteActiveCabinet()}});
-function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.23',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
+function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.24',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
 function saveProjectToFile(){const data=projectFileData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a'),d=new Date(),pad=n=>String(n).padStart(2,'0');a.href=URL.createObjectURL(blob);a.download='kitchen-project-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function applyLoadedProject(data){if(!data||!data.project||!Array.isArray(data.project.cabinets))throw new Error('Невалиден файл на проект');const m=data.materials||{};if(Array.isArray(m.pdc)){pdcMaterials=m.pdc;localStorage.setItem('kitchenPdcMaterials',JSON.stringify(pdcMaterials))}if(Array.isArray(m.edges)){edgeMaterials=m.edges;localStorage.setItem('kitchenEdgeMaterials',JSON.stringify(edgeMaterials))}if(Array.isArray(m.backs)){backMaterials=m.backs;localStorage.setItem('kitchenBackMaterials',JSON.stringify(backMaterials))}if(Array.isArray(m.worktops)){worktops=m.worktops;localStorage.setItem('kitchenWorktops',JSON.stringify(worktops))}if(m.services){Object.assign(servicePrices,m.services);localStorage.setItem('kitchenServicePrices',JSON.stringify(servicePrices))}
  cabinets=JSON.parse(JSON.stringify(data.project.cabinets));activeCab=-1;$('wall').value=data.project.wall||3200;const o=data.project.options||{};['projectTop','projectPlinth','projectSplash','showBanding'].forEach(id=>{if(typeof o[id]==='boolean'&&$(id))$(id).checked=o[id]});renderPdcList();refreshPdcSelects();renderEdgeList();renderBacks();renderWorktops();renderServicePrices();[['worktopChoice','worktopChoice'],['plinthPdc','plinthPdc'],['plinthEdge','plinthEdge'],['splashPdc','splashPdc'],['splashEdge','splashEdge']].forEach(([id,k])=>{if(o[k]!=null&&$(id))$(id).value=String(o[k])});updateEditorTitle();renderProject();renderProjectCosts()}
@@ -794,6 +795,7 @@ function initConstructor(){
  try{const stored=JSON.parse(localStorage.getItem('nediqConstructorDraft')||'null');if(stored&&typeof stored==='object')state={...state,...stored}}catch(e){}
 
  let mode='body',selectedFront=-1,frontDrag=null,selectedShelf=-1,shelfDrag=null,selectedPartition=-1,partitionDrag=null;
+ let view3D=false;
  let constructorZoom=1;
  const applyConstructorZoom=()=>{
   const vw=800/constructorZoom,vh=530/constructorZoom;
@@ -927,6 +929,61 @@ function initConstructor(){
  const normalized=()=>{state.width=clamp(Number(state.width)||900,300,2400);state.height=clamp(Number(state.height)||720,300,2400);state.depth=clamp(Number(state.depth)||555,200,1000);state.thick=clamp(Number(state.thick)||18,10,40);state.back=clamp(Number(state.back) >= 0 ? Number(state.back) : 3,0,20);state.pos=clamp(Number(state.pos)||0,0,Math.max(0,state.width-3*state.thick));};
  const syncInputs=()=>{const vals=[state.width,state.height,state.depth,state.thick,state.back];ids.forEach((id,i)=>{const el=$(id);if(el.type==='checkbox')el.checked=vals[i];else el.value=vals[i]})};
  const esc=n=>Math.round(n*10)/10;
+ const render3D=()=>{
+  const W=state.width,H=state.height,T=state.thick,D=Math.max(60,state.depth-state.back-(state.fronts.length?T:0));
+  const sc=Math.min(480/W,320/H,170/D),ox=385-W*sc/2,oy=105;
+  const dx=D*sc*.57,dy=D*sc*.31;
+  const poly=(pts,fill,stroke='#66564b')=>'<polygon points="'+pts.map(p=>p.join(',')).join(' ')+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.5" stroke-linejoin="round"/>';
+  const p=(xx,yy,z=0)=>[ox+xx*sc+z*dx,oy+yy*sc-z*dy];
+  const panel=(xa,ya,xb,yb,z,fill)=>poly([p(xa,ya,z),p(xb,ya,z),p(xb,yb,z),p(xa,yb,z)],fill);
+  const slab=(xa,ya,xb,yb,depth,fill='#e8dfd2')=>{
+   const front=panel(xa,ya,xb,yb,0,fill);
+   const top=poly([p(xa,ya,0),p(xb,ya,0),p(xb,ya,depth),p(xa,ya,depth)],'#cbbba6');
+   const side=poly([p(xb,ya,0),p(xb,yb,0),p(xb,yb,depth),p(xb,ya,depth)],'#b9aa96');
+   return top+side+front;
+  };
+  let html='<rect width="800" height="530" fill="#e8edf2"/>';
+  html+=poly([[0,445],[800,445],[800,530],[0,530]],'#f2eee8','#d8d2c9');
+  html+=poly([p(T,T,D),p(W-T,T,D),p(W-T,H-T,D),p(T,H-T,D)],'#f4f0ea');
+  // Rear and right side first; shelves are layered in front of the back panel.
+  html+=poly([p(W-T,0,0),p(W,0,0),p(W,0,D),p(W-T,0,D)],'#e0d3c1');
+  html+=poly([p(W-T,0,D),p(W,0,D),p(W,H,D),p(W-T,H,D)],'#e9dfd1');
+  html+=poly([p(W,0,0),p(W,H,0),p(W,H,D),p(W,0,D)],'#c9b9a4');
+  html+=slab(0,H-T,W,H,D,'#e6dbca');
+  const bays=state.partitions.length+1;
+  for(let bi=0;bi<bays;bi++){
+   const bounds=bayBounds(bi);
+   state.shelves.filter(s=>shelfBay(s)===bi).sort((a,b)=>a.height-b.height).forEach(s=>{
+    const yy=H-T-s.height,depth=Math.max(0,D-s.reduction);
+    html+=slab(bounds.start,yy,bounds.end,yy+T,depth,'#eadfd0');
+   });
+  }
+  state.partitions.forEach(position=>{
+   const px=T+position;
+   html+=poly([p(px,T,0),p(px+T,T,0),p(px+T,T,D),p(px,T,D)],'#c9b9a4');
+   html+=panel(px,T,px+T,H-T,0,'#e9ddca');
+  });
+  html+=slab(0,0,W,T,D,'#e4d5bf');
+  html+=poly([p(0,0,0),p(T,0,0),p(T,H,0),p(0,H,0)],'#e8dccb');
+  html+=poly([p(0,0,0),p(T,0,0),p(T,0,D),p(0,0,D)],'#d2c1a9');
+  html+=poly([p(0,0,D),p(T,0,D),p(T,H,D),p(0,H,D)],'#e4d8c7');
+  if(mode==='front'&&state.fronts.length){
+   state.fronts.forEach((front,i)=>{
+    const fx=Number(front.x)||0,fy=Number(front.y)||0,fw=Number(front.w)||0,fh=Number(front.h)||0;
+    html+=panel(fx,fy,fx+fw,fy+fh,0,'#d6a36f');
+    if(state.frontTransparent)html=html.replace(/fill="#d6a36f"(?= stroke)/g,'fill="#d6a36f" fill-opacity="0.3"');
+   });
+  }
+  html+='<text x="400" y="500" text-anchor="middle" font-size="14" fill="#334155">3D визуализация · '+W+' × '+H+' × '+state.depth+' mm</text>';
+  return html;
+ };
+ const updateViewButtons=()=>{
+  $('ctorView2D').style.background=view3D?'#fff':'#173b66';$('ctorView2D').style.color=view3D?'#173b66':'#fff';
+  $('ctorView3D').style.background=view3D?'#173b66':'#fff';$('ctorView3D').style.color=view3D?'#fff':'#173b66';
+  $('ctorViewTitle').textContent=view3D?'3D изглед · редактирай в 2D':mode==='body'?'Корпус · избери и влачи преградите и рафтовете':'Фасади · влачи за преместване; издърпай ръб за размер';
+ };
+ $('ctorView2D').onclick=()=>{view3D=false;metrics=draw()};
+ $('ctorView3D').onclick=()=>{view3D=true;metrics=draw()};
  const draw=()=>{normalized();state.fronts.forEach(frontClamp);const {width:W,height:H,thick:T,pos:P,enabled:E}=state;const scale=Math.min(610/W,360/H),x=(800-W*scale)/2,y=(500-H*scale)/2,sw=W*scale,sh=H*scale,t=T*scale,inner=W-2*T,left=P,right=inner-P-(E?T:0);
  const rect=(rx,ry,rw,rh,fill,stroke='#718096')=>'<rect x="'+rx+'" y="'+ry+'" width="'+Math.max(0,rw)+'" height="'+Math.max(0,rh)+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.4"/>';
  let html=rect(x,y,sw,sh,'#cbd5e1')+rect(x+t,y+t,sw-2*t,sh-2*t,'#f8fafc')+rect(x,y,t,sh,'#d3b48a')+rect(x+sw-t,y,t,sh,'#d3b48a')+rect(x,y,sw,t,'#d3b48a')+rect(x,y+sh-t,sw,t,'#d3b48a');
@@ -988,7 +1045,7 @@ function initConstructor(){
   state.fronts.forEach((p,i)=>{const rx=x+p.x*scale,ry=y+p.y*scale,rw=p.w*scale,rh=p.h*scale;html+='<rect data-shape="'+i+'" x="'+rx+'" y="'+ry+'" width="'+rw+'" height="'+rh+'" fill="'+(i===selectedFront?'#d7ab76':'#ead8be')+'" fill-opacity="'+(transparent?'0.36':'1')+'" stroke="'+(i===selectedFront?'#b45309':'#9a8060')+'" stroke-width="1.4"/>';html+='<text data-label="'+i+'" x="'+(rx+rw/2)+'" y="'+(ry+rh/2)+'" text-anchor="middle" font-size="'+Math.min(15,Math.max(9,rw/9))+'" fill="#543c27" pointer-events="none">' +frontName(p,i)+'</text>';html+='<rect data-front="'+i+'" x="'+rx+'" y="'+ry+'" width="'+rw+'" height="'+rh+'" fill="transparent" style="cursor:move"/>';const edge=7;
   [['left',rx-edge/2,ry+edge,edge,Math.max(0,rh-2*edge),'ew-resize'],['right',rx+rw-edge/2,ry+edge,edge,Math.max(0,rh-2*edge),'ew-resize'],['top',rx+edge,ry-edge/2,Math.max(0,rw-2*edge),edge,'ns-resize'],['bottom',rx+edge,ry+rh-edge/2,Math.max(0,rw-2*edge),edge,'ns-resize']].forEach(([side,bx,by,bw,bh,cursor])=>{html+='<rect data-edge="'+side+'" data-edge-front="'+i+'" x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" fill="transparent" style="cursor:'+cursor+'"/>'});
   })}
- svg.innerHTML=html;updateFrontUI();
+ svg.innerHTML=view3D?render3D():html;updateViewButtons();updateFrontUI();
  $('ctorDimensions').innerHTML='<b>Вътрешна ширина:</b> '+esc(inner)+' mm<br><b>Отделения:</b> '+Array.from({length:state.partitions.length+1},(_,i)=>esc(bayBounds(i).width)+' mm').join(' / ')+'<br><b>Обща дълбочина:</b> '+state.depth+' mm<br><b>Гръб:</b> '+state.back+' mm<br><b>Врата:</b> '+(state.fronts?.length?state.thick:0)+' mm<br><b>Дълбочина на страниците:</b> '+esc(Math.max(0,state.depth-state.back-(state.fronts?.length?state.thick:0)))+' mm';
  localStorage.setItem('nediqConstructorDraft',JSON.stringify(state));syncInputs();
  return {x,y,t,scale,T,W};
@@ -1023,7 +1080,7 @@ function initConstructor(){
    if(handle){handle.setAttribute('x',rx+rw-9);handle.setAttribute('y',ry+rh-9)}
   })
  };
- svg.addEventListener('pointerdown',e=>{
+ svg.addEventListener('pointerdown',e=>{if(view3D)return;
   if(mode==='front'){
    const resize=e.target.getAttribute('data-resize'),front=e.target.getAttribute('data-front'),edge=e.target.getAttribute('data-edge');
    const edgeFront=e.target.getAttribute('data-edge-front');
@@ -1078,7 +1135,7 @@ function initConstructor(){
   const edgeValues=boundaries.filter(v=>v>=min&&v<=max).sort((a,b)=>Math.abs(a-requested)-Math.abs(b-requested));
   for(const edge of edgeValues){const test={...p,[coord]:edge};if(frontFits(test,index)){p[coord]=edge;return}}
  };
- svg.addEventListener('pointermove',e=>{
+ svg.addEventListener('pointermove',e=>{if(view3D)return;
   if(frontDrag&&mode==='front'){
    const d=frontDrag,p=state.fronts[d.index];if(!p)return;
    const point=pointerCoords(e),dx=Math.round((point.x-d.startX)/d.scale),dy=Math.round((point.y-d.startY)/d.scale);
