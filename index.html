@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.19</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.20</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -104,6 +104,14 @@
 <div id="ctorFrontControls" style="display:none"><label style="display:flex;align-items:center;gap:8px;margin:4px 0 12px;font-weight:600"><input type="checkbox" id="ctorFrontTransparent" style="width:auto"> Прозрачни фасади — виж корпуса и рафтовете</label><div class="config-title">Редактор на фасади</div><div class="project-actions"><button type="button" id="ctorAddDoor">+ Врата</button><button type="button" id="ctorAddDrawer">+ Лице на чекмедже</button></div><div class="field"><label for="ctorFrontGap">Фуга (mm)</label><input id="ctorFrontGap" type="number" value="3" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapLeft">Фуга отляво (mm)</label><input id="ctorGapLeft" type="number" value="2" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapRight">Фуга отдясно (mm)</label><input id="ctorGapRight" type="number" value="2" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapTop">Фуга отгоре (mm)</label><input id="ctorGapTop" type="number" value="0" min="0" max="20" step="0.5"></div><div id="ctorFrontWarning" role="status" style="display:none;color:#9a3412;font-weight:600;padding:8px;background:#fff0df;border-radius:7px"></div><div id="ctorFrontList"></div><div id="ctorFrontEditor" style="display:none"><div class="field"><label>Позиция X отляво (mm)</label><input id="ctorFrontX" type="number" step="1"></div><div class="field"><label>Позиция Y отгоре (mm)</label><input id="ctorFrontY" type="number" step="1"></div><div class="field"><label>Ширина (mm)</label><input id="ctorFrontW" type="number" min="1" step="1"></div><div class="field"><label>Височина (mm)</label><input id="ctorFrontH" type="number" min="1" step="1"></div><button type="button" id="ctorDeleteFront">Изтрий избраната фасада</button></div></div>
 </div>
 <div><div id="ctorViewTitle" class="config-title">Изглед отпред · влачи оранжевата преграда</div>
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 10px">
+<button type="button" id="ctorZoomOut" title="Намали изгледа">−</button>
+<input id="ctorZoomSlider" aria-label="Мащаб на чертежа" type="range" min="100" max="500" step="25" value="100" style="width:150px;max-width:40%">
+<button type="button" id="ctorZoomIn" title="Увеличи изгледа">+</button>
+<button type="button" id="ctorZoomReset">100%</button>
+<strong id="ctorZoomValue">100%</strong>
+<span class="hint">Мащаб на изгледа, без промяна на размерите</span>
+</div>
 <svg id="ctorSvg" viewBox="0 0 800 530" role="img" aria-label="Схематичен корпус с подвижна вертикална преграда" style="display:block;width:100%;height:auto;aspect-ratio:800/530;max-height:560px;touch-action:none;background:#eef2f5;border-radius:12px;border:1px solid #d8e0e9"></svg>
 <p class="hint">Изгледът е схематичен и показва конструкцията в реални пропорции. Разкроят и 3D моделът ще бъдат свързани в следващ етап.</p></div>
 </div></section></div>
@@ -760,7 +768,7 @@ document.querySelectorAll('input[name="cfg"]').forEach(e=>e.addEventListener('ch
 function deleteActiveCabinet(){if(activeCab<0||!cabinets[activeCab])return;cabinets.splice(activeCab,1);activeCab=-1;updateEditorTitle();renderProject()}
 $('deleteSelectedCab').onclick=deleteActiveCabinet;
 document.addEventListener('keydown',e=>{if(e.key!=='Delete')return;const t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;if(activeCab>=0){e.preventDefault();deleteActiveCabinet()}});
-function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.19',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
+function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.20',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
 function saveProjectToFile(){const data=projectFileData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a'),d=new Date(),pad=n=>String(n).padStart(2,'0');a.href=URL.createObjectURL(blob);a.download='kitchen-project-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function applyLoadedProject(data){if(!data||!data.project||!Array.isArray(data.project.cabinets))throw new Error('Невалиден файл на проект');const m=data.materials||{};if(Array.isArray(m.pdc)){pdcMaterials=m.pdc;localStorage.setItem('kitchenPdcMaterials',JSON.stringify(pdcMaterials))}if(Array.isArray(m.edges)){edgeMaterials=m.edges;localStorage.setItem('kitchenEdgeMaterials',JSON.stringify(edgeMaterials))}if(Array.isArray(m.backs)){backMaterials=m.backs;localStorage.setItem('kitchenBackMaterials',JSON.stringify(backMaterials))}if(Array.isArray(m.worktops)){worktops=m.worktops;localStorage.setItem('kitchenWorktops',JSON.stringify(worktops))}if(m.services){Object.assign(servicePrices,m.services);localStorage.setItem('kitchenServicePrices',JSON.stringify(servicePrices))}
  cabinets=JSON.parse(JSON.stringify(data.project.cabinets));activeCab=-1;$('wall').value=data.project.wall||3200;const o=data.project.options||{};['projectTop','projectPlinth','projectSplash','showBanding'].forEach(id=>{if(typeof o[id]==='boolean'&&$(id))$(id).checked=o[id]});renderPdcList();refreshPdcSelects();renderEdgeList();renderBacks();renderWorktops();renderServicePrices();[['worktopChoice','worktopChoice'],['plinthPdc','plinthPdc'],['plinthEdge','plinthEdge'],['splashPdc','splashPdc'],['splashEdge','splashEdge']].forEach(([id,k])=>{if(o[k]!=null&&$(id))$(id).value=String(o[k])});updateEditorTitle();renderProject();renderProjectCosts()}
@@ -778,6 +786,21 @@ function initConstructor(){
  try{const stored=JSON.parse(localStorage.getItem('nediqConstructorDraft')||'null');if(stored&&typeof stored==='object')state={...state,...stored}}catch(e){}
 
  let mode='body',selectedFront=-1,frontDrag=null,selectedShelf=-1,shelfDrag=null;
+ let constructorZoom=1;
+ const applyConstructorZoom=()=>{
+  const vw=800/constructorZoom,vh=530/constructorZoom;
+  svg.setAttribute('viewBox',[(800-vw)/2,(530-vh)/2,vw,vh].join(' '));
+  $('ctorZoomSlider').value=Math.round(constructorZoom*100);
+  $('ctorZoomValue').textContent=Math.round(constructorZoom*100)+'%';
+ };
+ const setConstructorZoom=value=>{constructorZoom=Math.max(1,Math.min(5,Math.round(value*4)/4));applyConstructorZoom()};
+ $('ctorZoomIn').onclick=()=>setConstructorZoom(constructorZoom+0.25);
+ $('ctorZoomOut').onclick=()=>setConstructorZoom(constructorZoom-0.25);
+ $('ctorZoomReset').onclick=()=>setConstructorZoom(1);
+ $('ctorZoomSlider').oninput=()=>setConstructorZoom(Number($('ctorZoomSlider').value)/100);
+ svg.addEventListener('wheel',e=>{if(!e.ctrlKey)return;e.preventDefault();setConstructorZoom(constructorZoom+(e.deltaY<0?0.25:-0.25))},{passive:false});
+ applyConstructorZoom();
+
  if(!Array.isArray(state.fronts))state.fronts=[];
  state.fronts=state.fronts.filter(p=>p&&['door','drawer'].includes(p.type)).map(p=>({type:p.type,x:Number(p.x)||0,y:Number(p.y)||0,w:Number(p.w)||100,h:Number(p.h)||100}));
  state.frontGap=Number.isFinite(Number(state.frontGap))?Number(state.frontGap):3;
