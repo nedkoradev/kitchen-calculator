@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.12</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.13</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -89,7 +89,7 @@
 <label class="opt"><input id="ctorLockLeft" type="checkbox" checked> Запази лявото отделение при промяна на ширината</label>
 <div id="ctorDimensions" class="calc"></div>
 <button type="button" id="ctorReset">Нов стандартен корпус</button></div>
-<div id="ctorFrontControls" style="display:none"><div class="config-title">Редактор на фасади</div><div class="project-actions"><button type="button" id="ctorAddDoor">+ Врата</button><button type="button" id="ctorAddDrawer">+ Лице на чекмедже</button></div><div class="field"><label for="ctorFrontGap">Фуга (mm)</label><input id="ctorFrontGap" type="number" value="3" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapLeft">Фуга отляво (mm)</label><input id="ctorGapLeft" type="number" value="2" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapRight">Фуга отдясно (mm)</label><input id="ctorGapRight" type="number" value="2" min="0" max="20" step="0.5"></div><div id="ctorFrontWarning" role="status" style="display:none;color:#9a3412;font-weight:600;padding:8px;background:#fff0df;border-radius:7px"></div><div id="ctorFrontList"></div><div id="ctorFrontEditor" style="display:none"><div class="field"><label>Позиция X отляво (mm)</label><input id="ctorFrontX" type="number" step="1"></div><div class="field"><label>Позиция Y отгоре (mm)</label><input id="ctorFrontY" type="number" step="1"></div><div class="field"><label>Ширина (mm)</label><input id="ctorFrontW" type="number" min="1" step="1"></div><div class="field"><label>Височина (mm)</label><input id="ctorFrontH" type="number" min="1" step="1"></div><button type="button" id="ctorDeleteFront">Изтрий избраната фасада</button></div></div>
+<div id="ctorFrontControls" style="display:none"><div class="config-title">Редактор на фасади</div><div class="project-actions"><button type="button" id="ctorAddDoor">+ Врата</button><button type="button" id="ctorAddDrawer">+ Лице на чекмедже</button></div><div class="field"><label for="ctorFrontGap">Фуга (mm)</label><input id="ctorFrontGap" type="number" value="3" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapLeft">Фуга отляво (mm)</label><input id="ctorGapLeft" type="number" value="2" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapRight">Фуга отдясно (mm)</label><input id="ctorGapRight" type="number" value="2" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapTop">Фуга отгоре (mm)</label><input id="ctorGapTop" type="number" value="0" min="0" max="20" step="0.5"></div><div id="ctorFrontWarning" role="status" style="display:none;color:#9a3412;font-weight:600;padding:8px;background:#fff0df;border-radius:7px"></div><div id="ctorFrontList"></div><div id="ctorFrontEditor" style="display:none"><div class="field"><label>Позиция X отляво (mm)</label><input id="ctorFrontX" type="number" step="1"></div><div class="field"><label>Позиция Y отгоре (mm)</label><input id="ctorFrontY" type="number" step="1"></div><div class="field"><label>Ширина (mm)</label><input id="ctorFrontW" type="number" min="1" step="1"></div><div class="field"><label>Височина (mm)</label><input id="ctorFrontH" type="number" min="1" step="1"></div><button type="button" id="ctorDeleteFront">Изтрий избраната фасада</button></div></div>
 </div>
 <div><div id="ctorViewTitle" class="config-title">Изглед отпред · влачи оранжевата преграда</div>
 <svg id="ctorSvg" viewBox="0 0 800 530" role="img" aria-label="Схематичен корпус с подвижна вертикална преграда" style="display:block;width:100%;height:auto;aspect-ratio:800/530;max-height:560px;touch-action:none;background:#eef2f5;border-radius:12px;border:1px solid #d8e0e9"></svg>
@@ -748,7 +748,7 @@ document.querySelectorAll('input[name="cfg"]').forEach(e=>e.addEventListener('ch
 function deleteActiveCabinet(){if(activeCab<0||!cabinets[activeCab])return;cabinets.splice(activeCab,1);activeCab=-1;updateEditorTitle();renderProject()}
 $('deleteSelectedCab').onclick=deleteActiveCabinet;
 document.addEventListener('keydown',e=>{if(e.key!=='Delete')return;const t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;if(activeCab>=0){e.preventDefault();deleteActiveCabinet()}});
-function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.12',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
+function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.13',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
 function saveProjectToFile(){const data=projectFileData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a'),d=new Date(),pad=n=>String(n).padStart(2,'0');a.href=URL.createObjectURL(blob);a.download='kitchen-project-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function applyLoadedProject(data){if(!data||!data.project||!Array.isArray(data.project.cabinets))throw new Error('Невалиден файл на проект');const m=data.materials||{};if(Array.isArray(m.pdc)){pdcMaterials=m.pdc;localStorage.setItem('kitchenPdcMaterials',JSON.stringify(pdcMaterials))}if(Array.isArray(m.edges)){edgeMaterials=m.edges;localStorage.setItem('kitchenEdgeMaterials',JSON.stringify(edgeMaterials))}if(Array.isArray(m.backs)){backMaterials=m.backs;localStorage.setItem('kitchenBackMaterials',JSON.stringify(backMaterials))}if(Array.isArray(m.worktops)){worktops=m.worktops;localStorage.setItem('kitchenWorktops',JSON.stringify(worktops))}if(m.services){Object.assign(servicePrices,m.services);localStorage.setItem('kitchenServicePrices',JSON.stringify(servicePrices))}
  cabinets=JSON.parse(JSON.stringify(data.project.cabinets));activeCab=-1;$('wall').value=data.project.wall||3200;const o=data.project.options||{};['projectTop','projectPlinth','projectSplash','showBanding'].forEach(id=>{if(typeof o[id]==='boolean'&&$(id))$(id).checked=o[id]});renderPdcList();refreshPdcSelects();renderEdgeList();renderBacks();renderWorktops();renderServicePrices();[['worktopChoice','worktopChoice'],['plinthPdc','plinthPdc'],['plinthEdge','plinthEdge'],['splashPdc','splashPdc'],['splashEdge','splashEdge']].forEach(([id,k])=>{if(o[k]!=null&&$(id))$(id).value=String(o[k])});updateEditorTitle();renderProject();renderProjectCosts()}
@@ -761,7 +761,7 @@ document.querySelectorAll('#w,#h,#legs,#top,#t,#d,#back,#rail,input[name="modelT
 function initConstructor(){
  const ids=['ctorWidth','ctorHeight','ctorDepth','ctorThick','ctorBack','ctorPartitionEnabled','ctorPartitionPos','ctorLockLeft'];
  const svg=$('ctorSvg');if(!svg)return;
- const defaults={width:900,height:720,depth:555,thick:18,back:3,enabled:true,pos:350,lock:true,fronts:[],frontGap:3,gapLeft:2,gapRight:2};
+ const defaults={width:900,height:720,depth:555,thick:18,back:3,enabled:true,pos:350,lock:true,fronts:[],frontGap:3,gapLeft:2,gapRight:2,gapTop:0};
  let state={...defaults};
  try{const stored=JSON.parse(localStorage.getItem('nediqConstructorDraft')||'null');if(stored&&typeof stored==='object')state={...state,...stored}}catch(e){}
 
@@ -772,11 +772,12 @@ function initConstructor(){
  const clamp=(v,min,max)=>Math.min(max,Math.max(min,v));
  state.gapLeft=Number.isFinite(Number(state.gapLeft))?clamp(Number(state.gapLeft),0,20):2;
  state.gapRight=Number.isFinite(Number(state.gapRight))?clamp(Number(state.gapRight),0,20):2;
+ state.gapTop=Number.isFinite(Number(state.gapTop))?clamp(Number(state.gapTop),0,20):0;
  const frontEditorIds=['ctorFrontX','ctorFrontY','ctorFrontW','ctorFrontH'];
  const frontClamp=p=>{p.w=clamp(Number(p.w)||1,1,state.width);p.h=clamp(Number(p.h)||1,1,state.height);p.x=clamp(Number(p.x)||0,0,state.width-p.w);p.y=clamp(Number(p.y)||0,0,state.height-p.h)};
- const frontFits=(p,exclude=-1,gap=state.frontGap)=>p.w>0&&p.h>0&&p.x>=state.gapLeft&&p.y>=0&&p.x+p.w<=state.width-state.gapRight&&p.y+p.h<=state.height&&state.fronts.every((q,i)=>i===exclude||p.x+p.w+gap<=q.x||q.x+q.w+gap<=p.x||p.y+p.h+gap<=q.y||q.y+q.h+gap<=p.y);
+ const frontFits=(p,exclude=-1,gap=state.frontGap)=>p.w>0&&p.h>0&&p.x>=state.gapLeft&&p.y>=state.gapTop&&p.x+p.w<=state.width-state.gapRight&&p.y+p.h<=state.height&&state.fronts.every((q,i)=>i===exclude||p.x+p.w+gap<=q.x||q.x+q.w+gap<=p.x||p.y+p.h+gap<=q.y||q.y+q.h+gap<=p.y);
  const freeFrontPosition=(w,h,exclude=-1,gap=state.frontGap)=>{
-  const xs=[state.gapLeft],ys=[gap];
+  const xs=[state.gapLeft],ys=[state.gapTop];
   state.fronts.forEach((q,i)=>{if(i!==exclude){xs.push(q.x+q.w+gap);ys.push(q.y+q.h+gap)}});
   for(const y of ys.sort((a,b)=>a-b))for(const x of xs.sort((a,b)=>a-b)){const p={x,y,w,h};if(frontFits(p,exclude,gap))return p}
   return null;
@@ -793,6 +794,7 @@ function initConstructor(){
   $('ctorFrontGap').value=state.frontGap;
   $('ctorGapLeft').value=state.gapLeft;
   $('ctorGapRight').value=state.gapRight;
+  $('ctorGapTop').value=state.gapTop;
   const list=$('ctorFrontList');list.innerHTML='';
   state.fronts.forEach((p,i)=>{
    const row=document.createElement('div');row.style.cssText='display:flex;gap:5px;align-items:center;margin:5px 0';
@@ -863,7 +865,7 @@ function initConstructor(){
   if(requested===current)return;
   const horizontal=axis==='x',size=horizontal?'w':'h',other=horizontal?'y':'x',otherSize=horizontal?'h':'w';
   const max=resize?(horizontal?state.width-state.gapRight-p.x:state.height-p.y):(horizontal?state.width-state.gapRight-p.w:state.height-p.h);
-  const min=resize?30:(horizontal?state.gapLeft:0);
+  const min=resize?30:(horizontal?state.gapLeft:state.gapTop);
   let dest=clamp(requested,min,max);
   const direction=Math.sign(dest-current);
   const snap=12;
@@ -919,8 +921,8 @@ function initConstructor(){
 
  $('ctorModeBody').onclick=()=>{mode='body';metrics=draw()};
  $('ctorModeFront').onclick=()=>{mode='front';metrics=draw()};
- ['ctorGapLeft','ctorGapRight'].forEach(id=>$(id).addEventListener('change',()=>{
-  const key=id==='ctorGapLeft'?'gapLeft':'gapRight',old=state[key],next=clamp(Number($(id).value)||0,0,20);
+ ['ctorGapLeft','ctorGapRight','ctorGapTop'].forEach(id=>$(id).addEventListener('change',()=>{
+  const key=id==='ctorGapLeft'?'gapLeft':id==='ctorGapRight'?'gapRight':'gapTop',old=state[key],next=clamp(Number($(id).value)||0,0,20);
   state[key]=next;
   if(state.fronts.every((p,i)=>frontFits(p,i))){frontWarning('')}else{state[key]=old;frontWarning('Новата странична фуга не се побира. Премести или намали фасадите.')}
   metrics=draw()
@@ -930,7 +932,7 @@ function initConstructor(){
   const g=state.frontGap;
   if(state.fronts.some((p,i)=>!frontFits(p,i))){frontWarning('Първо отстрани застъпването на съществуващите фасади.');return}
   const usable=state.width-state.gapLeft-state.gapRight;
-  const sizes=[[Math.floor((usable-g)/2),state.height-2*g],[Math.floor((usable-g)/2),Math.floor((state.height-4*g)/3)],[Math.floor((usable-2*g)/3),Math.floor((state.height-4*g)/3)],[Math.floor((usable-2*g)/3),Math.floor((state.height-2*g)/4)]];
+  const sizes=[[Math.floor((usable-g)/2),state.height-state.gapTop-g],[Math.floor((usable-g)/2),Math.floor((state.height-state.gapTop-3*g)/3)],[Math.floor((usable-2*g)/3),Math.floor((state.height-4*g)/3)],[Math.floor((usable-2*g)/3),Math.floor((state.height-2*g)/4)]];
   let p=null;for(const [w,h] of sizes){if(w<50||h<50)continue;p=freeFrontPosition(w,h);if(p)break}
   if(!p){frontWarning('Няма достатъчно свободно място за нова фасада. Намали съществуваща фасада или освободи място.');return}
   state.fronts.push({...p,type});selectedFront=state.fronts.length-1;frontWarning('');metrics=draw()
