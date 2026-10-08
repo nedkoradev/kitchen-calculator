@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.26</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.27</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -777,7 +777,7 @@ document.querySelectorAll('input[name="cfg"]').forEach(e=>e.addEventListener('ch
 function deleteActiveCabinet(){if(activeCab<0||!cabinets[activeCab])return;cabinets.splice(activeCab,1);activeCab=-1;updateEditorTitle();renderProject()}
 $('deleteSelectedCab').onclick=deleteActiveCabinet;
 document.addEventListener('keydown',e=>{if(e.key!=='Delete')return;const t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;if(activeCab>=0){e.preventDefault();deleteActiveCabinet()}});
-function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.26',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
+function projectFileData(){return {app:'NEDIQ Furniture Designer',version:'4.30.27',savedAt:new Date().toISOString(),project:{wall:num('wall'),cabinets:JSON.parse(JSON.stringify(cabinets)),options:{projectTop:$('projectTop').checked,projectPlinth:$('projectPlinth').checked,projectSplash:$('projectSplash').checked,showBanding:$('showBanding')?.checked??true,worktopChoice:Number($('worktopChoice').value)||0,plinthPdc:Number($('plinthPdc').value)||0,plinthEdge:Number($('plinthEdge').value)||0,splashPdc:Number($('splashPdc').value)||0,splashEdge:Number($('splashEdge').value)||0}},materials:{pdc:JSON.parse(JSON.stringify(pdcMaterials)),edges:JSON.parse(JSON.stringify(edgeMaterials)),backs:JSON.parse(JSON.stringify(backMaterials)),worktops:JSON.parse(JSON.stringify(worktops)),services:{...servicePrices}}}}
 function saveProjectToFile(){const data=projectFileData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a'),d=new Date(),pad=n=>String(n).padStart(2,'0');a.href=URL.createObjectURL(blob);a.download='kitchen-project-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function applyLoadedProject(data){if(!data||!data.project||!Array.isArray(data.project.cabinets))throw new Error('Невалиден файл на проект');const m=data.materials||{};if(Array.isArray(m.pdc)){pdcMaterials=m.pdc;localStorage.setItem('kitchenPdcMaterials',JSON.stringify(pdcMaterials))}if(Array.isArray(m.edges)){edgeMaterials=m.edges;localStorage.setItem('kitchenEdgeMaterials',JSON.stringify(edgeMaterials))}if(Array.isArray(m.backs)){backMaterials=m.backs;localStorage.setItem('kitchenBackMaterials',JSON.stringify(backMaterials))}if(Array.isArray(m.worktops)){worktops=m.worktops;localStorage.setItem('kitchenWorktops',JSON.stringify(worktops))}if(m.services){Object.assign(servicePrices,m.services);localStorage.setItem('kitchenServicePrices',JSON.stringify(servicePrices))}
  cabinets=JSON.parse(JSON.stringify(data.project.cabinets));activeCab=-1;$('wall').value=data.project.wall||3200;const o=data.project.options||{};['projectTop','projectPlinth','projectSplash','showBanding'].forEach(id=>{if(typeof o[id]==='boolean'&&$(id))$(id).checked=o[id]});renderPdcList();refreshPdcSelects();renderEdgeList();renderBacks();renderWorktops();renderServicePrices();[['worktopChoice','worktopChoice'],['plinthPdc','plinthPdc'],['plinthEdge','plinthEdge'],['splashPdc','splashPdc'],['splashEdge','splashEdge']].forEach(([id,k])=>{if(o[k]!=null&&$(id))$(id).value=String(o[k])});updateEditorTitle();renderProject();renderProjectCosts()}
@@ -951,22 +951,26 @@ function initConstructor(){
   const wood='#e6d9c8',inside='#f2ebe1',edge='#c4b39f',back='#e3d9cd';
   // Back panel: one continuous colour and one continuous plane.
   if(state.back>0)html+=face([[T,T,D],[W-T,T,D],[W-T,H-T,D],[T,H-T,D]],back);
-  // Inner faces of the side panels are full-depth, opaque surfaces.
+  // The inside of the left side is visible from this viewing angle.
+  // Draw partition depth faces BEFORE shelves, otherwise their large polygons
+  // incorrectly cover the shelf surfaces.
   html+=sideFace(T,T,H-T,0,D,inside);
-  html+=sideFace(W-T,T,H-T,0,D,inside);
-  // Shelf tops and thicknesses. Their front edges remain visible.
+  state.partitions.forEach(position=>{
+   const px=T+position;
+   html+=sideFace(px+T,T,H-T,0,D,inside);
+  });
+  // Shelf horizontal surfaces and their front thickness.
   for(let bi=0;bi<=state.partitions.length;bi++){
    const bounds=bayBounds(bi);
    state.shelves.filter(s=>shelfBay(s)===bi).sort((a,b)=>a.height-b.height).forEach(s=>{
     const yy=H-T-s.height,depth=Math.max(0,D-s.reduction);
-    html+=topFace(bounds.start,bounds.end,yy,0,depth,wood);
-    html+=frontFace(bounds.start,bounds.end,yy,yy+T,edge);
+    html+=topFace(bounds.start,bounds.end,yy,0,depth,'#d9b995');
+    html+=frontFace(bounds.start,bounds.end,yy,yy+T,'#b99269');
    });
   }
-  // Partition panels: depth faces first, narrow front edges second.
+  // The front edge of each partition remains visible over shelf edges.
   state.partitions.forEach(position=>{
    const px=T+position;
-   html+=sideFace(px,T,H-T,0,D,inside);
    html+=frontFace(px,px+T,T,H-T,edge);
   });
   // Bottom: solid front edge, continuous top plane.
@@ -975,7 +979,7 @@ function initConstructor(){
   // Left side: visible inner depth face and opaque front edge.
   html+=sideFace(0,0,H,0,D,wood);
   html+=frontFace(0,T,0,H,edge);
-  // Right side: outer face is opaque; do not paint it as a wireframe.
+  // Right side: its outer face is a single opaque full-depth panel.
   html+=sideFace(W,0,H,0,D,'#c9b8a4');
   html+=frontFace(W-T,W,0,H,edge);
   // Top is drawn LAST so partitions and sides cannot stick through its roof.
