@@ -876,9 +876,9 @@ function initConstructor(){
   state.shelves.forEach((s,i)=>{
    const row=document.createElement('div');row.style.cssText='display:flex;gap:5px;margin:5px 0';
    const btn=document.createElement('button');btn.type='button';btn.textContent='Рафт '+(i+1)+' · '+('отделение '+(shelfBay(s)+1))+' · '+Math.round(s.height)+' mm';
-   btn.style.cssText='flex:1;text-align:left;padding:7px;border:1px solid #cbd5e1;border-radius:6px;background:'+(i===selectedShelf?'#cce1f6':'#fff')+';color:#173b66';
+   btn.className='ctor-item-button'+(i===selectedShelf?' ctor-item-selected':'');
    btn.onclick=()=>{selectedShelf=i;draw()};
-   const del=document.createElement('button');del.type='button';del.textContent='✕';del.title='Изтрий рафт '+(i+1);del.onclick=()=>{state.shelves.splice(i,1);if(selectedShelf===i)selectedShelf=-1;else if(selectedShelf>i)selectedShelf--;draw()};
+   const del=document.createElement('button');del.type='button';del.textContent='✕';del.className='ctor-delete-button';del.title='Изтрий рафт '+(i+1);del.onclick=()=>{state.shelves.splice(i,1);if(selectedShelf===i)selectedShelf=-1;else if(selectedShelf>i)selectedShelf--;draw()};
    row.append(btn,del);list.append(row)
   });
   const s=state.shelves[selectedShelf];$('ctorShelfEditor').style.display=s?'grid':'none';$('ctorShelfEditor').style.gap='7px';
@@ -903,8 +903,8 @@ function initConstructor(){
   $('ctorFrontTransparent').checked=!!state.frontTransparent;
   $('ctorFrontControls').style.display=mode==='front'?'grid':'none';
   $('ctorFrontControls').style.gap='12px';
-  $('ctorModeBody').style.background=mode==='body'?'#173b66':'#718096';
-  $('ctorModeFront').style.background=mode==='front'?'#173b66':'#718096';
+  $('ctorModeBody').style.background=mode==='body'?'#173b66':'#fff';$('ctorModeBody').style.color=mode==='body'?'#fff':'#173b66';
+  $('ctorModeFront').style.background=mode==='front'?'#173b66':'#fff';$('ctorModeFront').style.color=mode==='front'?'#fff':'#173b66';
   $('ctorViewTitle').textContent=mode==='body'?'Корпус · избери и влачи оранжевите прегради':'Фасади · влачи за преместване; издърпай който и да е ръб за оразмеряване; щракни извън фасада за деселектиране';
   $('ctorFrontGap').value=state.frontGap;
   $('ctorGapLeft').value=state.gapLeft;
@@ -914,10 +914,10 @@ function initConstructor(){
   state.fronts.forEach((p,i)=>{
    const row=document.createElement('div');row.style.cssText='display:flex;gap:5px;align-items:center;margin:5px 0';
    const btn=document.createElement('button');btn.type='button';btn.textContent=frontName(p,i)+' · '+Math.round(p.w)+' × '+Math.round(p.h)+' mm';
-   btn.style.cssText='display:block;flex:1;min-width:0;text-align:left;padding:9px;color:#173b66;font-weight:600;background:'+(i===selectedFront?'#cce1f6':'#fff')+';border:1px solid #cbd5e1;border-radius:7px;cursor:pointer';
+   btn.className='ctor-item-button'+(i===selectedFront?' ctor-item-selected':'');btn.style.minWidth='0';
    btn.onclick=()=>{selectedFront=i;draw()};
    const del=document.createElement('button');del.type='button';del.textContent='✕';del.title='Изтрий '+frontName(p,i);del.setAttribute('aria-label',del.title);
-   del.style.cssText='flex:0 0 34px;padding:8px;color:#a12424;background:#fff;border:1px solid #e2b4b4;border-radius:7px;cursor:pointer';
+   del.className='ctor-delete-button';
    del.onclick=()=>{state.fronts.splice(i,1);if(selectedFront===i)selectedFront=-1;else if(selectedFront>i)selectedFront--;draw()};
    row.append(btn,del);list.appendChild(row)
   });
