@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.49</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.50</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -799,6 +799,9 @@ function initConstructor(){
  let view3D=false,selectedPart=null;
  if(!state.partDepth||typeof state.partDepth!=='object')state.partDepth={};
  if(!Array.isArray(state.partitionDepths))state.partitionDepths=[];
+ if(typeof state.hasLeft!=='boolean')state.hasLeft=true;
+ if(typeof state.hasRight!=='boolean')state.hasRight=true;
+ if(!state.sideDepths||typeof state.sideDepths!=='object')state.sideDepths={};
  if(typeof state.hasBottom!=='boolean')state.hasBottom=true;
  if(typeof state.hasTop!=='boolean')state.hasTop=true;
  let constructorZoom=1;
@@ -870,7 +873,7 @@ function initConstructor(){
   if([...select.options].some(o=>o.value===previous))select.value=previous;
  };
  const partLabel=key=>key==='bottom'?'Дъно':key==='top'?'Таван':key==='left'?'Лява страница':key==='right'?'Дясна страница':key==='back'?'Гръб':key.startsWith('partition:')?'Преграда '+(Number(key.split(':')[1])+1):key.startsWith('shelf:')?'Рафт '+(Number(key.split(':')[1])+1):'Детайл';
- const partExists=key=>key==='bottom'?state.hasBottom:key==='top'?state.hasTop:key==='back'?state.back>0:key==='left'||key==='right'?true:key.startsWith('partition:')?Number(key.split(':')[1])<state.partitions.length:key.startsWith('shelf:')?Number(key.split(':')[1])<state.shelves.length:false;
+ const partExists=key=>key==='bottom'?state.hasBottom:key==='top'?state.hasTop:key==='back'?state.back>0:key==='left'?state.hasLeft:key==='right'?state.hasRight:key.startsWith('partition:')?Number(key.split(':')[1])<state.partitions.length:key.startsWith('shelf:')?Number(key.split(':')[1])<state.shelves.length:false;
  const selectPart=key=>{selectedPart=key&&partExists(key)?key:null;if(selectedPart?.startsWith('shelf:'))selectedShelf=Number(selectedPart.split(':')[1]);if(selectedPart?.startsWith('partition:'))selectedPartition=Number(selectedPart.split(':')[1]);metrics=draw()};
  const partAttr=key=>' data-ctor-part="'+key+'" style="cursor:pointer"';
  const partRect=(key,rx,ry,rw,rh,fill)=>'<rect'+partAttr(key)+' x="'+rx+'" y="'+ry+'" width="'+Math.max(0,rw)+'" height="'+Math.max(0,rh)+'" fill="'+fill+'" stroke="'+(selectedPart===key?'#f97316':'#786b5c')+'" stroke-width="'+(selectedPart===key?3:1.3)+'"/>';
@@ -882,13 +885,14 @@ function initConstructor(){
  const s=key.startsWith('shelf:')?state.shelves[i]:null;
  const depth=key==='top'||key==='bottom'?Math.min(D,Number(state.partDepth[key])||D):D;
  const partitionDepth=key.startsWith('partition:')?Math.max(1,Math.min(D,D-(Number(state.partitionDepths[i])||0))):D;
- const dims=key==='left'||key==='right'?H+' × '+D+' × '+T:key==='bottom'||key==='top'?W+' × '+depth+' × '+T:key==='back'?W+' × '+H+' × '+state.back:s?Math.round(shelfWidth(s))+' × '+Math.round(D-s.reduction)+' × '+T:key.startsWith('partition:')?(H-2*T)+' × '+Math.round(partitionDepth)+' × '+T:'—';
+ const sideD=key==='left'||key==='right'?Math.max(1,Math.min(D,Number(state.sideDepths[key])||D)):D;
+ const dims=key==='left'||key==='right'?H+' × '+Math.round(sideD)+' × '+T:key==='bottom'||key==='top'?W+' × '+depth+' × '+T:key==='back'?W+' × '+H+' × '+state.back:s?Math.round(shelfWidth(s))+' × '+Math.round(D-s.reduction)+' × '+T:key.startsWith('partition:')?(H-2*T)+' × '+Math.round(partitionDepth)+' × '+T:'—';
  el.innerHTML='<b>'+partLabel(key)+'</b><br>Размери: '+dims+' mm';
- btn.disabled=!(key==='bottom'||key==='top'||key==='back'||key.startsWith('shelf:')||key.startsWith('partition:'));
- const pos=!!s||key.startsWith('partition:'),dep=!!s||key==='top'||key==='bottom'||key.startsWith('partition:');
+ btn.disabled=!(key==='bottom'||key==='top'||key==='back'||key==='left'||key==='right'||key.startsWith('shelf:')||key.startsWith('partition:'));
+ const pos=!!s||key.startsWith('partition:'),dep=!!s||key==='top'||key==='bottom'||key==='left'||key==='right'||key.startsWith('partition:');
  fields.style.display=pos||dep?'block':'none';$('ctorPartPositionWrap').style.display=pos?'block':'none';$('ctorPartDepthWrap').style.display=dep?'block':'none';
  if(pos){$('ctorPartPositionLabel').textContent=s?'Височина над дъното (mm)':'Позиция отляво (mm)';$('ctorPartPosition').value=s?s.height:state.partitions[i]}
- if(dep)$('ctorPartDepth').value=s?D-s.reduction:key.startsWith('partition:')?partitionDepth:depth;
+ if(dep)$('ctorPartDepth').value=s?D-s.reduction:key.startsWith('partition:')?partitionDepth:key==='left'||key==='right'?sideD:depth;
  el.style.cssText='background:#fff0c2;border:2px solid #f59e0b;border-radius:10px;padding:12px;box-shadow:0 0 0 3px #f59e0b22';
  fields.style.border='2px solid #f59e0b';fields.style.borderRadius='10px';fields.style.padding='10px';fields.style.background='#fff8e8';
  };
@@ -973,7 +977,7 @@ function initConstructor(){
   if(state.back>0)html+=poly([[T,state.hasTop?T:0,D],[W-T,state.hasTop?T:0,D],[W-T,state.hasBottom?H-T:H,D],[T,state.hasBottom?H-T:H,D]],'#e2d5c5','#786b5c','back');
   // Back, bottom and inside left wall.
   if(state.hasBottom)html+=horizontal(0,W,H-T,0,Math.min(D,Number(state.partDepth.bottom)||D),wood,'bottom');
-  html+=vertical(T,state.hasTop?T:0,state.hasBottom?H-T:H,0,D,inner,'left');
+  if(state.hasLeft)html+=vertical(T,state.hasTop?T:0,state.hasBottom?H-T:H,0,Math.min(D,Number(state.sideDepths.left)||D),inner,'left');
   // Bay shelves: each has its own actual width and depth.
   for(let bi=0;bi<=state.partitions.length;bi++){
    const bounds=bayBounds(bi);
@@ -992,28 +996,28 @@ function initConstructor(){
   // Right side has an INNER surface at W-T and an OUTER surface at W.
   // Draw the inner surface at the actual material thickness, then the
   // exterior side. This also closes the right-hand bottom corner.
-  html+=vertical(W-T,state.hasTop?T:0,state.hasBottom?H-T:H,0,D,'#eee4d7','right');
-  html+=vertical(W,0,H,0,D,'#c9b8a4','right');
-  html+=front(W-T,0,W,H,edge,'right');
-  html+=front(0,0,T,H,edge,'left');
+  if(state.hasRight)html+=vertical(W-T,state.hasTop?T:0,state.hasBottom?H-T:H,0,Math.min(D,Number(state.sideDepths.right)||D),'#eee4d7','right');
+  if(state.hasRight)html+=vertical(W,0,H,0,Math.min(D,Number(state.sideDepths.right)||D),'#c9b8a4','right');
+  if(state.hasRight)html+=front(W-T,0,W,H,edge,'right');
+  if(state.hasLeft)html+=front(0,0,T,H,edge,'left');
   if(state.hasBottom)html+=front(0,H-T,W,H,edge,'bottom');
   if(state.hasTop)html+=horizontal(0,W,0,0,Math.min(D,Number(state.partDepth.top)||D),wood,'top');
   // The right-side bottom joint must run along the full depth at the
   // top surface of the bottom panel, not vertically at the rear corner.
   // Render it last, over the right side surface so it remains visible.
   const rightBottomFront=p(W,H-T,0),rightBottomBack=p(W,H-T,D);
-  if(state.hasBottom)html+='<line x1="'+rightBottomFront[0]+'" y1="'+rightBottomFront[1]+'" x2="'+rightBottomBack[0]+'" y2="'+rightBottomBack[1]+'" stroke="#786b5c" stroke-width="1.5" pointer-events="none"/>';
-  if(state.hasTop)html+=vertical(W,0,T,0,D,'#c9b8a4','top');
+  if(state.hasBottom&&state.hasRight){const end=p(W,H-T,Math.min(D,Number(state.sideDepths.right)||D));html+='<line x1="'+rightBottomFront[0]+'" y1="'+rightBottomFront[1]+'" x2="'+end[0]+'" y2="'+end[1]+'" stroke="#786b5c" stroke-width="1.5" pointer-events="none"/>'}
+  if(state.hasTop&&state.hasRight)html+=vertical(W,0,T,0,Math.min(D,Number(state.sideDepths.right)||D),'#c9b8a4','top');
   if(state.hasTop)html+=front(0,0,W,T,edge,'top');
   // Exposed top edges of the side walls and partitions when the roof is removed.
   // These are the actual 18 mm board-thickness faces, not roof remnants.
   if(!state.hasTop){
-   html+=horizontal(0,T,0,0,D,'#c7ad91','left');
+   if(state.hasLeft)html+=horizontal(0,T,0,0,Math.min(D,Number(state.sideDepths.left)||D),'#c7ad91','left');
    state.partitions.forEach((position,index)=>{
     const x=T+position;
     html+=horizontal(x,x+T,T,0,Math.max(1,D-(Number(state.partitionDepths[index])||0)),'#c7ad91','partition:'+index);
    });
-   html+=horizontal(W-T,W,0,0,D,'#b59679','right');
+   if(state.hasRight)html+=horizontal(W-T,W,0,0,Math.min(D,Number(state.sideDepths.right)||D),'#b59679','right');
   }
   if(mode==='front'&&state.fronts.length){
    state.fronts.forEach(f=>{
@@ -1088,7 +1092,7 @@ function initConstructor(){
  $('ctorView3D').onclick=()=>{view3D=true;metrics=draw()};
  const draw=()=>{normalized();state.fronts.forEach(frontClamp);const {width:W,height:H,thick:T,pos:P,enabled:E}=state;const scale=Math.min(610/W,360/H),x=(800-W*scale)/2,y=(500-H*scale)/2,sw=W*scale,sh=H*scale,t=T*scale,inner=W-2*T,left=P,right=inner-P-(E?T:0);
  const rect=(rx,ry,rw,rh,fill,stroke='#718096')=>'<rect x="'+rx+'" y="'+ry+'" width="'+Math.max(0,rw)+'" height="'+Math.max(0,rh)+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.4"/>';
- let html=rect(x,y,sw,sh,'#cbd5e1')+rect(x+t,y+t,sw-2*t,sh-2*t,'#f8fafc')+partRect('left',x,y,t,sh,'#d3b48a')+partRect('right',x+sw-t,y,t,sh,'#d3b48a')+(state.hasTop?partRect('top',x,y,sw,t,'#d3b48a'):'')+(state.hasBottom?partRect('bottom',x,y+sh-t,sw,t,'#d3b48a'):'');
+ let html=rect(x,y,sw,sh,'#cbd5e1')+rect(x+t,y+t,sw-2*t,sh-2*t,'#f8fafc')+(state.hasLeft?partRect('left',x,y,t,sh,'#d3b48a'):'')+(state.hasRight?partRect('right',x+sw-t,y,t,sh,'#d3b48a'):'')+(state.hasTop?partRect('top',x,y,sw,t,'#d3b48a'):'')+(state.hasBottom?partRect('bottom',x,y+sh-t,sw,t,'#d3b48a'):'');
  if(state.back>0){html+=partRect('back',x+t+3,y+t+3,sw-2*t-6,sh-2*t-6,'#e3eaf2')}
  state.partitions.forEach((p,i)=>{const px=x+(T+p)*scale;html+=partRect('partition:'+i,px,y+t,t,sh-2*t,i===selectedPartition?'#f59e0b':'#e69b32');html+='<rect data-partition="'+i+'" x="'+(px-9)+'" y="'+(y+t)+'" width="'+(t+18)+'" height="'+(sh-2*t)+'" fill="transparent" style="cursor:ew-resize"/>'})
  if(mode==='body'){
@@ -1291,7 +1295,7 @@ function initConstructor(){
  });
  const end=()=>{dragging=false;shelfDrag=null;partitionDrag=null;if(frontDrag){frontDrag=null;metrics=draw()}};
  svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
- $('ctorReset').addEventListener('click',()=>{state={...defaults,hasTop:true,hasBottom:true,partDepth:{},fronts:[],shelves:[],partitions:[350],partitionDepths:[]};selectedFront=-1;selectedShelf=-1;selectedPartition=-1;selectedPart=null;metrics=draw()});
+ $('ctorReset').addEventListener('click',()=>{state={...defaults,hasTop:true,hasBottom:true,hasLeft:true,hasRight:true,sideDepths:{},partDepth:{},fronts:[],shelves:[],partitions:[350],partitionDepths:[]};selectedFront=-1;selectedShelf=-1;selectedPartition=-1;selectedPart=null;metrics=draw()});
 
  $('ctorAddShelf').onclick=()=>{
   const bayIndex=Number($('ctorShelfBay').value)||0;
@@ -1308,11 +1312,11 @@ function initConstructor(){
   if(shelfFits(next,selectedShelf)){Object.assign(s,next);shelfWarning('')}else shelfWarning('Невалиден размер или застъпване с друг рафт.');
   metrics=draw()
  }));
- const removeSelectedPart=()=>{if(!selectedPart)return;const key=selectedPart;if(key==='bottom')state.hasBottom=false;else if(key==='top')state.hasTop=false;else if(key==='back')state.back=0;else if(key.startsWith('shelf:'))state.shelves.splice(Number(key.split(':')[1]),1);else if(key.startsWith('partition:')){const i=Number(key.split(':')[1]);state.partitions.splice(i,1);state.partitionDepths.splice(i,1)}else return;selectedPart=null;selectedShelf=-1;selectedPartition=-1;metrics=draw()};
+ const removeSelectedPart=()=>{if(!selectedPart)return;const key=selectedPart;if(key==='bottom')state.hasBottom=false;else if(key==='top')state.hasTop=false;else if(key==='back')state.back=0;else if(key==='left')state.hasLeft=false;else if(key==='right')state.hasRight=false;else if(key.startsWith('shelf:'))state.shelves.splice(Number(key.split(':')[1]),1);else if(key.startsWith('partition:')){const i=Number(key.split(':')[1]);state.partitions.splice(i,1);state.partitionDepths.splice(i,1)}else return;selectedPart=null;selectedShelf=-1;selectedPartition=-1;metrics=draw()};
  $('ctorDeletePart').onclick=removeSelectedPart;
  document.addEventListener('keydown',e=>{if(e.key!=='Delete')return;if(!document.getElementById('constructorPanel')?.offsetParent)return;if(e.target.closest('input,textarea,select,[contenteditable]'))return;if(!selectedPart)return;e.preventDefault();removeSelectedPart()});
  $('ctorPartPosition').onchange=()=>{if(!selectedPart)return;const key=selectedPart,i=Number(key.split(':')[1]),v=Number($('ctorPartPosition').value);if(!Number.isFinite(v))return;if(key.startsWith('shelf:')){const trial={...state.shelves[i],height:v};if(shelfFits(trial,i))state.shelves[i].height=v}else if(key.startsWith('partition:')){const next=[...state.partitions];next[i]=v;if(next.every((p,j)=>j===0||p>next[j-1])&&partitionValid(next))state.partitions=next}metrics=draw()};
- $('ctorPartDepth').onchange=()=>{if(!selectedPart)return;const key=selectedPart,v=Number($('ctorPartDepth').value),D=sideDepth();if(!Number.isFinite(v)||v<1||v>D){metrics=draw();return}if(key.startsWith('shelf:'))state.shelves[Number(key.split(':')[1])].reduction=D-v;else if(key==='top'||key==='bottom')state.partDepth[key]=v;else if(key.startsWith('partition:'))state.partitionDepths[Number(key.split(':')[1])]=D-v;metrics=draw()};
+ $('ctorPartDepth').onchange=()=>{if(!selectedPart)return;const key=selectedPart,v=Number($('ctorPartDepth').value),D=sideDepth();if(!Number.isFinite(v)||v<1||v>D){metrics=draw();return}if(key.startsWith('shelf:'))state.shelves[Number(key.split(':')[1])].reduction=D-v;else if(key==='top'||key==='bottom')state.partDepth[key]=v;else if(key.startsWith('partition:'))state.partitionDepths[Number(key.split(':')[1])]=D-v;else if(key==='left'||key==='right')state.sideDepths[key]=v;metrics=draw()};
  $('ctorRestoreParts').onclick=()=>{state.hasBottom=true;state.hasTop=true;state.partDepth={...state.partDepth,top:sideDepth(),bottom:sideDepth()};selectedPart=null;metrics=draw()};
  $('ctorModeBody').onclick=()=>{mode='body';metrics=draw()};
  $('ctorModeFront').onclick=()=>{mode='front';metrics=draw()};
