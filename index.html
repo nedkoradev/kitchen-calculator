@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.44</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.45</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -958,55 +958,55 @@ function initConstructor(){
   const sc=Math.min(650/(W+D*.57),390/(H+D*.31)),dx=sc*.57,dy=sc*.31;
   const ox=(800-(W*sc+D*dx))/2,oy=(480-(H*sc+D*dy))/2+D*dy;
   const p=(x,y,z=0)=>[ox+x*sc+z*dx,oy+y*sc-z*dy];
-  const face=(coords,color,key)=>'<polygon'+(key?partAttr(key):'')+' points="'+coords.map(q=>p(...q).join(',')).join(' ')+'" fill="'+color+'" stroke="'+(key===selectedPart?'#f97316':'#786b5c')+'" stroke-width="'+(key===selectedPart?3:1.2)+'" stroke-linejoin="round"/>';
-  const h=(x0,x1,y,z0,z1,color,key)=>face([[x0,y,z0],[x1,y,z0],[x1,y,z1],[x0,y,z1]],color,key);
-  const v=(x,y0,y1,z0,z1,color,key)=>face([[x,y0,z0],[x,y0,z1],[x,y1,z1],[x,y1,z0]],color,key);
-  const f=(x0,y0,x1,y1,color,key)=>face([[x0,y0,0],[x1,y0,0],[x1,y1,0],[x0,y1,0]],color,key);
-  let html='<rect width="800" height="530" fill="#e8edf2"/><rect x="0" y="445" width="800" height="85" fill="#eeeae5"/>';
-  // Paint from rear to front. Each panel owns opaque faces; no hit-test overlays.
-  if(state.back>0)html+=face([[T,T,D],[W-T,T,D],[W-T,H-T,D],[T,H-T,D]],'#e0d0bd','back');
-  // Left inside side and bottom are behind internal dividers.
-  html+=v(T,T,H-T,0,D,'#e5d3be','left');
-  if(state.hasBottom){
-   const bd=Math.min(D,Number(state.partDepth.bottom)||D);
-   html+=h(0,W,H-T,0,bd,'#e7cba9','bottom');
-   html+=f(0,H-T,W,H,'#bda88e','bottom');
-  }
-  // Shelves are drawn inside each bay, followed by the divider at its right.
-  // This prevents the background and horizontal panels from showing through.
+  const poly=(pts,fill,stroke='#786b5c',key=null)=>'<polygon'+(key?partAttr(key):'')+' points="'+pts.map(v=>p(...v).join(',')).join(' ')+'" fill="'+fill+'" stroke="'+(key===selectedPart?'#f97316':stroke)+'" stroke-width="'+(key===selectedPart?3:1.3)+'" stroke-linejoin="round"/>';
+  const front=(x0,y0,x1,y1,fill,key=null)=>poly([[x0,y0,0],[x1,y0,0],[x1,y1,0],[x0,y1,0]],fill,'#786b5c',key);
+  const horizontal=(x0,x1,y,z0,z1,fill,key=null)=>poly([[x0,y,z0],[x1,y,z0],[x1,y,z1],[x0,y,z1]],fill,'#786b5c',key);
+  const vertical=(x,y0,y1,z0,z1,fill,key=null)=>poly([[x,y0,z0],[x,y0,z1],[x,y1,z1],[x,y1,z0]],fill,'#786b5c',key);
+  let html='<rect width="800" height="530" fill="#e8edf2"/>';
+  html+='<rect x="0" y="445" width="800" height="85" fill="#eeeae5"/>';
+  const wood='#e6d8c7',edge='#bda88e',inner='#eee4d7';
+  // Back panel at the far end of the depth.
+  if(state.back>0)html+=poly([[T,T,D],[W-T,T,D],[W-T,H-T,D],[T,H-T,D]],'#e2d5c5','#786b5c','back');
+  // Back, bottom and inside left wall.
+  if(state.hasBottom)html+=horizontal(0,W,H-T,0,Math.min(D,Number(state.partDepth.bottom)||D),wood,'bottom');
+  html+=vertical(T,T,H-T,0,D,inner,'left');
+  // Bay shelves: each has its own actual width and depth.
   for(let bi=0;bi<=state.partitions.length;bi++){
    const bounds=bayBounds(bi);
    state.shelves.filter(s=>shelfBay(s)===bi).sort((a,b)=>a.height-b.height).forEach(s=>{
-    const y=H-T-s.height,z=Math.max(0,D-s.reduction),key='shelf:'+state.shelves.indexOf(s);
-    html+=h(bounds.start,bounds.end,y+T,0,z,'#b99e80',key);
-    html+=h(bounds.start,bounds.end,y,0,z,'#ddbb96',key);
-    html+=f(bounds.start,y,bounds.end,y+T,'#b99269',key);
+    const y=H-T-s.height,z=Math.max(0,D-s.reduction);
+    html+=horizontal(bounds.start,bounds.end,y+T,0,z,'#bda68c');
+    html+=horizontal(bounds.start,bounds.end,y,0,z,'#d9b995','shelf:'+state.shelves.indexOf(s));
+    html+=front(bounds.start,y,bounds.end,y+T,'#b99269','shelf:'+state.shelves.indexOf(s));
    });
    if(bi<state.partitions.length){
-    const x=T+state.partitions[bi],key='partition:'+bi;
-    html+=v(x+T,T,H-T,0,D,'#bca387',key);
-    html+=v(x,T,H-T,0,D,'#e3c7a6',key);
-    html+=f(x,T,x+T,H-T,'#ac8f72',key);
+    const x=T+state.partitions[bi];
+    html+=vertical(x+T,T,H-T,0,D,'#e4d5c1','partition:'+bi);
+    html+=front(x,T,x+T,H-T,edge,'partition:'+bi);
    }
   }
-  // Roof overlays the upper ends of dividers; its top is a single face.
-  if(state.hasTop){
-   const td=Math.min(D,Number(state.partDepth.top)||D);
-   html+=h(0,W,0,0,td,'#e8c7a4','top');
-   html+=f(0,0,W,T,'#c5a487','top');
-  }
-  // Right outer side is nearest to the viewer: hide all interior geometry.
-  html+=v(W,0,H,0,D,'#c6a182','right');
-  html+=f(W-T,T,W,H-T,'#a98c72','right');
-  // Right front board end caps are shown only when those boards exist.
-  if(state.hasTop)html+=f(W-T,0,W,T,'#c5a487','top');
-  if(state.hasBottom)html+=f(W-T,H-T,W,H,'#bda88e','bottom');
-  // Left front edge remains visible; no rear outline is drawn through it.
-  html+=f(0,T,T,H-T,'#bda88e','left');
+  // Right side has an INNER surface at W-T and an OUTER surface at W.
+  // Draw the inner surface at the actual material thickness, then the
+  // exterior side. This also closes the right-hand bottom corner.
+  html+=vertical(W-T,T,H-T,0,D,'#eee4d7','right');
+  html+=vertical(W,0,H,0,D,'#c9b8a4','right');
+  html+=front(W-T,T,W,H-T,edge,'right');
+  html+=front(0,T,T,H-T,edge,'left');
+  if(state.hasBottom)html+=front(0,H-T,W,H,edge,'bottom');
+  if(state.hasTop)html+=horizontal(0,W,0,0,Math.min(D,Number(state.partDepth.top)||D),wood,'top');
+  // The right-side bottom joint must run along the full depth at the
+  // top surface of the bottom panel, not vertically at the rear corner.
+  // Render it last, over the right side surface so it remains visible.
+  const rightBottomFront=p(W,H-T,0),rightBottomBack=p(W,H-T,D);
+  if(state.hasBottom)html+='<line x1="'+rightBottomFront[0]+'" y1="'+rightBottomFront[1]+'" x2="'+rightBottomBack[0]+'" y2="'+rightBottomBack[1]+'" stroke="#786b5c" stroke-width="1.5" pointer-events="none"/>';
+  if(state.hasTop)html+=vertical(W,0,T,0,D,'#c9b8a4','top');
+  if(state.hasTop)html+=front(0,0,W,T,edge,'top');
   if(mode==='front'&&state.fronts.length){
-   state.fronts.forEach(q=>{
-    const x=Number(q.x)||0,y=Number(q.y)||0,w=Number(q.w)||0,hh=Number(q.h)||0;
-    html+='<polygon points="'+[[x,y],[x+w,y],[x+w,y+hh],[x,y+hh]].map(pt=>p(...pt).join(',')).join(' ')+'" fill="#d6a36f"'+(state.frontTransparent?' fill-opacity="0.3"':'')+' stroke="#786b5c" stroke-width="1.3"/>';
+   state.fronts.forEach(f=>{
+    const x=Number(f.x)||0,y=Number(f.y)||0,w=Number(f.w)||0,h=Number(f.h)||0;
+    const fill=state.frontTransparent?'#d6a36f':'#d6a36f';
+    const opacity=state.frontTransparent?' fill-opacity="0.3"':'';
+    html+='<polygon points="'+[[x,y],[x+w,y],[x+w,y+h],[x,y+h]].map(v=>p(...v).join(',')).join(' ')+'" fill="'+fill+'"'+opacity+' stroke="#786b5c" stroke-width="1.3"/>';
    });
   }
   html+='<text x="400" y="500" text-anchor="middle" font-size="14" fill="#334155">3D визуализация · '+W+' × '+H+' × '+state.depth+' mm</text>';
@@ -1133,7 +1133,7 @@ function initConstructor(){
   state.fronts.forEach((p,i)=>{const rx=x+p.x*scale,ry=y+p.y*scale,rw=p.w*scale,rh=p.h*scale;html+='<rect data-shape="'+i+'" x="'+rx+'" y="'+ry+'" width="'+rw+'" height="'+rh+'" fill="'+(i===selectedFront?'#d7ab76':'#ead8be')+'" fill-opacity="'+(transparent?'0.36':'1')+'" stroke="'+(i===selectedFront?'#b45309':'#9a8060')+'" stroke-width="1.4"/>';html+='<text data-label="'+i+'" x="'+(rx+rw/2)+'" y="'+(ry+rh/2)+'" text-anchor="middle" font-size="'+Math.min(15,Math.max(9,rw/9))+'" fill="#543c27" pointer-events="none">' +frontName(p,i)+'</text>';html+='<rect data-front="'+i+'" x="'+rx+'" y="'+ry+'" width="'+rw+'" height="'+rh+'" fill="transparent" style="cursor:move"/>';const edge=7;
   [['left',rx-edge/2,ry+edge,edge,Math.max(0,rh-2*edge),'ew-resize'],['right',rx+rw-edge/2,ry+edge,edge,Math.max(0,rh-2*edge),'ew-resize'],['top',rx+edge,ry-edge/2,Math.max(0,rw-2*edge),edge,'ns-resize'],['bottom',rx+edge,ry+rh-edge/2,Math.max(0,rw-2*edge),edge,'ns-resize']].forEach(([side,bx,by,bw,bh,cursor])=>{html+='<rect data-edge="'+side+'" data-edge-front="'+i+'" x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" fill="transparent" style="cursor:'+cursor+'"/>'});
   })}
- if(view3D){renderTrue3D()}else{$('ctorThreeMount').style.display='none';svg.style.display='block';svg.innerHTML=html}updateViewButtons();updateFrontUI();updatePartUI();
+ $('ctorThreeMount').style.display='none';svg.style.display='block';svg.innerHTML=view3D?render3D():html;updateViewButtons();updateFrontUI();updatePartUI();
  $('ctorDimensions').innerHTML='<b>Вътрешна ширина:</b> '+esc(inner)+' mm<br><b>Отделения:</b> '+Array.from({length:state.partitions.length+1},(_,i)=>esc(bayBounds(i).width)+' mm').join(' / ')+'<br><b>Обща дълбочина:</b> '+state.depth+' mm<br><b>Гръб:</b> '+state.back+' mm<br><b>Врата:</b> '+(state.fronts?.length?state.thick:0)+' mm<br><b>Дълбочина на страниците:</b> '+esc(Math.max(0,state.depth-state.back-(state.fronts?.length?state.thick:0)))+' mm';
  localStorage.setItem('nediqConstructorDraft',JSON.stringify(state));syncInputs();
  return {x,y,t,scale,T,W};
