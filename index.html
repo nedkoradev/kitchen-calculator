@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.39</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.40</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -966,8 +966,8 @@ function initConstructor(){
   const wood='#e6d8c7',edge='#bda88e',inner='#eee4d7';
   // Back panel at the far end of the depth.
   if(state.back>0)html+=poly([[T,T,D],[W-T,T,D],[W-T,H-T,D],[T,H-T,D]],'#e2d5c5','#786b5c','back');
-  // Back, bottom and inside left wall.
-  if(state.hasBottom)html+=horizontal(0,W,H-T,0,Math.min(D,Number(state.partDepth.bottom)||D),wood,'bottom');
+  // Bottom is a complete board with visible front thickness and upper face.
+  if(state.hasBottom){const bd=Math.min(D,Number(state.partDepth.bottom)||D);html+=horizontal(0,W,H-T,0,bd,'#d9c3a6','bottom');html+=front(0,H-T,W,H,'#bda88e','bottom')}
   html+=vertical(T,T,H-T,0,D,inner,'left');
   // Bay shelves: each has its own actual width and depth.
   for(let bi=0;bi<=state.partitions.length;bi++){
@@ -991,15 +991,15 @@ function initConstructor(){
   html+=vertical(W,0,H,0,D,'#c9b8a4','right');
   html+=front(W-T,T,W,H-T,edge,'right');
   html+=front(0,T,T,H-T,edge,'left');
-  if(state.hasBottom)html+=front(0,H-T,W,H,edge,'bottom');
-  if(state.hasTop)html+=horizontal(0,W,0,0,Math.min(D,Number(state.partDepth.top)||D),wood,'top');
+  // Bottom front edge is rendered with the bottom board itself.
+  // The roof is rendered as a solid slab after the interior, never as an overlay.
+  if(state.hasTop){const td=Math.min(D,Number(state.partDepth.top)||D);html+=horizontal(0,W,0,0,td,'#d7b994','top');html+=front(0,0,W,T,'#bda88e','top')}
   // The right-side bottom joint must run along the full depth at the
   // top surface of the bottom panel, not vertically at the rear corner.
   // Render it last, over the right side surface so it remains visible.
   const rightBottomFront=p(W,H-T,0),rightBottomBack=p(W,H-T,D);
   if(state.hasBottom)html+='<line x1="'+rightBottomFront[0]+'" y1="'+rightBottomFront[1]+'" x2="'+rightBottomBack[0]+'" y2="'+rightBottomBack[1]+'" stroke="#786b5c" stroke-width="1.5" pointer-events="none"/>';
-  html+=vertical(W,0,T,0,D,'#c9b8a4','right');
-  if(state.hasTop)html+=front(0,0,W,T,edge,'top');
+  if(state.hasTop)html+=vertical(W,0,T,0,D,'#c9b8a4','right');
   if(mode==='front'&&state.fronts.length){
    state.fronts.forEach(f=>{
     const x=Number(f.x)||0,y=Number(f.y)||0,w=Number(f.w)||0,h=Number(f.h)||0;
@@ -1245,7 +1245,7 @@ function initConstructor(){
  document.addEventListener('keydown',e=>{if(e.key!=='Delete')return;if(!document.getElementById('constructorPanel')?.offsetParent)return;if(e.target.closest('input,textarea,select,[contenteditable]'))return;if(!selectedPart)return;e.preventDefault();removeSelectedPart()});
  $('ctorPartPosition').onchange=()=>{if(!selectedPart)return;const key=selectedPart,i=Number(key.split(':')[1]),v=Number($('ctorPartPosition').value);if(!Number.isFinite(v))return;if(key.startsWith('shelf:')){const trial={...state.shelves[i],height:v};if(shelfFits(trial,i))state.shelves[i].height=v}else if(key.startsWith('partition:')){const next=[...state.partitions];next[i]=v;if(next.every((p,j)=>j===0||p>next[j-1])&&partitionValid(next))state.partitions=next}metrics=draw()};
  $('ctorPartDepth').onchange=()=>{if(!selectedPart)return;const key=selectedPart,v=Number($('ctorPartDepth').value),D=sideDepth();if(!Number.isFinite(v)||v<1||v>D){metrics=draw();return}if(key.startsWith('shelf:'))state.shelves[Number(key.split(':')[1])].reduction=D-v;else if(key==='top'||key==='bottom')state.partDepth[key]=v;metrics=draw()};
- $('ctorRestoreParts').onclick=()=>{state.hasBottom=true;state.hasTop=true;metrics=draw()};
+ $('ctorRestoreParts').onclick=()=>{state.hasBottom=true;state.hasTop=true;state.partDepth={...state.partDepth,top:sideDepth(),bottom:sideDepth()};selectedPart=null;metrics=draw()};
  $('ctorModeBody').onclick=()=>{mode='body';metrics=draw()};
  $('ctorModeFront').onclick=()=>{mode='front';metrics=draw()};
  $('ctorFrontTransparent').onchange=()=>{state.frontTransparent=$('ctorFrontTransparent').checked;metrics=draw()};
