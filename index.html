@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.38</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.39</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -93,13 +93,13 @@
 
 <div id="ctorBodyControls"><div class="config-title">Вертикални прегради</div>
 <button type="button" id="ctorAddPartition">+ Преграда</button>
-<div id="ctorPartitionList"></div>
+<div id="ctorPartitionList" style="display:none"></div>
 <div id="ctorPartitionWarning" class="hint" role="status"></div>
 <div class="config-title" style="margin-top:12px">Рафтове</div>
 <div class="field"><label for="ctorShelfBay">Отделение</label><select id="ctorShelfBay"></select></div>
 
 <button type="button" id="ctorAddShelf">+ Рафт</button>
-<div id="ctorShelfList"></div>
+<div id="ctorShelfList" style="display:none"></div>
 <div id="ctorShelfEditor" style="display:none">
 <div class="field"><label for="ctorShelfHeight">Височина от вътрешното дъно (mm)</label><input id="ctorShelfHeight" type="number" min="0" step="1"></div>
 <div class="field"><label for="ctorShelfReduction">Намаляване на дълбочината (mm)</label><input id="ctorShelfReduction" type="number" min="0" step="1"></div>
@@ -107,7 +107,7 @@
 <div id="ctorShelfInfo" class="hint"></div>
 <button type="button" id="ctorDeleteShelf">Изтрий избрания рафт</button></div>
 <div id="ctorShelfWarning" role="status" class="hint"></div>
-<div class="config-title" style="margin-top:14px">Избран конструктивен детайл</div><div id="ctorSelectedPart" class="calc">Щракни върху детайл в 2D или 3D.</div><div class="project-actions"><button type="button" id="ctorDeletePart" disabled>Премахни избрания детайл</button><button type="button" id="ctorRestoreParts">Възстанови дъно и таван</button></div><div id="ctorDimensions" class="calc"></div>
+<div class="config-title" style="margin-top:14px">Избран конструктивен детайл</div><div id="ctorSelectedPart" class="calc">Щракни върху детайл в 2D или 3D.</div><div id="ctorPartFields" style="display:none"><div class="field" id="ctorPartPositionWrap"><label id="ctorPartPositionLabel">Позиция (mm)</label><input type="number" id="ctorPartPosition" step="1"></div><div class="field" id="ctorPartDepthWrap"><label>Дълбочина (mm)</label><input type="number" id="ctorPartDepth" step="1" min="1"></div></div><div class="project-actions"><button type="button" id="ctorDeletePart" disabled>Премахни избрания детайл</button><button type="button" id="ctorRestoreParts">Възстанови дъно и таван</button></div><div id="ctorDimensions" class="calc"></div>
 <button type="button" id="ctorReset">Нов стандартен корпус</button></div>
 <div id="ctorFrontControls" style="display:none"><label style="display:flex;align-items:center;gap:8px;margin:4px 0 12px;font-weight:600"><input type="checkbox" id="ctorFrontTransparent" style="width:auto"> Прозрачни фасади — виж корпуса и рафтовете</label><div class="config-title">Редактор на фасади</div><div class="project-actions"><button type="button" id="ctorAddDoor">+ Врата</button><button type="button" id="ctorAddDrawer">+ Лице на чекмедже</button></div><div class="field"><label for="ctorFrontGap">Фуга (mm)</label><input id="ctorFrontGap" type="number" value="3" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapLeft">Фуга отляво (mm)</label><input id="ctorGapLeft" type="number" value="2" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapRight">Фуга отдясно (mm)</label><input id="ctorGapRight" type="number" value="2" min="0" max="20" step="0.5"></div><div class="field"><label for="ctorGapTop">Фуга отгоре (mm)</label><input id="ctorGapTop" type="number" value="0" min="0" max="20" step="0.5"></div><div id="ctorFrontWarning" role="status" style="display:none;color:#9a3412;font-weight:600;padding:8px;background:#fff0df;border-radius:7px"></div><div id="ctorFrontList"></div><div id="ctorFrontEditor" style="display:none"><div class="field"><label>Позиция X отляво (mm)</label><input id="ctorFrontX" type="number" step="1"></div><div class="field"><label>Позиция Y отгоре (mm)</label><input id="ctorFrontY" type="number" step="1"></div><div class="field"><label>Ширина (mm)</label><input id="ctorFrontW" type="number" min="1" step="1"></div><div class="field"><label>Височина (mm)</label><input id="ctorFrontH" type="number" min="1" step="1"></div><button type="button" id="ctorDeleteFront">Изтрий избраната фасада</button></div></div>
 </div>
@@ -796,6 +796,7 @@ function initConstructor(){
 
  let mode='body',selectedFront=-1,frontDrag=null,selectedShelf=-1,shelfDrag=null,selectedPartition=-1,partitionDrag=null;
  let view3D=false,selectedPart=null;
+ if(!state.partDepth||typeof state.partDepth!=='object')state.partDepth={};
  if(typeof state.hasBottom!=='boolean')state.hasBottom=true;
  if(typeof state.hasTop!=='boolean')state.hasTop=true;
  let constructorZoom=1;
@@ -873,12 +874,18 @@ function initConstructor(){
  const partRect=(key,rx,ry,rw,rh,fill)=>'<rect'+partAttr(key)+' x="'+rx+'" y="'+ry+'" width="'+Math.max(0,rw)+'" height="'+Math.max(0,rh)+'" fill="'+fill+'" stroke="'+(selectedPart===key?'#f97316':'#786b5c')+'" stroke-width="'+(selectedPart===key?3:1.3)+'"/>';
  const partPoly=(key,pts,fill)=>'<polygon'+partAttr(key)+' points="'+pts.map(v=>v.join(',')).join(' ')+'" fill="'+fill+'" stroke="'+(selectedPart===key?'#f97316':'#786b5c')+'" stroke-width="'+(selectedPart===key?3:1.3)+'" stroke-linejoin="round"/>';
  const updatePartUI=()=>{
-  const el=$('ctorSelectedPart'),btn=$('ctorDeletePart');
-  if(!selectedPart||!partExists(selectedPart)){selectedPart=null;el.textContent='Щракни върху детайл в 2D или 3D.';btn.disabled=true;return}
-  const key=selectedPart,T=state.thick,D=sideDepth(),W=state.width,H=state.height;
-  let dims=key==='left'||key==='right'?H+' × '+D+' × '+T:key==='bottom'||key==='top'?W+' × '+D+' × '+T:key==='back'?W+' × '+H+' × '+state.back:key.startsWith('shelf:')?Math.round(shelfWidth(state.shelves[Number(key.split(':')[1])]))+' × '+Math.round(D-state.shelves[Number(key.split(':')[1])].reduction)+' × '+T:key.startsWith('partition:')?(H-2*T)+' × '+D+' × '+T:'—';
-  el.innerHTML='<b>'+partLabel(key)+'</b><br>Размери: '+dims+' mm<br><small>Изборът е синхронизиран между 2D и 3D.</small>';
-  btn.disabled=!(key==='bottom'||key==='top'||key==='back'||key.startsWith('shelf:')||key.startsWith('partition:'));
+ const el=$('ctorSelectedPart'),btn=$('ctorDeletePart'),fields=$('ctorPartFields');
+ if(!selectedPart||!partExists(selectedPart)){selectedPart=null;el.textContent='Щракни върху детайл в 2D или 3D.';btn.disabled=true;fields.style.display='none';return}
+ const key=selectedPart,T=state.thick,D=sideDepth(),W=state.width,H=state.height,i=Number(key.split(':')[1]);
+ const s=key.startsWith('shelf:')?state.shelves[i]:null;
+ const depth=key==='top'||key==='bottom'?Math.min(D,Number(state.partDepth[key])||D):D;
+ const dims=key==='left'||key==='right'?H+' × '+D+' × '+T:key==='bottom'||key==='top'?W+' × '+depth+' × '+T:key==='back'?W+' × '+H+' × '+state.back:s?Math.round(shelfWidth(s))+' × '+Math.round(D-s.reduction)+' × '+T:key.startsWith('partition:')?(H-2*T)+' × '+D+' × '+T:'—';
+ el.innerHTML='<b>'+partLabel(key)+'</b><br>Размери: '+dims+' mm';
+ btn.disabled=!(key==='bottom'||key==='top'||key==='back'||key.startsWith('shelf:')||key.startsWith('partition:'));
+ const pos=!!s||key.startsWith('partition:'),dep=!!s||key==='top'||key==='bottom';
+ fields.style.display=pos||dep?'block':'none';$('ctorPartPositionWrap').style.display=pos?'block':'none';$('ctorPartDepthWrap').style.display=dep?'block':'none';
+ if(pos){$('ctorPartPositionLabel').textContent=s?'Височина над дъното (mm)':'Позиция отляво (mm)';$('ctorPartPosition').value=s?s.height:state.partitions[i]}
+ if(dep)$('ctorPartDepth').value=s?D-s.reduction:depth;
  };
  const sideDepth=()=>Math.max(0,state.depth-state.back-(state.fronts.length?state.thick:0));
  const shelfBay=s=>bayIndex(s);
@@ -950,49 +957,49 @@ function initConstructor(){
   const sc=Math.min(650/(W+D*.57),390/(H+D*.31)),dx=sc*.57,dy=sc*.31;
   const ox=(800-(W*sc+D*dx))/2,oy=(480-(H*sc+D*dy))/2+D*dy;
   const p=(x,y,z=0)=>[ox+x*sc+z*dx,oy+y*sc-z*dy];
-  const poly=(pts,fill,stroke='#786b5c')=>'<polygon points="'+pts.map(v=>p(...v).join(',')).join(' ')+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.3" stroke-linejoin="round"/>';
-  const front=(x0,y0,x1,y1,fill)=>poly([[x0,y0,0],[x1,y0,0],[x1,y1,0],[x0,y1,0]],fill);
-  const horizontal=(x0,x1,y,z0,z1,fill)=>poly([[x0,y,z0],[x1,y,z0],[x1,y,z1],[x0,y,z1]],fill);
-  const vertical=(x,y0,y1,z0,z1,fill)=>poly([[x,y0,z0],[x,y0,z1],[x,y1,z1],[x,y1,z0]],fill);
+  const poly=(pts,fill,stroke='#786b5c',key=null)=>'<polygon'+(key?partAttr(key):'')+' points="'+pts.map(v=>p(...v).join(',')).join(' ')+'" fill="'+fill+'" stroke="'+(key===selectedPart?'#f97316':stroke)+'" stroke-width="'+(key===selectedPart?3:1.3)+'" stroke-linejoin="round"/>';
+  const front=(x0,y0,x1,y1,fill,key=null)=>poly([[x0,y0,0],[x1,y0,0],[x1,y1,0],[x0,y1,0]],fill,'#786b5c',key);
+  const horizontal=(x0,x1,y,z0,z1,fill,key=null)=>poly([[x0,y,z0],[x1,y,z0],[x1,y,z1],[x0,y,z1]],fill,'#786b5c',key);
+  const vertical=(x,y0,y1,z0,z1,fill,key=null)=>poly([[x,y0,z0],[x,y0,z1],[x,y1,z1],[x,y1,z0]],fill,'#786b5c',key);
   let html='<rect width="800" height="530" fill="#e8edf2"/>';
   html+='<rect x="0" y="445" width="800" height="85" fill="#eeeae5"/>';
   const wood='#e6d8c7',edge='#bda88e',inner='#eee4d7';
   // Back panel at the far end of the depth.
-  if(state.back>0)html+=poly([[T,T,D],[W-T,T,D],[W-T,H-T,D],[T,H-T,D]],'#e2d5c5');
+  if(state.back>0)html+=poly([[T,T,D],[W-T,T,D],[W-T,H-T,D],[T,H-T,D]],'#e2d5c5','#786b5c','back');
   // Back, bottom and inside left wall.
-  if(state.hasBottom)html+=horizontal(0,W,H-T,0,D,wood);
-  html+=vertical(T,T,H-T,0,D,inner);
+  if(state.hasBottom)html+=horizontal(0,W,H-T,0,Math.min(D,Number(state.partDepth.bottom)||D),wood,'bottom');
+  html+=vertical(T,T,H-T,0,D,inner,'left');
   // Bay shelves: each has its own actual width and depth.
   for(let bi=0;bi<=state.partitions.length;bi++){
    const bounds=bayBounds(bi);
    state.shelves.filter(s=>shelfBay(s)===bi).sort((a,b)=>a.height-b.height).forEach(s=>{
     const y=H-T-s.height,z=Math.max(0,D-s.reduction);
     html+=horizontal(bounds.start,bounds.end,y+T,0,z,'#bda68c');
-    html+=horizontal(bounds.start,bounds.end,y,0,z,'#d9b995');
-    html+=front(bounds.start,y,bounds.end,y+T,'#b99269');
+    html+=horizontal(bounds.start,bounds.end,y,0,z,'#d9b995','shelf:'+state.shelves.indexOf(s));
+    html+=front(bounds.start,y,bounds.end,y+T,'#b99269','shelf:'+state.shelves.indexOf(s));
    });
    if(bi<state.partitions.length){
     const x=T+state.partitions[bi];
-    html+=vertical(x+T,T,H-T,0,D,'#e4d5c1');
-    html+=front(x,T,x+T,H-T,edge);
+    html+=vertical(x+T,T,H-T,0,D,'#e4d5c1','partition:'+bi);
+    html+=front(x,T,x+T,H-T,edge,'partition:'+bi);
    }
   }
   // Right side has an INNER surface at W-T and an OUTER surface at W.
   // Draw the inner surface at the actual material thickness, then the
   // exterior side. This also closes the right-hand bottom corner.
-  html+=vertical(W-T,T,H-T,0,D,'#eee4d7');
-  html+=vertical(W,0,H,0,D,'#c9b8a4');
-  html+=front(W-T,T,W,H-T,edge);
-  html+=front(0,T,T,H-T,edge);
-  if(state.hasBottom)html+=front(0,H-T,W,H,edge);
-  if(state.hasTop)html+=horizontal(0,W,0,0,D,wood);
+  html+=vertical(W-T,T,H-T,0,D,'#eee4d7','right');
+  html+=vertical(W,0,H,0,D,'#c9b8a4','right');
+  html+=front(W-T,T,W,H-T,edge,'right');
+  html+=front(0,T,T,H-T,edge,'left');
+  if(state.hasBottom)html+=front(0,H-T,W,H,edge,'bottom');
+  if(state.hasTop)html+=horizontal(0,W,0,0,Math.min(D,Number(state.partDepth.top)||D),wood,'top');
   // The right-side bottom joint must run along the full depth at the
   // top surface of the bottom panel, not vertically at the rear corner.
   // Render it last, over the right side surface so it remains visible.
   const rightBottomFront=p(W,H-T,0),rightBottomBack=p(W,H-T,D);
-  html+='<line x1="'+rightBottomFront[0]+'" y1="'+rightBottomFront[1]+'" x2="'+rightBottomBack[0]+'" y2="'+rightBottomBack[1]+'" stroke="#786b5c" stroke-width="1.5"/>';
-  html+=vertical(W,0,T,0,D,'#c9b8a4');
-  if(state.hasTop)html+=front(0,0,W,T,edge);
+  if(state.hasBottom)html+='<line x1="'+rightBottomFront[0]+'" y1="'+rightBottomFront[1]+'" x2="'+rightBottomBack[0]+'" y2="'+rightBottomBack[1]+'" stroke="#786b5c" stroke-width="1.5" pointer-events="none"/>';
+  html+=vertical(W,0,T,0,D,'#c9b8a4','right');
+  if(state.hasTop)html+=front(0,0,W,T,edge,'top');
   if(mode==='front'&&state.fronts.length){
    state.fronts.forEach(f=>{
     const x=Number(f.x)||0,y=Number(f.y)||0,w=Number(f.w)||0,h=Number(f.h)||0;
@@ -1001,14 +1008,6 @@ function initConstructor(){
     html+='<polygon points="'+[[x,y],[x+w,y],[x+w,y+h],[x,y+h]].map(v=>p(...v).join(',')).join(' ')+'" fill="'+fill+'"'+opacity+' stroke="#786b5c" stroke-width="1.3"/>';
    });
   }
-  // Click targets are layered in visible drawing order; the last drawn surface wins.
-  if(state.hasBottom)html+=partPoly('bottom',[[0,H-T,0],[W,H-T,0],[W,H-T,D],[0,H-T,D]].map(v=>p(...v)),'transparent');
-  if(state.back>0)html+=partPoly('back',[[T,T,D],[W-T,T,D],[W-T,H-T,D],[T,H-T,D]].map(v=>p(...v)),'transparent');
-  state.shelves.forEach((s,i)=>{const b=bayBounds(shelfBay(s)),yy=H-T-s.height,zz=Math.max(0,D-s.reduction);html+=partPoly('shelf:'+i,[[b.start,yy,0],[b.end,yy,0],[b.end,yy,zz],[b.start,yy,zz]].map(v=>p(...v)),'transparent')});
-  state.partitions.forEach((v,i)=>{const xx=T+v;html+=partPoly('partition:'+i,[[xx,T,0],[xx,T,D],[xx,H-T,D],[xx,H-T,0]].map(v=>p(...v)),'transparent')});
-  html+=partPoly('left',[[0,0,0],[T,0,0],[T,H,0],[0,H,0]].map(v=>p(...v)),'transparent');
-  html+=partPoly('right',[[W-T,T,0],[W,T,0],[W,H-T,0],[W-T,H-T,0]].map(v=>p(...v)),'transparent');
-  if(state.hasTop)html+=partPoly('top',[[0,0,0],[W,0,0],[W,0,D],[0,0,D]].map(v=>p(...v)),'transparent');
   html+='<text x="400" y="500" text-anchor="middle" font-size="14" fill="#334155">3D визуализация · '+W+' × '+H+' × '+state.depth+' mm</text>';
   return html;
  };
@@ -1224,7 +1223,7 @@ function initConstructor(){
  });
  const end=()=>{dragging=false;shelfDrag=null;partitionDrag=null;if(frontDrag){frontDrag=null;metrics=draw()}};
  svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
- $('ctorReset').addEventListener('click',()=>{state={...defaults,fronts:[],shelves:[],partitions:[350]};selectedFront=-1;selectedShelf=-1;selectedPartition=-1;metrics=draw()});
+ $('ctorReset').addEventListener('click',()=>{state={...defaults,hasTop:true,hasBottom:true,partDepth:{},fronts:[],shelves:[],partitions:[350]};selectedFront=-1;selectedShelf=-1;selectedPartition=-1;selectedPart=null;metrics=draw()});
 
  $('ctorAddShelf').onclick=()=>{
   const bayIndex=Number($('ctorShelfBay').value)||0;
@@ -1241,7 +1240,11 @@ function initConstructor(){
   if(shelfFits(next,selectedShelf)){Object.assign(s,next);shelfWarning('')}else shelfWarning('Невалиден размер или застъпване с друг рафт.');
   metrics=draw()
  }));
- $('ctorDeletePart').onclick=()=>{if(!selectedPart)return;const key=selectedPart;if(key==='bottom')state.hasBottom=false;else if(key==='top')state.hasTop=false;else if(key==='back')state.back=0;else if(key.startsWith('shelf:'))state.shelves.splice(Number(key.split(':')[1]),1);else if(key.startsWith('partition:'))state.partitions.splice(Number(key.split(':')[1]),1);selectedPart=null;selectedShelf=-1;selectedPartition=-1;metrics=draw()};
+ const removeSelectedPart=()=>{if(!selectedPart)return;const key=selectedPart;if(key==='bottom')state.hasBottom=false;else if(key==='top')state.hasTop=false;else if(key==='back')state.back=0;else if(key.startsWith('shelf:'))state.shelves.splice(Number(key.split(':')[1]),1);else if(key.startsWith('partition:'))state.partitions.splice(Number(key.split(':')[1]),1);else return;selectedPart=null;selectedShelf=-1;selectedPartition=-1;metrics=draw()};
+ $('ctorDeletePart').onclick=removeSelectedPart;
+ document.addEventListener('keydown',e=>{if(e.key!=='Delete')return;if(!document.getElementById('constructorPanel')?.offsetParent)return;if(e.target.closest('input,textarea,select,[contenteditable]'))return;if(!selectedPart)return;e.preventDefault();removeSelectedPart()});
+ $('ctorPartPosition').onchange=()=>{if(!selectedPart)return;const key=selectedPart,i=Number(key.split(':')[1]),v=Number($('ctorPartPosition').value);if(!Number.isFinite(v))return;if(key.startsWith('shelf:')){const trial={...state.shelves[i],height:v};if(shelfFits(trial,i))state.shelves[i].height=v}else if(key.startsWith('partition:')){const next=[...state.partitions];next[i]=v;if(next.every((p,j)=>j===0||p>next[j-1])&&partitionValid(next))state.partitions=next}metrics=draw()};
+ $('ctorPartDepth').onchange=()=>{if(!selectedPart)return;const key=selectedPart,v=Number($('ctorPartDepth').value),D=sideDepth();if(!Number.isFinite(v)||v<1||v>D){metrics=draw();return}if(key.startsWith('shelf:'))state.shelves[Number(key.split(':')[1])].reduction=D-v;else if(key==='top'||key==='bottom')state.partDepth[key]=v;metrics=draw()};
  $('ctorRestoreParts').onclick=()=>{state.hasBottom=true;state.hasTop=true;metrics=draw()};
  $('ctorModeBody').onclick=()=>{mode='body';metrics=draw()};
  $('ctorModeFront').onclick=()=>{mode='front';metrics=draw()};
