@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.48</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.49</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -798,6 +798,7 @@ function initConstructor(){
  let mode='body',selectedFront=-1,frontDrag=null,selectedShelf=-1,shelfDrag=null,selectedPartition=-1,partitionDrag=null;
  let view3D=false,selectedPart=null;
  if(!state.partDepth||typeof state.partDepth!=='object')state.partDepth={};
+ if(!Array.isArray(state.partitionDepths))state.partitionDepths=[];
  if(typeof state.hasBottom!=='boolean')state.hasBottom=true;
  if(typeof state.hasTop!=='boolean')state.hasTop=true;
  let constructorZoom=1;
@@ -876,17 +877,20 @@ function initConstructor(){
  const partPoly=(key,pts,fill)=>'<polygon'+partAttr(key)+' points="'+pts.map(v=>v.join(',')).join(' ')+'" fill="'+fill+'" stroke="'+(selectedPart===key?'#f97316':'#786b5c')+'" stroke-width="'+(selectedPart===key?3:1.3)+'" stroke-linejoin="round"/>';
  const updatePartUI=()=>{
  const el=$('ctorSelectedPart'),btn=$('ctorDeletePart'),fields=$('ctorPartFields');
- if(!selectedPart||!partExists(selectedPart)){selectedPart=null;el.textContent='Щракни върху детайл в 2D или 3D.';btn.disabled=true;fields.style.display='none';return}
+ if(!selectedPart||!partExists(selectedPart)){selectedPart=null;el.textContent='Щракни върху детайл в 2D или 3D.';btn.disabled=true;fields.style.display='none';el.style.cssText='';return}
  const key=selectedPart,T=state.thick,D=sideDepth(),W=state.width,H=state.height,i=Number(key.split(':')[1]);
  const s=key.startsWith('shelf:')?state.shelves[i]:null;
  const depth=key==='top'||key==='bottom'?Math.min(D,Number(state.partDepth[key])||D):D;
- const dims=key==='left'||key==='right'?H+' × '+D+' × '+T:key==='bottom'||key==='top'?W+' × '+depth+' × '+T:key==='back'?W+' × '+H+' × '+state.back:s?Math.round(shelfWidth(s))+' × '+Math.round(D-s.reduction)+' × '+T:key.startsWith('partition:')?(H-2*T)+' × '+D+' × '+T:'—';
+ const partitionDepth=key.startsWith('partition:')?Math.max(1,Math.min(D,D-(Number(state.partitionDepths[i])||0))):D;
+ const dims=key==='left'||key==='right'?H+' × '+D+' × '+T:key==='bottom'||key==='top'?W+' × '+depth+' × '+T:key==='back'?W+' × '+H+' × '+state.back:s?Math.round(shelfWidth(s))+' × '+Math.round(D-s.reduction)+' × '+T:key.startsWith('partition:')?(H-2*T)+' × '+Math.round(partitionDepth)+' × '+T:'—';
  el.innerHTML='<b>'+partLabel(key)+'</b><br>Размери: '+dims+' mm';
  btn.disabled=!(key==='bottom'||key==='top'||key==='back'||key.startsWith('shelf:')||key.startsWith('partition:'));
- const pos=!!s||key.startsWith('partition:'),dep=!!s||key==='top'||key==='bottom';
+ const pos=!!s||key.startsWith('partition:'),dep=!!s||key==='top'||key==='bottom'||key.startsWith('partition:');
  fields.style.display=pos||dep?'block':'none';$('ctorPartPositionWrap').style.display=pos?'block':'none';$('ctorPartDepthWrap').style.display=dep?'block':'none';
  if(pos){$('ctorPartPositionLabel').textContent=s?'Височина над дъното (mm)':'Позиция отляво (mm)';$('ctorPartPosition').value=s?s.height:state.partitions[i]}
- if(dep)$('ctorPartDepth').value=s?D-s.reduction:depth;
+ if(dep)$('ctorPartDepth').value=s?D-s.reduction:key.startsWith('partition:')?partitionDepth:depth;
+ el.style.cssText='background:#fff0c2;border:2px solid #f59e0b;border-radius:10px;padding:12px;box-shadow:0 0 0 3px #f59e0b22';
+ fields.style.border='2px solid #f59e0b';fields.style.borderRadius='10px';fields.style.padding='10px';fields.style.background='#fff8e8';
  };
  const sideDepth=()=>Math.max(0,state.depth-state.back-(state.fronts.length?state.thick:0));
  const shelfBay=s=>bayIndex(s);
@@ -981,7 +985,7 @@ function initConstructor(){
    });
    if(bi<state.partitions.length){
     const x=T+state.partitions[bi];
-    html+=vertical(x+T,T,H-T,0,D,'#e4d5c1','partition:'+bi);
+    html+=vertical(x+T,T,H-T,0,Math.max(1,D-(Number(state.partitionDepths[bi])||0)),'#e4d5c1','partition:'+bi);
     html+=front(x,T,x+T,H-T,edge,'partition:'+bi);
    }
   }
@@ -1007,7 +1011,7 @@ function initConstructor(){
    html+=horizontal(0,T,0,0,D,'#c7ad91','left');
    state.partitions.forEach((position,index)=>{
     const x=T+position;
-    html+=horizontal(x,x+T,T,0,D,'#c7ad91','partition:'+index);
+    html+=horizontal(x,x+T,T,0,Math.max(1,D-(Number(state.partitionDepths[index])||0)),'#c7ad91','partition:'+index);
    });
    html+=horizontal(W-T,W,0,0,D,'#b59679','right');
   }
@@ -1191,9 +1195,9 @@ function initConstructor(){
    svg.setPointerCapture(e.pointerId);e.preventDefault();return
   }
   const part=e.target.getAttribute('data-partition');
-  if(part!==null){const i=Number(part),pt=pointerCoords(e);selectedPartition=i;partitionDrag={index:i,startX:pt.x,start:state.partitions[i],scale:metrics.scale};svg.setPointerCapture(e.pointerId);metrics=draw();e.preventDefault();return}
+  if(part!==null){const i=Number(part),pt=pointerCoords(e);selectedPart='partition:'+i;selectedPartition=i;partitionDrag={index:i,startX:pt.x,start:state.partitions[i],scale:metrics.scale};svg.setPointerCapture(e.pointerId);metrics=draw();e.preventDefault();return}
   const shelfIndex=e.target.getAttribute('data-shelf');
-  if(shelfIndex!==null){const i=Number(shelfIndex);selectedShelf=i;const pt=pointerCoords(e);shelfDrag={index:i,startY:pt.y,height:state.shelves[i].height,scale:metrics.scale};metrics=draw();svg.setPointerCapture(e.pointerId);e.preventDefault();return}
+  if(shelfIndex!==null){const i=Number(shelfIndex);selectedPart='shelf:'+i;selectedShelf=i;const pt=pointerCoords(e);shelfDrag={index:i,startY:pt.y,height:state.shelves[i].height,scale:metrics.scale};metrics=draw();svg.setPointerCapture(e.pointerId);e.preventDefault();return}
   if(e.target.id!=='ctorDrag'){if(!chosen)selectedPart=null;if(selectedShelf!==-1||chosen){selectedShelf=-1;metrics=draw()}return}
   dragging=true;svg.setPointerCapture(e.pointerId);e.preventDefault()
  });
@@ -1287,7 +1291,7 @@ function initConstructor(){
  });
  const end=()=>{dragging=false;shelfDrag=null;partitionDrag=null;if(frontDrag){frontDrag=null;metrics=draw()}};
  svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
- $('ctorReset').addEventListener('click',()=>{state={...defaults,hasTop:true,hasBottom:true,partDepth:{},fronts:[],shelves:[],partitions:[350]};selectedFront=-1;selectedShelf=-1;selectedPartition=-1;selectedPart=null;metrics=draw()});
+ $('ctorReset').addEventListener('click',()=>{state={...defaults,hasTop:true,hasBottom:true,partDepth:{},fronts:[],shelves:[],partitions:[350],partitionDepths:[]};selectedFront=-1;selectedShelf=-1;selectedPartition=-1;selectedPart=null;metrics=draw()});
 
  $('ctorAddShelf').onclick=()=>{
   const bayIndex=Number($('ctorShelfBay').value)||0;
@@ -1304,11 +1308,11 @@ function initConstructor(){
   if(shelfFits(next,selectedShelf)){Object.assign(s,next);shelfWarning('')}else shelfWarning('Невалиден размер или застъпване с друг рафт.');
   metrics=draw()
  }));
- const removeSelectedPart=()=>{if(!selectedPart)return;const key=selectedPart;if(key==='bottom')state.hasBottom=false;else if(key==='top')state.hasTop=false;else if(key==='back')state.back=0;else if(key.startsWith('shelf:'))state.shelves.splice(Number(key.split(':')[1]),1);else if(key.startsWith('partition:'))state.partitions.splice(Number(key.split(':')[1]),1);else return;selectedPart=null;selectedShelf=-1;selectedPartition=-1;metrics=draw()};
+ const removeSelectedPart=()=>{if(!selectedPart)return;const key=selectedPart;if(key==='bottom')state.hasBottom=false;else if(key==='top')state.hasTop=false;else if(key==='back')state.back=0;else if(key.startsWith('shelf:'))state.shelves.splice(Number(key.split(':')[1]),1);else if(key.startsWith('partition:')){const i=Number(key.split(':')[1]);state.partitions.splice(i,1);state.partitionDepths.splice(i,1)}else return;selectedPart=null;selectedShelf=-1;selectedPartition=-1;metrics=draw()};
  $('ctorDeletePart').onclick=removeSelectedPart;
  document.addEventListener('keydown',e=>{if(e.key!=='Delete')return;if(!document.getElementById('constructorPanel')?.offsetParent)return;if(e.target.closest('input,textarea,select,[contenteditable]'))return;if(!selectedPart)return;e.preventDefault();removeSelectedPart()});
  $('ctorPartPosition').onchange=()=>{if(!selectedPart)return;const key=selectedPart,i=Number(key.split(':')[1]),v=Number($('ctorPartPosition').value);if(!Number.isFinite(v))return;if(key.startsWith('shelf:')){const trial={...state.shelves[i],height:v};if(shelfFits(trial,i))state.shelves[i].height=v}else if(key.startsWith('partition:')){const next=[...state.partitions];next[i]=v;if(next.every((p,j)=>j===0||p>next[j-1])&&partitionValid(next))state.partitions=next}metrics=draw()};
- $('ctorPartDepth').onchange=()=>{if(!selectedPart)return;const key=selectedPart,v=Number($('ctorPartDepth').value),D=sideDepth();if(!Number.isFinite(v)||v<1||v>D){metrics=draw();return}if(key.startsWith('shelf:'))state.shelves[Number(key.split(':')[1])].reduction=D-v;else if(key==='top'||key==='bottom')state.partDepth[key]=v;metrics=draw()};
+ $('ctorPartDepth').onchange=()=>{if(!selectedPart)return;const key=selectedPart,v=Number($('ctorPartDepth').value),D=sideDepth();if(!Number.isFinite(v)||v<1||v>D){metrics=draw();return}if(key.startsWith('shelf:'))state.shelves[Number(key.split(':')[1])].reduction=D-v;else if(key==='top'||key==='bottom')state.partDepth[key]=v;else if(key.startsWith('partition:'))state.partitionDepths[Number(key.split(':')[1])]=D-v;metrics=draw()};
  $('ctorRestoreParts').onclick=()=>{state.hasBottom=true;state.hasTop=true;state.partDepth={...state.partDepth,top:sideDepth(),bottom:sideDepth()};selectedPart=null;metrics=draw()};
  $('ctorModeBody').onclick=()=>{mode='body';metrics=draw()};
  $('ctorModeFront').onclick=()=>{mode='front';metrics=draw()};
