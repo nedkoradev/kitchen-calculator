@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.43</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.44</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -121,6 +121,7 @@
 <span class="hint">Мащаб на изгледа, без промяна на размерите</span>
 </div>
 <div style="display:flex;gap:8px;margin:6px 0 10px;align-items:center"><button type="button" id="ctorView2D">2D · редакция</button><button type="button" id="ctorView3D">3D · преглед</button><span class="hint">В 3D виждаш корпуса, рафтовете и фасадите.</span></div>
+<div id="ctorThreeMount" style="display:none;width:100%;aspect-ratio:800/530;max-height:560px;border-radius:12px;overflow:hidden;background:#eef2f5"></div>
 <svg id="ctorSvg" viewBox="0 0 800 530" role="img" aria-label="Схематичен корпус с подвижна вертикална преграда" style="display:block;width:100%;height:auto;aspect-ratio:800/530;max-height:560px;touch-action:none;background:#eef2f5;border-radius:12px;border:1px solid #d8e0e9"></svg>
 <p class="hint">Изгледът е схематичен и показва конструкцията в реални пропорции. Разкроят и 3D моделът ще бъдат свързани в следващ етап.</p></div>
 </div></section></div>
@@ -256,7 +257,7 @@
 <div id="projectCosts" class="calc">Добави шкафове и материал за корпус, за да се изчисли разходът.</div>
 </section></div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 (()=>{'use strict';
@@ -1011,6 +1012,59 @@ function initConstructor(){
   html+='<text x="400" y="500" text-anchor="middle" font-size="14" fill="#334155">3D визуализация · '+W+' × '+H+' × '+state.depth+' mm</text>';
   return html;
  };
+ let threeCtx=null;
+ const renderTrue3D=()=>{
+  const mount=$('ctorThreeMount');
+  if(!window.THREE){mount.style.display='none';svg.style.display='block';svg.innerHTML=render3D();return}
+  svg.style.display='none';mount.style.display='block';
+  const THREE=window.THREE;
+  if(!threeCtx){
+   const scene=new THREE.Scene();scene.background=new THREE.Color('#f5e9d9');
+   const camera=new THREE.OrthographicCamera(-650,650,430,-430,1,6000);
+   const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
+   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+   renderer.setSize(800,530,false);renderer.domElement.style.cssText='display:block;width:100%;height:100%;cursor:pointer';
+   mount.appendChild(renderer.domElement);
+   scene.add(new THREE.HemisphereLight(0xffffff,0x97745c,2));
+   const lamp=new THREE.DirectionalLight(0xffffff,1.4);lamp.position.set(600,900,1000);scene.add(lamp);
+   const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
+   renderer.domElement.addEventListener('pointerdown',e=>{
+    const box=renderer.domElement.getBoundingClientRect();
+    pointer.set((e.clientX-box.left)/box.width*2-1,-((e.clientY-box.top)/box.height*2-1));
+    raycaster.setFromCamera(pointer,camera);
+    const hit=raycaster.intersectObjects(threeCtx.parts,false)[0];
+    selectedPart=hit?hit.object.userData.part:null;
+    if(selectedPart?.startsWith('shelf:'))selectedShelf=Number(selectedPart.split(':')[1]);
+    if(selectedPart?.startsWith('partition:'))selectedPartition=Number(selectedPart.split(':')[1]);
+    metrics=draw();
+   });
+   threeCtx={scene,camera,renderer,parts:[]};
+  }
+  const {scene,camera,renderer}=threeCtx;
+  for(const mesh of threeCtx.parts){scene.remove(mesh);mesh.geometry.dispose();mesh.material.dispose()}
+  threeCtx.parts=[];
+  const W=state.width,H=state.height,T=state.thick,D=Math.max(60,sideDepth());
+  const add=(key,x,y,z,w,h,d,color)=>{
+   if(w<=0||h<=0||d<=0)return;
+   const mat=new THREE.MeshStandardMaterial({color:key===selectedPart?'#f59e0b':color,roughness:.84,metalness:0,side:THREE.DoubleSide});
+   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+   mesh.position.set(x-W/2,H/2-y,z-D/2);mesh.userData.part=key;
+   scene.add(mesh);threeCtx.parts.push(mesh);
+  };
+  if(state.back>0)add('back',W/2,H/2,D+state.back/2,W,state.height,state.back,'#dfcdb7');
+  add('left',T/2,H/2,D/2,T,H,D,'#ddc2a4');
+  add('right',W-T/2,H/2,D/2,T,H,D,'#c9a581');
+  if(state.hasBottom)add('bottom',W/2,H-T/2,Math.min(D,Number(state.partDepth.bottom)||D)/2,W,T,Math.min(D,Number(state.partDepth.bottom)||D),'#e2c6a5');
+  if(state.hasTop)add('top',W/2,T/2,Math.min(D,Number(state.partDepth.top)||D)/2,W,T,Math.min(D,Number(state.partDepth.top)||D),'#e9cba9');
+  state.partitions.forEach((v,i)=>add('partition:'+i,T+v+T/2,H/2,D/2,T,H-2*T,D,'#e0bea0'));
+  state.shelves.forEach((s,i)=>{const b=bayBounds(shelfBay(s)),depth=Math.max(1,D-s.reduction);add('shelf:'+i,b.start+b.width/2,H-T-s.height+T/2,depth/2,b.width,T,depth,'#d4af86')});
+  if(mode==='front')state.fronts.forEach((q,i)=>add('facade:'+i,q.x+q.w/2,q.y+q.h/2,-T/2,q.w,q.h,T,'#c9935e'));
+  const extent=Math.max(W+D*.65,H+D*.42)*1.12/constructorZoom;
+  camera.left=-extent*.75;camera.right=extent*.75;camera.top=extent*.497;camera.bottom=-extent*.497;
+  camera.position.set(W*.85,H*.65,D*1.9+500);
+  camera.lookAt(0,0,0);camera.updateProjectionMatrix();
+  renderer.render(scene,camera);
+ };
  const updateViewButtons=()=>{
   $('ctorView2D').style.background=view3D?'#fff':'#173b66';$('ctorView2D').style.color=view3D?'#173b66':'#fff';
   $('ctorView3D').style.background=view3D?'#173b66':'#fff';$('ctorView3D').style.color=view3D?'#fff':'#173b66';
@@ -1079,7 +1133,7 @@ function initConstructor(){
   state.fronts.forEach((p,i)=>{const rx=x+p.x*scale,ry=y+p.y*scale,rw=p.w*scale,rh=p.h*scale;html+='<rect data-shape="'+i+'" x="'+rx+'" y="'+ry+'" width="'+rw+'" height="'+rh+'" fill="'+(i===selectedFront?'#d7ab76':'#ead8be')+'" fill-opacity="'+(transparent?'0.36':'1')+'" stroke="'+(i===selectedFront?'#b45309':'#9a8060')+'" stroke-width="1.4"/>';html+='<text data-label="'+i+'" x="'+(rx+rw/2)+'" y="'+(ry+rh/2)+'" text-anchor="middle" font-size="'+Math.min(15,Math.max(9,rw/9))+'" fill="#543c27" pointer-events="none">' +frontName(p,i)+'</text>';html+='<rect data-front="'+i+'" x="'+rx+'" y="'+ry+'" width="'+rw+'" height="'+rh+'" fill="transparent" style="cursor:move"/>';const edge=7;
   [['left',rx-edge/2,ry+edge,edge,Math.max(0,rh-2*edge),'ew-resize'],['right',rx+rw-edge/2,ry+edge,edge,Math.max(0,rh-2*edge),'ew-resize'],['top',rx+edge,ry-edge/2,Math.max(0,rw-2*edge),edge,'ns-resize'],['bottom',rx+edge,ry+rh-edge/2,Math.max(0,rw-2*edge),edge,'ns-resize']].forEach(([side,bx,by,bw,bh,cursor])=>{html+='<rect data-edge="'+side+'" data-edge-front="'+i+'" x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" fill="transparent" style="cursor:'+cursor+'"/>'});
   })}
- svg.innerHTML=view3D?render3D():html;updateViewButtons();updateFrontUI();updatePartUI();
+ if(view3D){renderTrue3D()}else{$('ctorThreeMount').style.display='none';svg.style.display='block';svg.innerHTML=html}updateViewButtons();updateFrontUI();updatePartUI();
  $('ctorDimensions').innerHTML='<b>Вътрешна ширина:</b> '+esc(inner)+' mm<br><b>Отделения:</b> '+Array.from({length:state.partitions.length+1},(_,i)=>esc(bayBounds(i).width)+' mm').join(' / ')+'<br><b>Обща дълбочина:</b> '+state.depth+' mm<br><b>Гръб:</b> '+state.back+' mm<br><b>Врата:</b> '+(state.fronts?.length?state.thick:0)+' mm<br><b>Дълбочина на страниците:</b> '+esc(Math.max(0,state.depth-state.back-(state.fronts?.length?state.thick:0)))+' mm';
  localStorage.setItem('nediqConstructorDraft',JSON.stringify(state));syncInputs();
  return {x,y,t,scale,T,W};
