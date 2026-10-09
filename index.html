@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.28</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.29</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -952,15 +952,6 @@ function initConstructor(){
    const x=T+pos;
    html+=vertical(x+T,T,H-T,0,D,'#e4d5c1');
   });
-  // Draw shelves after internal walls: their horizontal surfaces are in front.
-  for(let bi=0;bi<=state.partitions.length;bi++){
-   const bounds=bayBounds(bi);
-   state.shelves.filter(s=>shelfBay(s)===bi).sort((a,b)=>a.height-b.height).forEach(s=>{
-    const y=H-T-s.height,z=Math.max(0,D-s.reduction);
-    html+=horizontal(bounds.start,bounds.end,y,0,z,'#d9b995');
-    html+=front(bounds.start,y,bounds.end,y+T,'#b99269');
-   });
-  }
   // Partition front edges, continuous from top to bottom.
   state.partitions.forEach(pos=>{
    const x=T+pos;
@@ -974,6 +965,17 @@ function initConstructor(){
   html+=front(0,0,T,H,edge);
   html+=horizontal(0,W,0,0,D,wood);
   html+=front(0,0,W,T,edge);
+  // Shelves must be drawn after the opaque cabinet shell. Otherwise the
+  // projected right side and floor paint over the interior shelf polygons.
+  // Draw shelves after internal walls: their horizontal surfaces are in front.
+  for(let bi=0;bi<=state.partitions.length;bi++){
+   const bounds=bayBounds(bi);
+   state.shelves.filter(s=>shelfBay(s)===bi).sort((a,b)=>a.height-b.height).forEach(s=>{
+    const y=H-T-s.height,z=Math.max(0,D-s.reduction);
+    html+=horizontal(bounds.start,bounds.end,y,0,z,'#d9b995');
+    html+=front(bounds.start,y,bounds.end,y+T,'#b99269');
+   });
+  }
   if(mode==='front'&&state.fronts.length){
    state.fronts.forEach(f=>{
     const x=Number(f.x)||0,y=Number(f.y)||0,w=Number(f.w)||0,h=Number(f.h)||0;
