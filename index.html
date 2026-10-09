@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.46</p></header>
+<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.47</p></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -966,10 +966,10 @@ function initConstructor(){
   html+='<rect x="0" y="445" width="800" height="85" fill="#eeeae5"/>';
   const wood='#e6d8c7',edge='#bda88e',inner='#eee4d7';
   // Back panel at the far end of the depth.
-  if(state.back>0)html+=poly([[T,T,D],[W-T,T,D],[W-T,H-T,D],[T,H-T,D]],'#e2d5c5','#786b5c','back');
+  if(state.back>0)html+=poly([[T,state.hasTop?T:0,D],[W-T,state.hasTop?T:0,D],[W-T,state.hasBottom?H-T:H,D],[T,state.hasBottom?H-T:H,D]],'#e2d5c5','#786b5c','back');
   // Back, bottom and inside left wall.
   if(state.hasBottom)html+=horizontal(0,W,H-T,0,Math.min(D,Number(state.partDepth.bottom)||D),wood,'bottom');
-  html+=vertical(T,T,H-T,0,D,inner,'left');
+  html+=vertical(T,state.hasTop?T:0,state.hasBottom?H-T:H,0,D,inner,'left');
   // Bay shelves: each has its own actual width and depth.
   for(let bi=0;bi<=state.partitions.length;bi++){
    const bounds=bayBounds(bi);
@@ -981,8 +981,8 @@ function initConstructor(){
    });
    if(bi<state.partitions.length){
     const x=T+state.partitions[bi];
-    html+=vertical(x+T,state.hasTop?T:0,state.hasBottom?H-T:H,0,D,'#e4d5c1','partition:'+bi);
-    html+=front(x,state.hasTop?T:0,x+T,state.hasBottom?H-T:H,edge,'partition:'+bi);
+    html+=vertical(x+T,T,H-T,0,D,'#e4d5c1','partition:'+bi);
+    html+=front(x,T,x+T,H-T,edge,'partition:'+bi);
    }
   }
   // Right side has an INNER surface at W-T and an OUTER surface at W.
@@ -990,8 +990,8 @@ function initConstructor(){
   // exterior side. This also closes the right-hand bottom corner.
   html+=vertical(W-T,state.hasTop?T:0,state.hasBottom?H-T:H,0,D,'#eee4d7','right');
   html+=vertical(W,0,H,0,D,'#c9b8a4','right');
-  html+=front(W-T,state.hasTop?T:0,W,state.hasBottom?H-T:H,edge,'right');
-  html+=front(0,state.hasTop?T:0,T,state.hasBottom?H-T:H,edge,'left');
+  html+=front(W-T,0,W,H,edge,'right');
+  html+=front(0,0,T,H,edge,'left');
   if(state.hasBottom)html+=front(0,H-T,W,H,edge,'bottom');
   if(state.hasTop)html+=horizontal(0,W,0,0,Math.min(D,Number(state.partDepth.top)||D),wood,'top');
   // The right-side bottom joint must run along the full depth at the
