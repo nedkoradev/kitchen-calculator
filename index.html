@@ -940,7 +940,7 @@ function initConstructor(){
  const finishOptions=(el,arr,blank)=>{const old=el.value;el.replaceChildren();const opt=document.createElement('option');opt.value='';opt.textContent=blank;el.append(opt);arr.forEach((m,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=m.name||'Материал '+(i+1);el.append(o)});if([...el.options].some(o=>o.value===old))el.value=old};
  const updateFinishLists=()=>{let boards=[],bands=[];try{boards=JSON.parse(localStorage.getItem('kitchenPdcMaterials')||'[]');bands=JSON.parse(localStorage.getItem('kitchenEdgeMaterials')||'[]')}catch(e){}finishOptions(partMaterialSelect,boards,'Избери материал');finishSelects.forEach(el=>finishOptions(el,bands,'Без кант'));return {boards,bands}};
  const finishFor=key=>state.partFinishes[key]||{};
- const partPaint=(key,fallback)=>{if(!key)return fallback;const id=finishFor(key).material;if(id==null)return fallback;let boards=[];try{boards=JSON.parse(localStorage.getItem('kitchenPdcMaterials')||'[]')}catch(e){}const color=boards[id]?.color;return typeof color==='string'&&/^#[0-9a-f]{6}$/i.test(color)?color:fallback};
+ const partPaint=(key,fallback)=>{if(!key)return fallback;const id=finishFor(key).material;if(id==null)return fallback;let boards=[];try{boards=JSON.parse(localStorage.getItem('kitchenPdcMaterials')||'[]')}catch(e){}const color=boards[id]?.color;return typeof color==='string'&&(/^#[0-9a-f]{3,8}$/i.test(color)||/^rgb(a)?\(/i.test(color))?color:fallback};
 
  const saveFinish=()=>{if(!selectedPart)return;const existing=finishFor(selectedPart);state.partFinishes[selectedPart]={...existing,material:partMaterialSelect.value===''?null:Number(partMaterialSelect.value),edges:finishSelects.map(el=>el.value===''?null:Number(el.value))};localStorage.setItem('nediqConstructorDraft',JSON.stringify(state));draw()};
  partMaterialSelect.addEventListener('change',saveFinish);finishSelects.forEach(el=>el.addEventListener('change',saveFinish));
@@ -1186,7 +1186,7 @@ function initConstructor(){
   if(mode==='front'&&state.fronts.length){
    state.fronts.forEach(f=>{
     const x=Number(f.x)||0,y=Number(f.y)||0,w=Number(f.w)||0,h=Number(f.h)||0;
-    const fill=state.frontTransparent?'#d6a36f':'#d6a36f';
+    const fill=partPaint('facade:'+state.fronts.indexOf(f),'#d6a36f');
     const opacity=state.frontTransparent?' fill-opacity="0.3"':'';
     html+='<polygon points="'+[[x,y],[x+w,y],[x+w,y+h],[x,y+h]].map(v=>p(...v).join(',')).join(' ')+'" fill="'+fill+'"'+opacity+' stroke="#786b5c" stroke-width="1.3"/>';
    });
@@ -1228,7 +1228,7 @@ function initConstructor(){
   const W=state.width,H=state.height,T=state.thick,D=Math.max(60,sideDepth());
   const add=(key,x,y,z,w,h,d,color)=>{
    if(w<=0||h<=0||d<=0)return;
-   const mat=new THREE.MeshStandardMaterial({color:key===selectedPart?'#f59e0b':color,roughness:.84,metalness:0,side:THREE.DoubleSide});
+   const mat=new THREE.MeshStandardMaterial({color:partPaint(key,color),roughness:.84,metalness:0,side:THREE.DoubleSide});
    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
    mesh.position.set(x-W/2,H/2-y,z-D/2);mesh.userData.part=key;
    scene.add(mesh);threeCtx.parts.push(mesh);
