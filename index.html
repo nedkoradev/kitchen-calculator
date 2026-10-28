@@ -10,7 +10,7 @@
 .legacy-pdc-role{display:none!important}.pdc-table{width:100%;border-collapse:collapse}.pdc-table th,.pdc-table td{border:1px solid #d8dee6;padding:8px 9px}.pdc-table th{background:#f8fafc;color:#617086;text-align:left}.part-material{margin-top:10px}.part-material select,.project-actions select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-options{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px 14px;margin-top:12px}.project-option{display:grid;grid-template-columns:auto 1fr;gap:7px 9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #d8e0e9;border-radius:9px}.project-option label{grid-column:1/-1;font-weight:700}.project-option select{width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.project-option .opt-label{font-size:12px;color:#617086}@media(max-width:900px){.project-options{grid-template-columns:1fr}}
 .constructor-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px}.constructor-controls{display:grid;gap:12px;align-content:start}.constructor-controls button{padding:10px;border:0;border-radius:8px;background:#173b66;color:#fff;cursor:pointer}@media(max-width:800px){.constructor-layout{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.52</p></header>
+<header style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap"><div><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.53</p></div><div id="kitchenAuthBar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span id="kitchenAuthStatus" style="font-size:13px">Проверка на входа…</span><button id="kitchenLogin" type="button" style="display:none;padding:9px 14px;border-radius:8px;border:0;background:#fff;color:#173b66;font-weight:bold;cursor:pointer">Вход с Google</button><button id="kitchenLogout" type="button" style="display:none;padding:9px 14px;border-radius:8px;border:1px solid #cbd5e1;background:transparent;color:white;cursor:pointer">Изход</button></div></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -257,6 +257,22 @@
 <div id="projectCosts" class="calc">Добави шкафове и материал за корпус, за да се изчисли разходът.</div>
 </section></div>
 </div>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+const config={apiKey:"AIzaSyBlrriK3iQAuO0KN-bHkd1p5PoLWoqjTJ4",authDomain:"kitchen-designer-9d437.firebaseapp.com",projectId:"kitchen-designer-9d437",storageBucket:"kitchen-designer-9d437.firebasestorage.app",messagingSenderId:"579302190437",appId:"1:579302190437:web:b2ce4dda4911447588458c"};
+const status=document.getElementById('kitchenAuthStatus'),login=document.getElementById('kitchenLogin'),logout=document.getElementById('kitchenLogout');
+try{
+ const app=initializeApp(config),auth=getAuth(app);
+ onAuthStateChanged(auth,user=>{
+  status.textContent=user?'Влязъл: '+(user.displayName||user.email):'Не сте влезли';
+  login.style.display=user?'none':'inline-block';logout.style.display=user?'inline-block':'none';
+  window.kitchenCurrentUser=user||null;
+ },err=>{status.textContent='Грешка при проверка на входа';login.style.display='inline-block';console.error(err)});
+ login.onclick=async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider())}catch(err){if(err.code!=='auth/popup-closed-by-user')alert('Google вход: '+err.message)}};
+ logout.onclick=async()=>{try{await signOut(auth)}catch(err){alert('Изход: '+err.message)}};
+}catch(err){status.textContent='Firebase не е достъпен';console.error(err)}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
