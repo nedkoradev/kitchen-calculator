@@ -14,7 +14,7 @@
 .library-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}.library-heading{display:flex;gap:16px;align-items:flex-start}.library-icon{width:52px;height:52px;display:grid;place-items:center;flex-shrink:0;background:#1769ec;color:#fff;border-radius:13px;font-size:28px}.library-heading h2{margin:0 0 8px;font-size:25px}.library-heading p{margin:4px 0;color:#64748b;line-height:1.4}.library-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin:28px 0 14px}.library-toolbar #kitchenLibraryStatus{font-weight:600;color:#253752}.library-sort{display:flex;align-items:center;gap:8px;color:#64748b}.library-sort select{padding:9px 30px 9px 12px;border:1px solid #d3ddeb;border-radius:9px;background:white;color:#14263d}.library-list{display:grid;gap:12px}.library-card{display:flex;align-items:center;gap:18px;padding:16px;border:1px solid #dbe5f1;border-radius:14px;background:#fcfdff;min-width:0}.library-preview{width:108px;height:92px;flex-shrink:0;display:grid;place-items:center;border-radius:11px;background:linear-gradient(135deg,#eef4fb,#e2eaf4)}.library-preview svg{width:90px;height:78px}.library-info{flex:1;min-width:0}.library-name{font-size:18px;font-weight:700;color:#14263d;overflow-wrap:anywhere}.library-meta{color:#63758f;margin-top:7px;font-size:14px}.library-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.library-action{padding:10px 14px;border-radius:9px;border:1px solid #d0ddec;background:#f0f5fb;color:#233b5b;font-weight:600;cursor:pointer;white-space:nowrap}.library-action.primary{background:#1769ec;border-color:#1769ec;color:#fff}.library-action.danger{background:#fff5f5;border-color:#ffd2d2;color:#b4232c}.library-action:hover{filter:brightness(.96)}.library-action:disabled{opacity:.55;cursor:wait}@media(max-width:850px){.library-card{flex-wrap:wrap}.library-actions{width:100%;justify-content:flex-start}.library-preview{width:84px;height:78px}#libraryPanel .library-shell{padding:18px}}
 #projectPanel .cloud-project-box{padding:18px 20px;margin:12px 0 18px;border:1px solid #d7e3f1;border-radius:13px;background:#f8fbff}#projectPanel .cloud-project-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}#projectPanel .cloud-project-name{margin-right:auto;color:#173b66;font-size:17px}#projectPanel .cloud-project-btn{border:1px solid #cbd9e9;border-radius:9px;background:#fff;color:#173b66;padding:10px 15px;font-weight:700;font-size:14px;cursor:pointer}#projectPanel .cloud-project-btn.primary{background:#173b66;color:#fff;border-color:#173b66}#projectPanel .cloud-project-btn.save{background:#176e51;color:#fff;border-color:#176e51}#projectPanel .cloud-project-btn.danger{background:#fff3f3;color:#a52b2b;border-color:#eac5c5}#projectPanel .cloud-project-btn:hover{filter:brightness(.96)}#projectPanel .cloud-project-status{margin-top:12px;color:#63758f;font-size:14px}#projectPanel .cloud-project-picker{display:none;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding:13px;background:#fff;border:1px solid #dce6f2;border-radius:10px}#projectPanel .cloud-project-picker select{min-width:210px;max-width:100%;padding:10px 12px;border:1px solid #cbd9e9;border-radius:9px;background:#fff;color:#173b66;font-size:14px}#projectPanel .cloud-project-picker .hint{font-size:13px;color:#63758f}
 </style></head><body>
-<header style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap"><div><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.78</p></div><div id="kitchenAuthBar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span id="kitchenAuthStatus" style="font-size:13px">Проверка на входа…</span><button id="kitchenLogin" type="button" style="display:none;padding:9px 14px;border-radius:8px;border:0;background:#fff;color:#173b66;font-weight:bold;cursor:pointer">Вход с Google</button><button id="kitchenLogout" type="button" style="display:none;padding:9px 14px;border-radius:8px;border:1px solid #cbd5e1;background:transparent;color:white;cursor:pointer">Изход</button></div></header>
+<header style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap"><div><h1>NEDIQ Furniture Designer</h1><p>Мебелен проект — v4.30.79</p></div><div id="kitchenAuthBar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span id="kitchenAuthStatus" style="font-size:13px">Проверка на входа…</span><button id="kitchenLogin" type="button" style="display:none;padding:9px 14px;border-radius:8px;border:0;background:#fff;color:#173b66;font-weight:bold;cursor:pointer">Вход с Google</button><button id="kitchenLogout" type="button" style="display:none;padding:9px 14px;border-radius:8px;border:1px solid #cbd5e1;background:transparent;color:white;cursor:pointer">Изход</button></div></header>
 <div class="wrap"><nav class="mainnav">
 <button class="main-tab active" data-panel="projectPanel">Проект</button>
 <button class="main-tab" data-panel="constructorPanel">Конструктор</button>
@@ -1214,14 +1214,14 @@ function initConstructor(){
   svg.style.display='none';mount.style.display='block';
   const THREE=window.THREE;
   if(!threeCtx){
-   const scene=new THREE.Scene();scene.background=new THREE.Color('#edf1f5');
+   const scene=new THREE.Scene();scene.background=new THREE.Color(0xeef2f5);
    const camera=new THREE.OrthographicCamera(-650,650,430,-430,1,6000);
    const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
-   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.outputColorSpace=THREE.SRGBColorSpace;
    renderer.setSize(800,530,false);renderer.domElement.style.cssText='display:block;width:100%;height:100%;cursor:pointer';
    mount.appendChild(renderer.domElement);
-   scene.add(new THREE.HemisphereLight(0xffffff,0x8795a6,1.05));
-   const lamp=new THREE.DirectionalLight(0xffffff,.75);lamp.position.set(600,900,1000);scene.add(lamp);
+   scene.add(new THREE.HemisphereLight(0xffffff,0x59636d,2.5));
+   const lamp=new THREE.DirectionalLight(0xffffff,2.4);lamp.position.set(600,900,1000);scene.add(lamp);
    const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
    renderer.domElement.addEventListener('pointerdown',e=>{
     const box=renderer.domElement.getBoundingClientRect();
@@ -1253,10 +1253,11 @@ function initConstructor(){
   const W=state.width,H=state.height,T=state.thick,D=Math.max(60,sideDepth());
   const add=(key,x,y,z,w,h,d,color)=>{
    if(w<=0||h<=0||d<=0)return;
-   const mat=new THREE.MeshStandardMaterial({color:partPaint(key,color),roughness:.9,metalness:0,side:THREE.FrontSide});
+   const mat=new THREE.MeshBasicMaterial({color:partPaint(key,color),polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});
    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
    mesh.position.set(x-W/2,H/2-y,z-D/2);mesh.userData.part=key;
    scene.add(mesh);threeCtx.parts.push(mesh);
+   const outline=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color:0x493426}));outline.position.copy(mesh.position);scene.add(outline);threeCtx.parts.push(outline);
    // Board edges are narrow physical surfaces, not painted front-face borders.
    // Vertical panels: broad face Y/Z, thickness X. Horizontal panels: broad X/Z, thickness Y.
    const verticalPanel=key==='left'||key==='right'||key.startsWith('partition:');
@@ -1280,7 +1281,7 @@ function initConstructor(){
    ];
    strips.forEach(([idx,ex,ey,ez,ew,eh,ed])=>{
     const color=edgeColor(key,idx);if(!color)return;
-    const band=new THREE.Mesh(new THREE.BoxGeometry(ew,eh,ed),new THREE.MeshStandardMaterial({color,roughness:.8}));
+    const band=new THREE.Mesh(new THREE.BoxGeometry(ew,eh,ed),new THREE.MeshBasicMaterial({color,depthTest:true,depthWrite:true}));
     band.position.set(mesh.position.x+ex,mesh.position.y+ey,mesh.position.z+ez);
     band.userData.part=key;scene.add(band);threeCtx.parts.push(band);
    });
