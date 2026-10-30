@@ -1,6 +1,6 @@
 <!doctype html><html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kitchen Designer V2</title><style>
 *{box-sizing:border-box}body{margin:0;font:14px Arial,sans-serif;background:#eef2f6;color:#19334e}header{padding:14px 20px;background:#163d68;color:white;display:flex;justify-content:space-between}a{color:#d5e9ff}main{display:grid;grid-template-columns:270px 1fr;gap:12px;padding:12px;height:calc(100dvh - 50px)}aside,.stage{background:white;border:1px solid #d6e0eb;border-radius:9px;overflow:hidden}aside{padding:16px;overflow:auto}label{display:block;margin:11px 0 5px;font-size:12px}input[type=number],input[type=color],select{width:100%;height:34px;border:1px solid #bdc9d7;border-radius:5px;padding:5px}button{padding:8px 10px;background:white;color:#163d68;border:1px solid #bdc9d7;border-radius:5px;cursor:pointer}button.active{background:#163d68;color:white}.stage{display:flex;flex-direction:column}.toolbar{display:flex;gap:5px;flex-wrap:wrap;padding:10px;border-bottom:1px solid #dce3eb}#view{flex:1;min-height:250px;touch-action:none}#view canvas{display:block;width:100%;height:100%}.status{padding:10px;background:#f5f8fb;font-size:12px}.selection{padding:12px;background:#eef5fc;margin-top:15px;border-radius:7px;line-height:1.6}@media(max-width:720px){main{display:flex;flex-direction:column;height:auto}.stage{height:65dvh;min-height:400px}aside{order:2}}</style></head>
-<body><header><strong>Kitchen Designer V2 · 3D прототип v0.23</strong><a href="../">Основен калкулатор</a></header><main><aside><h3>Параметричен шкаф</h3><label>Ширина, мм</label><input id="w" type="number" min="250" max="1800" value="800"><label>Височина, мм</label><input id="h" type="number" min="250" max="2400" value="720"><label>Дълбочина, мм</label><input id="d" type="number" min="150" max="900" value="555"><label>Дебелина ПДЧ, мм</label><input id="t" type="number" min="12" max="30" value="18"><label><input id="back" type="checkbox" checked> Покажи гръб</label><label><input id="shelf" type="checkbox" checked> Покажи рафт</label><label><input id="partition" type="checkbox" checked> Покажи преграда</label><div class="selection"><strong>Свободни детайли</strong><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px"><button id="addPart">+ Плоскост</button><button id="duplicatePart">Дублирай</button><button id="deletePart">Изтрий</button><button id="groupParts">Групирай</button><button id="ungroupParts">Разгрупирай</button><button id="moveGroup" type="button">Премести групата</button></div><div id="groupStatus" style="font-size:11px;margin-top:6px"></div><div id="partSelectionList" style="margin-top:8px;max-height:160px;overflow:auto"></div><p style="font-size:11px;color:#60758a">Избирай плоскости с отметките в списъка или с Ctrl + щракване. „Групирай“ ги мести заедно; „Разгрупирай“ ги освобождава. Като в PRO100: избраната плоскост е синя с черни точки по ръбовете. Хвани ръб или точка за оразмеряване; заключените размери не се променят. Хвани вътрешността за преместване: влачи плоскостта свободно в равнината на изгледа: отгоре X/Z, отпред X/Y, отстрани Y/Z. Не е нужно да пускаш мишката. Цветните 3D стрелки остават за точно движение по ос. В празното пространство завърташ камерата. Delete — изтриване, Ctrl+Shift+D — копие.</p></div><div class="selection"><strong>Избран детайл</strong><div id="selected">Щракни върху плоскост.</div><div id="finishEditor" style="display:none"><div id="geometryEditor"><label>Ширина X, мм <span style="float:right"><input type="checkbox" id="lockW"  style="width:auto;vertical-align:middle"> Заключи</span></label><input id="partW" type="number" min="1" step="1"><label>Височина Y, мм <span style="float:right"><input type="checkbox" id="lockH" checked style="width:auto;vertical-align:middle"> Заключи</span></label><input id="partH" type="number" min="1" step="1"><label>Дълбочина Z, мм <span style="float:right"><input type="checkbox" id="lockD"  style="width:auto;vertical-align:middle"> Заключи</span></label><input id="partD" type="number" min="1" step="1"><label>Позиция X, мм</label><input id="partX" type="number" step="1"><label>Позиция Y, мм</label><input id="partY" type="number" step="1"><label>Позиция Z, мм</label><input id="partZ" type="number" step="1"></div><div id="materialInfo" style="font-size:11px;color:#60758a;margin-top:6px">Зареждане на материали…</div><label>Материал от библиотеката</label><select id="materialSelect"></select><label>Цвят на детайла</label><input id="board" type="color" value="#dfd0bc"><label>Кант — ляво</label><select id="edgeLeft"></select><label>Кант — дясно</label><select id="edgeRight"></select><label>Кант — горе</label><select id="edgeTop"></select><label>Кант — долу</label><select id="edgeBottom"></select><label><input type="checkbox" id="allEdges"> Кантирай всички страни с един кант</label></div></div><p style="font-size:12px;color:#60758a">Тестова страница. Не променя основния конструктор или проектите му.</p></aside><section class="stage"><div class="toolbar" id="views"><button data-v="perspective" class="active">Перспектива</button><button data-v="iso">Аксонометрия</button><button data-v="front">Отпред</button><button data-v="top">Отгоре</button><button data-v="left">Отляво</button><button data-v="right">Отдясно</button><button id="fit">Центрирай</button></div><div id="view"></div><div class="status" id="status">Влачене: завъртане · Колелце: мащаб · Десен бутон: преместване · Щракване: селекция</div></section></main>
+<body><header><strong>Kitchen Designer V2 · 3D прототип v0.18</strong><a href="../">Основен калкулатор</a></header><main><aside><h3>Параметричен шкаф</h3><label>Ширина, мм</label><input id="w" type="number" min="250" max="1800" value="800"><label>Височина, мм</label><input id="h" type="number" min="250" max="2400" value="720"><label>Дълбочина, мм</label><input id="d" type="number" min="150" max="900" value="555"><label>Дебелина ПДЧ, мм</label><input id="t" type="number" min="12" max="30" value="18"><label><input id="back" type="checkbox" checked> Покажи гръб</label><label><input id="shelf" type="checkbox" checked> Покажи рафт</label><label><input id="partition" type="checkbox" checked> Покажи преграда</label><div class="selection"><strong>Свободни детайли</strong><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px"><button id="addPart">+ Плоскост</button><button id="duplicatePart">Дублирай</button><button id="deletePart">Изтрий</button></div><p style="font-size:11px;color:#60758a">Като в PRO100: избраната плоскост е синя с черни точки по ръбовете. Хвани ръб или точка за оразмеряване; заключените размери не се променят. Хвани вътрешността за преместване: влачи плоскостта свободно в равнината на изгледа: отгоре X/Z, отпред X/Y, отстрани Y/Z. Не е нужно да пускаш мишката. Цветните 3D стрелки остават за точно движение по ос. В празното пространство завърташ камерата. Delete — изтриване, Ctrl+Shift+D — копие.</p></div><div class="selection"><strong>Избран детайл</strong><div id="selected">Щракни върху плоскост.</div><div id="finishEditor" style="display:none"><div id="geometryEditor"><label>Ширина X, мм <span style="float:right"><input type="checkbox" id="lockW"  style="width:auto;vertical-align:middle"> Заключи</span></label><input id="partW" type="number" min="1" step="1"><label>Височина Y, мм <span style="float:right"><input type="checkbox" id="lockH" checked style="width:auto;vertical-align:middle"> Заключи</span></label><input id="partH" type="number" min="1" step="1"><label>Дълбочина Z, мм <span style="float:right"><input type="checkbox" id="lockD"  style="width:auto;vertical-align:middle"> Заключи</span></label><input id="partD" type="number" min="1" step="1"><label>Позиция X, мм</label><input id="partX" type="number" step="1"><label>Позиция Y, мм</label><input id="partY" type="number" step="1"><label>Позиция Z, мм</label><input id="partZ" type="number" step="1"></div><div id="materialInfo" style="font-size:11px;color:#60758a;margin-top:6px">Зареждане на материали…</div><label>Материал от библиотеката</label><select id="materialSelect"></select><label>Цвят на детайла</label><input id="board" type="color" value="#dfd0bc"><label>Кант — ляво</label><select id="edgeLeft"></select><label>Кант — дясно</label><select id="edgeRight"></select><label>Кант — горе</label><select id="edgeTop"></select><label>Кант — долу</label><select id="edgeBottom"></select><label><input type="checkbox" id="allEdges"> Кантирай всички страни с един кант</label></div></div><p style="font-size:12px;color:#60758a">Тестова страница. Не променя основния конструктор или проектите му.</p></aside><section class="stage"><div class="toolbar" id="views"><button data-v="perspective" class="active">Перспектива</button><button data-v="iso">Аксонометрия</button><button data-v="front">Отпред</button><button data-v="top">Отгоре</button><button data-v="left">Отляво</button><button data-v="right">Отдясно</button><button id="fit">Центрирай</button></div><div id="view"></div><div class="status" id="status">Влачене: завъртане · Колелце: мащаб · Десен бутон: преместване · Щракване: селекция</div></section></main>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script><script type="module">
 import * as THREE from 'three';import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 const $=id=>document.getElementById(id),host=$('view'),scene=new THREE.Scene();scene.background=new THREE.Color('#f0f3f6');
@@ -11,7 +11,7 @@ scene.add(new THREE.HemisphereLight(0xffffff,0x8e99a8,2.4));const sun=new THREE.
 const grid=new THREE.GridHelper(2400,24,0xe1e6ed,0xe9edf2);scene.add(grid);
 const group=new THREE.Group();scene.add(group);const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();let boards=[],selected=null,viewMode='perspective',dims={w:800,h:720,d:555,t:18};
 const labels={left:'Лява страница',right:'Дясна страница',top:'Таван',bottom:'Дъно',back:'Гръб',partition:'Преграда',shelf:'Рафт'};
-const finishes={};const customParts=[];let moveGroupMode=false;let partCounter=0;const multiSelected=new Set();const groups=new Map();let groupCounter=0;const edgeIds=['edgeLeft','edgeRight','edgeTop','edgeBottom'];let libraryBoards=[],libraryEdges=[];
+const finishes={};const customParts=[];let partCounter=0;const edgeIds=['edgeLeft','edgeRight','edgeTop','edgeBottom'];let libraryBoards=[],libraryEdges=[];
 try{libraryBoards=JSON.parse(localStorage.getItem('kitchenPdcMaterials')||'[]')||[];libraryEdges=JSON.parse(localStorage.getItem('kitchenEdgeMaterials')||'[]')||[]}catch(e){}
 function options(id,arr,blank){const el=$(id);el.innerHTML='';const empty=document.createElement('option');empty.value='';empty.textContent=blank;el.append(empty);arr.forEach((m,i)=>{const o=document.createElement('option');o.value=i;o.textContent=m.name||('Материал '+(i+1));el.append(o)})}
 function refreshMaterials(){options('materialSelect',libraryBoards,'Ръчно избран цвят');edgeIds.forEach(id=>options(id,libraryEdges,'Без кант'));updateEditor()}
@@ -83,44 +83,15 @@ if($('back').checked)box('back',w-2*t,h-2*t,3,0,h/2,-d/2+1.5);
 if($('partition').checked)box('partition',t,h-2*t,d,0,h/2,0);
 if($('shelf').checked){const inner=(w-3*t)/2;box('shelf',inner,t,d,(-w/2+t+inner/2),h/2,0)}
 for(const p of customParts)box(p.key,p.w,p.h,p.d,p.x,p.y,p.z);
-grid.position.y=-1;controls.target.set(0,h/2,0);if(resetSelection){selected=null;multiSelected.clear()}updateSelection();if(resetSelection)setView(viewMode,false)}
-function addCustom(){const key='custom'+(++partCounter);customParts.push({key,w:500,h:18,d:400,x:0,y:dims.h+80,z:0,locks:{w:false,h:true,d:false}});labels[key]='Плоскост '+partCounter;selected=key;multiSelected.clear();multiSelected.add(key);build(false);updateSelection()}
-function deleteCustom(){const i=customParts.findIndex(p=>p.key===selected);if(i<0)return;const key=selected;customParts.splice(i,1);multiSelected.delete(key);delete finishes[key];delete labels[key];selected=null;build(false)}
-function duplicateCustom(){const p=customParts.find(p=>p.key===selected);if(!p)return;const key='custom'+(++partCounter);customParts.push({...p,key,locks:{...p.locks},x:p.x+35,y:p.y+35});labels[key]='Плоскост '+partCounter;if(finishes[p.key])finishes[key]=structuredClone(finishes[p.key]);selected=key;multiSelected.clear();multiSelected.add(key);build(false)}
-$('moveGroup').onclick=()=>{
- const part=customParts.find(p=>p.key===selected&&p.group)||customParts.find(p=>multiSelected.has(p.key)&&p.group);
- if(!part){$('groupStatus').textContent='Първо групирай поне две плоскости';return}
- selected=part.key;moveGroupMode=!moveGroupMode;if(!moveGroupMode)groupDrag=null;
- $('moveGroup').classList.toggle('active',moveGroupMode);
- $('moveGroup').textContent=moveGroupMode?'Край на преместването':'Премести групата';
- controls.enabled=!moveGroupMode;
- renderer.domElement.style.cursor=moveGroupMode?'move':'auto';
- updateSelection();
-};
-$('groupParts').onclick=()=>{const keys=[...multiSelected].filter(k=>customParts.some(p=>p.key===k));if(keys.length<2){$('groupStatus').textContent='Избери поне 2 плоскости';return}const name='Шкаф '+(++groupCounter);for(const key of keys)customParts.find(p=>p.key===key).group=name;groups.set(name,new Set(keys));selected=keys[0];updateSelection()};
-$('ungroupParts').onclick=()=>{const p=customParts.find(p=>multiSelected.has(p.key)&&p.group)||customParts.find(p=>p.key===selected);if(!p?.group)return;moveGroupMode=false;$('moveGroup').classList.remove('active');$('moveGroup').textContent='Премести групата';controls.enabled=true;const name=p.group;for(const item of customParts)if(item.group===name)delete item.group;groups.delete(name);updateSelection()};
+grid.position.y=-1;controls.target.set(0,h/2,0);if(resetSelection)selected=null;updateSelection();if(resetSelection)setView(viewMode,false)}
+function addCustom(){const key='custom'+(++partCounter);customParts.push({key,w:500,h:18,d:400,x:0,y:dims.h+80,z:0,locks:{w:false,h:true,d:false}});labels[key]='Плоскост '+partCounter;selected=key;build(false);updateSelection()}
+function deleteCustom(){const i=customParts.findIndex(p=>p.key===selected);if(i<0)return;const key=selected;customParts.splice(i,1);delete finishes[key];delete labels[key];selected=null;build(false)}
+function duplicateCustom(){const p=customParts.find(p=>p.key===selected);if(!p)return;const key='custom'+(++partCounter);customParts.push({...p,key,locks:{...p.locks},x:p.x+35,y:p.y+35});labels[key]='Плоскост '+partCounter;if(finishes[p.key])finishes[key]=structuredClone(finishes[p.key]);selected=key;build(false)}
 $('addPart').onclick=addCustom;$('deletePart').onclick=deleteCustom;$('duplicatePart').onclick=duplicateCustom;
 for(const [id,k] of [['partW','w'],['partH','h'],['partD','d'],['partX','x'],['partY','y'],['partZ','z']])$(id).addEventListener('change',()=>{const p=customParts.find(p=>p.key===selected);if(!p||p.locks?.[k])return;const n=Number($(id).value);if(!Number.isFinite(n)||('whd'.includes(k)&&n<=0))return;p[k]=n;build(false)});
 for(const [id,k] of [['W','w'],['H','h'],['D','d']])$('lock'+id).addEventListener('change',()=>{const p=customParts.find(p=>p.key===selected);if(!p)return;p.locks??={};p.locks[k]=$('lock'+id).checked;$('part'+id).disabled=p.locks[k]});
 document.addEventListener('keydown',e=>{const tag=document.activeElement?.tagName;if(['INPUT','SELECT','TEXTAREA'].includes(tag))return;if(e.key==='Delete'){deleteCustom()}else if(e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='d'){e.preventDefault();duplicateCustom()}});
-function updateSelection(){
- for(const b of boards){const outline=b.children.find(c=>c.isLineSegments);if(outline)outline.material.color.setHex(multiSelected.has(b.userData.key)||b.userData.key===selected?0xff8700:0x5a6470)}
- updateEditor();syncGizmo();
- const info=$('groupStatus');
- if(info)info.textContent=multiSelected.size>1?'Избрани: '+multiSelected.size+' детайла':selected&&customParts.find(p=>p.key===selected)?.group?'Група: '+customParts.find(p=>p.key===selected).group:'Избери поне 2 плоскости за групиране';
- const list=$('partSelectionList');if(list){
-  list.replaceChildren();
-  for(const part of customParts){
-   const label=document.createElement('label');label.style.cssText='display:flex;align-items:center;gap:6px;margin:3px 0;padding:3px;border-radius:4px;cursor:pointer;background:'+(multiSelected.has(part.key)?'#dceafa':'transparent');
-   const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=multiSelected.has(part.key);checkbox.style.width='auto';
-   checkbox.addEventListener('change',()=>{if(checkbox.checked){multiSelected.add(part.key);selected=part.key}else{multiSelected.delete(part.key);if(selected===part.key)selected=[...multiSelected].at(-1)||null}updateSelection()});
-   const name=document.createElement('span');name.textContent=(labels[part.key]||part.key)+(part.group?' · '+part.group:'');
-   label.append(checkbox,name);list.append(label);
-  }
- }
- $('groupParts').disabled=multiSelected.size<2;
- $('ungroupParts').disabled=!customParts.some(p=>multiSelected.has(p.key)&&p.group);
-}
+function updateSelection(){for(const b of boards){const outline=b.children.find(c=>c.isLineSegments);if(outline)outline.material.color.setHex(b.userData.key===selected?0xff8700:0x5a6470)}updateEditor();syncGizmo()}
 function setView(v,buttons=true){viewMode=v;const {w,h,d}=dims;const m=Math.max(w,h,d);const p={perspective:[1.15,.42,1.75],iso:[1,.8,1],front:[0,0,1],top:[0,1,0.0001],left:[-1,0,0],right:[1,0,0]}[v]||[1,1,1];const aspect=Math.max(.5,host.clientWidth/Math.max(1,host.clientHeight));const fov=THREE.MathUtils.degToRad(camera.fov);const fitHeight=Math.max(h,d,w/aspect)*1.35;const dist=Math.max(m*1.5,fitHeight/(2*Math.tan(fov/2)));camera.position.set(p[0]*dist,h/2+p[1]*dist,p[2]*dist);camera.up.set(0,1,0);if(v==='top')camera.up.set(0,0,-1);controls.target.set(0,h/2,0);camera.lookAt(controls.target);camera.updateProjectionMatrix();controls.update();if(buttons)document.querySelectorAll('[data-v]').forEach(b=>b.classList.toggle('active',b.dataset.v===v))}
 document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>setView(b.dataset.v));$('fit').onclick=()=>setView(viewMode);
 for(const id of ['w','h','d','t','back','shelf','partition'])$(id).addEventListener('change',()=>{const prev=selected;build();selected=prev;updateSelection()});
@@ -208,69 +179,15 @@ function constrainedAxis(mesh,axis,from,to){
  const candidate={x:part.x,y:part.y,z:part.z};candidate[axis]=result;
  return boards.some(b=>b!==mesh&&overlaps(mesh,b,candidate.x,candidate.z,candidate.y))?from:result
 }
-// Dedicated capture-phase group dragging. Runs before OrbitControls and never
-// uses the ordinary panel drag/collision handler.
-let groupDrag=null;
-renderer.domElement.addEventListener('pointerdown',e=>{
- if(!moveGroupMode||e.button!==0)return;
- const leader=customParts.find(p=>p.key===selected&&p.group);
- if(!leader)return;
- e.preventDefault();e.stopImmediatePropagation();
- controls.enabled=false;
- groupDrag={id:e.pointerId,leader,lastX:e.clientX,lastY:e.clientY,
-  members:customParts.filter(p=>p.group===leader.group)};
- renderer.domElement.setPointerCapture(e.pointerId);
-},true);
-renderer.domElement.addEventListener('pointermove',e=>{
- if(!groupDrag||e.pointerId!==groupDrag.id)return;
- e.preventDefault();e.stopImmediatePropagation();
- const dx=e.clientX-groupDrag.lastX,dy=e.clientY-groupDrag.lastY;
- groupDrag.lastX=e.clientX;groupDrag.lastY=e.clientY;
- const distance=camera.position.distanceTo(new THREE.Vector3(groupDrag.leader.x,groupDrag.leader.y,groupDrag.leader.z));
- const scale=2*distance*Math.tan(THREE.MathUtils.degToRad(camera.fov)/2)/Math.max(1,host.clientHeight);
- const right=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
- const up=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion);
- const delta=right.multiplyScalar(dx*scale).addScaledVector(up,-dy*scale);
- const forward=new THREE.Vector3();camera.getWorldDirection(forward);
- const excluded=['x','y','z'].reduce((best,k)=>Math.abs(forward[k])>Math.abs(forward[best])?k:best,'x');
- delta[excluded]=0;
- for(const member of groupDrag.members){
-  for(const axis of ['x','y','z'])member[axis]+=delta[axis];
-  const mesh=boards.find(b=>b.userData.key===member.key);
-  if(mesh)mesh.position.set(member.x,member.y,member.z);
- }
- for(const axis of ['x','y','z'])$('part'+axis.toUpperCase()).value=Math.round(groupDrag.leader[axis]);
- syncGizmo();
-},true);
-function finishGroupDrag(e){
- if(!groupDrag||e.pointerId!==groupDrag.id)return;
- e.preventDefault();e.stopImmediatePropagation();
- groupDrag=null;controls.enabled=!moveGroupMode;
-}
-renderer.domElement.addEventListener('pointerup',finishGroupDrag,true);
-renderer.domElement.addEventListener('pointercancel',finishGroupDrag,true);
 renderer.domElement.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
- if(moveGroupMode){
-  const leader=customParts.find(p=>p.key===selected&&p.group);
-  if(!leader)return;
-  e.preventDefault();e.stopImmediatePropagation();
-  const mesh=boards.find(b=>b.userData.key===leader.key);if(!mesh)return;
-  drag={id:e.pointerId,part:leader,mesh,axis:null,lastPointer:{x:e.clientX,y:e.clientY},
-    members:customParts.filter(p=>p.group===leader.group)};
-  controls.enabled=false;renderer.domElement.setPointerCapture(e.pointerId);
-  down=null;return;
- }
  down={x:e.clientX,y:e.clientY};
  pointerRay(e);
- const hits=ray.intersectObjects(boards,false);
- // Prioritize user-created boards when they overlap the parametric cabinet.
- const hit=hits.find(h=>customParts.some(p=>p.key===h.object.userData.key))||hits[0];
+ const hit=ray.intersectObjects(boards,false)[0];
  const part=hit&&customParts.find(p=>p.key===hit.object.userData.key);
- if(e.ctrlKey&&part){e.preventDefault();selected=part.key;if(multiSelected.has(part.key))multiSelected.delete(part.key);else multiSelected.add(part.key);updateSelection();down=null;return}
  const edge=part?edgeAt(e,hit.object,hit):null;const resizeEdge=edge&&!part.locks?.[edge.axis]?edge:null;
- if(resizeEdge&&!part.group){
-  selected=part.key;multiSelected.clear();multiSelected.add(selected);updateSelection();
+ if(resizeEdge){
+  selected=part.key;updateSelection();
   const axis=resizeEdge.axis,mesh=hit.object,anchor=mesh.position.clone();
   const axisVector=new THREE.Vector3(axis==='x'?1:0,axis==='y'?1:0,axis==='z'?1:0);
   const centerScreen=screenPos(anchor),endScreen=screenPos(anchor.clone().addScaledVector(axisVector,100));
@@ -281,18 +198,17 @@ renderer.domElement.addEventListener('pointerdown',e=>{
    startMouse:{x:e.clientX,y:e.clientY},pixelsPerMm:length/100,screenDirection:{x:vx/length,y:vy/length},
    anchor,origin:{x:part.x,y:part.y,z:part.z},initialSize:part[axis==='x'?'w':axis==='y'?'h':'d']};
  }else if(hit){
-  selected=hit.object.userData.key;multiSelected.clear();if(part?.group){for(const member of customParts.filter(p=>p.group===part.group))multiSelected.add(member.key)}else multiSelected.add(selected);updateSelection();
+  selected=hit.object.userData.key;updateSelection();
   const part=customParts.find(p=>p.key===selected);if(!part)return;
-  const normal=new THREE.Vector3();camera.getWorldDirection(normal);const anchor=hit.point.clone();
-  drag={id:e.pointerId,part,mesh:hit.object,axis:null,anchor,normal,lastPointer:{x:e.clientX,y:e.clientY},origin:{x:part.x,y:part.y,z:part.z},
- members:part.group?customParts.filter(q=>q.group===part.group):[part]};
- }else{selected=null;multiSelected.clear();updateSelection();return}
+  const normal=new THREE.Vector3();camera.getWorldDirection(normal);const anchor=hit.point.clone(),p=dragPoint(e,anchor,normal);if(!p)return;
+  drag={id:e.pointerId,part,mesh:hit.object,axis:null,start:p,anchor,normal,lastPointer:{x:e.clientX,y:e.clientY},origin:{x:part.x,y:part.y,z:part.z}};
+ }else{selected=null;updateSelection();return}
  controls.enabled=false;renderer.domElement.setPointerCapture(e.pointerId)
 });
 renderer.domElement.addEventListener('pointermove',e=>{
- if(!drag){if(moveGroupMode){renderer.domElement.style.cursor='move';return}pointerRay(e);const hit=ray.intersectObjects(boards,false)[0];const part=hit&&customParts.find(p=>p.key===hit.object.userData.key);renderer.domElement.style.cursor=part&&(()=>{const edge=edgeAt(e,hit.object,hit);return edge&&!part.group&&!part.locks?.[edge.axis]})()?'crosshair':part?'grab':'auto';return}
+ if(!drag){pointerRay(e);const hit=ray.intersectObjects(boards,false)[0];const part=hit&&customParts.find(p=>p.key===hit.object.userData.key);renderer.domElement.style.cursor=part&&(()=>{const edge=edgeAt(e,hit.object,hit);return edge&&!part.locks?.[edge.axis]})()?'crosshair':part?'grab':'auto';return}
  if(e.pointerId!==drag.id)return;
- const p=drag.resize?null:drag.axis?axisPoint(e,drag.axis,drag.anchor):null;if(drag.axis&&!p)return;
+ const p=drag.resize?null:drag.axis?axisPoint(e,drag.axis,drag.anchor):dragPoint(e,drag.anchor,drag.normal);if(!drag.resize&&!p)return;
  if(drag.axis){
   const axis=drag.axis;
   if(drag.resize){
@@ -348,38 +264,20 @@ renderer.domElement.addEventListener('pointermove',e=>{
   const excluded=['x','y','z'].reduce((best,k)=>Math.abs(forward[k])>Math.abs(forward[best])?k:best,'x');
   const axes=['x','y','z'].filter(k=>k!==excluded);
   // Resolve collisions independently so a blocked direction still allows sliding.
-  const members=drag.members||[drag.part],memberKeys=new Set(members.map(m=>m.key));
   for(const axis of axes){
-   const requested=screenDelta[axis];let allowed=requested;
-   // Move the whole assembly by one shared displacement; ignore contacts within it.
-   for(const member of members){
-    const mesh=boards.find(b=>b.userData.key===member.key);if(!mesh)continue;
-    const delta=requested;if(Math.abs(delta)<.0001)continue;
-    if(axis==='y'&&member.y+allowed<member.h/2)allowed=Math.max(allowed,member.h/2-member.y);
-    for(const other of boards){
-     if(memberKeys.has(other.userData.key))continue;
-     const rest=['x','y','z'].filter(k=>k!==axis);
-     if(!rest.every(k=>Math.abs(member[k]-other.position[k])<(member[k==='x'?'w':k==='y'?'h':'d']+other.userData[k==='x'?'w':k==='y'?'h':'d'])/2-.05))continue;
-     const half=(member[axis==='x'?'w':axis==='y'?'h':'d']+other.userData[axis==='x'?'w':axis==='y'?'h':'d'])/2;
-     if(Math.abs(member[axis]-other.position[axis])<half-.05)continue;
-     const contact=other.position[axis]+(delta>0?-half:half)-member[axis];
-     if(contact/delta>=0&&contact/delta<=1&&Math.abs(contact)<Math.abs(allowed))allowed=contact;
-    }
-   }
-   for(const member of members){
-    member[axis]+=allowed;const mesh=boards.find(b=>b.userData.key===member.key);if(mesh)mesh.position[axis]=member[axis];
-   }
-   $('part'+axis.toUpperCase()).value=Math.round(drag.part[axis]);
+   const next=constrainedAxis(drag.mesh,axis,drag.part[axis],drag.part[axis]+screenDelta[axis]);
+   drag.part[axis]=next;drag.mesh.position[axis]=next;
+   $('part'+axis.toUpperCase()).value=Math.round(next*10)/10;
   }
   drag.lastPointer={x:e.clientX,y:e.clientY};
  }
  syncGizmo();down=null
 });
-function endDrag(e){if(drag&&e.pointerId===drag.id){const resized=drag.resize;drag=null;controls.enabled=!moveGroupMode;down=null;if(resized){build(false);updateSelection()}}}
+function endDrag(e){if(drag&&e.pointerId===drag.id){const resized=drag.resize;drag=null;controls.enabled=true;down=null;if(resized){build(false);updateSelection()}}}
 renderer.domElement.addEventListener('pointerup',e=>{
  if(drag){endDrag(e);return}
  if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>5){down=null;return}
- down=null;pointerRay(e);const hits=ray.intersectObjects(boards,false);const hit=hits.find(h=>customParts.some(p=>p.key===h.object.userData.key))||hits[0];selected=hit?.object.userData.key||null;multiSelected.clear();if(selected){const p=customParts.find(p=>p.key===selected);if(p?.group){for(const member of customParts.filter(q=>q.group===p.group))multiSelected.add(member.key)}else multiSelected.add(selected)}updateSelection()
+ down=null;pointerRay(e);const hit=ray.intersectObjects(boards,false)[0];selected=hit?.object.userData.key||null;updateSelection()
 });
 renderer.domElement.addEventListener('pointercancel',endDrag);
 const observer=new ResizeObserver(()=>{const w=host.clientWidth,h=host.clientHeight;if(w&&h){camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}});observer.observe(host);
