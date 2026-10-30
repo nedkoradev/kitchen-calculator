@@ -1,6 +1,6 @@
 <!doctype html><html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kitchen Designer V2</title><style>
-*{box-sizing:border-box}body{margin:0;font:14px Arial,sans-serif;background:#eef2f6;color:#19334e}header{padding:14px 20px;background:#163d68;color:white;display:flex;justify-content:space-between}a{color:#d5e9ff}main{display:grid;grid-template-columns:270px 1fr;gap:12px;padding:12px;height:calc(100dvh - 50px)}aside,.stage{background:white;border:1px solid #d6e0eb;border-radius:9px;overflow:hidden}aside{padding:16px;overflow:auto}label{display:block;margin:11px 0 5px;font-size:12px}input[type=number],input[type=color]{width:100%;height:34px;border:1px solid #bdc9d7;border-radius:5px;padding:5px}button{padding:8px 10px;background:white;color:#163d68;border:1px solid #bdc9d7;border-radius:5px;cursor:pointer}button.active{background:#163d68;color:white}.stage{display:flex;flex-direction:column}.toolbar{display:flex;gap:5px;flex-wrap:wrap;padding:10px;border-bottom:1px solid #dce3eb}#view{flex:1;min-height:250px;touch-action:none}#view canvas{display:block;width:100%;height:100%}.status{padding:10px;background:#f5f8fb;font-size:12px}.selection{padding:12px;background:#eef5fc;margin-top:15px;border-radius:7px;line-height:1.6}@media(max-width:720px){main{display:flex;flex-direction:column;height:auto}.stage{height:65dvh;min-height:400px}aside{order:2}}</style></head>
-<body><header><strong>Kitchen Designer V2 · 3D прототип v0.2</strong><a href="../">Основен калкулатор</a></header><main><aside><h3>Параметричен шкаф</h3><label>Ширина, мм</label><input id="w" type="number" min="250" max="1800" value="800"><label>Височина, мм</label><input id="h" type="number" min="250" max="2400" value="720"><label>Дълбочина, мм</label><input id="d" type="number" min="150" max="900" value="555"><label>Дебелина ПДЧ, мм</label><input id="t" type="number" min="12" max="30" value="18"><label>Цвят ПДЧ</label><input id="board" type="color" value="#dfd0bc"><label>Цвят кант</label><input id="edge" type="color" value="#353d45"><label><input id="bands" type="checkbox" checked> Предни кантове</label><label><input id="back" type="checkbox" checked> Гръб</label><label><input id="shelf" type="checkbox" checked> Рафт</label><label><input id="partition" type="checkbox" checked> Преграда</label><div class="selection"><strong>Избран детайл</strong><div id="selected">Щракни върху плоскост.</div></div><p style="font-size:12px;color:#60758a">Тестова страница. Не променя основния конструктор или проектите му.</p></aside><section class="stage"><div class="toolbar" id="views"><button data-v="perspective" class="active">Перспектива</button><button data-v="iso">Аксонометрия</button><button data-v="front">Отпред</button><button data-v="top">Отгоре</button><button data-v="left">Отляво</button><button data-v="right">Отдясно</button><button id="fit">Центрирай</button></div><div id="view"></div><div class="status" id="status">Влачене: завъртане · Колелце: мащаб · Десен бутон: преместване · Щракване: селекция</div></section></main>
+*{box-sizing:border-box}body{margin:0;font:14px Arial,sans-serif;background:#eef2f6;color:#19334e}header{padding:14px 20px;background:#163d68;color:white;display:flex;justify-content:space-between}a{color:#d5e9ff}main{display:grid;grid-template-columns:270px 1fr;gap:12px;padding:12px;height:calc(100dvh - 50px)}aside,.stage{background:white;border:1px solid #d6e0eb;border-radius:9px;overflow:hidden}aside{padding:16px;overflow:auto}label{display:block;margin:11px 0 5px;font-size:12px}input[type=number],input[type=color],select{width:100%;height:34px;border:1px solid #bdc9d7;border-radius:5px;padding:5px}button{padding:8px 10px;background:white;color:#163d68;border:1px solid #bdc9d7;border-radius:5px;cursor:pointer}button.active{background:#163d68;color:white}.stage{display:flex;flex-direction:column}.toolbar{display:flex;gap:5px;flex-wrap:wrap;padding:10px;border-bottom:1px solid #dce3eb}#view{flex:1;min-height:250px;touch-action:none}#view canvas{display:block;width:100%;height:100%}.status{padding:10px;background:#f5f8fb;font-size:12px}.selection{padding:12px;background:#eef5fc;margin-top:15px;border-radius:7px;line-height:1.6}@media(max-width:720px){main{display:flex;flex-direction:column;height:auto}.stage{height:65dvh;min-height:400px}aside{order:2}}</style></head>
+<body><header><strong>Kitchen Designer V2 · 3D прототип v0.3</strong><a href="../">Основен калкулатор</a></header><main><aside><h3>Параметричен шкаф</h3><label>Ширина, мм</label><input id="w" type="number" min="250" max="1800" value="800"><label>Височина, мм</label><input id="h" type="number" min="250" max="2400" value="720"><label>Дълбочина, мм</label><input id="d" type="number" min="150" max="900" value="555"><label>Дебелина ПДЧ, мм</label><input id="t" type="number" min="12" max="30" value="18"><label><input id="back" type="checkbox" checked> Покажи гръб</label><label><input id="shelf" type="checkbox" checked> Покажи рафт</label><label><input id="partition" type="checkbox" checked> Покажи преграда</label><div class="selection"><strong>Избран детайл</strong><div id="selected">Щракни върху плоскост.</div><div id="finishEditor" style="display:none"><label>Материал от библиотеката</label><select id="materialSelect"></select><label>Цвят на детайла</label><input id="board" type="color" value="#dfd0bc"><label>Кант — ляво</label><select id="edgeLeft"></select><label>Кант — дясно</label><select id="edgeRight"></select><label>Кант — горе</label><select id="edgeTop"></select><label>Кант — долу</label><select id="edgeBottom"></select><label><input type="checkbox" id="allEdges"> Кантирай всички страни с един кант</label></div></div><p style="font-size:12px;color:#60758a">Тестова страница. Не променя основния конструктор или проектите му.</p></aside><section class="stage"><div class="toolbar" id="views"><button data-v="perspective" class="active">Перспектива</button><button data-v="iso">Аксонометрия</button><button data-v="front">Отпред</button><button data-v="top">Отгоре</button><button data-v="left">Отляво</button><button data-v="right">Отдясно</button><button id="fit">Центрирай</button></div><div id="view"></div><div class="status" id="status">Влачене: завъртане · Колелце: мащаб · Десен бутон: преместване · Щракване: селекция</div></section></main>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script><script type="module">
 import * as THREE from 'three';import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 const $=id=>document.getElementById(id),host=$('view'),scene=new THREE.Scene();scene.background=new THREE.Color('#f0f3f6');
@@ -11,32 +11,50 @@ scene.add(new THREE.HemisphereLight(0xffffff,0x8e99a8,2.4));const sun=new THREE.
 const grid=new THREE.GridHelper(2400,24,0xe1e6ed,0xe9edf2);scene.add(grid);
 const group=new THREE.Group();scene.add(group);const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();let boards=[],selected=null,viewMode='perspective',dims={w:800,h:720,d:555,t:18};
 const labels={left:'Лява страница',right:'Дясна страница',top:'Таван',bottom:'Дъно',back:'Гръб',partition:'Преграда',shelf:'Рафт'};
+const finishes={};const edgeIds=['edgeLeft','edgeRight','edgeTop','edgeBottom'];let libraryBoards=[],libraryEdges=[];
+try{libraryBoards=JSON.parse(localStorage.getItem('kitchenPdcMaterials')||'[]')||[];libraryEdges=JSON.parse(localStorage.getItem('kitchenEdgeMaterials')||'[]')||[]}catch(e){}
+function options(id,arr,blank){const el=$(id);el.innerHTML='';const empty=document.createElement('option');empty.value='';empty.textContent=blank;el.append(empty);arr.forEach((m,i)=>{const o=document.createElement('option');o.value=i;o.textContent=m.name||('Материал '+(i+1));el.append(o)})}
+options('materialSelect',libraryBoards,'Ръчно избран цвят');edgeIds.forEach(id=>options(id,libraryEdges,'Без кант'));
+const colorFor=key=>finishes[key]?.color||'#dfd0bc';
+const bandFor=(key,i)=>{const idx=finishes[key]?.edges?.[i];return idx===null||idx===undefined?null:libraryEdges[idx]?.color||null};
+function updateEditor(){const b=boards.find(o=>o.userData.key===selected);$('finishEditor').style.display=b?'block':'none';$('selected').textContent=b?labels[selected]+' — '+[b.userData.w,b.userData.h,b.userData.d].map(Math.round).join(' × ')+' мм':'Щракни върху плоскост.';if(!b)return;const f=finishes[selected]||{};$('materialSelect').value=f.material??'';$('board').value=colorFor(selected);edgeIds.forEach((id,i)=>$(id).value=f.edges?.[i]??'')}
+function saveFinish(){if(!selected)return;const mat=$('materialSelect').value;finishes[selected]={material:mat===''?null:Number(mat),color:$('board').value,edges:edgeIds.map(id=>$(id).value===''?null:Number($(id).value))};build(false);updateSelection()}
+$('materialSelect').addEventListener('change',()=>{const n=$('materialSelect').value;if(n!=='')$('board').value=libraryBoards[Number(n)]?.color||'#dfd0bc';saveFinish()});
+$('board').addEventListener('input',()=>{$('materialSelect').value='';saveFinish()});
+edgeIds.forEach(id=>$(id).addEventListener('change',()=>{if($('allEdges').checked){const val=$(id).value;edgeIds.forEach(k=>$(k).value=val)}saveFinish()}));
 function dispose(){group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose())}});group.clear();boards=[]}
-function box(key,w,h,d,x,y,z){const material=new THREE.MeshStandardMaterial({color:$('board').value,roughness:.9,metalness:0});const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.position.set(x,y,z);mesh.userData={key,w,h,d};group.add(mesh);boards.push(mesh);
-const outline=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color:0x5a6470}));mesh.add(outline);
-if($('bands').checked&&key!=='back'){
- // Apply band only to the narrow front-facing cut edge, never over the broad board face.
- const vertical=['left','right','partition'].includes(key);
- const horizontal=['top','bottom','shelf'].includes(key);
- if(vertical||horizontal){
-  const thickness=vertical?w:h, bandDepth=0.8;
-  const band=new THREE.Mesh(new THREE.BoxGeometry(vertical?thickness:w,vertical?h:thickness,bandDepth),new THREE.MeshStandardMaterial({color:$('edge').value,roughness:.9}));
-  band.position.z=d/2+bandDepth/2+.03;
-  mesh.add(band);
- }
+function box(key,w,h,d,x,y,z){
+ const material=new THREE.MeshStandardMaterial({color:colorFor(key),roughness:.9,metalness:0});
+ const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.position.set(x,y,z);mesh.userData={key,w,h,d};group.add(mesh);boards.push(mesh);
+ const outline=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color:0x5a6470}));mesh.add(outline);
+ // Edge strips are separate narrow cut-face surfaces, never overlays on the broad panel.
+ const vertical=['left','right','partition'].includes(key),horizontal=['top','bottom','shelf'].includes(key);
+ const thickness=vertical?w:horizontal?h:d;
+ const strips=vertical?[
+  [-d/2-.45,0,'z',w,h],[d/2+.45,0,'z',w,h],[h/2+.45,0,'y',w,d],[-h/2-.45,0,'y',w,d]
+ ]:horizontal?[
+  [-w/2-.45,0,'x',h,d],[w/2+.45,0,'x',h,d],[d/2+.45,0,'z',w,h],[-d/2-.45,0,'z',w,h]
+ ]:[
+  [-w/2-.45,0,'x',h,d],[w/2+.45,0,'x',h,d],[h/2+.45,0,'y',w,d],[-h/2-.45,0,'y',w,d]
+ ];
+ strips.forEach(([offset,_,axis,aa,bb],i)=>{const color=bandFor(key,i);if(!color)return;
+ const size=axis==='x'?[.9,aa,bb]:axis==='y'?[aa,.9,bb]:[aa,bb,.9];
+ const strip=new THREE.Mesh(new THREE.BoxGeometry(...size),new THREE.MeshStandardMaterial({color,roughness:.8}));
+ strip.position[axis]=offset;mesh.add(strip);
+ });
+ return mesh
 }
-return mesh}
-function build(){dispose();const w=Math.max(250,+$('w').value||800),h=Math.max(250,+$('h').value||720),d=Math.max(150,+$('d').value||555),t=Math.min(30,Math.max(12,+$('t').value||18));dims={w,h,d,t};
+function build(resetSelection=true){dispose();const w=Math.max(250,+$('w').value||800),h=Math.max(250,+$('h').value||720),d=Math.max(150,+$('d').value||555),t=Math.min(30,Math.max(12,+$('t').value||18));dims={w,h,d,t};
 box('left',t,h,d,-w/2+t/2,h/2,0);box('right',t,h,d,w/2-t/2,h/2,0);
 box('bottom',w-2*t,t,d,0,t/2,0);box('top',w-2*t,t,d,0,h-t/2,0);
 if($('back').checked)box('back',w-2*t,h-2*t,3,0,h/2,-d/2+1.5);
 if($('partition').checked)box('partition',t,h-2*t,d,0,h/2,0);
 if($('shelf').checked){const inner=(w-3*t)/2;box('shelf',inner,t,d,(-w/2+t+inner/2),h/2,0)}
-grid.position.y=-1;controls.target.set(0,h/2,0);selected=null;updateSelection();setView(viewMode,false)}
-function updateSelection(){for(const b of boards){b.material.emissive.setHex(b.userData.key===selected?0x514100:0x000000);b.material.emissiveIntensity=.32}const b=boards.find(b=>b.userData.key===selected);$('selected').textContent=b?labels[selected]+' — '+[b.userData.w,b.userData.h,b.userData.d].map(v=>Math.round(v)).join(' × ')+' мм':'Щракни върху плоскост.'}
+grid.position.y=-1;controls.target.set(0,h/2,0);if(resetSelection)selected=null;updateSelection();if(resetSelection)setView(viewMode,false)}
+function updateSelection(){for(const b of boards){const outline=b.children.find(c=>c.isLineSegments);if(outline)outline.material.color.setHex(b.userData.key===selected?0xff8700:0x5a6470)}updateEditor()}
 function setView(v,buttons=true){viewMode=v;const {w,h,d}=dims;const m=Math.max(w,h,d);const p={perspective:[1.15,.42,1.75],iso:[1,.8,1],front:[0,0,1],top:[0,1,0.0001],left:[-1,0,0],right:[1,0,0]}[v]||[1,1,1];const dist=m*1.45;camera.position.set(p[0]*dist,h/2+p[1]*dist,p[2]*dist);camera.up.set(0,1,0);if(v==='top')camera.up.set(0,0,-1);controls.target.set(0,h/2,0);camera.lookAt(controls.target);controls.update();if(buttons)document.querySelectorAll('[data-v]').forEach(b=>b.classList.toggle('active',b.dataset.v===v))}
 document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>setView(b.dataset.v));$('fit').onclick=()=>setView(viewMode);
-for(const el of document.querySelectorAll('aside input'))el.addEventListener('input',()=>{const prev=selected;build();selected=prev;updateSelection()});
+for(const id of ['w','h','d','t','back','shelf','partition'])$(id).addEventListener('change',()=>{const prev=selected;build();selected=prev;updateSelection()});
 let down=null;renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY}});renderer.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>5)return;down=null;const rect=renderer.domElement.getBoundingClientRect();mouse.set((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1);ray.setFromCamera(mouse,camera);const hit=ray.intersectObjects(boards,false)[0];selected=hit?.object.userData.key||null;updateSelection()});
 const observer=new ResizeObserver(()=>{const w=host.clientWidth,h=host.clientHeight;if(w&&h){camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}});observer.observe(host);
 function frame(){requestAnimationFrame(frame);controls.update();renderer.render(scene,camera)}build();frame();
