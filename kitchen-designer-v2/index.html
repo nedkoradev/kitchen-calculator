@@ -121,13 +121,42 @@ $('ungroupParts').onclick=()=>{
  for(const item of customParts)if(item.assembly===id)delete item.assembly;
  build(false);
 };
+function constrainedAssemblyDelta(assembly,requested){
+ const members=customParts.filter(p=>p.assembly===activeAssembly);
+ const memberKeys=new Set(members.map(p=>p.key));
+ const obstacles=boards.filter(b=>!memberKeys.has(b.userData.key));
+ const half=(obj,axis)=>obj.userData[axis==='x'?'w':axis==='y'?'h':'d']/2;
+ const result=new THREE.Vector3();assembly.updateMatrixWorld(true);
+ for(const axis of ['x','y','z']){
+  let allowed=requested[axis];if(Math.abs(allowed)<1e-7)continue;
+  for(const p of members){
+   const mesh=boards.find(b=>b.userData.key===p.key);if(!mesh)continue;
+   const center=mesh.getWorldPosition(new THREE.Vector3()).add(result);
+   const h=half(mesh,axis);
+   if(axis==='y'&&allowed<0)allowed=Math.max(allowed,h-center.y);
+   for(const obstacle of obstacles){
+    const other=obstacle.getWorldPosition(new THREE.Vector3());
+    if(!['x','y','z'].filter(k=>k!==axis).every(k=>Math.abs(center[k]-other[k])<half(mesh,k)+half(obstacle,k)-0.01))continue;
+    const radius=h+half(obstacle,axis),separation=center[axis]-other[axis];
+    if(Math.abs(separation)<radius-0.01)continue;
+    if(allowed>0&&separation<=-radius+0.01){
+     const contact=-radius-separation;if(contact>=-0.01)allowed=Math.min(allowed,Math.max(0,contact));
+    }else if(allowed<0&&separation>=radius-0.01){
+     const contact=radius-separation;if(contact<=0.01)allowed=Math.max(allowed,Math.min(0,contact));
+    }
+   }
+  }
+  result[axis]=allowed;
+ }
+ return result;
+}
 // PRO100-style selection and grouping: Shift+click, context menu, drag assembly.
 const menu=document.createElement('div');menu.id='assemblyContext';
 menu.style.cssText='position:fixed;z-index:10000;display:none;background:white;border:1px solid #bdc9d7;border-radius:7px;box-shadow:0 6px 22px #0003;padding:5px;min-width:150px';
 document.body.append(menu);
 function closeMenu(){menu.style.display='none'}
 function showMenu(e){
- e.preventDefault();closeMenu();
+ e.preventDefault();closeMenu();menu.replaceChildren();
  pointerRay(e);
  const hit=ray.intersectObjects(boards,false).find(h=>customParts.some(p=>p.key===h.object.userData.key));
  const part=hit&&customParts.find(p=>p.key===hit.object.userData.key);
