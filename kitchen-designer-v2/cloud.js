@@ -1,33 +1,45 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import {getFirestore,collection,doc,setDoc,getDocs} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import {getFirestore,collection,doc,setDoc,getDocs,getDoc} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 const config={apiKey:"AIzaSyBlrriK3iQAuO0KN-bHkd1p5PoLWoqjTJ4",authDomain:"kitchen-designer-9d437.firebaseapp.com",projectId:"kitchen-designer-9d437",storageBucket:"kitchen-designer-9d437.firebasestorage.app",messagingSenderId:"579302190437",appId:"1:579302190437:web:b2ce4dda4911447588458c"};
 const app=initializeApp(config),auth=getAuth(app),db=getFirestore(app);
 const el=id=>document.getElementById(id),status=msg=>el('cloudStatus').textContent=msg;
+const emit=(type,detail)=>window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-'+type,{detail}));
 let user=null;
-onAuthStateChanged(auth,u=>{user=u;el('cloudLogin').hidden=!!u;el('cloudLogout').hidden=!u;el('cloudSync').disabled=!u;status(u?'Свързан: '+u.email:'Влез с Google, за да запазваш проектите онлайн.')});
+onAuthStateChanged(auth,u=>{
+ user=u;el('cloudLogin').hidden=!!u;el('cloudLogout').hidden=!u;
+ status(u?'☁ '+(u.email||'Свързан'):'☁ Не сте влезли');
+});
 el('cloudLogin').onclick=async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){status('Вход: '+e.message)}};
-el('cloudLogout').onclick=async()=>{try{await signOut(auth)}catch(e){status(e.message)}};
-el('cloudSync').onclick=async()=>{
- if(!user)return;
- el('cloudSync').disabled=true;
+el('cloudLogout').onclick=async()=>{try{await signOut(auth)}catch(e){status('Изход: '+e.message)}};
+const cabinetCollection=()=>collection(db,'users',user.uid,'v2_cabinets');
+function requireUser(){if(!user)throw new Error('Първо влез с Google от горния десен ъгъл.')}
+window.addEventListener('kitchen-v2-cloud-list-request',async()=>{
  try{
-  status('Синхронизиране…');
-  const local=window.kitchenV2CloudData();
-  const result={};
-  for(const [kind,items] of [['cabinets',local.cabinets],['projects',local.projects]]){
-   const ref=collection(db,'users',user.uid,'v2_'+kind);
-   const snap=await getDocs(ref);
-   const merged=new Map(snap.docs.map(d=>[d.id,d.data()]));
-   for(const item of items){
-    const id=String(item.id);
-    await setDoc(doc(ref,id),{id,name:item.name,parts:item.parts,updatedAt:Date.now()});
-    merged.set(id,{id,name:item.name,parts:item.parts});
-   }
-   result[kind]=[...merged.values()].filter(x=>Array.isArray(x.parts));
-   localStorage.setItem(kind==='cabinets'?'kitchenV2Cabinets':'kitchenV2Projects',JSON.stringify(result[kind]));
-  }
-  window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-data',{detail:{cabinetItems:result.cabinets,projectItems:result.projects}}));
-  status('Синхронизирани '+(result.cabinets.length+result.projects.length)+' записа.');
- }catch(e){status('Грешка: '+e.message)}finally{el('cloudSync').disabled=!user}
-};
+  requireUser();
+  const snap=await getDocs(cabinetCollection());
+  const items=snap.docs.map(d=>({id:d.id,name:d.data().name||'Без име'})).sort((a,b)=>a.name.localeCompare(b.name,'bg'));
+  emit('list',{items});
+ }catch(e){emit('error',{message:'Грешка при зареждане: '+e.message})}
+});
+window.addEventListener('kitchen-v2-cloud-save-request',async e=>{
+ try{
+  requireUser();
+  const {name,parts}=e.detail;
+  if(!Array.isArray(parts)||!parts.length)throw new Error('Няма детайли.');
+  const id='cab_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
+  await setDoc(doc(cabinetCollection(),id),{name,parts,v2:true,updatedAt:Date.now()});
+  emit('saved',{id,name});
+  status('☁ Запазено: '+name);
+ }catch(err){emit('error',{message:'Грешка при запис: '+err.message})}
+});
+window.addEventListener('kitchen-v2-cloud-open-request',async e=>{
+ try{
+  requireUser();
+  const snap=await getDoc(doc(cabinetCollection(),e.detail.id));
+  if(!snap.exists())throw new Error('Шкафът не е намерен.');
+  const data=snap.data();
+  if(!Array.isArray(data.parts))throw new Error('Невалиден формат на шкафа.');
+  emit('opened',{name:data.name||'Без име',parts:data.parts});
+ }catch(err){emit('error',{message:'Грешка при отваряне: '+err.message})}
+});
