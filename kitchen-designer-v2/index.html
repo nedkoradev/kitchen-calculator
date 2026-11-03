@@ -48,8 +48,22 @@ main{height:calc(100dvh - 110px)}
 main.projectMode #views .projectTab{display:none!important}
 #projectExtraPane{max-width:1100px;margin:0 auto}
 @media(max-width:700px){#mainNavigation{grid-template-columns:repeat(3,minmax(0,1fr))}main{height:calc(100dvh - 160px)}}
+#projectExtraPane.libraryPage{max-width:none;margin:0;padding:22px 26px}
+.libraryHeading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px}
+.libraryHeading h2{font-size:24px;margin:0 0 8px}
+.libraryHeading p{color:#617590;line-height:1.6;margin:0}
+.libraryTopline{display:flex;align-items:center;justify-content:space-between;margin:14px 0}
+.libraryCard{display:flex;align-items:center;gap:18px;border:1px solid #d8e3ef;background:#fafcff;border-radius:12px;padding:15px;margin-bottom:12px}
+.libraryThumbnail{flex:0 0 100px;width:100px;height:100px;border-radius:10px;background:#e9f0f8;display:grid;place-items:center}
+.libraryThumbnail svg{width:80px;height:80px}
+.libraryCardBody{flex:1;min-width:0}.libraryCardBody strong{font-size:16px}.libraryCardBody p{margin:6px 0;color:#63758f}
+.libraryActions{display:flex;gap:8px;flex-wrap:wrap}.libraryActions button{font-weight:600}
+.libraryPrimary{background:#1764ee;color:white;border-color:#1764ee}
+.libraryDanger{color:#b4232f;background:#fff4f4;border-color:#ffd0d0}
+.libraryTopButton{background:#1764ee;color:white;border-color:#1764ee;font-weight:600}
+@media(max-width:800px){.libraryCard{flex-wrap:wrap}.libraryActions{width:100%}.libraryHeading{flex-wrap:wrap}}
 </style></head>
-<body><header><strong>Kitchen Designer V2 · 3D прототип v0.99</strong><div id="headerRight"><span id="cloudStatus">Проверка на входа…</span><button id="cloudLogin" type="button">Вход с Google</button><button id="cloudLogout" type="button" hidden>Изход</button><a href="../">Основен калкулатор</a></div></header><nav id="mainNavigation"><button id="modeProject" type="button">Проект</button><button id="modeConstructor" type="button">Конструктор</button><button id="navLibrary" type="button">Библиотека</button><button id="navMaterials" type="button">Материали</button><button id="navCut" type="button">Разкрой</button><button id="navCosts" type="button">Разходи</button></nav><main><aside><div class="selection" id="toolsPanel"><div class="toolIcons"><button id="addHorizontal" title="Добави хоризонтален детайл"><span class="toolSymbol">▱<b>+</b></span></button><button id="addVertical" title="Добави вертикален детайл"><span class="toolSymbol">▯<b>+</b></span></button><div class="rotateTools"><button id="rotateLeft" type="button" title="Завърти избрания детайл на 90° наляво в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 24.5 9 A 11 11 0 1 0 25 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 20 8 L 25 8 L 25 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button id="rotateRight" type="button" title="Завърти избрания детайл на 90° надясно в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 7.5 9 A 11 11 0 1 1 7 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 12 8 L 7 8 L 7 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><button id="addPart" hidden>Добави детайл</button><button id="duplicatePart" hidden>Дублирай</button><button id="deletePart" hidden>Изтрий</button><button id="groupParts" hidden>Групирай</button><button id="ungroupParts" hidden>Разгрупирай</button></div><div class="toolIcons" style="margin-top:0"><button id="quickSave" type="button" title="Запази шкаф или проект"><span class="toolSymbol">💾</span></button><button id="quickOpen" type="button" title="Отвори шкаф или проект"><span class="toolSymbol">📂</span></button></div><div id="groupList" hidden></div><div id="groupInfo" hidden></div></div><div class="selection" id="libraryPanel" hidden style="display:none"><strong>Библиотека и проект</strong><label>Режим</label><select id="workspaceMode"><option value="constructor">Конструктор</option><option value="project">Проект</option></select><label>Име на шкафа</label><input id="cabinetName" type="text" placeholder="Напр. Шкаф 600"><button id="saveCabinet" style="width:100%;margin-top:8px">Запази шкаф в библиотеката</button><label>Запазени шкафове</label><select id="savedCabinets"></select><button id="insertCabinet" style="width:100%;margin-top:8px">Добави шкаф в проекта</button><label>Име на проекта</label><input id="projectName" type="text" value="Моят проект"><div style="display:flex;gap:5px;margin-top:8px"><button id="saveProject" style="flex:1">Запази проект</button><button id="newProject" style="flex:1">Нов проект</button></div><label>Запазени проекти</label><select id="savedProjects"></select><button id="openProject" style="width:100%;margin-top:8px">Отвори проект</button><div id="storageStatus" style="font-size:11px;color:#60758a;margin-top:8px"></div></div><section id="projectDashboard" hidden>
+<body><header><strong>Kitchen Designer V2 · 3D прототип v1.00</strong><div id="headerRight"><span id="cloudStatus">Проверка на входа…</span><button id="cloudLogin" type="button">Вход с Google</button><button id="cloudLogout" type="button" hidden>Изход</button><a href="../">Основен калкулатор</a></div></header><nav id="mainNavigation"><button id="modeProject" type="button">Проект</button><button id="modeConstructor" type="button">Конструктор</button><button id="navLibrary" type="button">Библиотека</button><button id="navMaterials" type="button">Материали</button><button id="navCut" type="button">Разкрой</button><button id="navCosts" type="button">Разходи</button></nav><main><aside><div class="selection" id="toolsPanel"><div class="toolIcons"><button id="addHorizontal" title="Добави хоризонтален детайл"><span class="toolSymbol">▱<b>+</b></span></button><button id="addVertical" title="Добави вертикален детайл"><span class="toolSymbol">▯<b>+</b></span></button><div class="rotateTools"><button id="rotateLeft" type="button" title="Завърти избрания детайл на 90° наляво в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 24.5 9 A 11 11 0 1 0 25 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 20 8 L 25 8 L 25 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button id="rotateRight" type="button" title="Завърти избрания детайл на 90° надясно в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 7.5 9 A 11 11 0 1 1 7 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 12 8 L 7 8 L 7 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><button id="addPart" hidden>Добави детайл</button><button id="duplicatePart" hidden>Дублирай</button><button id="deletePart" hidden>Изтрий</button><button id="groupParts" hidden>Групирай</button><button id="ungroupParts" hidden>Разгрупирай</button></div><div class="toolIcons" style="margin-top:0"><button id="quickSave" type="button" title="Запази шкаф или проект"><span class="toolSymbol">💾</span></button><button id="quickOpen" type="button" title="Отвори шкаф или проект"><span class="toolSymbol">📂</span></button></div><div id="groupList" hidden></div><div id="groupInfo" hidden></div></div><div class="selection" id="libraryPanel" hidden style="display:none"><strong>Библиотека и проект</strong><label>Режим</label><select id="workspaceMode"><option value="constructor">Конструктор</option><option value="project">Проект</option></select><label>Име на шкафа</label><input id="cabinetName" type="text" placeholder="Напр. Шкаф 600"><button id="saveCabinet" style="width:100%;margin-top:8px">Запази шкаф в библиотеката</button><label>Запазени шкафове</label><select id="savedCabinets"></select><button id="insertCabinet" style="width:100%;margin-top:8px">Добави шкаф в проекта</button><label>Име на проекта</label><input id="projectName" type="text" value="Моят проект"><div style="display:flex;gap:5px;margin-top:8px"><button id="saveProject" style="flex:1">Запази проект</button><button id="newProject" style="flex:1">Нов проект</button></div><label>Запазени проекти</label><select id="savedProjects"></select><button id="openProject" style="width:100%;margin-top:8px">Отвори проект</button><div id="storageStatus" style="font-size:11px;color:#60758a;margin-top:8px"></div></div><section id="projectDashboard" hidden>
  <h3>Проект</h3><label>Име на проекта</label><input id="projectTitle" value="Нова кухня">
  <label>Шкафове от облака</label><select id="projectCabinetList"><option value="">Зареждане…</option></select>
  <button id="projectAddCabinet" type="button">+ Добави шкаф</button>
@@ -1312,20 +1326,58 @@ function changeDesignMode(next){
  if(next==='project')window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'));
  build(false);setView('perspective');projectRefresh();
 }
+function renderCloudLibrary(){
+ const root=$('projectExtraPane');if(!root||root.hidden)return;
+ root.replaceChildren();
+ const heading=document.createElement('div');heading.className='libraryHeading';
+ const title=document.createElement('div');title.innerHTML='<h2>▣ Библиотека с модели</h2><p>Запазените шкафове са достъпни за повторно използване в различни проекти.<br>Лична библиотека в Cloud Firestore.</p>';
+ const save=document.createElement('button');save.className='libraryTopButton';save.textContent='+ Запази текущия шкаф';save.onclick=()=>{activateMainNavigation('constructor');showFileDialog('save')};
+ heading.append(title,save);root.append(heading);
+ const bar=document.createElement('div');bar.className='libraryTopline';
+ const count=document.createElement('strong');count.textContent='Запазени шкафове: '+cloudCabinets.length;
+ const order=document.createElement('select');order.style.width='140px';order.add(new Option('Най-нови','new'));order.add(new Option('По име','name'));order.value=window.librarySort||'new';
+ order.onchange=()=>{window.librarySort=order.value;renderCloudLibrary()};
+ const sort=document.createElement('div');sort.textContent='Сортиране: ';sort.append(order);bar.append(count,sort);root.append(bar);
+ const items=[...cloudCabinets];
+ if(order.value==='name')items.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'bg'));
+ else items.sort((a,b)=>Number(b.createdAt?.seconds||b.createdAt||0)-Number(a.createdAt?.seconds||a.createdAt||0));
+ if(!items.length){const p=document.createElement('p');p.textContent='Няма запазени шкафове в облака или списъкът още се зарежда.';root.append(p);return}
+ for(const item of items){
+  const card=document.createElement('div');card.className='libraryCard';
+  const thumb=document.createElement('div');thumb.className='libraryThumbnail';
+  thumb.innerHTML='<svg viewBox="0 0 90 90" aria-hidden="true"><path d="M17 26 33 13 74 13 58 26Z" fill="#d9b18a" stroke="#997552"/><path d="M58 26 74 13 74 69 58 80Z" fill="#bd916a" stroke="#997552"/><rect x="17" y="26" width="41" height="54" fill="#f3e9dc" stroke="#997552"/><path d="M37.5 26V80M17 53H58" stroke="#b69c80" stroke-width="2"/></svg>';
+  const body=document.createElement('div');body.className='libraryCardBody';
+  const name=document.createElement('strong');name.textContent=item.name||'Шкаф';body.append(name);
+  const meta=document.createElement('p');meta.textContent=item.dimensions||item.size||'Запазен модел в облака';body.append(meta);
+  const actions=document.createElement('div');actions.className='libraryActions';
+  const open=document.createElement('button');open.className='libraryPrimary';open.textContent='↗ Отвори в конструктора';
+  open.onclick=()=>{activateMainNavigation('constructor');window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-open-request',{detail:{id:item.id}}))};
+  const duplicate=document.createElement('button');duplicate.textContent='▢ Дублирай';
+  duplicate.onclick=()=>{const newName=window.prompt('Име на копието:',(item.name||'Шкаф')+' — копие');if(!newName?.trim())return;pendingLibraryDuplicate=newName.trim();activateMainNavigation('constructor');window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-open-request',{detail:{id:item.id}}))};
+  const del=document.createElement('button');del.className='libraryDanger';del.textContent='▣ Изтрий';
+  del.onclick=()=>{if(!window.confirm('Да изтрия ли „'+(item.name||'Шкаф')+'“ от облака?'))return;window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-delete-request',{detail:{id:item.id}}))};
+  actions.append(open,duplicate,del);card.append(thumb,body,actions);root.append(card);
+ }
+}
+let pendingLibraryDuplicate=null;
+window.addEventListener('kitchen-v2-cloud-list',()=>{if(!$('projectExtraPane').hidden&&$('navLibrary').classList.contains('mainNavActive'))renderCloudLibrary()});
+window.addEventListener('kitchen-v2-cloud-deleted',()=>{if($('navLibrary').classList.contains('mainNavActive'))window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'))});
+window.addEventListener('kitchen-v2-cloud-opened',e=>{if(!pendingLibraryDuplicate)return;const name=pendingLibraryDuplicate;pendingLibraryDuplicate=null;window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-save-request',{detail:{name,parts:e.detail.parts}}))});
 function activateMainNavigation(tab){
  changeDesignMode(tab==='constructor'?'constructor':'project');
  for(const [id,name] of [['modeProject','project'],['modeConstructor','constructor'],['navLibrary','library'],['navMaterials','materials'],['navCut','cut'],['navCosts','costs']]){
   $(id).classList.toggle('mainNavActive',name===tab);
  }
  const extra=$('projectExtraPane');
- extra.hidden=tab!=='library'&&tab!=='materials';
+ extra.hidden=tab!=='library'&&tab!=='materials';extra.classList.toggle('libraryPage',tab==='library');
  if(tab==='cut'||tab==='costs')switchProjectTab(tab);
  else if(tab==='library'||tab==='materials'){
   switchProjectTab('cut');$('projectCutPane').hidden=true;$('projectCostPane').hidden=true;
   $('projectSummary').hidden=true;extra.replaceChildren();
   const h=document.createElement('h2');h.textContent=tab==='library'?'Библиотека':'Материали';extra.append(h);
   if(tab==='library'){
-   const p=document.createElement('p');p.textContent='Шкафовете от облака се избират от панела вляво и се добавят в раздел „Проект“.';extra.append(p);
+   extra.classList.add('libraryPage');
+   renderCloudLibrary();
    window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'));
   }else{
    const t=document.createElement('table');t.innerHTML='<thead><tr><th>Материал</th><th>Размер</th><th>Цена</th></tr></thead>';
