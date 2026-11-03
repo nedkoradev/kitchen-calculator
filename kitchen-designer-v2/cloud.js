@@ -18,7 +18,7 @@ window.addEventListener('kitchen-v2-cloud-list-request',async()=>{
  try{
   requireUser();
   const snap=await getDocs(cabinetCollection());
-  const items=snap.docs.map(d=>({id:d.id,name:d.data().name||'Без име'})).sort((a,b)=>a.name.localeCompare(b.name,'bg'));
+  const items=snap.docs.map(d=>({id:d.id,name:d.data().name||'Без име',parts:d.data().parts||[],updatedAt:d.data().updatedAt||0})).sort((a,b)=>a.name.localeCompare(b.name,'bg'));
   emit('list',{items});
  }catch(e){emit('error',{message:'Грешка при зареждане: '+e.message})}
 });
@@ -53,4 +53,14 @@ window.addEventListener('kitchen-v2-cloud-delete-request',async e=>{
   emit('deleted',{id});
   status('☁ Шкафът е изтрит.');
  }catch(err){emit('error',{message:'Грешка при изтриване: '+err.message})}
+});
+
+const materialCollection=()=>collection(db,'users',user.uid,'materials');
+window.addEventListener('kitchen-v2-material-list-request',async()=>{
+ try{requireUser();const snap=await getDocs(materialCollection());emit('material-list',{items:snap.docs.map(d=>({id:d.id,name:d.data().name||d.id}))})}
+ catch(e){emit('material-error',{message:e.message})}
+});
+window.addEventListener('kitchen-v2-material-load-request',async e=>{
+ try{requireUser();const snap=await getDoc(doc(materialCollection(),e.detail.id));if(!snap.exists())throw Error('Базата не е намерена');emit('material-loaded',{name:snap.data().name||e.detail.id,data:snap.data()})}
+ catch(e){emit('material-error',{message:e.message})}
 });
