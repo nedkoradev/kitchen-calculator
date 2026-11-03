@@ -11,7 +11,7 @@ window.addEventListener('keydown',function(e){
  window.dispatchEvent(new Event('kitchen-select-all'));
 },true);
 </script>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script><script type="module">
+<script type="module" src="./cloud.js"></script><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script><script type="module">
 import * as THREE from 'three';import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 const $=id=>document.getElementById(id),host=$('view'),scene=new THREE.Scene();scene.background=new THREE.Color('#f0f3f6');
 let camera=new THREE.PerspectiveCamera(38,1,20,9000);camera.position.set(1300,1050,1450);
