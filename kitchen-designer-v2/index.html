@@ -4,7 +4,7 @@
 <script>
 /* Capture Select All before browser page-text selection, independent of module loading. */
 window.addEventListener('keydown',function(e){
- if(!(e.ctrlKey||e.metaKey)||e.key.toLowerCase()!=='a')return;
+ if(!(e.ctrlKey||e.metaKey)||(e.code!=='KeyA'&&e.key.toLowerCase()!=='a'))return;
  const target=e.target;
  if(target instanceof Element && target.closest('#propertiesDialog input:focus,#propertiesDialog textarea:focus'))return;
  e.preventDefault();e.stopImmediatePropagation();
