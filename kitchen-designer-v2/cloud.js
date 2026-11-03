@@ -1,6 +1,6 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import {getFirestore,collection,doc,setDoc,getDocs,getDoc} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import {getFirestore,collection,doc,setDoc,getDocs,getDoc,deleteDoc} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 const config={apiKey:"AIzaSyBlrriK3iQAuO0KN-bHkd1p5PoLWoqjTJ4",authDomain:"kitchen-designer-9d437.firebaseapp.com",projectId:"kitchen-designer-9d437",storageBucket:"kitchen-designer-9d437.firebasestorage.app",messagingSenderId:"579302190437",appId:"1:579302190437:web:b2ce4dda4911447588458c"};
 const app=initializeApp(config),auth=getAuth(app),db=getFirestore(app);
 const el=id=>document.getElementById(id),status=msg=>el('cloudStatus').textContent=msg;
@@ -42,4 +42,15 @@ window.addEventListener('kitchen-v2-cloud-open-request',async e=>{
   if(!Array.isArray(data.parts))throw new Error('Невалиден формат на шкафа.');
   emit('opened',{name:data.name||'Без име',parts:data.parts});
  }catch(err){emit('error',{message:'Грешка при отваряне: '+err.message})}
+});
+
+window.addEventListener('kitchen-v2-cloud-delete-request',async e=>{
+ try{
+  requireUser();
+  const id=e.detail?.id;
+  if(typeof id!=='string'||!id.startsWith('cab_'))throw new Error('Невалиден идентификатор.');
+  await deleteDoc(doc(cabinetCollection(),id));
+  emit('deleted',{id});
+  status('☁ Шкафът е изтрит.');
+ }catch(err){emit('error',{message:'Грешка при изтриване: '+err.message})}
 });
