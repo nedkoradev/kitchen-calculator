@@ -64,7 +64,7 @@ main.projectMode #views .projectTab{display:none!important}
 @media(max-width:800px){.libraryCard{flex-wrap:wrap}.libraryActions{width:100%}.libraryHeading{flex-wrap:wrap}}
 #projectExtraPane.materialsPage{max-width:none;margin:0;padding:22px 26px;background:#f1f5f9}.materialSection{background:#fff;border:1px solid #d3dfec;border-radius:14px;padding:18px;margin-bottom:18px}.materialSection h2{margin:0 0 16px;font-size:22px}.materialGroup{background:#f5f8fc}.materialGroup h2{font-size:18px}.materialsPage table{width:100%;border-collapse:collapse}.materialsPage td,.materialsPage th{border:1px solid #d3dfec;padding:9px;text-align:left}.materialsPage th{background:#f8fafc}.materialSwatch{display:inline-block;width:15px;height:15px;border:1px solid #aaa;border-radius:3px;vertical-align:middle;margin-right:8px}.materialAdd{background:#173d68;color:white;margin-top:12px}.materialEditDialog{border:1px solid #cdd9e8;border-radius:12px;padding:22px;width:min(480px,95vw);max-height:90vh;overflow:auto}.materialEditDialog label{display:block;margin:10px 0}.materialEditDialog input{display:block;width:100%;height:34px;margin-top:4px}.materialActions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}main.catalogMode{grid-template-columns:minmax(0,1fr)}main.catalogMode aside{display:none}main.catalogMode #projectResults{height:100%;padding:0;background:#f1f5f9}main.catalogMode .stage{min-width:0}main.catalogMode #projectExtraPane{min-height:100%;padding:22px 26px}main.projectMode:not(.catalogMode){grid-template-columns:78px minmax(0,1fr)}main.projectMode:not(.catalogMode) aside{width:78px;padding:6px}main.projectMode #projectDashboard{display:none!important}#projectTools{display:none}main.projectMode:not(.catalogMode) #projectTools{display:flex;flex-direction:column;align-items:center;gap:7px}#projectTools button{width:54px;height:54px;font-size:25px;padding:4px;display:grid;place-items:center}#projectTools button:disabled{opacity:.4}#projectResults{max-width:none!important;width:100%;box-sizing:border-box}#projectResults #projectCosts{max-width:none!important;width:100%}#projectCosts .oldStyleCosts{border-collapse:collapse;width:100%;font-size:13px;background:#fff}#projectCosts .oldStyleCosts th,#projectCosts .oldStyleCosts td{border:1px solid #d4dfeb;padding:9px 10px}#projectCosts .oldStyleCosts th{background:#eaf1f7;text-align:left;font-weight:700}#projectCosts .oldStyleCosts td:not(:first-child){text-align:right}#projectCosts .oldStyleCosts td:first-child{min-width:280px}#projectCosts .oldStyleCosts tr.costSection td{background:#f1f5f9;font-weight:bold;text-align:left}#projectCosts .oldStyleCosts tr.costGrandTotal td{background:#e6eef7;font-size:17px;font-weight:800}#projectCosts .oldStyleCosts tr.costSubtotal td{font-weight:700;background:#f6f8fb}#v2MaterialCloudSelect{width:190px!important;min-width:190px!important;max-width:190px!important;flex:0 0 190px!important}#projectExtraPane .materialActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .materialsPage .materialGroup td,.materialsPage .materialGroup th{color:#111827}.materialsPage .materialGroup td a,.materialsPage .materialGroup td a:visited{color:#111827!important;text-decoration:underline;text-underline-offset:2px}.materialsPage .materialGroup td a:hover{color:#164a82!important}</style></head>
-<body><header><strong>Kitchen Designer V2 · 3D прототип v1.08</strong><div id="headerRight"><span id="cloudStatus">Проверка на входа…</span><button id="cloudLogin" type="button">Вход с Google</button><button id="cloudLogout" type="button" hidden>Изход</button><a href="../">Основен калкулатор</a></div></header><nav id="mainNavigation"><button id="modeProject" type="button">Проект</button><button id="modeConstructor" type="button">Конструктор</button><button id="navLibrary" type="button">Библиотека</button><button id="navMaterials" type="button">Материали</button><button id="navCut" type="button">Разкрой</button><button id="navCosts" type="button">Разходи</button></nav><main><aside><div class="selection" id="toolsPanel"><div class="toolIcons"><button id="addHorizontal" title="Добави хоризонтален детайл"><span class="toolSymbol">▱<b>+</b></span></button><button id="addVertical" title="Добави вертикален детайл"><span class="toolSymbol">▯<b>+</b></span></button><div class="rotateTools"><button id="rotateLeft" type="button" title="Завърти избрания детайл на 90° наляво в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 24.5 9 A 11 11 0 1 0 25 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 20 8 L 25 8 L 25 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button id="rotateRight" type="button" title="Завърти избрания детайл на 90° надясно в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 7.5 9 A 11 11 0 1 1 7 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 12 8 L 7 8 L 7 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><button id="addPart" hidden>Добави детайл</button><button id="duplicatePart" hidden>Дублирай</button><button id="deletePart" hidden>Изтрий</button><button id="groupParts" hidden>Групирай</button><button id="ungroupParts" hidden>Разгрупирай</button></div><div class="toolIcons" style="margin-top:0"><button id="quickSave" type="button" title="Запази шкаф или проект"><span class="toolSymbol">💾</span></button><button id="quickOpen" type="button" title="Отвори шкаф или проект"><span class="toolSymbol">📂</span></button></div><div id="groupList" hidden></div><div id="groupInfo" hidden></div></div><div class="selection" id="libraryPanel" hidden style="display:none"><strong>Библиотека и проект</strong><label>Режим</label><select id="workspaceMode"><option value="constructor">Конструктор</option><option value="project">Проект</option></select><label>Име на шкафа</label><input id="cabinetName" type="text" placeholder="Напр. Шкаф 600"><button id="saveCabinet" style="width:100%;margin-top:8px">Запази шкаф в библиотеката</button><label>Запазени шкафове</label><select id="savedCabinets"></select><button id="insertCabinet" style="width:100%;margin-top:8px">Добави шкаф в проекта</button><label>Име на проекта</label><input id="projectName" type="text" value="Моят проект"><div style="display:flex;gap:5px;margin-top:8px"><button id="saveProject" style="flex:1">Запази проект</button><button id="newProject" style="flex:1">Нов проект</button></div><label>Запазени проекти</label><select id="savedProjects"></select><button id="openProject" style="width:100%;margin-top:8px">Отвори проект</button><div id="storageStatus" style="font-size:11px;color:#60758a;margin-top:8px"></div></div><div id="projectTools"><button id="projectQuickSave" type="button" title="Запази проект">💾</button><button id="projectQuickOpen" type="button" title="Отвори проект">📂</button><button id="projectQuickAdd" type="button" title="Добави шкаф от библиотеката">▣<span style="font-size:15px">＋</span></button></div><dialog id="projectAddDialog" class="materialEditDialog"><h3>Добави шкаф от библиотеката</h3><p>Избери шкаф от облака:</p><div id="projectAddDialogOptions"></div><div class="materialActions"><button type="button" id="projectAddDialogCancel">Отказ</button><button type="button" id="projectAddDialogConfirm">Добави</button></div></dialog><section id="projectDashboard" hidden>
+<body><header><strong>Kitchen Designer V2 · 3D прототип v1.09</strong><div id="headerRight"><span id="cloudStatus">Проверка на входа…</span><button id="cloudLogin" type="button">Вход с Google</button><button id="cloudLogout" type="button" hidden>Изход</button><a href="../">Основен калкулатор</a></div></header><nav id="mainNavigation"><button id="modeProject" type="button">Проект</button><button id="modeConstructor" type="button">Конструктор</button><button id="navLibrary" type="button">Библиотека</button><button id="navMaterials" type="button">Материали</button><button id="navCut" type="button">Разкрой</button><button id="navCosts" type="button">Разходи</button></nav><main><aside><div class="selection" id="toolsPanel"><div class="toolIcons"><button id="addHorizontal" title="Добави хоризонтален детайл"><span class="toolSymbol">▱<b>+</b></span></button><button id="addVertical" title="Добави вертикален детайл"><span class="toolSymbol">▯<b>+</b></span></button><div class="rotateTools"><button id="rotateLeft" type="button" title="Завърти избрания детайл на 90° наляво в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 24.5 9 A 11 11 0 1 0 25 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 20 8 L 25 8 L 25 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button id="rotateRight" type="button" title="Завърти избрания детайл на 90° надясно в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 7.5 9 A 11 11 0 1 1 7 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 12 8 L 7 8 L 7 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><button id="addPart" hidden>Добави детайл</button><button id="duplicatePart" hidden>Дублирай</button><button id="deletePart" hidden>Изтрий</button><button id="groupParts" hidden>Групирай</button><button id="ungroupParts" hidden>Разгрупирай</button></div><div class="toolIcons" style="margin-top:0"><button id="quickSave" type="button" title="Запази шкаф или проект"><span class="toolSymbol">💾</span></button><button id="quickOpen" type="button" title="Отвори шкаф или проект"><span class="toolSymbol">📂</span></button></div><div id="groupList" hidden></div><div id="groupInfo" hidden></div></div><div class="selection" id="libraryPanel" hidden style="display:none"><strong>Библиотека и проект</strong><label>Режим</label><select id="workspaceMode"><option value="constructor">Конструктор</option><option value="project">Проект</option></select><label>Име на шкафа</label><input id="cabinetName" type="text" placeholder="Напр. Шкаф 600"><button id="saveCabinet" style="width:100%;margin-top:8px">Запази шкаф в библиотеката</button><label>Запазени шкафове</label><select id="savedCabinets"></select><button id="insertCabinet" style="width:100%;margin-top:8px">Добави шкаф в проекта</button><label>Име на проекта</label><input id="projectName" type="text" value="Моят проект"><div style="display:flex;gap:5px;margin-top:8px"><button id="saveProject" style="flex:1">Запази проект</button><button id="newProject" style="flex:1">Нов проект</button></div><label>Запазени проекти</label><select id="savedProjects"></select><button id="openProject" style="width:100%;margin-top:8px">Отвори проект</button><div id="storageStatus" style="font-size:11px;color:#60758a;margin-top:8px"></div></div><div id="projectTools"><button id="projectQuickSave" type="button" title="Запази проект">💾</button><button id="projectQuickOpen" type="button" title="Отвори проект">📂</button><button id="projectQuickAdd" type="button" title="Добави шкаф от библиотеката">▣<span style="font-size:15px">＋</span></button></div><dialog id="projectAddDialog" class="materialEditDialog"><h3>Добави шкаф от библиотеката</h3><p>Избери шкаф от облака:</p><div id="projectAddDialogOptions"></div><div class="materialActions"><button type="button" id="projectAddDialogCancel">Отказ</button><button type="button" id="projectAddDialogConfirm">Добави</button></div></dialog><section id="projectDashboard" hidden>
  <h3>Проект</h3><label>Име на проекта</label><input id="projectTitle" value="Нова кухня">
  <label>Шкафове от облака</label><select id="projectCabinetList"><option value="">Зареждане…</option></select>
  <button id="projectAddCabinet" type="button">+ Добави шкаф</button>
@@ -364,6 +364,12 @@ dialog.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComp
 
 function showMenu(e){
  e.preventDefault();closeMenu();menu.replaceChildren();
+ const corner=topCornerHit(e);
+ if(corner){
+  e.preventDefault();e.stopImmediatePropagation();
+  assemblyPointer={id:e.pointerId,assembly:corner.assembly,x:e.clientX,y:e.clientY,corner};
+  controls.enabled=false;renderer.domElement.setPointerCapture(e.pointerId);return;
+ }
  const hit=pickBoard(e);
  const part=hit&&customParts.find(p=>p.key===hit.object.userData.key);
  if(!part)return;
@@ -493,6 +499,33 @@ renderer.domElement.addEventListener('pointermove',e=>{
  if(!assemblyPointer||e.pointerId!==assemblyPointer.id)return;
  e.preventDefault();e.stopImmediatePropagation();
  const assembly=assemblies.get(assemblyPointer.assembly);if(!assembly)return;
+ if(assemblyPointer.corner){
+  const c=assemblyPointer.corner;
+  const worldPerPixel=(camera.top-camera.bottom)/Math.max(1,host.clientHeight)/camera.zoom;
+  const dx=(e.clientX-c.startX)*worldPerPixel;
+  const dz=(e.clientY-c.startY)*worldPerPixel;
+  const oldX=c.x.max-c.x.min,oldZ=c.z.max-c.z.min;
+  const newX=Math.max(30,Math.round(oldX+c.sx*dx));
+  const newZ=Math.max(30,Math.round(oldZ+c.sz*dz));
+  for(const original of c.initial){
+   const p=customParts.find(q=>q.key===original.key),mesh=boards.find(b=>b.userData.key===original.key);
+   if(!p||!mesh)continue;
+   for(const [axis,dim,oldBounds,oldSize,newSize,sign] of [['x','w',c.x,oldX,newX,c.sx],['z','d',c.z,oldZ,newZ,c.sz]]){
+    const fixed=(sign>0?oldBounds.min:oldBounds.max)-(axis==='x'?ROOM.w/2:ROOM.d/2);
+    const oldDim=original[dim],newDim=p.locks?.[dim]?oldDim:Math.max(1,Math.round(oldDim*newSize/oldSize));
+    const oldLow=original[axis]-oldDim/2;
+    const oldFixed=sign>0?oldLow:original[axis]+oldDim/2;
+    const ratio=(oldFixed-fixed)/(oldSize-oldDim||1);
+    const newFixed=fixed+ratio*(newSize-newDim);
+    p[dim]=newDim;p[axis]=newFixed+(sign>0?newDim/2:-newDim/2);
+    mesh.position[axis]=p[axis];mesh.userData[dim]=p[dim];
+   }
+   mesh.geometry.dispose();mesh.geometry=new THREE.BoxGeometry(p.w,p.h,p.d);
+   const outline=mesh.children.find(q=>q.isLineSegments);
+   if(outline){outline.geometry.dispose();outline.geometry=new THREE.EdgesGeometry(mesh.geometry)}
+  }
+  syncGizmo();return;
+ }
  if(assemblyPointer.resize){
   const r=assemblyPointer.resize;
   const px=(e.clientX-r.start)*r.dirX+(e.clientY-r.startY)*r.dirY;
@@ -665,12 +698,22 @@ function syncGizmo(){
  const selectedPart=customParts.find(p=>p.key===selected);
  const members=customParts.filter(p=>groupSelections.has(p.key)||p.key===selected||(!singleMemberSelection&&selectedPart?.assembly&&p.assembly===selectedPart.assembly));
  if(!members.length)return;
+ const grouped=!!(selectedPart?.assembly&&!singleMemberSelection);
+ if(grouped&&viewMode==='top'){
+  const xs=groupBounds(members,'x'),zs=groupBounds(members,'z');
+  const top=Math.max(...members.map(p=>p.y+p.h/2))+2;
+  for(const x of [xs.min-ROOM.w/2,xs.max-ROOM.w/2])for(const z of [zs.min-ROOM.d/2,zs.max-ROOM.d/2]){
+   const marker=new THREE.Mesh(markerGeometry,markerMaterial);
+   marker.position.set(x,top,z);marker.renderOrder=30;selectionOverlay.add(marker);
+  }
+ }
  for(const part of members){
   const mesh=boards.find(b=>b.userData.key===part.key);if(!mesh)continue;
   const center=mesh.getWorldPosition(new THREE.Vector3());
   const tint=new THREE.Mesh(new THREE.BoxGeometry(part.w+.2,part.h+.2,part.d+.2),
    new THREE.MeshBasicMaterial({color:0x4656df,transparent:true,opacity:.19,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));
   tint.position.copy(center);selectionOverlay.add(tint);
+  if(grouped&&viewMode==='top')continue;
   for(const x of [-1,0,1])for(const y of [-1,0,1])for(const z of [-1,0,1]){
    if([x,y,z].filter(v=>v===0).length>1)continue;
    const marker=new THREE.Mesh(markerGeometry,markerMaterial);
@@ -701,6 +744,20 @@ function edgeAt(e,mesh,hit){
   if(pixel<14&&(!best||pixel<best.pixel))best={axis,sign,pixel,dist};
  }
  return best;
+}
+function topCornerHit(e){
+ if(viewMode!=='top'||singleMemberSelection)return null;
+ const p=customParts.find(q=>q.key===selected);
+ if(!p?.assembly)return null;
+ const members=customParts.filter(q=>q.assembly===p.assembly);
+ const x=groupBounds(members,'x'),z=groupBounds(members,'z');
+ const y=Math.max(...members.map(q=>q.y+q.h/2))+2;
+ for(const sx of [-1,1])for(const sz of [-1,1]){
+  const point=new THREE.Vector3((sx<0?x.min:x.max)-ROOM.w/2,y,(sz<0?z.min:z.max)-ROOM.d/2);
+  const screen=screenPos(point);
+  if(Math.hypot(e.clientX-screen.x,e.clientY-screen.y)<16)return {assembly:p.assembly,sx,sz,x,z,initial:members.map(q=>({key:q.key,x:q.x,z:q.z,w:q.w,d:q.d})),startX:e.clientX,startY:e.clientY,corner:point};
+ }
+ return null;
 }
 function pickBoard(e){
  pointerRay(e);
