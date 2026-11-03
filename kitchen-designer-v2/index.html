@@ -183,17 +183,18 @@ function resizeGroupNumeric(members,dim,newSize){
    else if(!leftPanels.includes(p))p[axis]=mapFace(center);
   }else{
    let na=mapFace(a),nb=mapFace(b);
-   // Rails crossing between locked side panels must terminate on their
-   // INNER faces. Old saved cabinets may have rails that overlapped a side;
-   // preserving that overlap while stretching reproduces red intersections.
-   const isRail=dim==='w'&&p.h<=150&&p.w>p.h*2&&leftInset>0&&rightInset>0;
-   if(isRail){
-    const innerLeft=left+leftInset,innerRight=left+newSize-rightInset;
-    const oldInnerLeft=fixedLeft,oldInnerRight=fixedRight;
-    const nearLeft=a<=oldInnerLeft+leftInset+2&&b>oldInnerLeft;
-    const nearRight=b>=oldInnerRight-rightInset-2&&a<oldInnerRight;
-    if(nearLeft)na=innerLeft;
-    if(nearRight)nb=innerRight;
+   // Clamp spanning crosspieces to the exact inside faces of the fixed-
+   // thickness end panels. This also works for rails with nonstandard
+   // heights and for cabinets already resized in earlier versions.
+   if(leftInset>0&&rightInset>0&&oldInner>0){
+    const span=b-a;
+    const crossesInterior=span>=oldInner*.65;
+    const nearLeft=a<=fixedLeft+Math.max(4,leftInset);
+    const nearRight=b>=fixedRight-Math.max(4,rightInset);
+    if(crossesInterior&&nearLeft&&nearRight){
+     na=left+leftInset;
+     nb=left+newSize-rightInset;
+    }
    }
    const size=Math.max(1,Math.round(nb-na));
    p[dim]=size;p[axis]=na+size/2;
