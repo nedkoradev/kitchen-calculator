@@ -24,7 +24,7 @@ main.projectMode{grid-template-columns:94px minmax(0,1fr) 285px}
 main.projectMode #projectDashboard{display:block}
 @media(max-width:850px){main.projectMode{grid-template-columns:75px minmax(0,1fr)}#projectDashboard{position:fixed;right:8px;bottom:8px;z-index:10;max-height:48vh;box-shadow:0 4px 20px #0002}}
 </style></head>
-<body><header><strong>Kitchen Designer V2 · 3D прототип v0.90</strong><div id="headerRight"><button id="modeConstructor" class="modeActive" type="button">Конструктор</button><button id="modeProject" type="button">Проект</button><span id="cloudStatus">Проверка на входа…</span><button id="cloudLogin" type="button">Вход с Google</button><button id="cloudLogout" type="button" hidden>Изход</button><a href="../">Основен калкулатор</a></div></header><main><aside><div class="selection" id="toolsPanel"><div class="toolIcons"><button id="addHorizontal" title="Добави хоризонтален детайл"><span class="toolSymbol">▱<b>+</b></span></button><button id="addVertical" title="Добави вертикален детайл"><span class="toolSymbol">▯<b>+</b></span></button><div class="rotateTools"><button id="rotateLeft" type="button" title="Завърти избрания детайл на 90° наляво в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 24.5 9 A 11 11 0 1 0 25 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 20 8 L 25 8 L 25 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button id="rotateRight" type="button" title="Завърти избрания детайл на 90° надясно в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 7.5 9 A 11 11 0 1 1 7 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 12 8 L 7 8 L 7 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><button id="addPart" hidden>Добави детайл</button><button id="duplicatePart" hidden>Дублирай</button><button id="deletePart" hidden>Изтрий</button><button id="groupParts" hidden>Групирай</button><button id="ungroupParts" hidden>Разгрупирай</button></div><div class="toolIcons" style="margin-top:0"><button id="quickSave" type="button" title="Запази шкаф или проект"><span class="toolSymbol">💾</span></button><button id="quickOpen" type="button" title="Отвори шкаф или проект"><span class="toolSymbol">📂</span></button></div><div id="groupList" hidden></div><div id="groupInfo" hidden></div></div><div class="selection" id="libraryPanel" hidden style="display:none"><strong>Библиотека и проект</strong><label>Режим</label><select id="workspaceMode"><option value="constructor">Конструктор</option><option value="project">Проект</option></select><label>Име на шкафа</label><input id="cabinetName" type="text" placeholder="Напр. Шкаф 600"><button id="saveCabinet" style="width:100%;margin-top:8px">Запази шкаф в библиотеката</button><label>Запазени шкафове</label><select id="savedCabinets"></select><button id="insertCabinet" style="width:100%;margin-top:8px">Добави шкаф в проекта</button><label>Име на проекта</label><input id="projectName" type="text" value="Моят проект"><div style="display:flex;gap:5px;margin-top:8px"><button id="saveProject" style="flex:1">Запази проект</button><button id="newProject" style="flex:1">Нов проект</button></div><label>Запазени проекти</label><select id="savedProjects"></select><button id="openProject" style="width:100%;margin-top:8px">Отвори проект</button><div id="storageStatus" style="font-size:11px;color:#60758a;margin-top:8px"></div></div><section id="projectDashboard" hidden>
+<body><header><strong>Kitchen Designer V2 · 3D прототип v0.91</strong><div id="headerRight"><button id="modeConstructor" class="modeActive" type="button">Конструктор</button><button id="modeProject" type="button">Проект</button><span id="cloudStatus">Проверка на входа…</span><button id="cloudLogin" type="button">Вход с Google</button><button id="cloudLogout" type="button" hidden>Изход</button><a href="../">Основен калкулатор</a></div></header><main><aside><div class="selection" id="toolsPanel"><div class="toolIcons"><button id="addHorizontal" title="Добави хоризонтален детайл"><span class="toolSymbol">▱<b>+</b></span></button><button id="addVertical" title="Добави вертикален детайл"><span class="toolSymbol">▯<b>+</b></span></button><div class="rotateTools"><button id="rotateLeft" type="button" title="Завърти избрания детайл на 90° наляво в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 24.5 9 A 11 11 0 1 0 25 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 20 8 L 25 8 L 25 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button id="rotateRight" type="button" title="Завърти избрания детайл на 90° надясно в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 7.5 9 A 11 11 0 1 1 7 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 12 8 L 7 8 L 7 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><button id="addPart" hidden>Добави детайл</button><button id="duplicatePart" hidden>Дублирай</button><button id="deletePart" hidden>Изтрий</button><button id="groupParts" hidden>Групирай</button><button id="ungroupParts" hidden>Разгрупирай</button></div><div class="toolIcons" style="margin-top:0"><button id="quickSave" type="button" title="Запази шкаф или проект"><span class="toolSymbol">💾</span></button><button id="quickOpen" type="button" title="Отвори шкаф или проект"><span class="toolSymbol">📂</span></button></div><div id="groupList" hidden></div><div id="groupInfo" hidden></div></div><div class="selection" id="libraryPanel" hidden style="display:none"><strong>Библиотека и проект</strong><label>Режим</label><select id="workspaceMode"><option value="constructor">Конструктор</option><option value="project">Проект</option></select><label>Име на шкафа</label><input id="cabinetName" type="text" placeholder="Напр. Шкаф 600"><button id="saveCabinet" style="width:100%;margin-top:8px">Запази шкаф в библиотеката</button><label>Запазени шкафове</label><select id="savedCabinets"></select><button id="insertCabinet" style="width:100%;margin-top:8px">Добави шкаф в проекта</button><label>Име на проекта</label><input id="projectName" type="text" value="Моят проект"><div style="display:flex;gap:5px;margin-top:8px"><button id="saveProject" style="flex:1">Запази проект</button><button id="newProject" style="flex:1">Нов проект</button></div><label>Запазени проекти</label><select id="savedProjects"></select><button id="openProject" style="width:100%;margin-top:8px">Отвори проект</button><div id="storageStatus" style="font-size:11px;color:#60758a;margin-top:8px"></div></div><section id="projectDashboard" hidden>
  <h3>Проект</h3><label>Име на проекта</label><input id="projectTitle" value="Нова кухня">
  <label>Шкафове от облака</label><select id="projectCabinetList"><option value="">Зареждане…</option></select>
  <button id="projectAddCabinet" type="button">+ Добави шкаф</button>
@@ -80,6 +80,7 @@ async function loadDefaultMaterials(){
   const res=await fetch('../materials/default.json',{cache:'no-store'});
   if(!res.ok)throw new Error('HTTP '+res.status);
   const data=await res.json();
+  window.projectServicePrices=data.servicePrices||{};
   if(!libraryBoards.length&&Array.isArray(data.pdcMaterials))libraryBoards=data.pdcMaterials;
   if(!libraryEdges.length&&Array.isArray(data.edgeMaterials))libraryEdges=data.edgeMaterials;
   refreshMaterials();
@@ -1146,29 +1147,71 @@ $('propertiesDialog').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isCo
 let currentDesignMode='constructor',constructorBackup=null,projectBackup=null;
 const projectInstances=new Map();
 function projectRefresh(){
- const root=$('projectSummary'),cuts=$('projectCutList');if(!root||currentDesignMode!=='project')return;
- const parts=customParts,area=parts.reduce((a,p)=>a+p.w*p.h*2/1e6+p.w*p.d*2/1e6+p.h*p.d*2/1e6,0);
+ const root=$('projectSummary'),cuts=$('projectCutList'),costs=$('projectCosts');
+ if(!root||currentDesignMode!=='project')return;
+ root.replaceChildren();cuts.replaceChildren();costs.replaceChildren();
  const byMaterial=new Map(),cutRows=new Map();
- for(const p of parts){
-  const f=finishes[p.key]||{},m=libraryBoards?.[f.material];
-  const material=m?.name||'Материал не е зададен';
-  const dims=[p.w,p.h,p.d].sort((a,b)=>a-b);
-  const thickness=dims[0],face=[dims[2],dims[1]];
-  const item=byMaterial.get(material)||{count:0,area:0};
-  item.count++;item.area+=face[0]*face[1]/1e6;byMaterial.set(material,item);
-  const key=material+'|'+face.join('×')+'|'+thickness;
+ let edgeLength=0,edgeCost=0,unknownEdges=0,missingMaterials=0;
+ for(const p of customParts){
+  const f=finishes[p.key]||{},m=libraryBoards[f.material];
+  const dimensions=[p.w,p.h,p.d].sort((a,b)=>a-b);
+  const [thickness,short,long]=dimensions;
+  const name=m?.name||'Неизвестен материал';
+  if(!m)missingMaterials++;
+  const item=byMaterial.get(name)||{count:0,area:0,material:m};
+  item.count++;item.area+=long*short/1e6;byMaterial.set(name,item);
+  const edgeData=(f.edges||[]).map((idx,i)=>{
+   const edge=idx===null||idx===undefined||idx===''?null:libraryEdges[Number(idx)];
+   if(!edge)return null;
+   const length=(i<2?long:short)/1000;
+   edgeLength+=length;
+   if(Number.isFinite(Number(edge.price)))edgeCost+=length*Number(edge.price);else unknownEdges++;
+   return edge.name;
+  });
+  const key=JSON.stringify([name,long,short,thickness,edgeData]);
   cutRows.set(key,(cutRows.get(key)||0)+1);
  }
- root.replaceChildren();cuts.replaceChildren();
- const stats=document.createElement('p');stats.textContent=parts.length+' детайла · '+projectInstances.size+' добавени шкафа';root.append(stats);
- const table=document.createElement('table');table.innerHTML='<thead><tr><th>Материал</th><th>Бр.</th><th>м²</th></tr></thead>';
- const tbody=document.createElement('tbody');
- for(const [name,row] of byMaterial){const tr=document.createElement('tr');for(const value of [name,row.count,row.area.toFixed(2)]){const td=document.createElement('td');td.textContent=value;tr.append(td)}tbody.append(tr)}
- table.append(tbody);root.append(table);
- const cutTable=document.createElement('table');cutTable.innerHTML='<thead><tr><th>Детайл (мм)</th><th>Бр.</th></tr></thead>';
- const body=document.createElement('tbody');
- for(const [key,count] of cutRows){const tr=document.createElement('tr');for(const value of [key.replaceAll('|',' · '),count]){const td=document.createElement('td');td.textContent=value;tr.append(td)}body.append(tr)}
- cutTable.append(body);cuts.append(cutTable);
+ const heading=document.createElement('p');
+ heading.textContent=customParts.length+' детайла · '+new Set(customParts.map(p=>p.assembly).filter(Boolean)).size+' групи';
+ root.append(heading);
+ const addTable=(target,headers,rows)=>{
+  const table=document.createElement('table'),head=document.createElement('thead'),tr=document.createElement('tr');
+  for(const h of headers){const th=document.createElement('th');th.textContent=h;tr.append(th)}
+  head.append(tr);table.append(head);
+  const body=document.createElement('tbody');
+  for(const values of rows){const row=document.createElement('tr');for(const value of values){const td=document.createElement('td');td.textContent=String(value);row.append(td)}body.append(row)}
+  table.append(body);target.append(table);
+ };
+ addTable(root,['Материал','Бр.','м²'],[...byMaterial].map(([name,item])=>[name,item.count,item.area.toFixed(2)]));
+ addTable(cuts,['Материал / размер (мм) / кант','Бр.'],[...cutRows].map(([key,count])=>{
+  const [name,long,short,thick,edges]=JSON.parse(key);
+  return [name+' · '+long+'×'+short+'×'+thick+' · '+edges.map((v,i)=>v?['Л','Д','Г','Дл'][i]+': '+v:'').filter(Boolean).join(', '),count];
+ }));
+ // Material estimate based on catalogue sheet area and 80% usable yield.
+ // This is not a nesting optimisation or a purchase-ready cutting plan.
+ const money=n=>Number(n).toFixed(2)+' €';
+ let sheetsTotal=0,missingPrices=0;const sheetRows=[];
+ for(const [name,item] of byMaterial){
+  const m=item.material;
+  if(!m||!Number(m.fullW)||!Number(m.fullH)||!Number.isFinite(Number(m.fullPrice))){missingPrices++;continue}
+  const usable=Number(m.fullW)*Number(m.fullH)/1e6*.8;
+  const count=Math.ceil(item.area/usable),price=count*Number(m.fullPrice);
+  sheetsTotal+=price;sheetRows.push([name,count,money(price)]);
+ }
+ const services=window.projectServicePrices||{};
+ const cutPrice=customParts.length*Number(services.cutPart||0)+Number(services.cutStart||0);
+ const edgingService=edgeLength*Number(services.edging||0);
+ addTable(costs,['Разход','Стойност'],[
+  ...sheetRows.map(([name,count,price])=>['ПДЧ '+name+' ('+count+' листа)',price]),
+  ['Кант материал ('+edgeLength.toFixed(2)+' м)',money(edgeCost)],
+  ['Разкрой ('+customParts.length+' детайла)',money(cutPrice)],
+  ['Кантиране ('+edgeLength.toFixed(2)+' м)',money(edgingService)],
+  ['Ориентировъчно общо',money(sheetsTotal+edgeCost+cutPrice+edgingService)]
+ ]);
+ const note=document.createElement('p');note.className='projectHint';
+ note.textContent='Ориентировъчна сметка: 80% използваемост на цял лист, без оптимизация на разкроя. Не включва плотове, обков, транспорт и труд.'+
+ (missingMaterials||missingPrices||unknownEdges?' Има липсващи материали или цени; сумата е непълна.':'');
+ costs.append(note);
 }
 function changeDesignMode(next){
  if(next===currentDesignMode)return;
