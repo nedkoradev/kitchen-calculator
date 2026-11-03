@@ -9,6 +9,7 @@ let user=null;
 onAuthStateChanged(auth,u=>{
  user=u;el('cloudLogin').hidden=!!u;el('cloudLogout').hidden=!u;
  status(u?'☁ '+(u.email||'Свързан'):'☁ Не сте влезли');
+ if(u){window.dispatchEvent(new Event('kitchen-v2-material-list-request'));window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'))}
 });
 el('cloudLogin').onclick=async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){status('Вход: '+e.message)}};
 el('cloudLogout').onclick=async()=>{try{await signOut(auth)}catch(e){status('Изход: '+e.message)}};
@@ -63,4 +64,15 @@ window.addEventListener('kitchen-v2-material-list-request',async()=>{
 window.addEventListener('kitchen-v2-material-load-request',async e=>{
  try{requireUser();const snap=await getDoc(doc(materialCollection(),e.detail.id));if(!snap.exists())throw Error('Базата не е намерена');emit('material-loaded',{name:snap.data().name||e.detail.id,data:snap.data()})}
  catch(e){emit('material-error',{message:e.message})}
+});
+
+window.addEventListener('kitchen-v2-material-save-request',async e=>{
+ try{
+  requireUser();
+  const name=String(e.detail?.name||'').trim();if(!name)throw Error('Въведи име на базата');
+  const id='base_'+name.toLowerCase().replace(/[^a-z0-9а-я]+/gi,'_');
+  await setDoc(doc(materialCollection(),id),{...e.detail.data,name,updatedAt:Date.now()});
+  emit('material-saved',{name,id});
+  window.dispatchEvent(new Event('kitchen-v2-material-list-request'));
+ }catch(e){emit('material-error',{message:e.message})}
 });
