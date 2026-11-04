@@ -150,6 +150,37 @@ function groupBounds(members,axis){
  const origin=axis==='x'?ROOM.w/2:axis==='z'?ROOM.d/2:0;
  return {min:Math.min(...members.map(p=>p[axis]-p[dim]/2))+origin,max:Math.max(...members.map(p=>p[axis]+p[dim]/2))+origin};
 }
+// Clamp group resize against external boards, using the same 3D separation rule as movement.
+function clampGroupResize(members,initial,oldSize,wantedSize,apply){
+ const keys=new Set(members.map(p=>p.key));
+ const obstacles=boards.filter(b=>!keys.has(b.userData.key));
+ const originals=new Map(initial.map(p=>[p.key,p]));
+ const restore=()=>{for(const p of members){const a=originals.get(p.key);if(a)for(const k of ['x','y','z','w','h','d'])p[k]=a[k]}};
+ const valid=()=>{
+  for(const p of members){
+   for(const axis of ['x','y','z']){
+    const dim={x:'w',y:'h',z:'d'}[axis],lo=axis==='y'?0:-ROOM[dim]/2,hi=axis==='y'?ROOM.h:ROOM[dim]/2;
+    if(p[axis]-p[dim]/2<lo-.1||p[axis]+p[dim]/2>hi+.1)return false;
+   }
+   for(const b of obstacles){
+    const a=originals.get(p.key);
+    const intersects=obj=>['x','y','z'].every(axis=>{
+     const dim={x:'w',y:'h',z:'d'}[axis];
+     return Math.abs(obj[axis]-b.position[axis])<(obj[dim]+b.userData[dim])/2-.1;
+    });
+    // Allow pre-existing joints; prevent newly introduced intersections.
+    if(intersects(p)&&(!a||!intersects(a)))return false;
+   }
+  }
+  return true;
+ };
+ const test=size=>{restore();apply(size);return valid()};
+ if(wantedSize<=oldSize){test(wantedSize);return}
+ if(test(wantedSize))return;
+ let low=oldSize,high=wantedSize;
+ while(high-low>1){const mid=Math.floor((low+high)/2);if(test(mid))low=mid;else high=mid}
+ test(low);
+}
 function resizeGroupNumeric(members,dim,newSize){
  if(!members.length||!Number.isFinite(newSize)||newSize<=0)return;
  const axis={w:'x',h:'y',d:'z'}[dim],bounds=groupBounds(members,axis);
@@ -601,12 +632,14 @@ renderer.domElement.addEventListener('pointermove',e=>{
    const p=members.find(p=>p.key===initial.key);
    if(p)for(const key of ['x','y','z','w','h','d'])if(initial[key]!==undefined)p[key]=initial[key];
   }
-  resizeGroupNumeric(members,dim,newLength);
-  if(c.sign<0&&axis!=='y'){
-   const after=groupBounds(members,axis);
-   const shift=c.bounds.max-after.max;
-   for(const p of members)p[axis]+=shift;
-  }
+  clampGroupResize(members,c.initial,oldLength,newLength,size=>{
+   resizeGroupNumeric(members,dim,size);
+   if(c.sign<0&&axis!=='y'){
+    const after=groupBounds(members,axis);
+    const shift=c.bounds.max-after.max;
+    for(const p of members)p[axis]+=shift;
+   }
+  });
   build(false);
   syncGizmo();return;
  }
@@ -621,13 +654,15 @@ renderer.domElement.addEventListener('pointermove',e=>{
    const p=members.find(p=>p.key===initial.key);
    if(p)for(const key of ['x','y','z','w','h','d'])p[key]=initial[key];
   }
-  resizeGroupNumeric(members,dim,newSize);
-  if(r.sign<0&&axis!=='y'){
-   const bounds=groupBounds(members,axis);
-   const origin=axis==='x'?ROOM.w/2:axis==='z'?ROOM.d/2:0;
-   const shift=r.max+origin-bounds.max;
-   for(const p of members)p[axis]+=shift;
-  }
+  clampGroupResize(members,r.initial,oldSize,newSize,size=>{
+   resizeGroupNumeric(members,dim,size);
+   if(r.sign<0&&axis!=='y'){
+    const bounds=groupBounds(members,axis);
+    const origin=axis==='x'?ROOM.w/2:axis==='z'?ROOM.d/2:0;
+    const shift=r.max+origin-bounds.max;
+    for(const p of members)p[axis]+=shift;
+   }
+  });
   build(false);syncGizmo();return;
  }
  const dx=e.clientX-assemblyPointer.x,dy=e.clientY-assemblyPointer.y;
