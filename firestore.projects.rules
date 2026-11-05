@@ -7,11 +7,15 @@ service cloud.firestore {
   function owner(uid){return request.auth != null && request.auth.uid == uid;}
   function projectPath(uid,id){return /databases/$(database)/documents/users/$(uid)/v2_projects/$(id);}
   function claimPath(uid,key){return /databases/$(database)/documents/users/$(uid)/v2_project_names/$(key);}
+  // Rules lower() folds ASCII only; explicitly fold the Bulgarian alphabet too.
+  function nameKey(name){
+   return name.lower().replace('А','а').replace('Б','б').replace('В','в').replace('Г','г').replace('Д','д').replace('Е','е').replace('Ж','ж').replace('З','з').replace('И','и').replace('Й','й').replace('К','к').replace('Л','л').replace('М','м').replace('Н','н').replace('О','о').replace('П','п').replace('Р','р').replace('С','с').replace('Т','т').replace('У','у').replace('Ф','ф').replace('Х','х').replace('Ц','ц').replace('Ч','ч').replace('Ш','ш').replace('Щ','щ').replace('Ъ','ъ').replace('Ь','ь').replace('Ю','ю').replace('Я','я').replace('Ѝ','ѝ');
+  }
   function projectShape(d){
    return d.keys().hasOnly(['schemaVersion','name','nameKey','data','revision','createdAt','updatedAt'])
     && d.schemaVersion == 1 && d.name is string && d.name.size() > 0 && d.name.size() <= 100
     && d.name == d.name.trim() && !d.name.matches('.*[/\n\r\t].*') && !d.name.matches('.*  .*')
-    && d.nameKey == d.name.lower() && d.nameKey != '.' && d.nameKey != '..' && !d.nameKey.matches('__.*__')
+    && d.nameKey == nameKey(d.name) && d.nameKey != '.' && d.nameKey != '..' && !d.nameKey.matches('__.*__')
     && d.data is map && d.data.parts is list && d.data.room is map
     && d.revision is int && d.revision > 0 && d.createdAt is timestamp && d.updatedAt == request.time;
   }

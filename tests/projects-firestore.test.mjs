@@ -99,3 +99,14 @@ test('confirmation must be renewed when its target changed in another window',as
  await assert.rejects(store.save({...args,confirmation:approval}),{code:'confirmation-required'});
  assert.equal((await store.open(b.id)).revision,2);
 });
+
+test('Bulgarian uppercase names share a claim and forged mixed-case keys are denied',async()=>{
+ const {db,store}=client('alice'),name='АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯЍ';
+ const saved=await create(store,name);
+ await assert.rejects(create(store,name.toLowerCase()),{code:'confirmation-required'});
+ assert.equal((await store.open(saved.id)).name,name);
+ const forged=sdk.writeBatch(db),nameKey='Кухня';
+ forged.set(sdk.doc(db,'users','alice','v2_projects','forged'),{schemaVersion:1,name:nameKey,nameKey,data:data(),revision:1,createdAt:sdk.serverTimestamp(),updatedAt:sdk.serverTimestamp()});
+ forged.set(sdk.doc(db,'users','alice','v2_project_names',nameKey),{nameKey,projectId:'forged'});
+ await assertFails(forged.commit());
+});

@@ -74,9 +74,11 @@ Firestore не поддържа `undefined` полета; JSON сериализ�
 - Съществуващият `tests/browser.cjs` — успешни 2D/3D, selection jitter, движение/resize, undo/redo, групи, материали и ротация.
 - JavaScript синтаксис и `git diff --check` — успешни.
 
-Добавени **14 Firestore Emulator теста** в `tests/projects-firestore.test.mjs`: CRUD, rename/collision/Save As, concurrent creates, stale revisions, собствени/чужди UID, anonymous denial, bypass на name registry, забранени непълни deletes и offline/signed-out. Изпълняват същия `project-store.mjs` срещу истинския Firebase SDK и правилата. Пазят се с localhost guard и `demo-kitchen-projects`; никога не използват production проекта.
+Добавени **15 Firestore Emulator теста** в `tests/projects-firestore.test.mjs`: CRUD, rename/collision/Save As, concurrent creates, stale revisions, собствени/чужди UID, anonymous denial, bypass на name registry, забранени непълни deletes и offline/signed-out. Изпълняват същия `project-store.mjs` срещу истинския Firebase SDK и правилата. Пазят се с localhost guard и `demo-kitchen-projects`; никога не използват production проекта.
 
-**Тези 14 теста още не са изпълнени в тази среда:** Firebase CLI получава `403 Domain forbidden` при изтеглянето на Firestore Emulator от `storage.googleapis.com`. Не са проверени компилацията и изпълнението на предложените правила в реалния emulator. Не представяйте PR като готов за сливане, докато този блокиращ тест не мине. Не са правени пробни записи в реалния Firebase.
+**Проверено на 2026-11-05:** `npm run test:firestore` — **15/15 успешни**, с Firestore Emulator 1.19.8, Firebase SDK 10.14.1 и локален `demo-kitchen-projects`. Изтеглянето от `https://storage.googleapis.com/firebase-preview-drop/emulator/cloud-firestore-emulator-v1.19.8.jar` върна HTTP 200. Първото изпълнение откри, че Rules `lower()` преобразува само ASCII; правилата вече преобразуват изрично и българската азбука (включително Ѝ). Добавен е тест за всички български главни букви, заето име с различен регистър и отказ при подправен ключ. Други Unicode азбуки не са обхванати от това преобразуване. `npm test` — **57/57 успешни**. Няма записи в реалния Firebase или публикуване на production правила.
+
+В Cloud среда с недостъпна home директория задайте `XDG_CONFIG_HOME` и `FIREBASE_EMULATORS_PATH` към записваеми директории в `work/`. Незадължителната CLI MOTD заявка към `https://firebase-public.firebaseio.com/cli.json` връща `403 Domain forbidden`, но това не блокира тестовете.
 
 Възпроизвеждане (Node 22+, Java 21+, без build стъпка за приложението):
 
