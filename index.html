@@ -633,7 +633,7 @@ function deleteCustom(){
 function duplicateCustom(){
  const target=customParts.find(p=>p.key===selected);if(!target)return;
  const source=target.assembly&&!singleMemberSelection?customParts.filter(p=>p.assembly===target.assembly):[target];
- const newAssembly=source.length>1?'Група '+(++assemblyId):undefined;
+ const newAssembly=target.assembly&&!singleMemberSelection?'Група '+(++assemblyId):undefined;
  const copiedAssemblies=new Map();
  const bounds={min:Math.min(...source.map(p=>p.x-p.w/2)),max:Math.max(...source.map(p=>p.x+p.w/2))};
  const shift=Math.min(ROOM.w/2-bounds.max,Math.max(0,bounds.max-bounds.min+30));

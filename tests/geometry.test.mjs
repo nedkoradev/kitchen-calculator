@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {translate,resize,bounds} from '../geometry.mjs';
+import {manyPartCabinet,largeRoom} from './fixtures.mjs';
 const room={w:3000,h:2600,d:3000};
 const part=(key,extra={})=>({key,x:0,y:50,z:0,w:100,h:100,d:100,...extra});
 const cabinet=()=>[
@@ -129,4 +130,81 @@ test('multiple nested levels keep locked child dimensions and contacts',()=>{
  assert.equal(bounds(next,'x').max,800);
  assert.deepEqual(next[0].assemblyStack,['inner','middle']);
  assert.equal(next[0].w,18);
+});
+for(const [axis,dim] of [['x','w'],['y','h'],['z','d']]){
+ test(`contained overlap can escape in either ${axis} direction without deepening`,()=>{
+  const p=part('p',{y:500,[axis]:axis==='y'?510:10,[dim]:40});
+  const o=part('o',{y:500});
+  const volume=p=>['x','y','z'].reduce((v,k)=>{
+   const d={x:'w',y:'h',z:'d'}[k];
+   return v*Math.max(0,Math.min(p[k]+p[d]/2,o[k]+o[d]/2)-Math.max(p[k]-p[d]/2,o[k]-o[d]/2));
+  },1);
+  for(const sign of [-1,1]){
+   let previous=volume(p);
+   for(let i=1;i<=20;i++){
+    const next=translate([p],[o],largeRoom,{[axis]:sign*i*5})[0];
+    assert.equal(next[axis],p[axis]+sign*i*5);
+    assert.ok(volume(next)<=previous);previous=volume(next);
+   }
+   assert.equal(previous,0);
+  }
+ });
+ test(`partial overlap along ${axis} releases only away from the other part`,()=>{
+  const p=part('p',{y:500}),o=part('o',{y:500,[axis]:axis==='y'?530:30});
+  assert.equal(translate([p],[o],largeRoom,{[axis]:-100})[0][axis],p[axis]-100);
+  assert.equal(translate([p],[o],largeRoom,{[axis]:100})[0][axis],p[axis]);
+ });
+}
+test('sequential escape along different axes keeps intersection volume non-increasing',()=>{
+ let p=part('p',{y:500,w:40,x:10});const o=part('o',{y:580});
+ const volume=(a,b)=>['x','y','z'].reduce((v,k)=>{const d={x:'w',y:'h',z:'d'}[k];return v*Math.max(0,Math.min(a[k]+a[d]/2,b[k]+b[d]/2)-Math.max(a[k]-a[d]/2,b[k]-b[d]/2))},1);
+ for(const delta of [{x:-20},{z:30},{y:-20},{x:110}]){
+  const before=p;
+  p=translate([p],[o],largeRoom,delta)[0];
+  assert.ok(volume(p,o)<=volume(before,o));
+  for(const axis of Object.keys(delta))assert.equal(p[axis],before[axis]+delta[axis]);
+ }
+});
+test('escape from containment still stops at a new thin obstacle',()=>{
+ const p=part('p',{w:40,x:10,y:500}),o=part('o',{y:500}),thin=part('thin',{x:-200,w:1,y:500});
+ assert.equal(translate([p],[o,thin],largeRoom,{x:-1000})[0].x,-179.5);
+});
+for(const count of [5,50,100,200]){
+ test(`600→4000 mm resize preserves construction with ${count} parts`,()=>{
+  const parts=manyPartCabinet(count),before=structuredClone(parts),next=resize(parts,[],largeRoom,'w',4000);
+  assert.equal(bounds(next,'x').max-bounds(next,'x').min,4000);
+  assert.equal(bounds(next,'x').min,-2000);
+  assert.equal(next[0].w,18);assert.equal(next[1].w,18);
+  next.slice(2).forEach(p=>{assert.equal(p.w,3964);assert.equal(p.x-p.w/2,-1982);assert.equal(p.x+p.w/2,1982)});
+  next.forEach((p,i)=>{assert.equal(p.y,parts[i].y);assert.equal(p.h,parts[i].h);assert.equal(p.d,parts[i].d)});
+  assert.deepEqual(parts,before);
+ });
+}
+test('affine large resize cannot tunnel through a thin obstacle',()=>{
+ const p=manyPartCabinet(100),o=part('obstacle',{x:1000,w:1,y:600});
+ const next=resize(p,[o],largeRoom,'w',4000);
+ assert.equal(bounds(next,'x').max-bounds(next,'x').min,2999);
+});
+test('mixed-depth null histories resize the same child cabinet together',()=>{
+ const source=manyPartCabinet(5).map((p,i)=>({...p,assembly:'outer',assemblyStack:i===4?[null,'middle']:[null,'inner','middle']}));
+ const next=resize(source,[],largeRoom,'w',4000);
+ assert.equal(bounds(next,'x').max-bounds(next,'x').min,4000);
+ next.slice(2).forEach(p=>assert.equal(p.w,3964));
+ next.forEach((p,i)=>assert.deepEqual(p.assemblyStack,source[i].assemblyStack));
+});
+test('rounded interior partitions retain their thickness and relative opening position',()=>{
+ const source=manyPartCabinet(100);
+ source.push({...source[0],key:'partition',x:-1750});
+ const next=resize(source,[],largeRoom,'w',4000),partition=next.at(-1);
+ assert.equal(partition.w,18);
+ assert.equal(partition.x,-1750+Math.round(3400*232/564));
+ assert.equal(bounds(next,'x').max-bounds(next,'x').min,4000);
+});
+test('rounded partition cannot skip a thin obstacle inside the opening',()=>{
+ const source=manyPartCabinet(100);
+ source.push({...source[0],key:'partition',x:-1700});
+ const obstacle=part('thin',{x:-1650,w:1,y:600,h:1});
+ const next=resize(source,[obstacle],largeRoom,'w',4000);
+ assert.equal(bounds(next,'x').max-bounds(next,'x').min,680);
+ assert.ok(next.at(-1).x+9<=obstacle.x-.5);
 });
