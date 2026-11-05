@@ -1,0 +1,48 @@
+// Project-only rules for emulator tests and manual integration.
+// Merge these two matches into the EXISTING production rules; do not replace
+// cabinet/material rules or deploy this standalone file to production.
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function owner(uid){return request.auth != null && request.auth.uid == uid;}
+  function projectPath(uid,id){return /databases/$(database)/documents/users/$(uid)/v2_projects/$(id);}
+  function claimPath(uid,key){return /databases/$(database)/documents/users/$(uid)/v2_project_names/$(key);}
+  function projectShape(d){
+   return d.keys().hasOnly(['schemaVersion','name','nameKey','data','revision','createdAt','updatedAt'])
+    && d.schemaVersion == 1 && d.name is string && d.name.size() > 0 && d.name.size() <= 100
+    && d.name == d.name.trim() && !d.name.matches('.*[/\n\r\t].*') && !d.name.matches('.*  .*')
+    && d.nameKey == d.name.lower() && d.nameKey != '.' && d.nameKey != '..' && !d.nameKey.matches('__.*__')
+    && d.data is map && d.data.parts is list && d.data.room is map
+    && d.revision is int && d.revision > 0 && d.createdAt is timestamp && d.updatedAt == request.time;
+  }
+  function claimed(uid,id,d){
+   return getAfter(claimPath(uid,d.nameKey)).data.projectId == id
+    && getAfter(claimPath(uid,d.nameKey)).data.nameKey == d.nameKey;
+  }
+  match /users/{uid}/v2_projects/{id} {
+   allow read: if owner(uid);
+   allow create: if owner(uid) && projectShape(request.resource.data)
+    && request.resource.data.revision == 1 && request.resource.data.createdAt == request.time
+    && claimed(uid,id,request.resource.data);
+   allow update: if owner(uid) && projectShape(request.resource.data)
+    && request.resource.data.revision == resource.data.revision + 1
+    && request.resource.data.createdAt == resource.data.createdAt
+    && claimed(uid,id,request.resource.data)
+    && (resource.data.nameKey == request.resource.data.nameKey || !existsAfter(claimPath(uid,resource.data.nameKey)));
+   allow delete: if owner(uid) && !existsAfter(claimPath(uid,resource.data.nameKey));
+  }
+  match /users/{uid}/v2_project_names/{key} {
+   allow read: if owner(uid);
+   function validClaim(){
+    return request.resource.data.keys().hasOnly(['nameKey','projectId'])
+     && request.resource.data.nameKey == key && request.resource.data.projectId is string
+     && request.resource.data.projectId.matches('[A-Za-z0-9_-]{1,128}')
+     && getAfter(projectPath(uid,request.resource.data.projectId)).data.nameKey == key;
+   }
+   allow create: if owner(uid) && validClaim();
+   allow update: if owner(uid) && validClaim() && request.resource.data.projectId == resource.data.projectId;
+   allow delete: if owner(uid) && (!existsAfter(projectPath(uid,resource.data.projectId))
+    || getAfter(projectPath(uid,resource.data.projectId)).data.nameKey != key);
+  }
+ }
+}
