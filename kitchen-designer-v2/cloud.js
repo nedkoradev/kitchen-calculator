@@ -26,9 +26,10 @@ window.addEventListener('kitchen-v2-cloud-list-request',async()=>{
 window.addEventListener('kitchen-v2-cloud-save-request',async e=>{
  try{
   requireUser();
-  const {name,parts}=e.detail;
+  const {name,parts,id:requestedId}=e.detail;
   if(!Array.isArray(parts)||!parts.length)throw new Error('Няма детайли.');
-  const id='cab_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
+  const id=requestedId||'cab_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
+  if(requestedId){const old=await getDoc(doc(cabinetCollection(),id));if(!old.exists())throw new Error('Оригиналният шкаф вече не съществува.');}
   await setDoc(doc(cabinetCollection(),id),{name,parts,v2:true,updatedAt:Date.now()});
   emit('saved',{id,name});
   status('☁ Запазено: '+name);
@@ -41,7 +42,7 @@ window.addEventListener('kitchen-v2-cloud-open-request',async e=>{
   if(!snap.exists())throw new Error('Шкафът не е намерен.');
   const data=snap.data();
   if(!Array.isArray(data.parts))throw new Error('Невалиден формат на шкафа.');
-  emit('opened',{name:data.name||'Без име',parts:data.parts});
+  emit('opened',{id:e.detail.id,name:data.name||'Без име',parts:data.parts});
  }catch(err){emit('error',{message:'Грешка при отваряне: '+err.message})}
 });
 
