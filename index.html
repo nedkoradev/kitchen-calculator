@@ -93,6 +93,7 @@ window.addEventListener('keydown',function(e){
 },true);
 </script>
 <script type="module" src="./cloud.js"></script><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script><script type="module">
+import {translate,resize} from './geometry.mjs';
 import * as THREE from 'three';import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 const $=id=>document.getElementById(id),host=$('view'),scene=new THREE.Scene();scene.background=new THREE.Color('#f0f3f6');
 let camera=new THREE.PerspectiveCamera(38,1,20,9000);camera.position.set(1300,1050,1450);
@@ -175,132 +176,17 @@ function groupBounds(members,axis){
  const origin=axis==='x'?ROOM.w/2:axis==='z'?ROOM.d/2:0;
  return {min:Math.min(...members.map(p=>p[axis]-p[dim]/2))+origin,max:Math.max(...members.map(p=>p[axis]+p[dim]/2))+origin};
 }
-// Clamp group resize against external boards, using the same 3D separation rule as movement.
-function clampGroupResize(members,initial,oldSize,wantedSize,apply){
- const keys=new Set(members.map(p=>p.key));
- const obstacles=boards.filter(b=>!keys.has(b.userData.key));
- const originals=new Map(initial.map(p=>[p.key,p]));
- const restore=()=>{for(const p of members){const a=originals.get(p.key);if(a)for(const k of ['x','y','z','w','h','d'])p[k]=a[k]}};
- const valid=()=>{
-  for(const p of members){
-   for(const axis of ['x','y','z']){
-    const dim={x:'w',y:'h',z:'d'}[axis],lo=axis==='y'?0:-ROOM[dim]/2,hi=axis==='y'?ROOM.h:ROOM[dim]/2;
-    if(p[axis]-p[dim]/2<lo-.1||p[axis]+p[dim]/2>hi+.1)return false;
-   }
-   for(const b of obstacles){
-    const a=originals.get(p.key);
-    const intersects=obj=>['x','y','z'].every(axis=>{
-     const dim={x:'w',y:'h',z:'d'}[axis];
-     return Math.abs(obj[axis]-b.position[axis])<(obj[dim]+b.userData[dim])/2-.1;
-    });
-    // Allow pre-existing joints; prevent newly introduced intersections.
-    if(intersects(p)&&(!a||!intersects(a)))return false;
-   }
-  }
-  return true;
- };
- const test=size=>{restore();apply(size);return valid()};
- if(wantedSize<=oldSize){test(wantedSize);return}
- if(test(wantedSize))return;
- let low=oldSize,high=wantedSize;
- while(high-low>1){const mid=Math.floor((low+high)/2);if(test(mid))low=mid;else high=mid}
- test(low);
-}
-function resizeGroupNumeric(members,dim,newSize){
- if(!members.length||!Number.isFinite(newSize)||newSize<=0)return;
- const axis={w:'x',h:'y',d:'z'}[dim],bounds=groupBounds(members,axis);
- const oldSize=bounds.max-bounds.min;
- if(oldSize<=0)return;
- const origin=axis==='x'?ROOM.w/2:axis==='z'?ROOM.d/2:0;
- const left=bounds.min-origin,right=bounds.max-origin,delta=newSize-oldSize;
- const tolerance=2;
- // Vertical cabinet resizing: preserve the thickness and the original
- // top/bottom offsets of worktops, rails and bottoms. Side panels grow.
- if(dim==='h'){
-  for(const p of members){
-   const a=p.y-p.h/2,b=p.y+p.h/2;
-   const isHorizontal=p.h<=100&&p.w>p.h*2&&p.d>p.h*1.2;
-   if(isHorizontal||p.locks?.h){
-    const topGap=right-b,bottomGap=a-left;
-    if(topGap<bottomGap)p.y+=delta;
-    continue;
-   }
-   const bottomGap=a-left,topGap=right-b;
-   p.h=Math.max(1,Math.round(p.h+delta));
-   p.y=left+bottomGap+p.h/2;
-  }
-  return;
- }
- // End walls with locked thickness remain rigid. The usable opening,
- // rather than the thickness of the walls, changes when the cabinet grows.
- const locked=members.filter(p=>p.locks?.[dim]);
- const leftPanels=locked.filter(p=>Math.abs(p[axis]-p[dim]/2-left)<tolerance);
- const rightPanels=locked.filter(p=>Math.abs(p[axis]+p[dim]/2-right)<tolerance);
- const leftInset=leftPanels.length?Math.max(...leftPanels.map(p=>p[dim])):0;
- const rightInset=rightPanels.length?Math.max(...rightPanels.map(p=>p[dim])):0;
- const oldInner=oldSize-leftInset-rightInset,newInner=newSize-leftInset-rightInset;
- if(newInner<=0||oldInner<=0)return;
- const innerLeft=left+leftInset,innerRight=right-rightInset;
- const newInnerRight=left+newSize-rightInset;
- const mapFace=value=>{
-  if(value<=innerLeft+tolerance&&leftInset>0)return value;
-  if(value>=innerRight-tolerance&&rightInset>0)return value+delta;
-  return innerLeft+(value-innerLeft)*newInner/oldInner;
- };
- for(const p of members){
-  const a=p[axis]-p[dim]/2,b=p[axis]+p[dim]/2;
-  if(p.locks?.[dim]){
-   // Only an actual end wall stays rigid in its locked dimension.
-   // A spanning bottom or rail with an inherited lock must follow the
-   // cabinet opening, otherwise the first drag leaves a 36 mm gap.
-   const isEndWall=leftPanels.includes(p)||rightPanels.includes(p);
-   if(isEndWall){
-    if(rightPanels.includes(p))p[axis]+=delta;
-    continue;
-   }
-   const nearLeft=Math.abs(a-left)<3,nearRight=Math.abs(b-right)<3;
-   if(dim==='w'&&nearLeft&&nearRight){p[dim]=Math.round(p[dim]+delta);p[axis]+=delta/2;continue}
-   const distanceLeft=a-left,distanceRight=right-b;
-   if(distanceRight<distanceLeft&&distanceRight<=Math.max(30,p[dim]*2))p[axis]+=delta;
-   else if(distanceLeft>Math.max(30,p[dim]*2))p[axis]=mapFace(p[axis]);
-   continue;
-  }
-  let na=mapFace(a),nb=mapFace(b);
-  // Preserve the original edge offsets of spanning shelves and bottoms.
-  // Never snap outer-to-outer panels inward by 18 mm per side on the
-  // first mouse movement. A panel reaching the outside faces remains
-  // outside-to-outside; an inset panel remains inset by the same amount.
-  if(dim==='w'&&leftInset>0&&rightInset>0){
-   const spansOpening=b-a>=oldInner*.65;
-   if(spansOpening){
-    const offsetLeft=a-left,offsetRight=right-b;
-    if(Math.abs(offsetLeft)<=Math.max(40,leftInset*2)&&Math.abs(offsetRight)<=Math.max(40,rightInset*2)){
-     na=a;nb=b+delta;
-    }
-   }
-  }
-  // Horizontal members must retain their thickness during vertical resize,
-  // even when an older cabinet did not explicitly lock that dimension.
-  if(dim==='h'&&p.h<=100&&p.w>p.h*2&&p.d>p.h*1.2){
-   p.y+=(right-b< a-left)?delta:0;
-   continue;
-  }
-  p[dim]=Math.max(1,Math.round(nb-na));
-  p[axis]=na+p[dim]/2;
- }
-}
+// All geometry edits use model coordinates, including children of assemblies.
+function obstaclesFor(members){const keys=new Set(members.map(p=>p.key));return customParts.filter(p=>!keys.has(p.key))}
+function applyGeometry(members,next){for(let i=0;i<members.length;i++)for(const k of ['x','y','z','w','h','d'])members[i][k]=next[i][k]}
+function resizeGroupNumeric(members,dim,size){applyGeometry(members,resize(members,obstaclesFor(members),ROOM,dim,size))}
 function moveGroupToPosition(part,axis,value){
  const members=customParts.filter(p=>p.assembly===part.assembly);
- if(!members.length)return;
- const bounds=groupBounds(members,axis);
- const requested=Number(value);
- if(!Number.isFinite(requested))return;
- const delta=requested-bounds.min;
- if(Math.abs(delta)<.0001)return;
- for(const member of members)member[axis]+=delta;
+ const delta=Number(value)-groupBounds(members,axis).min;
+ applyGeometry(members,translate(members,obstaclesFor(members),ROOM,{[axis]:delta}));
  build(false);updateSelection();
 }
-function updateEditor(){const current=customParts.find(p=>p.key===selected);const isGroup=!!(current?.assembly&&!singleMemberSelection);$('dialogTitle').textContent=isGroup?'Свойства на групата':'Свойства на детайла';document.querySelector('[data-tab="material"]').style.display=isGroup?'none':'';if(isGroup&&activeTab==='material')selectTab('general');$('partName').placeholder=isGroup?'Име на групата':'Име на детайла';const b=boards.find(o=>o.userData.key===selected);$('finishEditor').style.display=b?'block':'none';$('selected').textContent=b?(isGroup?'Група от '+customParts.filter(p=>p.assembly===current.assembly).length+' детайла':labels[selected]+' — '+[b.userData.w,b.userData.h,b.userData.d].map(Math.round).join(' × ')+' мм'):'Щракни върху плоскост.';if(!b)return;const custom=customParts.find(p=>p.key===selected);$('partName').value=isGroup?(projectInstances.get(current.assembly)||current.assembly):(labels[selected]||'');$('geometryEditor').style.display=custom?'block':'none';if(custom){for(const [id,k] of [['partW','w'],['partH','h'],['partD','d'],['partX','x'],['partY','y'],['partZ','z']])$(id).value=Math.round(custom.assembly&&!singleMemberSelection?(('xyz'.includes(k))?groupBounds(customParts.filter(p=>p.assembly===custom.assembly),k).min:groupBounds(customParts.filter(p=>p.assembly===custom.assembly),({w:'x',h:'y',d:'z'})[k]).max-groupBounds(customParts.filter(p=>p.assembly===custom.assembly),({w:'x',h:'y',d:'z'})[k]).min):('xyz'.includes(k)?displayPosition(custom,k):custom[k]));for(const [id,k] of [['W','w'],['H','h'],['D','d']]){$('lock'+id).checked=isGroup?false:!!custom.locks?.[k];$('lock'+id).disabled=isGroup;$('part'+id).disabled=isGroup?false:!!custom.locks?.[k]}}ensureDefaultFinish(selected);const f=finishes[selected]||{};$('materialSelect').value=f.materialType&&f.materialType!=='pdc'?f.materialType+':'+f.material:(f.material??'');$('board').value=colorFor(selected);edgeIds.forEach((id,i)=>$(id).value=f.edges?.[i]??'');const edges=f.edges||[];$('allEdges').checked=!!allEdgeFlags[selected]}
+function updateEditor(){const current=customParts.find(p=>p.key===selected);const isGroup=!!(current?.assembly&&!singleMemberSelection);$('dialogTitle').textContent=isGroup?'Свойства на групата':'Свойства на детайла';document.querySelector('[data-tab="material"]').style.display=isGroup?'none':'';if(isGroup&&activeTab==='material')selectTab('general');$('partName').placeholder=isGroup?'Име на групата':'Име на детайла';const b=boards.find(o=>o.userData.key===selected);$('finishEditor').style.display=b?'block':'none';$('selected').textContent=b?(isGroup?'Група от '+customParts.filter(p=>p.assembly===current.assembly).length+' детайла':labels[selected]+' — '+[b.userData.w,b.userData.h,b.userData.d].map(Math.round).join(' × ')+' мм'):'Щракни върху плоскост.';if(!b)return;const custom=customParts.find(p=>p.key===selected);$('partName').value=isGroup?(projectInstances.get(current.assembly)||current.assembly):(labels[selected]||'');$('geometryEditor').style.display=custom?'block':'none';if(custom){for(const [id,k] of [['partW','w'],['partH','h'],['partD','d'],['partX','x'],['partY','y'],['partZ','z']])$(id).value=(custom.assembly&&!singleMemberSelection?(('xyz'.includes(k))?groupBounds(customParts.filter(p=>p.assembly===custom.assembly),k).min:groupBounds(customParts.filter(p=>p.assembly===custom.assembly),({w:'x',h:'y',d:'z'})[k]).max-groupBounds(customParts.filter(p=>p.assembly===custom.assembly),({w:'x',h:'y',d:'z'})[k]).min):('xyz'.includes(k)?displayPosition(custom,k):custom[k]));for(const [id,k] of [['W','w'],['H','h'],['D','d']]){$('lock'+id).checked=isGroup?false:!!custom.locks?.[k];$('lock'+id).disabled=isGroup;$('part'+id).disabled=isGroup?false:!!custom.locks?.[k]}}ensureDefaultFinish(selected);const f=finishes[selected]||{};$('materialSelect').value=f.materialType&&f.materialType!=='pdc'?f.materialType+':'+f.material:(f.material??'');$('board').value=colorFor(selected);edgeIds.forEach((id,i)=>$(id).value=f.edges?.[i]??'');const edges=f.edges||[];$('allEdges').checked=!!allEdgeFlags[selected]}
 $('partName').addEventListener('change',()=>{if(!selected)return;const p=customParts.find(q=>q.key===selected);const name=$('partName').value.trim();if(!name)return;if(p?.assembly&&!singleMemberSelection){const old=p.assembly;projectInstances.set(old,name);build(false)}else labels[selected]=name;updateEditor();refreshGroupList()});
 let activeTab='general';function selectTab(tab){activeTab=tab;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('[data-pane]').forEach(p=>p.style.display=p.dataset.pane===tab?'block':'none')}
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));selectTab('general');
@@ -422,38 +308,6 @@ function refreshGroupList(){
 function stopAssemblyMove(){activeAssembly=null;controls.enabled=true;refreshGroupList()}
 $('groupParts').onclick=createAssembly;
 $('ungroupParts').onclick=()=>{const p=customParts.find(p=>p.key===selected);if(p?.assembly)ungroupAssembly(p.assembly)};
-function constrainedAssemblyDelta(assembly,requested){
- const members=customParts.filter(p=>p.assembly===assembly.name);
- const memberKeys=new Set(members.map(p=>p.key));
- const obstacles=boards.filter(b=>!memberKeys.has(b.userData.key));
- const half=(obj,axis)=>obj.userData[axis==='x'?'w':axis==='y'?'h':'d']/2;
- const result=new THREE.Vector3();assembly.updateMatrixWorld(true);
- for(const axis of ['x','y','z']){
-  let allowed=requested[axis];if(Math.abs(allowed)<1e-7)continue;
-  for(const p of members){
-   const mesh=boards.find(b=>b.userData.key===p.key);if(!mesh)continue;
-   const center=mesh.getWorldPosition(new THREE.Vector3()).add(result);
-   const h=half(mesh,axis);
-   const roomHalf=axis==='x'?ROOM.w/2:axis==='z'?ROOM.d/2:ROOM.h;
-   const lower=axis==='y'?0:-roomHalf;
-   const upper=axis==='y'?ROOM.h:roomHalf;
-   allowed=Math.max(lower+h-center[axis],Math.min(upper-h-center[axis],allowed));
-   for(const obstacle of obstacles){
-    const other=obstacle.getWorldPosition(new THREE.Vector3());
-    if(!['x','y','z'].filter(k=>k!==axis).every(k=>Math.abs(center[k]-other[k])<half(mesh,k)+half(obstacle,k)-0.01))continue;
-    const radius=h+half(obstacle,axis),separation=center[axis]-other[axis];
-    if(Math.abs(separation)<radius-0.01)continue;
-    if(allowed>0&&separation<=-radius+0.01){
-     const contact=-radius-separation;if(contact>=-0.01)allowed=Math.min(allowed,Math.max(0,contact));
-    }else if(allowed<0&&separation>=radius-0.01){
-     const contact=radius-separation;if(contact<=0.01)allowed=Math.max(allowed,Math.min(0,contact));
-    }
-   }
-  }
-  result[axis]=allowed;
- }
- return result;
-}
 // PRO100-style selection and grouping: Shift+click, context menu, drag assembly.
 const menu=document.createElement('div');menu.id='assemblyContext';
 menu.style.cssText='position:fixed;z-index:10000;display:none;background:white;border:1px solid #bdc9d7;border-radius:7px;box-shadow:0 6px 22px #0003;padding:5px;min-width:150px';
@@ -499,12 +353,6 @@ dialog.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComp
 
 function showMenu(e){
  e.preventDefault();closeMenu();menu.replaceChildren();
- const corner=groupHandleHit(e);
- if(corner){
-  e.preventDefault();e.stopImmediatePropagation();
-  assemblyPointer={id:e.pointerId,assembly:corner.assembly,x:e.clientX,y:e.clientY,corner};
-  controls.enabled=false;renderer.domElement.setPointerCapture(e.pointerId);return;
- }
  const hit=pickBoard(e);
  const part=hit&&customParts.find(p=>p.key===hit.object.userData.key);
  if(!part)return;
@@ -696,33 +544,13 @@ renderer.domElement.addEventListener('pointermove',e=>{
   const c=assemblyPointer.corner,axis=c.axis,dim=axis==='x'?'w':axis==='y'?'h':'d';
   const movement=((e.clientX-c.startX)*c.dirX+(e.clientY-c.startY)*c.dirY)/c.pixelsPerMm;
   const oldLength=c.bounds.max-c.bounds.min;
-  const newLength=Math.max(30,Math.round(oldLength+c.sign*movement));
-  const fixed=c.sign>0?c.bounds.min:c.bounds.max;
-  const oldMoving=c.sign>0?c.bounds.max:c.bounds.min;
-  const newMoving=c.sign>0?fixed+newLength:fixed-newLength;
-  const delta=newMoving-oldMoving;
-  const origin=axis==='x'?ROOM.w/2:axis==='z'?ROOM.d/2:0;
-  if((axis==='y'&&(newMoving<0||newMoving>ROOM.h))||(axis!=='y'&&(newMoving<origin-ROOM[dim==='w'?'w':'d']/2||newMoving>origin+ROOM[dim==='w'?'w':'d']/2)))return;
-  // Transform the cabinet as one assembly. Keep locked edge-panel thicknesses
-  // and their margins fixed, stretch the space between them.
-  const oldMin=c.bounds.min-origin,oldMax=c.bounds.max-origin;
-  const newMin=c.sign>0?oldMin:oldMax-newLength;
-  const newMax=c.sign>0?oldMin+newLength:oldMax;
-  // Use the SAME resizing routine as numeric edits in the group properties.
-  // Recalculate from the pointer-down snapshot on every move (no accumulated drift).
+  const newLength=Math.max(1,Math.round(oldLength+c.sign*movement));
   const members=customParts.filter(p=>p.assembly===c.assembly);
   for(const initial of c.initial){
    const p=members.find(p=>p.key===initial.key);
    if(p)for(const key of ['x','y','z','w','h','d'])if(initial[key]!==undefined)p[key]=initial[key];
   }
-  clampGroupResize(members,c.initial,oldLength,newLength,size=>{
-   resizeGroupNumeric(members,dim,size);
-   if(c.sign<0&&axis!=='y'){
-    const after=groupBounds(members,axis);
-    const shift=c.bounds.max-after.max;
-    for(const p of members)p[axis]+=shift;
-   }
-  });
+  resizeGroupNumeric(members,dim,newLength);
   build(false);
   syncGizmo();return;
  }
@@ -731,50 +559,29 @@ renderer.domElement.addEventListener('pointermove',e=>{
   const r=assemblyPointer.resize,axis=r.axis,dim=r.dim;
   const px=(e.clientX-r.start)*r.dirX+(e.clientY-r.startY)*r.dirY;
   const oldSize=r.max-r.min;
-  const newSize=Math.max(30,Math.round(oldSize+r.sign*px/r.pixelsPerMm));
+  const newSize=Math.max(1,Math.round(oldSize+r.sign*px/r.pixelsPerMm));
   const members=customParts.filter(p=>p.assembly===assemblyPointer.assembly);
   for(const initial of r.initial){
    const p=members.find(p=>p.key===initial.key);
    if(p)for(const key of ['x','y','z','w','h','d'])p[key]=initial[key];
   }
-  clampGroupResize(members,r.initial,oldSize,newSize,size=>{
-   resizeGroupNumeric(members,dim,size);
-   if(r.sign<0&&axis!=='y'){
-    const bounds=groupBounds(members,axis);
-    const origin=axis==='x'?ROOM.w/2:axis==='z'?ROOM.d/2:0;
-    const shift=r.max+origin-bounds.max;
-    for(const p of members)p[axis]+=shift;
-   }
-  });
+  resizeGroupNumeric(members,dim,newSize);
   build(false);syncGizmo();return;
  }
  const dx=e.clientX-assemblyPointer.x,dy=e.clientY-assemblyPointer.y;
  assemblyPointer.x=e.clientX;assemblyPointer.y=e.clientY;
- const dist=camera.position.distanceTo(new THREE.Vector3(0,dims.h/2,0));
- const scale=camera.isOrthographicCamera?(camera.top-camera.bottom)/Math.max(1,host.clientHeight)/camera.zoom:2*dist*Math.tan(THREE.MathUtils.degToRad(camera.fov)/2)/Math.max(1,host.clientHeight);
- const right=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
- const up=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion);
- // Screen-up drag moves the entire cabinet vertically, even in front view.
- // Screen-right drag stays on the floor plane and never changes its height.
- const horizontal=right.clone().setY(0).normalize();
- const delta=horizontal.multiplyScalar(dx*scale);
- delta.y=-dy*scale;
+ const delta=screenMovement(dx,dy,new THREE.Vector3(0,dims.h/2,0));
  activeAssembly=assemblyPointer.assembly;
- assembly.position.add(constrainedAssemblyDelta(assembly,delta));
+ const members=customParts.filter(p=>p.assembly===assemblyPointer.assembly);
+ applyGeometry(members,translate(members,obstaclesFor(members),ROOM,delta));
+ build(false);
  activeAssembly=null;syncGizmo();
 },true);
 function endAssemblyPointer(e){
  if(!assemblyPointer||e.pointerId!==assemblyPointer.id)return;
  e.preventDefault();e.stopImmediatePropagation();
  const id=assemblyPointer.assembly,assembly=assemblies.get(id);
- if(assembly&&assemblyPointer.activated){
-  assembly.updateMatrixWorld(true);
-  for(const p of customParts.filter(p=>p.assembly===id)){
-   const mesh=boards.find(b=>b.userData.key===p.key);
-   if(mesh){const world=mesh.getWorldPosition(new THREE.Vector3());p.x=world.x;p.y=world.y;p.z=world.z}
-  }
-  build(false);
- }
+ if(assembly&&assemblyPointer.activated)build(false);
  assemblyPointer=null;controls.enabled=true;
 }
 renderer.domElement.addEventListener('pointerup',endAssemblyPointer,true);
@@ -789,8 +596,8 @@ function rotateSelectedPart(sign){
  const centerZ=(Math.min(...members.map(p=>p.z-p.d/2))+Math.max(...members.map(p=>p.z+p.d/2)))/2;
  for(const p of members){
   const dx=p.x-centerX,dz=p.z-centerZ;
-  p.x=Math.round(centerX+(sign>0?-dz:dz));
-  p.z=Math.round(centerZ+(sign>0?dx:-dx));
+  p.x=centerX+(sign>0?-dz:dz);
+  p.z=centerZ+(sign>0?dx:-dx);
   const w=p.w,d=p.d;p.w=d;p.d=w;
   const lw=p.locks?.w,ld=p.locks?.d;
   if(p.locks){p.locks.w=ld;p.locks.d=lw}
@@ -826,13 +633,16 @@ function deleteCustom(){
 function duplicateCustom(){
  const target=customParts.find(p=>p.key===selected);if(!target)return;
  const source=target.assembly&&!singleMemberSelection?customParts.filter(p=>p.assembly===target.assembly):[target];
- const newAssembly=source.length>1?'Група '+(++assemblyId):undefined;
+ const newAssembly=target.assembly&&!singleMemberSelection?'Група '+(++assemblyId):undefined;
+ const copiedAssemblies=new Map();
  const bounds={min:Math.min(...source.map(p=>p.x-p.w/2)),max:Math.max(...source.map(p=>p.x+p.w/2))};
  const shift=Math.min(ROOM.w/2-bounds.max,Math.max(0,bounds.max-bounds.min+30));
  let first=null;
  for(const p of source){
   const key='custom'+(++partCounter);
-  customParts.push({...p,key,assembly:newAssembly,locks:{...p.locks},x:p.x+shift});
+  const clone=structuredClone(p);
+  clone.assemblyStack=newAssembly?clone.assemblyStack?.map(id=>remapAssemblyId(id,copiedAssemblies)):undefined;
+  customParts.push({...clone,key,assembly:newAssembly,x:p.x+shift});
   labels[key]=labels[p.key]||'Плоскост '+partCounter;
   if(finishes[p.key])finishes[key]=structuredClone(finishes[p.key]);
   allEdgeFlags[key]=!!allEdgeFlags[p.key];
@@ -843,14 +653,16 @@ function duplicateCustom(){
  build(false);updateSelection();
 }
 $('addPart').onclick=()=>addCustom('horizontal');$('addHorizontal').onclick=()=>addCustom('horizontal');$('addVertical').onclick=()=>addCustom('vertical');$('deletePart').onclick=deleteCustom;$('duplicatePart').onclick=duplicateCustom;
-for(const [id,k] of [['partW','w'],['partH','h'],['partD','d'],['partX','x'],['partY','y'],['partZ','z']])$(id).addEventListener('change',()=>{const p=customParts.find(p=>p.key===selected);if(!p||p.locks?.[k])return;const n=Number($(id).value);if('xyz'.includes(k)&&p.assembly&&!singleMemberSelection){moveGroupToPosition(p,k,n);return}if('whd'.includes(k)&&p.assembly&&!singleMemberSelection){
- if(!Number.isFinite(n)||n<=0)return;
- const axis={w:'x',h:'y',d:'z'}[k],members=customParts.filter(q=>q.assembly===p.assembly);
- const bounds=groupBounds(members,axis),oldSize=bounds.max-bounds.min;
- if(n<=0||oldSize<=0)return;
- resizeGroupNumeric(members,k,n);
- build(false);updateSelection();return;
-}if(!Number.isFinite(n)||('whd'.includes(k)&&n<=0))return;if('whd'.includes(k)){const axis={w:'x',h:'y',d:'z'}[k],min=p[axis]-p[k]/2;p[k]=n;p[axis]=min+n/2}else p[k]=centerFromDisplay(p,k,n);build(false);updateSelection()});
+for(const [id,k] of [['partW','w'],['partH','h'],['partD','d'],['partX','x'],['partY','y'],['partZ','z']])$(id).addEventListener('change',()=>{
+ const p=customParts.find(p=>p.key===selected);if(!p)return;
+ const n=Number($(id).value),isGroup=p.assembly&&!singleMemberSelection;
+ if(!Number.isFinite(n)||$(id).value.trim()===''){updateEditor();return}
+ if('xyz'.includes(k)&&isGroup){moveGroupToPosition(p,k,n);return}
+ const members=isGroup?customParts.filter(q=>q.assembly===p.assembly):[p];
+ if('whd'.includes(k))resizeGroupNumeric(members,k,n);
+ else applyGeometry(members,translate(members,obstaclesFor(members),ROOM,{[k]:centerFromDisplay(p,k,n)-p[k]}));
+ build(false);updateSelection();
+});
 for(const [id,k] of [['W','w'],['H','h'],['D','d']])$('lock'+id).addEventListener('change',()=>{const p=customParts.find(p=>p.key===selected);if(!p)return;p.locks??={};p.locks[k]=$('lock'+id).checked;$('part'+id).disabled=p.locks[k]});
 document.addEventListener('keydown',e=>{const tag=document.activeElement?.tagName;if(['INPUT','SELECT','TEXTAREA'].includes(tag))return;if(e.key==='Delete'){deleteCustom()}else if(e.ctrlKey&&e.key.toLowerCase()==='d'){e.preventDefault();duplicateCustom()}else if(e.ctrlKey&&e.key.toLowerCase()==='g'){e.preventDefault();createAssembly()}else if(e.ctrlKey&&e.key.toLowerCase()==='u'){e.preventDefault();const p=customParts.find(p=>p.key===selected);if(p?.assembly)ungroupAssembly(p.assembly)}});
 function updateSelection(){for(const b of boards){const outline=b.children.find(c=>c.isLineSegments);if(outline)outline.material.color.setHex(groupSelections.has(b.userData.key)||b.userData.key===selected?0xff8700:0x5a6470)}updateEditor();syncGizmo()}
@@ -1032,58 +844,18 @@ function pickBoard(e){
 function pointerRay(e){const rect=renderer.domElement.getBoundingClientRect();mouse.set((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1);ray.setFromCamera(mouse,camera)}
 function axisPoint(e,axis,anchor){pointerRay(e);const dir=new THREE.Vector3(axis==='x'?1:0,axis==='y'?1:0,axis==='z'?1:0),cameraDir=new THREE.Vector3();camera.getWorldDirection(cameraDir);const normal=cameraDir.clone().addScaledVector(dir,-cameraDir.dot(dir)).normalize();if(normal.lengthSq()<.001)normal.set(axis==='y'?1:0,axis==='y'?0:1,0);return dragPoint(e,anchor,normal)}
 function dragPoint(e,anchor,normal){pointerRay(e);const plane=new THREE.Plane().setFromNormalAndCoplanarPoint(normal,anchor),p=new THREE.Vector3();return ray.ray.intersectPlane(plane,p)?p:null}
-function overlaps(a,b,x,z,y=a.position.y){const eps=.05;return Math.abs(x-b.position.x)<(a.userData.w+b.userData.w)/2-eps&&Math.abs(y-b.position.y)<(a.userData.h+b.userData.h)/2-eps&&Math.abs(z-b.position.z)<(a.userData.d+b.userData.d)/2-eps}
-function allowedMove(mesh,axis,from,to,otherCoord){
- // Parts inserted at the default origin can initially intersect. Allow them
- // to move out of that intersection; still block collisions with other parts.
- const others=boards.filter(b=>b!==mesh);
- const initialOverlap=new Set(others.filter(b=>overlaps(mesh,b,mesh.position.x,mesh.position.z,mesh.position.y)));
- const test=v=>!others.some(b=>!initialOverlap.has(b)&&overlaps(mesh,b,axis==='x'?v:otherCoord,axis==='z'?v:otherCoord));
- // Find the first contact along the movement direction; never tunnel through thin panels.
- const delta=to-from;if(Math.abs(delta)<.001)return from;
- let earliest=1;
- for(const b of others){
-  const yOverlap=Math.abs(mesh.position.y-b.position.y)<(mesh.userData.h+b.userData.h)/2-.05;
-  const otherAxis=axis==='x'?'z':'x';
-  const otherCenter=otherAxis==='x'?b.position.x:b.position.z;
-  const otherHalf=otherAxis==='x'?(mesh.userData.w+b.userData.w)/2:(mesh.userData.d+b.userData.d)/2;
-  if(initialOverlap.has(b)||!yOverlap||Math.abs(otherCoord-otherCenter)>=otherHalf-.05)continue;
-  const center=axis==='x'?b.position.x:b.position.z;
-  const half=axis==='x'?(mesh.userData.w+b.userData.w)/2:(mesh.userData.d+b.userData.d)/2;
-  if(Math.abs(from-center)<half-.05)continue;
-  const contact=center+(delta>0?-half:half);
-  const t=(contact-from)/delta;
-  if(t>=0&&t<=earliest)earliest=t;
- }
- const candidate=from+delta*Math.max(0,Math.min(1,earliest));return test(candidate)?candidate:from;
+function screenMovement(dx,dy,anchor){
+ const distance=camera.position.distanceTo(anchor);
+ const scale=camera.isOrthographicCamera?(camera.top-camera.bottom)/Math.max(1,host.clientHeight)/camera.zoom:2*distance*Math.tan(THREE.MathUtils.degToRad(camera.fov)/2)/Math.max(1,host.clientHeight);
+ const right=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion),up=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion);
+ const delta=right.multiplyScalar(dx*scale).addScaledVector(up,-dy*scale);
+ const forward=new THREE.Vector3();camera.getWorldDirection(forward);
+ const excluded=['x','y','z'].reduce((best,k)=>Math.abs(forward[k])>Math.abs(forward[best])?k:best,'x');
+ delta[excluded]=0;return delta;
 }
 function constrainedAxis(mesh,axis,from,to){
  const part=customParts.find(p=>p.key===mesh.userData.key);if(!part)return from;
- const delta=to-from;if(Math.abs(delta)<.0001)return from;
- let fraction=1;
- for(const other of boards){if(other===mesh)continue;
-  const axes=['x','y','z'].filter(k=>k!==axis);
-  if(!axes.every(k=>Math.abs(part[k]-other.position[k])<(part[k==='x'?'w':k==='y'?'h':'d']+other.userData[k==='x'?'w':k==='y'?'h':'d'])/2-.05))continue;
-  const half=(part[axis==='x'?'w':axis==='y'?'h':'d']+other.userData[axis==='x'?'w':axis==='y'?'h':'d'])/2;
-  if(Math.abs(from-other.position[axis])<half-.05)continue;
-  const contact=other.position[axis]+(delta>0?-half:half);
-  const t=(contact-from)/delta;if(t>=0&&t<fraction)fraction=t;
- }
- const halfSize=axis==='x'?part.w/2:axis==='y'?part.h/2:part.d/2;
- const limit=axis==='x'?ROOM.w/2:axis==='y'?ROOM.h:ROOM.d/2;
- const result=Math.max((axis==='y'?0:-limit)+halfSize,Math.min(limit-halfSize,from+delta*fraction));
- const candidate={x:part.x,y:part.y,z:part.z};candidate[axis]=result;
- return boards.some(b=>{
-  if(b===mesh||!overlaps(mesh,b,candidate.x,candidate.z,candidate.y))return false;
-  // Existing intersections must be escapable by mouse. Allow any move
-  // that reduces overlap along the dragged axis, until the parts separate.
-  if(overlaps(mesh,b,part.x,part.z,part.y)){
-   const before=Math.abs(from-b.position[axis]);
-   const after=Math.abs(result-b.position[axis]);
-   return after<before-0.0001;
-  }
-  return true;
- })?from:result
+ return translate([part],obstaclesFor([part]),ROOM,{[axis]:to-from})[0][axis];
 }
 renderer.domElement.addEventListener('pointerdown',e=>{
  if(e.button!==0||e.shiftKey||e.ctrlKey||e.metaKey)return;
@@ -1121,7 +893,7 @@ renderer.domElement.addEventListener('pointermove',e=>{
  if(!drag){if(groupHandleHit(e)||singlePartHandleHit(e)){renderer.domElement.style.cursor='crosshair';return}const hit=pickBoard(e);const part=hit&&customParts.find(p=>p.key===hit.object.userData.key);const edge=part&&!part.assembly&&!hit.tolerant?edgeAt(e,hit.object,hit):null;const dim=edge&&(edge.axis==='x'?'w':edge.axis==='y'?'h':'d');renderer.domElement.style.cursor=part?(edge&&(!part.assembly&&!part.locks?.[dim]||part.assembly&&customParts.some(p=>p.assembly===part.assembly&&!p.locks?.[dim]))?'crosshair':'grab'):'auto';return}
  if(e.pointerId!==drag.id)return;
  if(!drag.activated){
-  if(!drag.pressX){drag.pressX=drag.startMouse?.x??drag.lastPointer?.x??e.clientX;drag.pressY=drag.startMouse?.y??drag.lastPointer?.y??e.clientY}
+  if(drag.pressX===undefined){drag.pressX=drag.startMouse?.x??drag.lastPointer?.x??e.clientX;drag.pressY=drag.startMouse?.y??drag.lastPointer?.y??e.clientY}
   if(Math.hypot(e.clientX-drag.pressX,e.clientY-drag.pressY)<6)return;
   drag.activated=true;
   if(drag.lastPointer)drag.lastPointer={x:e.clientX,y:e.clientY};
@@ -1137,71 +909,35 @@ renderer.domElement.addEventListener('pointermove',e=>{
    if(drag.part.locks?.[dim])return;
    const dx=e.clientX-drag.startMouse.x,dy=e.clientY-drag.startMouse.y;
    const signedPixels=dx*drag.screenDirection.x+dy*drag.screenDirection.y;
-   const requested=Math.max(5,Math.round(drag.initialSize+signedPixels/drag.pixelsPerMm*drag.sign));
-   const initial=drag.initialSize;
-   // Keep the opposite face fixed; resize only the dragged edge.
-   // Stop the moving face at the first obstacle, including members of
-   // the same assembly. Existing joints/touching faces are allowed.
-   const minLimit=axis==='y'?0:axis==='x'?-ROOM.w/2:-ROOM.d/2;
-   const maxLimit=axis==='y'?ROOM.h:axis==='x'?ROOM.w/2:ROOM.d/2;
-   const fixedFace=drag.origin[axis]-drag.sign*initial/2;
-   const oldMoving=drag.origin[axis]+drag.sign*initial/2;
-   let targetMoving=fixedFace+drag.sign*requested;
-   targetMoving=Math.max(minLimit,Math.min(maxLimit,targetMoving));
-   for(const b of boards){
-    if(b===drag.mesh||b.userData.key===drag.part.key)continue;
-    const otherAxes=['x','y','z'].filter(k=>k!==axis);
-    const overlaps=otherAxes.every(k=>{
-     const dimension={x:'w',y:'h',z:'d'}[k];
-     return Math.abs(drag.origin[k]-b.position[k])<
-      (drag.part[dimension]+b.userData[dimension])/2-.05;
-    });
-    if(!overlaps)continue;
-    const half=b.userData[dim]/2;
-    const nearFace=b.position[axis]-drag.sign*half;
-    // Only obstacles ahead of the original moving face can stop
-    // expansion. Do not let existing cabinet joints block at zero.
-    if(drag.sign*(nearFace-oldMoving)<-.05)continue;
-    if(drag.sign*(targetMoving-nearFace)>0)targetMoving=nearFace;
-   }
-   const nextSize=Math.max(5,Math.round(drag.sign*(targetMoving-fixedFace)));
-   if(nextSize>=5){
-    const newPos=drag.origin[axis]+drag.sign*(nextSize-initial)/2;
-    drag.part[dim]=nextSize;drag.part[axis]=newPos;drag.mesh.position[axis]=newPos;
-    drag.mesh.geometry.dispose();drag.mesh.geometry=new THREE.BoxGeometry(drag.part.w,drag.part.h,drag.part.d);
-    drag.mesh.userData[dim]=nextSize;
-    const outline=drag.mesh.children.find(c=>c.isLineSegments);
-    if(outline){outline.geometry.dispose();outline.geometry=new THREE.EdgesGeometry(drag.mesh.geometry)}
-    $('part'+dim.toUpperCase()).value=Math.round(nextSize);
-    $('part'+axis.toUpperCase()).value=Math.round(newPos);
-   }
+   const requested=Math.max(1,Math.round(drag.initialSize+signedPixels/drag.pixelsPerMm*drag.sign));
+   const initial={...drag.part,[dim]:drag.initialSize,[axis]:drag.origin[axis]};
+   const next=resize([initial],obstaclesFor([drag.part]),ROOM,dim,requested)[0];
+   applyGeometry([drag.part],[next]);
+   drag.mesh.position[axis]=next[axis];
+   drag.mesh.geometry.dispose();drag.mesh.geometry=new THREE.BoxGeometry(next.w,next.h,next.d);
+   drag.mesh.userData[dim]=next[dim];
+   const outline=drag.mesh.children.find(c=>c.isLineSegments);
+   if(outline){outline.geometry.dispose();outline.geometry=new THREE.EdgesGeometry(drag.mesh.geometry)}
+   updateEditor();
    syncGizmo();down=null;return;
   }
   const desired=drag.origin[axis]+p[axis]-drag.start[axis];
   const next=constrainedAxis(drag.mesh,axis,drag.part[axis],desired);
   drag.part[axis]=next;drag.mesh.position[axis]=next;
-  $('part'+axis.toUpperCase()).value=Math.round(next);
  }else{
   // Screen-space movement follows the two axes visible in the current camera view.
   // Top view: screen vertical = Z, front view: screen vertical = Y.
   const dx=e.clientX-drag.lastPointer.x,dy=e.clientY-drag.lastPointer.y;
-  const distance=camera.position.distanceTo(drag.mesh.position);
-  const scale=camera.isOrthographicCamera?(camera.top-camera.bottom)/Math.max(1,host.clientHeight)/camera.zoom:2*distance*Math.tan(THREE.MathUtils.degToRad(camera.fov)/2)/Math.max(1,host.clientHeight);
-  const right=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
-  const up=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion);
-  const screenDelta=right.multiplyScalar(dx*scale).addScaledVector(up,-dy*scale);
-  const forward=new THREE.Vector3();camera.getWorldDirection(forward);
-  const excluded=['x','y','z'].reduce((best,k)=>Math.abs(forward[k])>Math.abs(forward[best])?k:best,'x');
-  const axes=['x','y','z'].filter(k=>k!==excluded);
+  const screenDelta=screenMovement(dx,dy,drag.mesh.getWorldPosition(new THREE.Vector3()));
+  const axes=['x','y','z'];
   // Resolve collisions independently so a blocked direction still allows sliding.
   for(const axis of axes){
    const next=constrainedAxis(drag.mesh,axis,drag.part[axis],drag.part[axis]+screenDelta[axis]);
    drag.part[axis]=next;drag.mesh.position[axis]=next;
-   $('part'+axis.toUpperCase()).value=Math.round(next*10)/10;
   }
   drag.lastPointer={x:e.clientX,y:e.clientY};
  }
- syncGizmo();down=null
+ updateEditor();syncGizmo();down=null
 });
 function endDrag(e){if(drag&&e.pointerId===drag.id){const resized=drag.resize,wasActivated=drag.activated;drag=null;controls.enabled=true;down=null;if(resized&&wasActivated){build(false);updateSelection()}}}
 renderer.domElement.addEventListener('pointerup',e=>{
@@ -1230,15 +966,22 @@ function refreshStorageLists(){
 function snapshotParts(){
  return customParts.map(p=>({part:structuredClone(p),name:labels[p.key]||p.key,finish:structuredClone(finishes[p.key]||{}),allEdges:!!allEdgeFlags[p.key]}));
 }
+function remapAssemblyId(id,names){
+ if(!id)return null;
+ if(!names.has(id))names.set(id,'assembly'+(++assemblyId));
+ return names.get(id);
+}
+function wrapAssembly(p,id){
+ p.assemblyStack=[...(p.assemblyStack||[]),p.assembly||null];p.assembly=id;
+}
 function restoreParts(items,offset={x:0,y:0,z:0},preserve=false){
  const assemblyNames=new Map(),newKeys=[];
  for(const item of items){
   const p=structuredClone(item.part),oldKey=p.key;
   p.key='custom'+(++partCounter);
-  if(p.assembly){
-   if(!assemblyNames.has(p.assembly))assemblyNames.set(p.assembly,'assembly'+(++assemblyId));
-   p.assembly=assemblyNames.get(p.assembly);
-  }else if(preserve){p.assembly=undefined}
+  if(p.assembly)p.assembly=remapAssemblyId(p.assembly,assemblyNames);
+  else if(preserve)p.assembly=undefined;
+  if(p.assemblyStack)p.assemblyStack=p.assemblyStack.map(id=>remapAssemblyId(id,assemblyNames));
   p.x+=offset.x;p.y+=offset.y;p.z+=offset.z;
   customParts.push(p);labels[p.key]=item.name||oldKey;
   finishes[p.key]=structuredClone(item.finish||{});allEdgeFlags[p.key]=!!item.allEdges;
@@ -1273,7 +1016,7 @@ $('insertCabinet').onclick=()=>{
  const keys=restoreParts(parts,offset);
  // All parts of an inserted cabinet behave as one movable assembly.
  const id='assembly'+(++assemblyId);
- keys.forEach(key=>{const p=customParts.find(p=>p.key===key);p.assembly=id});
+ keys.forEach(key=>{const p=customParts.find(p=>p.key===key);wrapAssembly(p,id)});
  groupSelections.clear();keys.forEach(key=>groupSelections.add(key));selected=keys[0];
  build(false);updateSelection();storageMessage('Шкафът е добавен като отделно копие в проекта.');
 };
@@ -1342,7 +1085,7 @@ window.addEventListener('kitchen-v2-cloud-opened',e=>{
  const keys=restoreParts(incoming,offset);
  // A saved cabinet is a single unit even if its original panels were ungrouped.
  const id='assembly'+(++assemblyId);
- keys.forEach(key=>{const p=customParts.find(q=>q.key===key);p.assembly=id});
+ keys.forEach(key=>{const p=customParts.find(q=>q.key===key);wrapAssembly(p,id)});
  groupSelections.clear();keys.forEach(key=>groupSelections.add(key));
  selected=keys[0];singleMemberSelection=false;
  build(false);updateSelection();refreshGroupList();
@@ -2063,7 +1806,7 @@ window.addEventListener('kitchen-v2-cloud-opened',e=>{
  }
  const keys=restoreParts(parts,offset);
  const assembly='assembly'+(++assemblyId);
- for(const key of keys){const p=customParts.find(q=>q.key===key);p.assembly=assembly}
+ for(const key of keys){const p=customParts.find(q=>q.key===key);wrapAssembly(p,assembly)}
  projectInstances.set(assembly,e.detail.name||'Шкаф');
  selected=keys[0];singleMemberSelection=false;groupSelections.clear();
  build(false);updateSelection();projectRefresh();
