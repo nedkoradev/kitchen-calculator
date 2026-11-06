@@ -1,0 +1,64 @@
+name: pages build and deployment
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # Keep the same Pages site/domain, but use this reproducible build instead
+      # of the implicit branch build so every publication measures fresh bytes.
+      - name: Configure Pages workflow publishing
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const current = await github.request('GET /repos/{owner}/{repo}/pages', {owner: context.repo.owner, repo: context.repo.repo});
+            if (current.data.build_type !== 'workflow') await github.request('PUT /repos/{owner}/{repo}/pages', {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              build_type: 'workflow'
+            });
+      - uses: actions/configure-pages@v5
+      - name: Measure the checked-out source files
+        run: node scripts/repository-space.mjs
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
+      - name: Verify generated statistics and release metadata
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync} from 'node:fs';
+          import {validSpaceStats} from './settings.mjs';
+          const stats=JSON.parse(readFileSync('_site/repository-space.json','utf8'));
+          const release=JSON.parse(readFileSync('_site/release.json','utf8'));
+          if(!validSpaceStats(stats)||stats.revision!==process.env.GITHUB_SHA||release.revision!==stats.revision||release.version!==stats.version)throw Error('Invalid Pages metadata');
+          const files=JSON.parse(readFileSync('_data/repository_space.json','utf8')).files;
+          if(stats.totalBytes!==files.reduce((total,file)=>total+file.bytes,0)||stats.textureBytes!==files.filter(file=>file.texture).reduce((total,file)=>total+file.bytes,0)||stats.imageCount!==files.filter(file=>file.image).length||stats.fileCount!==files.length)throw Error('Statistics do not match the measured source snapshot');
+          JS
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

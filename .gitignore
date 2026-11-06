@@ -1,3 +1,6 @@
 node_modules/
 work/
 *-debug.log
+
+_data/repository_space.json
+_site/

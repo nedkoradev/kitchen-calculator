@@ -1,5 +1,6 @@
 // Shared local SVG vocabulary: Lucide-style 24px, 2px strokes, no icon font/CDN.
 const paths={
+ gear:'<path d="M10 2h4l.5 3 2 1 2.8-1 2 3.5-2.3 2v3l2.3 2-2 3.5-2.8-1-2 1-.5 3h-4l-.5-3-2-1-2.8 1-2-3.5 2.3-2v-3l-2.3-2 2-3.5 2.8 1 2-1Z"/><circle cx="12" cy="12" r="3"/>',
  save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M7 3v6h9V3M7 21v-8h10v8"/>',
  saveAs:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h6M14 2v6h6l-6-6Z"/><path d="m16 15 3 3m-7 3 1-4 6-6 3 3-6 6-4 1Z"/>',
  open:'<path d="M3 8V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v2M3 8h17a1 1 0 0 1 1 1l-3 11H5L2 10a2 2 0 0 1 1-2Z"/>',
@@ -38,7 +39,7 @@ export function installActionIcons(){
  projectGroupParts:['group','Групирай'],projectUngroupParts:['ungroup','Разгрупирай'],projectRoomSettings:['room','Размери на стаята'],
  projectRotateLeft:['rotateLeft','Завърти наляво'],projectRotateRight:['rotateRight','Завърти надясно'],
  undoStep:['undo','Върни последната промяна (Ctrl+Z)'],redoStep:['redo','Повтори промяната (Ctrl+Y)'],
- fileDialogDelete:['trash','Изтрий избрания шкаф от облака'],fileDialogClose:['close','Затвори'],helpClose:['close','Затвори'],dialogClose:['close','Затвори'],helpButton:['info','Помощ']
+ fileDialogDelete:['trash','Изтрий избрания шкаф от облака'],fileDialogClose:['close','Затвори'],helpClose:['close','Затвори'],dialogClose:['close','Затвори'],helpButton:['info','Помощ'],settingsButton:['gear','Настройки'],settingsClose:['close','Затвори настройките']
  };
  for(const [id,[icon,label]] of Object.entries(actions)){const button=document.getElementById(id);if(button)decorateAction(button,icon,label,{iconOnly:true})}
 }

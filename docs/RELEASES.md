@@ -1,6 +1,6 @@
 # Версии и публикуване
 
-GitHub Pages продължава да използва съществуващия `pages build and deployment` от `main`. Няма нов workflow, bundler или Firebase deployment.
+GitHub Pages публикува от `main` чрез `pages build and deployment` workflow. Pages workflow вече е описан в `.github/workflows/pages.yml`, със същия Jekyll builder и допълнително измерване/валидация на source файловете преди deployment; няма bundler или Firebase deployment.
 
 `_data/version.json` е източникът на видимата версия `MAJOR.MINOR`. `npm test` автоматично изпълнява `scripts/prepare-release.mjs`: при функционални runtime промени спрямо актуалния `origin/main` minor се увеличава точно с 1. Повторното изпълнение в същия клон използва същата база, затова не увеличава номера повторно. При документационни/test-only промени няма увеличение. `npm run release:prepare` е изричният еквивалент, а `npm run release:check` проверява съответствието преди merge. Генерираните `_data/version.json` и HTML версия се commit-ват с промяната. Преди подготовката винаги fetch-вай актуалния main; ако той е напреднал, обнови клона, подготви версията отново и повтори приложимите тестове.
 
@@ -24,3 +24,5 @@ Jekyll обработва version metadata в `release.json`; пълният SHA
 Преди merge се проверяват актуалният main, окончателният head, conflicts, required checks/reviews. След merge се изчаква успешният Pages workflow и се проверяват онлайн `release.json` и версията в интерфейса, когато мрежовата политика позволява достъп. Ако live проверката е блокирана, това се отчита отделно от статуса на Pages deployment.
 
 Онлайн приложение: https://nedkoradev.github.io/kitchen-calculator/
+
+Статистиката за изходните файлове се генерира при всеки Pages build; граници/мерни единици и workflow преходът са описани в `docs/SETTINGS_AND_SPACE.md`.
