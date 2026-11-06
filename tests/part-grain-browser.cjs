@@ -14,7 +14,7 @@ const {openKitchen}=require('./browser-harness.cjs');
   const s=page.locator('.materialGroup').first();await s.locator('tbody tr').first().getByRole('button',{name:'Промени',exact:true}).click();
   const chooser=page.waitForEvent('filechooser');await page.locator('#chooseMaterialPhoto').click();await (await chooser).setFiles(path.join(__dirname,'../materials/textures/Screenshot 2026-11-06 135831.png'));
   await page.waitForFunction(()=>document.querySelector('#materialPhotoStatus').textContent.includes('Снимката е проверена'));
-  assert.equal(await page.locator('.materialPhotoPreview').isVisible(),true);if(process.env.KITCHEN_SCREENSHOTS)await page.screenshot({path:path.join(process.env.KITCHEN_SCREENSHOTS,'part-grain-decor.png')});await page.getByRole('button',{name:'Запази',exact:true}).click();
+  await page.locator('.photoWizard button').click();assert.equal(await page.locator('.materialPhotoPreview').isVisible(),true);if(process.env.KITCHEN_SCREENSHOTS)await page.screenshot({path:path.join(process.env.KITCHEN_SCREENSHOTS,'part-grain-decor.png')});await page.getByRole('button',{name:'Запази',exact:true}).click();
   const decor=(await page.evaluate(()=>window.__partGrain.capture())).materials;
   for(const mode of ['constructor','project']){
    await page.locator(mode==='constructor'?'#modeConstructor':'#modeProject').click();await page.evaluate(materials=>{const s=window.__partGrain.capture();s.materials=materials;window.__partGrain.restore(s)},decor);await setup([{key:'custom990',w:500,h:3000,d:18,x:0,y:1500,z:0,locks:{d:true}}]);await page.locator('#fit').click();

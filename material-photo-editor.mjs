@@ -43,11 +43,11 @@ export function installMaterialPhotoEditor(form,item,dialog){
  const pendingNote='Снимката още не е проверена. Предишната снимка се запазва.';
  const setStatus=text=>{status.textContent=text;if(wizardStatus)wizardStatus.textContent=text;};
  let wizardStatus=null,wizard=null,wizardTimer=null;
- function closeWizard(){if(wizardTimer){clearInterval(wizardTimer);wizardTimer=null}wizard?.remove();wizard=null;wizardStatus=null}
+ function closeWizard(){if(wizardTimer){clearTimeout(wizardTimer);wizardTimer=null}wizard?.close();wizard?.remove();wizard=null;wizardStatus=null}
  function openWizard(filename,originalName){
   closeWizard();
-  wizard=document.createElement('div');wizard.setAttribute('role','dialog');wizard.setAttribute('aria-modal','true');wizard.setAttribute('aria-label','Добавяне на снимка');
-  wizard.style.cssText='position:fixed;inset:0;z-index:99999;background:#152d47a6;display:flex;align-items:center;justify-content:center;padding:16px';
+  wizard=document.createElement('dialog');wizard.className='photoWizard';wizard.setAttribute('role','dialog');wizard.setAttribute('aria-modal','true');wizard.setAttribute('aria-label','Добавяне на снимка');
+  wizard.style.cssText='border:0;padding:0;border-radius:10px;width:min(460px,94vw);max-height:90vh;overflow:auto;background:white';
   const panel=document.createElement('div');panel.style.cssText='background:white;color:#19334e;border-radius:10px;padding:20px;width:min(460px,100%);box-shadow:0 12px 40px #0003;font:14px Arial,sans-serif';
   const heading=document.createElement('h3');heading.textContent='Добавяне на снимка';heading.style.margin='0 0 14px';
   const steps=document.createElement('p');steps.textContent='1. Натисни „Качи в GitHub“ и избери същата снимка от компютъра. 2. Натисни зеления „Commit changes“ в GitHub. 3. Върни се тук — приложението ще провери снимката автоматично.';steps.style.lineHeight='1.65';
@@ -60,8 +60,17 @@ export function installMaterialPhotoEditor(form,item,dialog){
   if(filename!==originalName){const renamed=document.createElement('a');renamed.href=previewUrl;renamed.download=filename;renamed.textContent='Изтегли с правилното име';renamed.style.cssText='padding:10px;border:1px solid #bdc9d7;border-radius:5px';actionsRow.append(renamed)}
   actionsRow.append(finish);
   wizardStatus=document.createElement('p');wizardStatus.setAttribute('role','status');wizardStatus.style.cssText='margin-top:12px;font-weight:bold;line-height:1.5';wizardStatus.textContent=status.textContent;
-  panel.append(heading,steps,name,note,actionsRow,wizardStatus);wizard.append(panel);document.body.append(wizard);
-  wizardTimer=setInterval(async()=>{if(!wizard||closed||verified)return;await verify();if(verified){wizardStatus.textContent='✓ Снимката е намерена! Затвори прозореца и натисни „Запази“.';finish.textContent='Готово';clearInterval(wizardTimer);wizardTimer=null}},10000);
+  panel.append(heading,steps,name,note,actionsRow,wizardStatus);wizard.append(panel);document.body.append(wizard);wizard.addEventListener('cancel',closeWizard);wizard.showModal();
+  const currentWizard=wizard;
+  async function recheck(){
+   if(wizard!==currentWizard||closed||verified)return;
+   if(controller){wizardTimer=setTimeout(recheck,10000);return}
+   await verify();
+   if(wizard!==currentWizard||closed)return;
+   if(verified){wizardStatus.textContent='✓ Снимката е намерена! Затвори прозореца и натисни „Запази“.';finish.textContent='Готово';wizardTimer=null}
+   else wizardTimer=setTimeout(recheck,10000);
+  }
+  wizardTimer=setTimeout(recheck,10000);
  }
 
  function releasePreview(){if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=null;if(download){download.hidden=true;download.removeAttribute('href')}preview.removeAttribute('src');preview.hidden=true}
@@ -86,7 +95,7 @@ export function installMaterialPhotoEditor(form,item,dialog){
    const decoded=await decodePhoto(blob);
    if(closed||token!==epoch){URL.revokeObjectURL(decoded.url);return}
    verified={url,hash};show(decoded);setStatus('Снимката е проверена. Натисни „Запази“.');
-  }catch(error){if(closed||token!==epoch)return;if(!local)releasePreview();setStatus((local?'Снимката не е качена. Показва се само преглед. ':'')+(error.name==='EncodingError'?'Файлът не може да се декодира като изображение.':error.name==='TypeError'?'Снимката не е достъпна от приложението. Провери адреса и публикуването.':error.name==='AbortError'?'Проверката отне твърде дълго. Опитай отново.':error.message))}finally{clearTimeout(timeout)}
+  }catch(error){if(closed||token!==epoch)return;if(!local)releasePreview();setStatus((local?'Снимката не е качена. Показва се само преглед. ':'')+(error.name==='EncodingError'?'Файлът не може да се декодира като изображение.':error.name==='TypeError'?'Снимката не е достъпна от приложението. Провери адреса и публикуването.':error.name==='AbortError'?'Проверката отне твърде дълго. Опитай отново.':error.message))}finally{clearTimeout(timeout);if(controller===request)controller=null}
  }
  button('verifyMaterialPhoto','Провери снимката',verify);
  const details=document.createElement('details');details.className='materialPhotoHelp';
@@ -120,7 +129,7 @@ export function installMaterialPhotoEditor(form,item,dialog){
    if(filename!==selected.name){download.href=previewUrl;download.download=filename;download.hidden=false;setStatus('Качи снимката с безопасното име от бутона за изтегляне.')}else setStatus('Проверка дали снимката вече е публикувана…');
    openWizard(filename,selected.name);
    await verify();
-   if(verified&&wizardStatus){wizardStatus.textContent='✓ Снимката е намерена! Затвори прозореца и натисни „Запази“.';clearInterval(wizardTimer);wizardTimer=null}
+   if(verified&&wizardStatus){wizard.querySelector('button').textContent='Готово';wizardStatus.textContent='✓ Снимката е намерена! Затвори прозореца и натисни „Запази“.';clearTimeout(wizardTimer);wizardTimer=null}
   }catch(error){if(closed||token!==epoch)return;setStatus((error.name==='EncodingError'?'Избраната снимка не може да се декодира.':error.message)+' Записаната снимка не е променена.');}
  };
  dialog.addEventListener('close',()=>{closed=true;closeWizard();invalidate();releasePreview();local=null},{once:true});

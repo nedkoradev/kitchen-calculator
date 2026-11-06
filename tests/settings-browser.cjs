@@ -13,7 +13,7 @@ const part={key:'custom901',x:0,y:100,z:0,w:720,h:18,d:550,locks:{h:true}};
    await page.locator(mode==='constructor'?'#modeConstructor':'#modeProject').click();await setup([part]);const before=await parts();
    const button=page.locator('#settingsButton');await button.scrollIntoViewIfNeeded();
    assert.equal(await button.getAttribute('title'),'Настройки');assert.equal(await button.locator('svg').getAttribute('viewBox'),'0 0 24 24');
-   assert.ok(await button.evaluate(el=>el.getBoundingClientRect().top>=document.querySelector('#helpButton').getBoundingClientRect().bottom));
+   assert.equal(await button.evaluate(el=>!!el.closest('#headerRight')),true);
    await button.click();assert.equal(await page.locator('#settingsDialog').evaluate(el=>el.matches(':modal')),true);
    await page.waitForFunction(()=>!document.querySelector('#spaceDetails').hidden);
    assert.equal(await page.locator('#settingsVersion').innerText(),`v${major}.${minor}`);assert.equal(await page.locator('#textureImageCount').innerText(),'2');
@@ -24,7 +24,7 @@ const part={key:'custom901',x:0,y:100,z:0,w:720,h:18,d:550,locks:{h:true}};
    await button.click();await page.waitForFunction(()=>!document.querySelector('#spaceDetails').hidden);
    if(process.env.KITCHEN_SCREENSHOT&&mode==='project')await page.screenshot({path:process.env.KITCHEN_SCREENSHOT});
    await page.locator('#settingsClose').click();assert.deepEqual(await parts(),before);
-   console.log(`PASS ${mode}: shared bottom gear, modal settings/version/stats/date/progress, Escape/close and no model changes`);
+   console.log(`PASS ${mode}: shared account-header gear, modal settings/version/stats/date/progress, Escape/close and no model changes`);
   }
   state='error';await page.locator('#settingsButton').click();await page.waitForFunction(()=>document.querySelector('#spaceStatus').textContent.includes('не е налична'));assert.equal(await page.locator('#spaceDetails').isVisible(),false);
   state='invalid';await page.locator('#spaceRetry').click();await page.waitForFunction(()=>document.querySelector('#spaceStatus').textContent.includes('не е налична'));assert.equal(await page.locator('#spaceDetails').isVisible(),false);
