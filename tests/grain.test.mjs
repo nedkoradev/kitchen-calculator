@@ -35,3 +35,9 @@ test('every grain-first Salex edge pair follows its physical dimension in all or
   for(const grainAxis of axes){const layout=cutLayout(p,{grainAxis},{grainRequired:true});assert.deepEqual(layout.edgeIndices.map(i=>lengths[i]),[layout.A,layout.A,layout.B,layout.B])}
  }
 });
+test('repository texture paths are portable Pages URLs with strict directory boundaries',()=>{
+ assert.equal(validTextureUrl('materials/textures/decor.webp'),'materials/textures/decor.webp');
+ assert.equal(validTextureUrl('./materials/textures/Дъб светъл.PNG'),'materials/textures/%D0%94%D1%8A%D0%B1%20%D1%81%D0%B2%D0%B5%D1%82%D1%8A%D0%BB.PNG');
+ assert.equal(validTextureUrl('materials/textures/decor.jpg?v=2'),'materials/textures/decor.jpg?v=2');
+ for(const input of ['/materials/textures/a.png','../materials/textures/a.png','materials/textures/../secret.png','materials/textures/%2e%2e/secret.png','materials/textures/a%2f..%2fsecret.png','materials/textures/a%255c..png','materials/textures/decor.html','//external.test/a.jpg'])assert.equal(validTextureUrl(input),null,input);
+});

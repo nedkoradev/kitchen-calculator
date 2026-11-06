@@ -23,5 +23,17 @@ export function textureCoordinates(p,finish={},material={},imageAspect=1){
  return {uAxis:other,vAxis:grain,width,height};
 }
 export function validTextureUrl(value){
- try{const url=new URL(value);return url.protocol==='https:'&&!url.username&&!url.password?url.href:null}catch{return null}
+ if(typeof value!=='string')return null;
+ const input=value.trim();
+ // Repository textures stay relative so project/library metadata is portable
+ // between Pages subpaths. No root paths, traversal, schemes or auth are allowed.
+ if(/^(?:\.\/)?materials\/textures\//.test(input)){
+  const path=input.replace(/^\.\//,'').split(/[?#]/)[0];
+  if(/%(?:2f|5c|25)/i.test(path))return null;
+  let decoded;try{decoded=decodeURIComponent(path)}catch{return null}
+  if(/[\\\u0000-\u001f\u007f]/.test(decoded)||decoded.split('/').some(part=>!part||part==='.'||part==='..')||!/^materials\/textures\/.+\.(jpe?g|png|webp)$/i.test(decoded))return null;
+  const suffix=input.slice(input.indexOf(path)+path.length);
+  return decoded.split('/').map(encodeURIComponent).join('/')+suffix;
+ }
+ try{const url=new URL(input);return url.protocol==='https:'&&!url.username&&!url.password?url.href:null}catch{return null}
 }

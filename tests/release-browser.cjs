@@ -7,10 +7,14 @@ const root=path.join(__dirname,'..'),scope='/kitchen-calculator/';
 const version=JSON.parse(fs.readFileSync(path.join(root,'_data/version.json'),'utf8'));const visible=`${version.major}.${version.minor}`;
 const first='a'.repeat(40),second='b'.repeat(40);let revision=first;
 const render=source=>source.replace(/^---\n[\s\S]*?\n---\n/,'').replaceAll('{{ site.data.version.major }}',String(version.major)).replaceAll('{{ site.data.version.minor }}',String(version.minor)).replaceAll('{{ site.github.build_revision }}',revision);
+const inventory=JSON.parse(fs.readFileSync(path.join(root,'_data/repository_space.json'),'utf8'));
+const stats=()=>({schemaVersion:1,inventoryReady:true,scope:'published-source-snapshot',includesGitHistory:false,version:visible,revision,measuredAt:'2026-11-06T12:00:00Z',totalBytes:inventory.files.reduce((n,f)=>n+f.bytes,0),fileCount:inventory.files.length,textureBytes:inventory.files.filter(f=>f.texture).reduce((n,f)=>n+f.bytes,0),imageCount:inventory.files.filter(f=>f.image).length,referenceBytes:1024**3});
 const html='<!doctype html><span id="appVersion">v0.0</span><script type="module" src="./app-release.js"></script>';
 const server=http.createServer((req,res)=>{
  const file=decodeURIComponent(new URL(req.url,'http://localhost').pathname).slice(scope.length)||'index.html';
  if(!req.url.startsWith(scope)||file.includes('..')){res.writeHead(404).end();return}
+ if(file==='repository-space.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify(stats()));return}
+ if(file==='materials/textures/test.png'){res.setHeader('Content-Type','image/png');res.end(fs.readFileSync(path.join(__dirname,'fixtures/grain.png')));return}
  if(file==='users/alice'){res.setHeader('Content-Type','application/json');res.end('{"private":true}');return}
  const location=path.join(root,file);if(!fs.existsSync(location)){res.writeHead(404).end();return}
  res.setHeader('Cache-Control','no-store');
@@ -36,6 +40,8 @@ const server=http.createServer((req,res)=>{
   const during=await page.evaluate(()=>caches.keys());assert.ok(during.some(key=>key.endsWith('a'.repeat(40))));assert.ok(during.some(key=>key.endsWith('b'.repeat(40))));
   await page.reload();await page.waitForFunction(()=>document.documentElement.dataset.buildRevision==='b'.repeat(40));
   await page.evaluate(()=>fetch('./users/alice'));
+  await page.evaluate(()=>fetch('./materials/textures/test.png'));
+  assert.equal(await page.evaluate(async()=>(await(await fetch('./repository-space.json')).json()).revision),'b'.repeat(40));
   assert.equal(await page.evaluate(async()=>{for(const name of await caches.keys()){for(const request of await (await caches.open(name)).keys())if(request.url.includes('/users/'))return true}return false}),false);
   assert.equal(await page.evaluate(()=>localStorage.getItem('unsaved-draft')),'keep');
   console.log('PASS release update keeps unsaved work, fetches new version and excludes user data from caches');
@@ -43,9 +49,12 @@ const server=http.createServer((req,res)=>{
   const next=await context.newPage();await next.goto(url);
   await next.waitForFunction(async()=>!(await caches.keys()).some(key=>key.endsWith('a'.repeat(40))));
   assert.ok((await next.evaluate(()=>caches.keys())).includes('another-app'));
+  await next.evaluate(()=>fetch('./materials/textures/test.png'));
   await context.setOffline(true);await next.reload();
   await next.waitForFunction(value=>document.querySelector('#appVersion').textContent==='v'+value,visible);
   assert.equal(await next.evaluate(()=>localStorage.getItem('unsaved-draft')),'keep');
+  assert.equal(await next.evaluate(async()=>(await(await fetch('./repository-space.json')).json()).revision),'b'.repeat(40));
+  assert.equal(await next.evaluate(async()=>(await fetch('./materials/textures/test.png')).ok),true);
   console.log('PASS activation removes only old app cache; public shell/version work offline');
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}

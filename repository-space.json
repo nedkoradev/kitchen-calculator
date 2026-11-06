@@ -1,0 +1,25 @@
+---
+layout: null
+---
+{%- assign total_bytes = 0 -%}
+{%- assign texture_bytes = 0 -%}
+{%- assign image_count = 0 -%}
+{%- for file in site.data.repository_space.files -%}
+  {%- assign total_bytes = total_bytes | plus: file.bytes -%}
+  {%- if file.texture -%}{%- assign texture_bytes = texture_bytes | plus: file.bytes -%}{%- endif -%}
+  {%- if file.image -%}{%- assign image_count = image_count | plus: 1 -%}{%- endif -%}
+{%- endfor -%}
+{
+  "schemaVersion": 1,
+  "inventoryReady": {% if site.data.repository_space.schemaVersion == 1 %}true{% else %}false{% endif %},
+  "scope": "published-source-snapshot",
+  "includesGitHistory": false,
+  "version": "{{ site.data.version.major }}.{{ site.data.version.minor }}",
+  "revision": "{{ site.github.build_revision }}",
+  "measuredAt": "{{ site.time | date_to_xmlschema }}",
+  "totalBytes": {{ total_bytes }},
+  "fileCount": {{ site.data.repository_space.files | size }},
+  "textureBytes": {{ texture_bytes }},
+  "imageCount": {{ image_count }},
+  "referenceBytes": 1073741824
+}
