@@ -2,7 +2,9 @@
 
 GitHub Pages продължава да използва съществуващия `pages build and deployment` от `main`. Няма нов workflow, bundler или Firebase deployment.
 
-`release.json` и `sw.js` имат Jekyll front matter. Pages заменя `site.github.build_revision` с пълния SHA на публикувания commit. Интерфейсът показва `1.65+<първите осем символа на SHA>`; commit идентификаторът се променя автоматично при всяка публикация. Това е идентификатор на build, не пореден SemVer patch номер. Локален HTTP сървър без Jekyll показва `v1.65-dev` и не регистрира некомпилирания worker.
+`_data/version.json` е източникът на видимата версия `MAJOR.MINOR`. `npm test` автоматично изпълнява `scripts/prepare-release.mjs`: при функционални runtime промени спрямо актуалния `origin/main` minor се увеличава точно с 1. Повторното изпълнение в същия клон използва същата база, затова не увеличава номера повторно. При документационни/test-only промени няма увеличение. `npm run release:prepare` е изричният еквивалент, а `npm run release:check` проверява съответствието преди merge. Генерираните `_data/version.json` и HTML версия се commit-ват с промяната. Преди подготовката винаги fetch-вай актуалния main; ако той е напреднал, обнови клона, подготви версията отново и повтори приложимите тестове.
+
+Jekyll обработва version metadata в `release.json`; пълният SHA остава само във вътрешния `revision` и в кода/идентичността на service worker кеша. Интерфейсът показва `Kitchen Designer v1.66` (следващо функционално обновяване: v1.67), без „3D“ или commit suffix. Локален HTTP сървър без Jekyll показва краткия номер от HTML и не регистрира некомпилирания worker.
 
 `app-release.js` проверява release metadata без HTTP кеш и регистрира worker с `updateViaCache: none`. Worker кодът съдържа пълния build SHA и кешът е отделен за scope и SHA. GET заявки само към изрично изброените публични app файлове са network-first с презаверяване на HTTP кеша; копието в Cache Storage е fallback при мрежова грешка. Firebase, authentication, CDN и потребителските данни не се кешират от този worker. CDN/Firebase остават нужни за пълната функционалност; този механизъм не обещава пълно offline приложение.
 
