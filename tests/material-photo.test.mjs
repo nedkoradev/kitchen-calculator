@@ -16,7 +16,8 @@ test('photo validation checks magic bytes, extension, MIME and the size limit',(
 test('suggested repo paths are safe, portable and bound to image contents',()=>{
  const hash='abc123def0'+'a'.repeat(54),path=proposedTexturePath('../Дъб светъл<script>.PNG','image/png',hash);
  assert.ok(path.startsWith('materials/textures/'));assert.ok(path.endsWith('-abc123def0.png'));assert.ok(!path.includes('..')&&!path.includes('<')&&!path.includes('>'));
- assert.notEqual(proposedTexturePath('oak.png','image/png',hash),proposedTexturePath('oak.png','image/png','b'.repeat(64)));
+ assert.equal(proposedTexturePath('Oak 01.PNG','image/png',hash),'materials/textures/Oak%2001.PNG');
+ assert.notEqual(proposedTexturePath('oak<script>.png','image/png',hash),proposedTexturePath('oak<script>.png','image/png','b'.repeat(64)));
 });
 
 test('edge texture UV axes follow every physical band after panel rotation',async()=>{

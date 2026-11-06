@@ -181,3 +181,9 @@ test('grain and HTTPS texture metadata roundtrip without embedding image bytes',
  const saved=await store.save({name:'Фладер',data:snapshot}),opened=await store.open(saved.id);
  assert.deepEqual(opened.data,snapshot);assert.equal(opened.data.parts[0].finish.grainAxis,'z');assert.ok(!JSON.stringify(opened.data).includes('base64'));
 });
+
+ test('all decor categories preserve relative URLs and texture scales in project storage',async()=>{
+ const {store}=client('alice'),snapshot=data();
+ for(const [i,key] of ['pdcMaterials','edgeMaterials','worktops','backMaterials'].entries())snapshot.materials[key]=[{name:key,url:'https://www.salex.bg/product/'+i,textureUrl:'materials/textures/decor-'+i+'.png',textureWidthMm:20+i,textureHeightMm:500+i,...(key==='edgeMaterials'?{}:{grainRequired:true})}];
+ const saved=await store.save({name:'Всички декори',data:snapshot});assert.deepEqual((await store.open(saved.id)).data.materials,snapshot.materials);
+ });

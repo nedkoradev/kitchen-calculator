@@ -27,7 +27,7 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('kitchenPdcMaterials')).at(-1));assert.equal(stored.textureUrl,photo);assert.equal(stored.grainRequired,true);assert.ok(!JSON.stringify(stored).includes('base64'));
   const row=section.locator('tbody tr').filter({hasText:'Photo and grain'});await row.getByRole('button',{name:'Промени',exact:true}).click();
   await page.route(photo+'?replacement=1*',route=>route.fulfill({contentType:'image/png',path:path.join(__dirname,'fixtures/grain.png'),headers:{'access-control-allow-origin':'*'}}));
-  await page.locator('#materialTextureUrl').fill(photo+'?replacement=1');await page.waitForFunction(()=>document.querySelector('#materialPhotoStatus').textContent.includes('Снимката е достъпна'));await page.getByRole('button',{name:'Запази',exact:true}).click();
+  await page.locator('#materialTextureUrl').fill(photo+'?replacement=1');await page.waitForFunction(()=>document.querySelector('#materialPhotoStatus').textContent.includes('Снимката е проверена'));await page.getByRole('button',{name:'Запази',exact:true}).click();
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('kitchenPdcMaterials')).at(-1).textureUrl),photo+'?replacement=1');
   await row.getByRole('button',{name:'Промени',exact:true}).click();
   await page.getByRole('button',{name:'Премахни снимката',exact:true}).click();assert.equal(await page.locator('#materialTextureUrl').inputValue(),'');await page.getByRole('button',{name:'Запази',exact:true}).click();assert.equal(await section.locator('.materialTextureThumb').count(),0);
