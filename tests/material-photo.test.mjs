@@ -18,3 +18,11 @@ test('suggested repo paths are safe, portable and bound to image contents',()=>{
  assert.ok(path.startsWith('materials/textures/'));assert.ok(path.endsWith('-abc123def0.png'));assert.ok(!path.includes('..')&&!path.includes('<')&&!path.includes('>'));
  assert.notEqual(proposedTexturePath('oak.png','image/png',hash),proposedTexturePath('oak.png','image/png','b'.repeat(64)));
 });
+
+test('edge texture UV axes follow every physical band after panel rotation',async()=>{
+ const {edgeTextureCoordinates,panelAxes}=await import('../grain.mjs');
+ for(const p of [{w:18,h:700,d:550},{w:600,h:700,d:18},{w:600,h:18,d:550}]){
+  const {thickness,axes}=panelAxes(p);
+  for(const normal of axes){const uv=edgeTextureCoordinates(p,normal,{textureWidthMm:18,textureHeightMm:1000});assert.equal(uv.uAxis,thickness);assert.equal(uv.vAxis,axes.find(a=>a!==normal));assert.equal(uv.width,18);assert.equal(uv.height,1000)}
+ }
+});

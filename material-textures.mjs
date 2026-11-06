@@ -1,8 +1,8 @@
-import {textureCoordinates,validTextureUrl} from './grain.mjs';
+import {textureCoordinates,edgeTextureCoordinates,validTextureUrl} from './grain.mjs';
 // One downloaded image per URL; per-panel UVs use physical millimetres.
 export function createMaterialTextures(THREE){
  const entries=new Map(),loader=new THREE.TextureLoader();loader.setCrossOrigin('anonymous');
- function apply(mesh,p,finish,material){
+ function apply(mesh,p,finish,material,edge=null){
   const url=validTextureUrl(material?.textureUrl);if(!url)return;
   let entry=entries.get(url);
   if(!entry){
@@ -14,7 +14,7 @@ export function createMaterialTextures(THREE){
   }
   if(entry.failed)return;
   const updateUV=(aspect=1)=>{
-   const {uAxis,vAxis,width,height}=textureCoordinates(p,finish,material,aspect),position=mesh.geometry.attributes.position,uv=mesh.geometry.attributes.uv;
+   const {uAxis,vAxis,width,height}=(edge?edgeTextureCoordinates(p,edge.normal,material,aspect):textureCoordinates(p,finish,material,aspect)),position=mesh.geometry.attributes.position,uv=mesh.geometry.attributes.uv;
    const coordinate=(i,axis)=>axis==='x'?position.getX(i):axis==='y'?position.getY(i):position.getZ(i);
    for(let i=0;i<uv.count;i++)uv.setXY(i,coordinate(i,uAxis)/width+.5,coordinate(i,vAxis)/height+.5);
    uv.needsUpdate=true;
