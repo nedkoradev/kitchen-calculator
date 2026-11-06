@@ -23,7 +23,10 @@ export function createMaterialTextures(THREE){
   if(entry.texture){mesh.material.map=entry.texture;mesh.material.color.set('#ffffff');mesh.material.needsUpdate=true}
   else entry.targets.set(mesh.material,updateUV);
  }
+ // A URL may have failed before its GitHub Pages file was published. A saved
+ // or reloaded catalog is an explicit retry, without reloading the application.
+ function retryFailed(){for(const [url,entry] of entries)if(entry.failed)entries.delete(url)}
  function release(material){for(const entry of entries.values())entry.targets.delete(material)}
  function prune(activeUrls){const active=new Set(activeUrls.map(validTextureUrl).filter(Boolean));for(const [url,entry] of entries)if(!active.has(url)){entry.texture?.dispose();entry.targets.clear();entries.delete(url)}}
- return {apply,release,prune};
+ return {apply,release,prune,retryFailed};
 }

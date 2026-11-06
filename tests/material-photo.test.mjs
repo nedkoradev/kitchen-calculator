@@ -27,3 +27,13 @@ test('edge texture UV axes follow every physical band after panel rotation',asyn
   for(const normal of axes){const uv=edgeTextureCoordinates(p,normal,{textureWidthMm:18,textureHeightMm:1000});assert.equal(uv.uAxis,thickness);assert.equal(uv.vAxis,axes.find(a=>a!==normal));assert.equal(uv.width,18);assert.equal(uv.height,1000)}
  }
 });
+
+test('saving a catalog retries a previously failed texture URL',async()=>{
+ const {createMaterialTextures}=await import('../material-textures.mjs');let loads=0,success,fail;
+ const THREE={TextureLoader:class{setCrossOrigin(){}load(url,onLoad,progress,onError){loads++;success=onLoad;fail=onError}},SRGBColorSpace:'srgb',RepeatWrapping:'repeat'};
+ const textureCache=createMaterialTextures(THREE),mesh={geometry:{attributes:{position:{getX:()=>1,getY:()=>2,getZ:()=>3},uv:{count:1,setXY(){}}}},material:{color:{set(){}},needsUpdate:false}};
+ const p={w:600,h:800,d:18},m={textureUrl:'materials/textures/nebraska.png'};
+ textureCache.apply(mesh,p,{},m);fail();textureCache.apply(mesh,p,{},m);assert.equal(loads,1);
+ textureCache.retryFailed();textureCache.apply(mesh,p,{},m);assert.equal(loads,2);
+ const texture={image:{width:355,height:489}};success(texture);assert.equal(mesh.material.map,texture);assert.equal(mesh.material.needsUpdate,true);
+});
