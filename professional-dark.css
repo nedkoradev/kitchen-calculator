@@ -92,3 +92,33 @@ dialog::backdrop{background:#05080db3!important}
  #mainNavigation button{padding:8px 10px!important;font-size:12px!important}
  #toolsPanel .toolIcons button:not([hidden]){width:42px!important;height:42px!important;min-height:42px!important}
 }
+
+/* v1.77 mobile tool rail correction: horizontal, scrollable and compact */
+.nedIcon{display:block;max-width:28px;max-height:28px;filter:drop-shadow(0 2px 3px #0005)}
+.nedPlus{position:absolute;right:2px;bottom:1px;color:#fff;background:#2563eb;border-radius:50%;font-size:12px;line-height:15px;width:15px;height:15px;text-align:center}
+#projectTools button{position:relative}
+@media(max-width:720px){
+ main.projectMode aside,main aside{flex:0 0 auto!important;min-height:0!important;max-height:110px!important;
+  overflow-x:auto!important;overflow-y:hidden!important;display:flex!important;flex-direction:row!important;
+  align-items:center!important;gap:6px!important;scrollbar-width:thin}
+ main.projectMode:not(.catalogMode) #projectTools{display:flex!important;flex-direction:row!important;
+  align-items:center!important;justify-content:flex-start!important;flex-wrap:nowrap!important;
+  gap:6px!important;width:max-content!important;min-width:max-content!important;padding:3px!important}
+ #projectTools button,#projectTools button.iconOnly{flex:0 0 46px!important;width:46px!important;
+  height:46px!important;min-height:46px!important;font-size:20px!important;padding:5px!important}
+ #projectTools #projectRotate{display:flex!important;flex-direction:row!important;
+  width:auto!important;gap:5px!important;margin:0!important;flex:0 0 auto!important}
+ #projectTools #projectRotate button{width:40px!important;height:46px!important;min-height:46px!important}
+ #toolsPanel{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+  align-items:center!important;justify-content:flex-start!important;gap:6px!important;
+  width:max-content!important;min-width:max-content!important;margin:0!important}
+ #toolsPanel .toolIcons{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+  align-items:center!important;width:max-content!important;flex:0 0 auto!important}
+ #toolsPanel .rotateTools{display:flex!important;flex-direction:row!important;width:auto!important;gap:5px!important}
+ #toolsPanel .rotateTools button{width:40px!important;height:44px!important;min-height:44px!important}
+ #toolsPanel .helpDock{flex:0 0 auto!important}
+ #toolsPanel #groupList,#toolsPanel #groupInfo{max-width:180px}
+ main.projectMode .stage,main .stage{flex:1 1 auto!important;min-height:65dvh!important}
+ #view{min-height:54dvh!important}
+ #projectDashboard[hidden],#toolsPanel[hidden],#projectTools[hidden]{display:none!important}
+}
