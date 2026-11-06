@@ -11,7 +11,7 @@ const oldUrl='https://images.example.test/old.png';
  const editor=async()=>{await page.locator('.materialGroup').first().locator('tbody tr').first().getByRole('button',{name:'Промени',exact:true}).click();await page.locator('.materialPhotoHelp summary').click()};
  const save=async()=>{await page.getByRole('button',{name:'Запази',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#materialPhotoUpload'))};
  const close=async()=>{await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('#materialPhotoUpload'));await page.waitForFunction(()=>window.__photoUrls.size===0)};
- const select=async(name='Декор нов.png',buffer=png,mimeType='image/png')=>{await page.locator('#materialPhotoUpload').setInputFiles({name,mimeType,buffer})};
+ const select=async(name='Декор нов.png',buffer=png,mimeType='image/png')=>{await page.locator('#materialPhotoUpload').setInputFiles({name,mimeType,buffer});await page.waitForFunction(()=>document.querySelector('.photoWizard')||document.querySelector('#materialPhotoStatus').textContent.includes('не е променена'));if(await page.locator('.photoWizard').count())await page.locator('.photoWizard button').click()};
  try{
   await page.route('https://images.example.test/**',route=>{
    const file=new URL(route.request().url()).pathname;

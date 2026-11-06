@@ -24,7 +24,7 @@ const {openKitchen}=require('./browser-harness.cjs');
   const popupPromise=page.waitForEvent('popup');await page.locator('#uploadMaterialPhoto').click();const popup=await popupPromise;await popup.waitForLoadState();assert.match(popup.url(),/\/upload\/main\/materials\/textures$/);await popup.close();
   const original=fs.readFileSync(path.join(__dirname,'fixtures/grain.png'));
   await page.locator('#materialPhotoUpload').setInputFiles({name:'oak<script>.png',mimeType:'image/png',buffer:original});
-  await page.waitForFunction(()=>!document.querySelector('#downloadMaterialPhoto').hidden);
+  await page.waitForFunction(()=>!document.querySelector('#downloadMaterialPhoto').hidden);await page.locator('.photoWizard button').click();
   const downloadPromise=page.waitForEvent('download');await page.locator('#downloadMaterialPhoto').click();const download=await downloadPromise;
   assert.equal(download.suggestedFilename(),decodeURIComponent((await linkValue()).split('/').at(-1)));assert.deepEqual(fs.readFileSync(await download.path()),original);
   await page.keyboard.press('Escape');
