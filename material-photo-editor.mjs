@@ -64,7 +64,7 @@ export function installMaterialPhotoEditor(form,item,dialog){
    const decoded=await decodePhoto(blob);
    if(closed||token!==epoch){URL.revokeObjectURL(decoded.url);return}
    verified={url,hash};show(decoded);setStatus('Снимката е проверена. Натисни „Запази“.');
-  }catch(error){if(closed||token!==epoch)return;if(!local)releasePreview();setStatus((error.name==='EncodingError'?'Файлът не може да се декодира като изображение.':error.name==='TypeError'?'Снимката не е достъпна от приложението. Провери адреса и публикуването.':error.name==='AbortError'?'Проверката отне твърде дълго. Опитай отново.':error.message))}finally{clearTimeout(timeout)}
+  }catch(error){if(closed||token!==epoch)return;if(!local)releasePreview();setStatus((local?'Снимката не е качена. Показва се само преглед. ':'')+(error.name==='EncodingError'?'Файлът не може да се декодира като изображение.':error.name==='TypeError'?'Снимката не е достъпна от приложението. Провери адреса и публикуването.':error.name==='AbortError'?'Проверката отне твърде дълго. Опитай отново.':error.message))}finally{clearTimeout(timeout)}
  }
  button('verifyMaterialPhoto','Провери снимката',verify);
  const details=document.createElement('details');details.className='materialPhotoHelp';
@@ -77,10 +77,13 @@ export function installMaterialPhotoEditor(form,item,dialog){
  extraActions.append(copy);
  const download=document.createElement('a');download.id='downloadMaterialPhoto';download.className='materialPhotoLink';download.textContent='Изтегли с безопасно име';download.hidden=true;
  button('removeMaterialPhoto','Премахни снимката',()=>{invalidate();local=null;file.value='';input.value='';removed=true;info.textContent='';suggestion.textContent='';releasePreview();setStatus('Връзката към снимката ще бъде премахната при „Запази“.')});
- form.append(actions,download,label);
- const note=document.createElement('p');note.className='projectHint';note.textContent='Избери снимка, качи я в GitHub и натисни „Провери снимката“.';form.append(note);
+ // Keep only the photo picker in the primary interface.
+ const advancedActions=document.createElement('div');advancedActions.className='materialActions';
+ for(const action of [...actions.children])if(action.id!=='chooseMaterialPhoto')advancedActions.append(action);
+ form.append(actions);
+ const note=document.createElement('p');note.className='projectHint';note.textContent='Избери снимка, качи я в GitHub и натисни „Провери снимката“.';details.append(note);
  const help=document.createElement('p');help.textContent='JPG, PNG или WebP до 10 MiB. Качи файла в materials/textures/ с показаното име. Изчакай GitHub Pages да го публикува. Фладерът в снимката следва вертикалата. Непроверената снимка не заменя записаната.';
- details.append(info,suggestion,help,extraActions);form.append(details);
+ details.append(label,advancedActions,download,info,suggestion,help,extraActions);form.append(details);
  input.oninput=()=>{invalidate();removed=false;local=null;file.value='';info.textContent='';suggestion.textContent='';releasePreview();setStatus(pendingNote);if(validTextureUrl(input.value))timer=setTimeout(verify,300)};
  file.onchange=async()=>{
   const selected=file.files[0];if(!selected)return;const token=invalidate();removed=false;local=null;file.value='';releasePreview();
@@ -92,16 +95,19 @@ export function installMaterialPhotoEditor(form,item,dialog){
    info.textContent=`${selected.name} · ${selected.size} B (${(selected.size/1024/1024).toFixed(2)} MiB) · ${decoded.width} × ${decoded.height} px`;
    const filename=decodeURIComponent(input.value.split('/').at(-1));
    suggestion.textContent='Име за GitHub: '+filename;
-   if(filename!==selected.name){download.href=previewUrl;download.download=filename;download.hidden=false;setStatus('Качи снимката с безопасното име от бутона за изтегляне.')}else setStatus('Снимката е избрана. Качи същия файл в GitHub.');
+   if(filename!==selected.name){download.href=previewUrl;download.download=filename;download.hidden=false;setStatus('Качи снимката с безопасното име от бутона за изтегляне.')}else setStatus('Проверка дали снимката вече е публикувана…');
+   await verify();
   }catch(error){if(closed||token!==epoch)return;setStatus((error.name==='EncodingError'?'Избраната снимка не може да се декодира.':error.message)+' Записаната снимка не е променена.');}
  };
  dialog.addEventListener('close',()=>{closed=true;invalidate();releasePreview();local=null},{once:true});
  if(baseline)verify();
- return ()=>{
+ const readPhoto=()=>{
   if(removed)return '';
   const current=validTextureUrl(input.value);
   if(current===baseline)return baseline;
   if(verified&&verified.url===current)return verified.url;
   return baseline;
  };
+ readPhoto.useColor=()=>{invalidate();local=null;removed=true;input.value='';file.value='';releasePreview();setStatus('Избран е цвят.');};
+ return readPhoto;
 }

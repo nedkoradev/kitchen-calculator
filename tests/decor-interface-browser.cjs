@@ -11,16 +11,16 @@ const {openKitchen}=require('./browser-harness.cjs');
    await section.locator('tbody tr').first().getByRole('button',{name:'Промени',exact:true}).click();
    assert.equal(await page.getByLabel('Линк към сайта',{exact:true}).isVisible(),true);
    const siteBox=await page.getByLabel('Линк към сайта',{exact:true}).boundingBox();assert.ok(siteBox.y+siteBox.height<800);
-   const link=page.getByLabel('Линк към снимката',{exact:true});assert.equal(await link.isVisible(),true);
-   const bounds=await link.boundingBox();assert.ok(bounds.y>=0&&bounds.y+bounds.height<=800,`${name} link is visible without scrolling`);
+   const link=page.getByLabel('Линк към снимката',{exact:true});assert.equal(await link.isVisible(),false);
    assert.equal(await page.locator('#copyMaterialPhotoPath').isVisible(),false);
-   const upload=page.getByRole('link',{name:'Отвори GitHub за качване',exact:true});assert.equal(await upload.getAttribute('href'),'https://github.com/nedkoradev/kitchen-calculator/upload/main/materials/textures');assert.equal(await upload.getAttribute('rel'),'noopener noreferrer');
+   const upload=page.locator('#uploadMaterialPhoto');assert.equal(await upload.getAttribute('href'),'https://github.com/nedkoradev/kitchen-calculator/upload/main/materials/textures');assert.equal(await upload.getAttribute('rel'),'noopener noreferrer');
    if(process.env.KITCHEN_SCREENSHOTS)await page.screenshot({path:path.join(process.env.KITCHEN_SCREENSHOTS,`decor-category-${i}.png`)});
    await page.keyboard.press('Escape');
   }
   // Follow the real upload link into a new browser tab. Only stub the external destination.
   await page.locator('.materialGroup').first().locator('tbody tr').first().getByRole('button',{name:'Промени',exact:true}).click();
   await page.context().route('https://github.com/nedkoradev/kitchen-calculator/upload/main/materials/textures',r=>r.fulfill({contentType:'text/html',body:'<title>GitHub textures upload</title>'}));
+  await page.locator('.materialPhotoHelp summary').click();
   const popupPromise=page.waitForEvent('popup');await page.locator('#uploadMaterialPhoto').click();const popup=await popupPromise;await popup.waitForLoadState();assert.match(popup.url(),/\/upload\/main\/materials\/textures$/);await popup.close();
   const original=fs.readFileSync(path.join(__dirname,'fixtures/grain.png'));
   await page.locator('#materialPhotoUpload').setInputFiles({name:'oak<script>.png',mimeType:'image/png',buffer:original});

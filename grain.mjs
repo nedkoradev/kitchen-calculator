@@ -13,9 +13,12 @@ export function grainFaceOptions(p){
  return axes.map(axis=>({axis,label:axis==='y'?'По височината':thickness==='y'&&axis==='z'?'По дълбочината':'По ширината',size:Math.round(dimension(p,axis))}));
 }
 export const rotatedGrainAxis=axis=>({x:'z',y:'y',z:'x'})[axis];
+export function requiresGrain(finish={},material={}){
+ return typeof finish.grainRequired==='boolean'?finish.grainRequired:!!material?.grainRequired;
+}
 export function cutLayout(p,finish={},material={}){
  const [thickness,short,long]=[p.w,p.h,p.d].map(Math.round).sort((a,b)=>a-b);
- if(!material?.grainRequired)return {A:long,B:short,thickness,grainRequired:false,edgeIndices:p.w<=p.h&&p.w<=p.d?[0,1,2,3]:[2,3,1,0]};
+ if(!requiresGrain(finish,material))return {A:long,B:short,thickness,grainRequired:false,edgeIndices:p.w<=p.h&&p.w<=p.d?[0,1,2,3]:[2,3,1,0]};
  const {thickness:thin,axes}=panelAxes(p),axis=physicalGrainAxis(p,finish),other=axes.find(value=>value!==axis);
  const edgeIndices=thin==='y'?(axis==='x'?[2,3,1,0]:[0,1,2,3]):axis==='y'?[0,1,2,3]:[3,2,1,0];
  return {A:Math.round(dimension(p,axis)),B:Math.round(dimension(p,other)),thickness,grainRequired:true,axis,edgeIndices};
