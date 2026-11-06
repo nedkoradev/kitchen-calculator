@@ -4,15 +4,16 @@ const {openKitchen}=require('./browser-harness.cjs');
 const photo='https://storage.googleapis.com/grain-test-fixture/decor.png';
 const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true,d:false}};
 (async()=>{
- const {browser,page,errors,setup,parts}=await openKitchen({firebaseDouble:true,extraHooks:`window.__grainTest={
- catalog(value){libraryBoards[0]={...libraryBoards[0],...value};libraryEdges=Array.from({length:4},(_,i)=>({name:'E'+i,color:'#aabbcc',price:i+1}));refreshMaterials()},
+ const {browser,page,errors,setup,parts,field}=await openKitchen({firebaseDouble:true,extraHooks:`window.__grainTest={
+ catalog(value){libraryBoards[0]={...libraryBoards[0],...value};libraryBoards[1]={name:'No grain',color:'#cdddaa',grainRequired:false};libraryEdges=Array.from({length:4},(_,i)=>({name:'E'+i,color:'#aabbcc',price:i+1}));refreshMaterials()},
  finish(value){finishes[selected]={...finishes[selected],...value};build(false);updateSelection()},
  meshes:()=>boards.map(mesh=>({key:mesh.userData.key,map:!!mesh.material.map,color:mesh.material.color.getHexString(),uv:Array.from(mesh.geometry.attributes.uv.array)})),
+ indicator:()=>selectionOverlay.children.find(child=>child.userData.grainAxis)?.userData.grainAxis,
  capture:captureProjectSnapshot,cut:key=>{const p=customParts.find(p=>p.key===key);return cutLayout(p,finishes[key],selectedBoard(finishes[key]))},
  properties:()=>{openProperties('detail');selectTab('material')}
  };`});
  try{
-  await page.route(photo,route=>route.fulfill({contentType:'image/png',path:path.join(__dirname,'fixtures/grain.png'),headers:{'access-control-allow-origin':'*'}}));
+  await page.route(photo+'*',route=>route.fulfill({contentType:'image/png',path:path.join(__dirname,'fixtures/grain.png'),headers:{'access-control-allow-origin':'*'}}));
   assert.match(await page.locator('header strong').innerText(),/^Kitchen Designer v\d+\.\d+$/);
   await page.locator('#navMaterials').click();
   const section=page.locator('.materialSection').filter({has:page.getByRole('heading',{name:'ПДЧ материали',exact:true})});
@@ -20,27 +21,34 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
   await page.getByLabel('Наименование',{exact:true}).fill('Photo and grain');
   await page.locator('#materialTextureUrl').fill(photo);await page.locator('#materialGrainRequired').check();
   await page.waitForFunction(()=>document.querySelector('.materialPhotoPreview').naturalWidth===32);
-  assert.equal(await page.locator('#materialPhotoUpload').isDisabled(),true);assert.equal(await page.locator('#materialPhotoUpload').getAttribute('accept'),'image/jpeg,image/png,image/webp');
+  assert.equal(await page.locator('#materialPhotoUpload').isDisabled(),false);assert.equal(await page.locator('#materialPhotoUpload').getAttribute('accept'),'image/jpeg,image/png,image/webp');
   await page.getByRole('button',{name:'Запази',exact:true}).click();
   assert.equal(await section.locator('.materialTextureThumb').count(),1);
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('kitchenPdcMaterials')).at(-1));assert.equal(stored.textureUrl,photo);assert.equal(stored.grainRequired,true);assert.ok(!JSON.stringify(stored).includes('base64'));
   const row=section.locator('tbody tr').filter({hasText:'Photo and grain'});await row.getByRole('button',{name:'Промени',exact:true}).click();
-  await page.route(photo+'?replacement=1',route=>route.fulfill({contentType:'image/png',path:path.join(__dirname,'fixtures/grain.png'),headers:{'access-control-allow-origin':'*'}}));
-  await page.locator('#materialTextureUrl').fill(photo+'?replacement=1');await page.getByRole('button',{name:'Запази',exact:true}).click();
+  await page.route(photo+'?replacement=1*',route=>route.fulfill({contentType:'image/png',path:path.join(__dirname,'fixtures/grain.png'),headers:{'access-control-allow-origin':'*'}}));
+  await page.locator('#materialTextureUrl').fill(photo+'?replacement=1');await page.waitForFunction(()=>document.querySelector('#materialPhotoStatus').textContent.includes('Снимката е достъпна'));await page.getByRole('button',{name:'Запази',exact:true}).click();
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('kitchenPdcMaterials')).at(-1).textureUrl),photo+'?replacement=1');
   await row.getByRole('button',{name:'Промени',exact:true}).click();
   await page.getByRole('button',{name:'Премахни снимката',exact:true}).click();assert.equal(await page.locator('#materialTextureUrl').inputValue(),'');await page.getByRole('button',{name:'Запази',exact:true}).click();assert.equal(await section.locator('.materialTextureThumb').count(),0);
-  console.log('PASS material photo metadata/thumbnail/removal, grain checkbox; uploads remain disabled without Storage');
+  console.log('PASS material photo metadata/thumbnail/removal, grain checkbox; local picker enabled without automatic upload');
   for(const mode of ['constructor','project']){
    await page.locator(mode==='constructor'?'#modeConstructor':'#modeProject').click();await setup([part]);
    await page.evaluate(photo=>{window.__grainTest.catalog({name:'Decor',grainRequired:true,textureUrl:photo,textureWidthMm:1000,textureHeightMm:0});window.__grainTest.finish({material:0,edges:[0,1,2,3],grainAxis:'x'})},photo);
-   const before=await parts();await page.evaluate(()=>window.__grainTest.properties());await page.locator('#grainDirection').selectOption('z');
-   assert.equal(await page.locator('#grainDirectionHint').innerText(),'↔ Фладер по дълбочина (Z) · разкрой 550 × 720 мм');await page.locator('#dialogDone').click();assert.deepEqual(await parts(),before);
+   const before=await parts();await page.evaluate(()=>window.__grainTest.properties());
+   assert.deepEqual(await page.locator('#grainDirection option').allTextContents(),['По ширината — 720 мм','По дълбочината — 550 мм']);
+   await page.locator('#grainDirection').selectOption('z');
+   assert.equal(await page.evaluate(()=>window.__grainTest.indicator()),'z');
+   await page.locator('#materialSelect').selectOption('1');assert.equal(await page.locator('#grainEditor').isVisible(),false);
+   await page.locator('#materialSelect').selectOption('0');assert.equal(await page.locator('#grainDirection').inputValue(),'z');
+   assert.deepEqual(await page.evaluate(()=>window.__test.finish()[window.__test.parts()[0].key].edges),[0,1,2,3]);
+   assert.equal(await page.locator('#grainDirectionHint').innerText(),'↔ По дълбочината · разкрой 550 × 720 мм');await page.locator('#dialogDone').click();assert.deepEqual(await parts(),before);
    await page.waitForFunction(()=>window.__grainTest.meshes()[0].map);let mesh=await page.evaluate(()=>window.__grainTest.meshes()[0]);assert.equal(mesh.color,'ffffff');assert.ok(Math.max(...mesh.uv)-Math.min(...mesh.uv)<.99,'physical scales are not stretched to a unit square');
    for(const view of ['top','front','perspective']){await page.evaluate(view=>window.__test.view(view),view);assert.equal((await page.evaluate(()=>window.__grainTest.meshes()[0])).map,true)}
    const right=mode==='constructor'?'#rotateRight':'#projectRotateRight',left=mode==='constructor'?'#rotateLeft':'#projectRotateLeft';
-   await page.locator(right).click();assert.equal(await page.evaluate(()=>window.__test.finish()[window.__test.parts()[0].key].grainAxis),'x');assert.equal(await page.evaluate(()=>window.__grainTest.cut(window.__test.parts()[0].key).A),550);
+   await page.locator(right).click();assert.equal(await page.evaluate(()=>window.__test.finish()[window.__test.parts()[0].key].grainAxis),'x');assert.equal(await page.evaluate(()=>window.__grainTest.indicator()),'x');assert.equal(await page.evaluate(()=>window.__grainTest.cut(window.__test.parts()[0].key).A),550);
    await page.locator(left).click();assert.deepEqual(await parts(),before);assert.equal(await page.evaluate(()=>window.__test.finish()[window.__test.parts()[0].key].grainAxis),'z');
+   const displayX=Number(await page.locator('#partX').inputValue());await field('partX',displayX+100);assert.equal(await page.evaluate(()=>window.__test.finish()[window.__test.parts()[0].key].grainAxis),'z');await field('partX',displayX);assert.deepEqual(await parts(),before);
    await page.evaluate(()=>window.__test.duplicateCustom());assert.equal(Object.values(await page.evaluate(()=>window.__test.finish())).filter(f=>f.grainAxis==='z').length,2);
    const copied=await parts();await page.evaluate(()=>{window.__test.selectAll();window.__test.createAssembly()});await page.evaluate(()=>window.__test.ungroupAssembly(window.__test.parts()[0].assembly));assert.deepEqual(JSON.parse(JSON.stringify(await parts())),JSON.parse(JSON.stringify(copied)));
    await page.evaluate(()=>window.__test.undoStep());await page.evaluate(()=>window.__test.redoStep());assert.deepEqual(JSON.parse(JSON.stringify(await parts())),JSON.parse(JSON.stringify(copied)));

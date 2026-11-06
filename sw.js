@@ -5,7 +5,7 @@ layout: null
 const REVISION='{{ site.github.build_revision }}';
 const PREFIX=`kitchen-designer:${self.registration.scope}:`;
 const CACHE=PREFIX+REVISION;
-const FILES=['./','./index.html','./app-release.js','./local-reset.js','./icons.mjs','./release.json','./settings.mjs','./repository-space.json','./geometry.mjs','./grain.mjs','./material-textures.mjs','./project-model.mjs','./project-store.mjs','./project-ui.mjs','./cloud.js','./materials/default.json','./manifest.webmanifest','./icon.svg'];
+const FILES=['./','./index.html','./app-release.js','./local-reset.js','./icons.mjs','./release.json','./settings.mjs','./repository-space.json','./geometry.mjs','./grain.mjs','./material-textures.mjs','./material-photo-editor.mjs','./project-model.mjs','./project-store.mjs','./project-ui.mjs','./cloud.js','./materials/default.json','./manifest.webmanifest','./icon.svg'];
 const urls=FILES.map(path=>new URL(path,self.registration.scope).href);
 self.addEventListener('install',event=>{
  event.waitUntil((async()=>{
@@ -22,6 +22,8 @@ self.addEventListener('activate',event=>{
 });
 self.addEventListener('fetch',event=>{
  const request=event.request,url=new URL(request.url);
+ // Public-image verification must reach the network, never an offline fallback.
+ if(url.searchParams.has('__kd_photo_check'))return;
  // Cache the public app shell and repository decor images only.
  // Never cache Firebase/user data, external textures or authentication calls.
  const repositoryTexture=url.href.startsWith(new URL('./materials/textures/',self.registration.scope).href)&&/\.(jpe?g|png|webp)$/i.test(url.pathname);
