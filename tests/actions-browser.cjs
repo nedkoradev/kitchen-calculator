@@ -20,7 +20,7 @@ const panel=(key,x=0)=>({key,x,y:150,z:0,w:101,h:18,d:300,locks:{w:false,h:true,
     const icon=button.querySelector('svg'),r=button.getBoundingClientRect(),s=icon.getBoundingClientRect();
     return {id:button.id,title:button.title,label:button.getAttribute('aria-label'),stroke:icon.getAttribute('stroke-width'),w:s.width,h:s.height,bw:r.width,bh:r.height,content:button.textContent.trim()};
    }));
-   assert.ok(icons.length>=8);
+   assert.ok(icons.length>=6);
    for(const icon of icons){assert.equal(icon.w,24,icon.id);assert.equal(icon.h,24,icon.id);assert.equal(icon.stroke,'2');assert.ok(icon.bw>=44&&icon.bh>=44,icon.id);assert.ok(icon.title&&icon.label);assert.equal(icon.content,'')}
    await setup([]);
    const horizontal=mode==='constructor'?'#addHorizontal':'#projectAddHorizontal',vertical=mode==='constructor'?'#addVertical':'#projectAddVertical';
@@ -28,9 +28,9 @@ const panel=(key,x=0)=>({key,x,y:150,z:0,w:101,h:18,d:300,locks:{w:false,h:true,
    await page.locator(vertical).click();assert.equal((await parts()).at(-1).w,18);assert.equal((await parts()).length,2);
    const original=[panel('custom701',-300),panel('custom702',300)];await setup(original);
    await page.evaluate(()=>window.__test.selectAll());
-   await page.locator(mode==='constructor'?'#groupParts':'#projectGroupParts').click();
+   assert.equal(await page.locator('#groupParts:visible,#projectGroupParts:visible').count(),0);await page.keyboard.press('Control+g');
    const grouped=await parts();assert.ok(grouped.every(p=>p.assembly===grouped[0].assembly));assert.deepEqual(grouped.map(p=>p.assemblyStack),[[null],[null]]);
-   await page.locator(mode==='constructor'?'#ungroupParts':'#projectUngroupParts').click();assert.deepEqual(await parts(),original);
+   await page.keyboard.press('Control+u');assert.deepEqual(await parts(),original);
    await setup([panel('custom703')]);
    await page.locator(mode==='constructor'?'#rotateRight':'#projectRotateRight').click();assert.equal((await parts())[0].w,300);assert.equal((await parts())[0].d,101);
    await page.locator(mode==='constructor'?'#rotateLeft':'#projectRotateLeft').click();assert.deepEqual(await parts(),[panel('custom703')]);

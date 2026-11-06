@@ -173,3 +173,11 @@ test('cloud roundtrip preserves a group of cabinets and every nested level and f
  const next=structuredClone(snapshot);next.parts.forEach(item=>{item.part.assembly=item.part.assemblyStack.pop()});
  await store.save({...saved,data:next});assert.deepEqual((await store.open(saved.id)).data,next);
 });
+
+test('grain and HTTPS texture metadata roundtrip without embedding image bytes',async()=>{
+ const {store}=client('alice'),snapshot=data();
+ snapshot.parts[0].finish={...snapshot.parts[0].finish,material:0,grainAxis:'z'};
+ snapshot.materials.pdcMaterials[0]={name:'Decor',grainRequired:true,textureUrl:'https://storage.googleapis.com/test-fixture/decor.webp',textureWidthMm:1000,textureHeightMm:500};
+ const saved=await store.save({name:'Фладер',data:snapshot}),opened=await store.open(saved.id);
+ assert.deepEqual(opened.data,snapshot);assert.equal(opened.data.parts[0].finish.grainAxis,'z');assert.ok(!JSON.stringify(opened.data).includes('base64'));
+});

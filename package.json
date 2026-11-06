@@ -2,8 +2,11 @@
   "name": "kitchen-designer-tests",
   "private": true,
   "scripts": {
-    "test": "node --test --test-isolation=none tests/geometry.test.mjs tests/projects.test.mjs tests/project-store.test.mjs",
-    "test:firestore": "firebase emulators:exec --only firestore --project demo-kitchen-projects --config firebase.emulators.json \"node --test --test-isolation=none tests/projects-firestore.test.mjs\""
+    "test": "node --test --test-isolation=none tests/geometry.test.mjs tests/projects.test.mjs tests/project-store.test.mjs tests/grain.test.mjs tests/release-version.test.mjs",
+    "test:firestore": "firebase emulators:exec --only firestore --project demo-kitchen-projects --config firebase.emulators.json \"node --test --test-isolation=none tests/projects-firestore.test.mjs\"",
+    "release:prepare": "node scripts/prepare-release.mjs",
+    "release:check": "node scripts/prepare-release.mjs --check",
+    "pretest": "node scripts/prepare-release.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "3.0.4",

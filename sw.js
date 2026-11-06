@@ -5,7 +5,7 @@ layout: null
 const REVISION='{{ site.github.build_revision }}';
 const PREFIX=`kitchen-designer:${self.registration.scope}:`;
 const CACHE=PREFIX+REVISION;
-const FILES=['./','./index.html','./app-release.js','./local-reset.js','./icons.mjs','./release.json','./geometry.mjs','./project-model.mjs','./project-store.mjs','./project-ui.mjs','./cloud.js','./materials/default.json','./manifest.webmanifest','./icon.svg'];
+const FILES=['./','./index.html','./app-release.js','./local-reset.js','./icons.mjs','./release.json','./geometry.mjs','./grain.mjs','./material-textures.mjs','./project-model.mjs','./project-store.mjs','./project-ui.mjs','./cloud.js','./materials/default.json','./manifest.webmanifest','./icon.svg'];
 const urls=FILES.map(path=>new URL(path,self.registration.scope).href);
 self.addEventListener('install',event=>{
  event.waitUntil((async()=>{
