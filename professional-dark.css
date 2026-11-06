@@ -35,3 +35,60 @@ dialog::backdrop{background:#05080db3!important}
 .libraryDanger{background:#40262c!important;color:#ffb8bd!important;border-color:#78404b!important}
 #projectResults tr:last-child{background:#27384e!important}
 @media(max-width:720px){#mainNavigation{gap:4px!important}#mainNavigation button{font-size:12px!important}}
+
+/* v1.76 — colorful tool language and responsive phone layout */
+#toolsPanel .toolIcons button:not([hidden]),#projectTools button.iconOnly,.rotateTools button,.historyTools button{
+ border-radius:12px!important;background:linear-gradient(145deg,#29374a,#202a38)!important;
+ border:1px solid #43556b!important;box-shadow:inset 0 1px #ffffff12,0 3px 9px #0003;
+}
+#toolsPanel .toolIcons button:nth-child(4n+1) .toolSymbol,#projectTools button:nth-child(4n+1) .toolSymbol{color:#69b5ff!important}
+#toolsPanel .toolIcons button:nth-child(4n+2) .toolSymbol,#projectTools button:nth-child(4n+2) .toolSymbol{color:#a99bff!important}
+#toolsPanel .toolIcons button:nth-child(4n+3) .toolSymbol,#projectTools button:nth-child(4n+3) .toolSymbol{color:#ffbf77!important}
+#toolsPanel .toolIcons button:nth-child(4n) .toolSymbol,#projectTools button:nth-child(4n) .toolSymbol{color:#67dbb4!important}
+#quickSave .toolSymbol,#projectQuickSave .toolSymbol{color:#6fe0b0!important}
+#quickOpen .toolSymbol,#projectQuickOpen .toolSymbol{color:#80b7ff!important}
+#toolsPanel .toolIcons button:hover:not(:disabled),#projectTools button:hover:not(:disabled){
+ transform:translateY(-1px);background:#34475e!important;box-shadow:0 5px 15px #0005;
+}
+#toolsPanel .toolSymbol b,#projectTools .toolSymbol b{background:#3b82f6!important;box-shadow:0 1px 5px #0005}
+#mainNavigation button{transition:background .15s,transform .15s!important}
+#mainNavigation button:hover{transform:translateY(-1px)}
+#mainNavigation button.mainNavActive{box-shadow:inset 0 -3px #93c5fd,0 3px 12px #2563eb33!important}
+@media(max-width:720px){
+ html,body{width:100%;max-width:100%;overflow-x:hidden}
+ header{padding:9px 12px!important;gap:8px;align-items:center;flex-wrap:wrap}
+ #headerRight{gap:5px!important;justify-content:flex-end}
+ #headerRight button{min-height:34px}
+ #mainNavigation{display:flex!important;overflow-x:auto;scroll-snap-type:x proximity;gap:6px!important;
+  padding:9px 10px!important;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+ #mainNavigation button{flex:0 0 auto;min-height:42px;padding:9px 12px!important;scroll-snap-align:start}
+ main,main.projectMode{display:flex!important;flex-direction:column!important;gap:8px!important;
+  height:auto!important;min-height:calc(100dvh - 130px);padding:8px!important}
+ main aside,main.projectMode aside{width:100%!important;min-width:0!important;order:0;
+  max-height:none!important;padding:6px!important}
+ #toolsPanel{padding:6px!important;min-height:0!important;gap:6px!important;flex-wrap:wrap}
+ #toolsPanel .toolIcons{display:flex!important;flex-direction:row!important;gap:6px!important;flex-wrap:wrap!important}
+ #toolsPanel .toolIcons button:not([hidden]){width:46px!important;height:46px!important;min-height:46px!important;padding:4px!important}
+ #toolsPanel .toolSymbol{font-size:23px!important;line-height:27px!important}
+ .helpDock{margin:0!important;padding:0!important;align-self:center!important}
+ .rotateTools{margin:0!important}
+ .stage{order:1;width:100%!important;min-width:0!important;height:auto!important;min-height:58dvh!important}
+ #view{min-height:52dvh!important}
+ #projectResults{padding:10px!important;max-width:100%;overflow-x:auto!important}
+ #projectResults table,#projectExtraPane table{min-width:max-content}
+ #projectExtraPane{padding:12px!important;max-width:100%!important;overflow-x:auto}
+ .toolbar{gap:5px!important;padding:7px!important;overflow-x:auto}
+ .toolbar button{min-height:38px}
+ #projectDashboard{position:static!important;width:100%!important;max-height:none!important;box-shadow:none!important}
+ .libraryCard{flex-wrap:wrap!important;gap:10px!important}
+ .libraryThumbnail{width:70px!important;height:70px!important;flex-basis:70px!important}
+ .libraryActions{width:100%;justify-content:flex-start}
+ dialog,#propertiesDialog,#helpDialog{max-width:calc(100vw - 16px)!important;width:calc(100vw - 16px)!important;
+  left:8px!important;top:5dvh!important;max-height:90dvh!important}
+ .dialogBody{max-height:calc(90dvh - 120px)!important;overflow-y:auto!important}
+ input,select,textarea{font-size:16px!important}
+}
+@media(max-width:380px){
+ #mainNavigation button{padding:8px 10px!important;font-size:12px!important}
+ #toolsPanel .toolIcons button:not([hidden]){width:42px!important;height:42px!important;min-height:42px!important}
+}
