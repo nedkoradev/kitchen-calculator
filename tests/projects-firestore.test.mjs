@@ -159,3 +159,17 @@ test('name registry denies foreign and anonymous access and orphan claims',async
  }
  await assertFails(sdk.setDoc(sdk.doc(client('alice').db,'users','alice','v2_project_names','orphan'),{nameKey:'orphan',projectId:'missing'}));
 });
+
+test('cloud roundtrip preserves a group of cabinets and every nested level and finish',async()=>{
+ const {store}=client('alice'),snapshot=data();
+ snapshot.parts=Array.from({length:4},(_,i)=>{
+  const item=structuredClone(data().parts[0]);
+  item.part={...item.part,key:'panel'+i,x:100+i*200,assembly:'outer',assemblyStack:[null,i<2?'cabinet-a':'cabinet-b','pair']};
+  item.name='Panel '+i;item.finish={material:i%2,edges:[0,null,2,3]};return item;
+ });
+ snapshot.assemblyNames={outer:'Група',pair:'Два корпуса','cabinet-a':'Ляв корпус','cabinet-b':'Десен корпус'};
+ const saved=await store.save({name:'Групирани корпуси',data:snapshot});
+ assert.deepEqual((await store.open(saved.id)).data,snapshot);
+ const next=structuredClone(snapshot);next.parts.forEach(item=>{item.part.assembly=item.part.assemblyStack.pop()});
+ await store.save({...saved,data:next});assert.deepEqual((await store.open(saved.id)).data,next);
+});

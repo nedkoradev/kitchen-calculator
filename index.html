@@ -354,17 +354,22 @@ $('dialogDone').onclick=closeProperties;
 dialog.addEventListener('cancel',e=>{e.preventDefault();closeProperties()});
 dialog.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();e.stopPropagation();if(document.activeElement?.matches('input'))document.activeElement.dispatchEvent(new Event('change',{bubbles:true}));closeProperties()}});
 
+// Both design modes use the same current (outermost) assembly selection.
+function selectionUnit(part){
+ return part.assembly?customParts.filter(p=>p.assembly===part.assembly):[part];
+}
 function showMenu(e){
  e.preventDefault();closeMenu();menu.replaceChildren();
  const hit=pickBoard(e);
  const part=hit&&customParts.find(p=>p.key===hit.object.userData.key);
  if(!part)return;
- if(!groupSelections.has(part.key)){
-  if(groupSelections.size===0)groupSelections.add(part.key);
-  else groupSelections.add(part.key);
- }
- if(part.assembly&&e.ctrlKey){singleMemberSelection=true;groupSelections.clear();groupSelections.add(part.key)}
- else if(part.assembly&&!singleMemberSelection){groupSelections.clear();for(const member of customParts.filter(p=>p.assembly===part.assembly))groupSelections.add(member.key)}
+ // Keep a multi-unit selection when opening its context menu. A cabinet or
+ // outer group is one selectable unit; Ctrl still targets an individual panel.
+ const single=!!(part.assembly&&(e.ctrlKey||(singleMemberSelection&&selected===part.key)));
+ singleMemberSelection=single;
+ const members=single?[part]:selectionUnit(part);
+ if(single||!members.some(p=>groupSelections.has(p.key)))groupSelections.clear();
+ for(const member of members)groupSelections.add(member.key);
  selected=part.key;
  updateSelection();refreshGroupList();
  const items=[];
@@ -448,8 +453,12 @@ renderer.domElement.addEventListener('pointerdown',e=>{
  if(e.shiftKey&&part){
   singleMemberSelection=false;e.preventDefault();e.stopImmediatePropagation();
   down=null;
-  if(groupSelections.has(part.key))groupSelections.delete(part.key);else groupSelections.add(part.key);
-  selected=part.key;updateSelection();refreshGroupList();return;
+  const members=selectionUnit(part),remove=members.every(p=>groupSelections.has(p.key));
+  for(const member of members){
+   if(remove)groupSelections.delete(member.key);else groupSelections.add(member.key);
+  }
+  selected=remove?(customParts.find(p=>groupSelections.has(p.key))?.key||null):part.key;
+  updateSelection();refreshGroupList();return;
  }
  if(part&&!e.shiftKey&&!part.assembly){
   singleMemberSelection=false;groupSelections.clear();groupSelections.add(part.key);selected=part.key;
