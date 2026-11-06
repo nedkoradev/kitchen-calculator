@@ -1,13 +1,13 @@
 import test,{before,after,beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {initializeTestEnvironment,assertFails} from '@firebase/rules-unit-testing';
+import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
 import * as sdk from 'firebase/firestore';
 import {createProjectStore} from '../project-store.mjs';
 const projectId='demo-kitchen-projects';
 if(!/^(127\.0\.0\.1|localhost):\d+$/.test(process.env.FIRESTORE_EMULATOR_HOST||''))throw Error('Use the local demo Firestore emulator; production and remote hosts are forbidden.');
 let env;
-before(async()=>{env=await initializeTestEnvironment({projectId,firestore:{rules:readFileSync(new URL('../firestore.projects.rules',import.meta.url),'utf8')}})});
+before(async()=>{env=await initializeTestEnvironment({projectId,firestore:{rules:readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')}})});
 after(async()=>env?.cleanup());
 beforeEach(async()=>env.clearFirestore());
 const data=()=>({room:{w:6000,h:2600,d:5000},parts:[{part:{key:'a',w:101,h:18,d:400,x:.5,y:9,z:0,locks:{h:true},assembly:'outer',assemblyStack:[null,'inner']},name:'Рафт',finish:{material:1,edges:[0,null,2,3]},allEdges:false}],assemblyNames:{inner:'Шкаф',outer:'Група'},materials:{pdcMaterials:[{name:'A'},{name:'B'}],edgeMaterials:[{name:'Кант'}],backMaterials:[],worktops:[],servicePrices:{cut:2}},settings:{viewMode:'top',projectTab:'3d'}});
@@ -109,4 +109,53 @@ test('Bulgarian uppercase names share a claim and forged mixed-case keys are den
  forged.set(sdk.doc(db,'users','alice','v2_projects','forged'),{schemaVersion:1,name:nameKey,nameKey,data:data(),revision:1,createdAt:sdk.serverTimestamp(),updatedAt:sdk.serverTimestamp()});
  forged.set(sdk.doc(db,'users','alice','v2_project_names',nameKey),{nameKey,projectId:'forged'});
  await assertFails(forged.commit());
+});
+
+// Compatibility and access checks run against the SAME merged rules as all 15 project tests.
+for(const collectionName of ['v2_cabinets','materials']){
+ test(`${collectionName}: owner can create, get, list, overwrite, update and delete`,async()=>{
+  const db=client('alice').db,ref=sdk.doc(db,'users','alice',collectionName,'legacy');
+  const original=collectionName==='v2_cabinets'?{name:'Шкаф',parts:[],v2:true,updatedAt:123}:{name:'Библиотека',pdcMaterials:[],edgeMaterials:[],updatedAt:123};
+  await assertSucceeds(sdk.setDoc(ref,original));
+  assert.deepEqual((await sdk.getDocFromServer(ref)).data(),original);
+  assert.equal((await sdk.getDocsFromServer(sdk.collection(db,'users','alice',collectionName))).size,1);
+  await assertSucceeds(sdk.setDoc(ref,{...original,name:'Презаписан'}));
+  await assertSucceeds(sdk.updateDoc(ref,{updatedAt:456}));
+  assert.equal((await sdk.getDocFromServer(ref)).data().updatedAt,456);
+  await assertSucceeds(sdk.deleteDoc(ref));
+  assert.equal((await sdk.getDocFromServer(ref)).exists(),false);
+ });
+ for(const actor of ['bob',null])test(`${collectionName}: ${actor||'anonymous'} cannot read, list or mutate another owner documents`,async()=>{
+  await sdk.setDoc(sdk.doc(client('alice').db,'users','alice',collectionName,'legacy'),{name:'Съществуващ',updatedAt:123});
+  const db=actor?client(actor).db:env.unauthenticatedContext().firestore(),ref=sdk.doc(db,'users','alice',collectionName,'legacy');
+  for(const action of [()=>sdk.getDocFromServer(ref),()=>sdk.getDocsFromServer(sdk.collection(db,'users','alice',collectionName)),()=>sdk.setDoc(sdk.doc(db,'users','alice',collectionName,'new'),{name:'Нов'}),()=>sdk.setDoc(ref,{name:'Подменен'}),()=>sdk.updateDoc(ref,{name:'Променен'}),()=>sdk.deleteDoc(ref)])await assertFails(action());
+  assert.equal((await sdk.getDocFromServer(sdk.doc(client('alice').db,'users','alice',collectionName,'legacy'))).data().name,'Съществуващ');
+ });
+}
+test('unknown collections, user documents and nested subcollections remain denied',async()=>{
+ const db=client('alice').db;
+ for(const path of [['unknown','x'],['users','alice'],['users','alice','other','x'],['users','alice','v2_cabinets','x','nested','y'],['users','alice','materials','x','nested','y'],['users','alice','v2_projects','x','nested','y']]){
+  const ref=sdk.doc(db,...path);
+  await assertFails(sdk.getDocFromServer(ref));await assertFails(sdk.getDocsFromServer(sdk.collection(db,...path.slice(0,-1))));
+  await assertFails(sdk.setDoc(ref,{name:'X'}));await assertFails(sdk.deleteDoc(ref));
+ }
+});
+test('project schema, timestamps, revision and control characters cannot bypass client validation',async()=>{
+ const db=client('alice').db;
+ for(const changes of [{extra:true},{schemaVersion:2},{revision:2},{revision:1.5},{createdAt:sdk.Timestamp.fromMillis(1)},{updatedAt:sdk.Timestamp.fromMillis(1)},{data:{parts:'invalid',room:{}}},...['','.', '..','__reserved__','A'.repeat(101),' Leading','Two  spaces','Bad\nName','Bad\u0000Name','Bad\u0001Name','Bad\u007fName'].map(name=>({name,nameKey:name.toLowerCase()}))]){
+  const value={schemaVersion:1,name:'Valid',nameKey:'valid',data:data(),revision:1,createdAt:sdk.serverTimestamp(),updatedAt:sdk.serverTimestamp(),...changes};
+  const batch=sdk.writeBatch(db);batch.set(sdk.doc(db,'users','alice','v2_projects','invalid'),value);
+  const claimId=!value.nameKey||['.','..'].includes(value.nameKey)||/^__.*__$/.test(value.nameKey)?'invalid-claim':value.nameKey;
+  batch.set(sdk.doc(db,'users','alice','v2_project_names',claimId),{nameKey:value.nameKey,projectId:'invalid'});
+  await assertFails(batch.commit());
+ }
+});
+test('name registry denies foreign and anonymous access and orphan claims',async()=>{
+ const {store}=client('alice');await create(store,'Claim');
+ for(const db of [client('bob').db,env.unauthenticatedContext().firestore()]){
+  const ref=sdk.doc(db,'users','alice','v2_project_names','claim');
+  await assertFails(sdk.getDocFromServer(ref));await assertFails(sdk.getDocsFromServer(sdk.collection(db,'users','alice','v2_project_names')));
+  await assertFails(sdk.setDoc(ref,{nameKey:'claim',projectId:'forged'}));await assertFails(sdk.deleteDoc(ref));
+ }
+ await assertFails(sdk.setDoc(sdk.doc(client('alice').db,'users','alice','v2_project_names','orphan'),{nameKey:'orphan',projectId:'missing'}));
 });

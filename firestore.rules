@@ -1,10 +1,14 @@
-// Project-only rules for emulator tests and manual integration.
-// Merge these two matches into the EXISTING production rules; do not replace
-// cabinet/material rules or deploy this standalone file to production.
 rules_version = '2';
 service cloud.firestore {
  match /databases/{database}/documents {
   function owner(uid){return request.auth != null && request.auth.uid == uid;}
+  // Existing cabinet and material documents remain private to their owner.
+  match /users/{uid}/v2_cabinets/{id} {
+   allow read, write: if owner(uid);
+  }
+  match /users/{uid}/materials/{id} {
+   allow read, write: if owner(uid);
+  }
   function projectPath(uid,id){return /databases/$(database)/documents/users/$(uid)/v2_projects/$(id);}
   function claimPath(uid,key){return /databases/$(database)/documents/users/$(uid)/v2_project_names/$(key);}
   // Rules lower() folds ASCII only; explicitly fold the Bulgarian alphabet too.
@@ -14,7 +18,7 @@ service cloud.firestore {
   function projectShape(d){
    return d.keys().hasOnly(['schemaVersion','name','nameKey','data','revision','createdAt','updatedAt'])
     && d.schemaVersion == 1 && d.name is string && d.name.size() > 0 && d.name.size() <= 100
-    && d.name == d.name.trim() && !d.name.matches('.*[/\n\r\t].*') && !d.name.matches('.*  .*')
+    && d.name == d.name.trim() && !d.name.matches('.*[/\\x00-\\x1F\\x7F].*') && !d.name.matches('.*  .*')
     && d.nameKey == nameKey(d.name) && d.nameKey != '.' && d.nameKey != '..' && !d.nameKey.matches('__.*__')
     && d.data is map && d.data.parts is list && d.data.room is map
     && d.revision is int && d.revision > 0 && d.createdAt is timestamp && d.updatedAt == request.time;
@@ -48,5 +52,10 @@ service cloud.firestore {
    allow delete: if owner(uid) && (!existsAfter(projectPath(uid,resource.data.projectId))
     || getAfter(projectPath(uid,resource.data.projectId)).data.nameKey != key);
   }
+  // This does not override other allows; keep the matches above narrowly scoped.
+  match /{document=**} {
+   allow read, write: if false;
+  }
+
  }
 }
