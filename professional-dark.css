@@ -1,0 +1,37 @@
+/* NED-IQ Professional Dark — visual-only theme, 2026 */
+:root{color-scheme:dark;--nd-bg:#11151c;--nd-panel:#1c232e;--nd-raised:#252e3b;--nd-border:#364354;--nd-text:#e8eef7;--nd-muted:#a9b7c9;--nd-accent:#3b82f6}
+html,body{background:var(--nd-bg)!important;color:var(--nd-text)!important;font-family:Inter,"Segoe UI",Arial,sans-serif!important}
+header,.dialogHead{background:#171e29!important;color:var(--nd-text)!important;border-bottom:1px solid var(--nd-border)}
+#mainNavigation{background:#11151c!important;border-bottom:1px solid #2b3543;gap:5px!important}
+#mainNavigation button{background:#1c232e!important;color:#c4d0df!important;border:1px solid #354153!important;border-radius:8px!important}
+#mainNavigation button.mainNavActive,#mainNavigation button.active{background:#2563eb!important;color:white!important;border-color:#3b82f6!important}
+main,main.projectMode{background:#11151c!important}
+aside,.stage,#projectDashboard,#projectResults,#projectExtraPane,.libraryCard,.libraryThumbnail,.selection,.status,#toolsPanel{background:var(--nd-panel)!important;color:var(--nd-text)!important;border-color:var(--nd-border)!important}
+#view{background:#19212c!important}
+.toolbar,.tabs,.dialogFoot{background:#1c232e!important;border-color:var(--nd-border)!important}
+button{background:var(--nd-raised)!important;color:var(--nd-text)!important;border:1px solid var(--nd-border)!important;border-radius:7px!important;transition:background .15s,border-color .15s,box-shadow .15s}
+button:hover:not(:disabled){background:#334358!important;border-color:#5988c7!important}
+button.active,button.mainNavActive,.libraryPrimary,#headerRight .modeActive{background:#2563eb!important;color:#fff!important;border-color:#3b82f6!important}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #60a5fa!important;outline-offset:2px}
+button:disabled{opacity:.48!important}
+input,select,textarea{background:#131b26!important;color:#e8eef7!important;border:1px solid #445267!important;border-radius:6px!important}
+input[type=checkbox],input[type=radio]{accent-color:#3b82f6}
+input::placeholder,textarea::placeholder{color:#8999ad}
+label,.projectHint,.libraryCardBody p,.libraryHeading p{color:var(--nd-muted)!important}
+h1,h2,h3,h4,h5,strong{color:#f1f5fb}
+a{color:#8dbdff}
+table{border-collapse:collapse}
+th,td{border:1px solid #3b4657!important;color:#e1e8f2!important}
+th,#projectResults th{background:#2a3544!important;color:#f3f6fc!important}
+td{background:#1d2632!important}
+tr:nth-child(even) td{background:#222d3a!important}
+tr:last-child td{color:#f0f6ff}
+dialog,#propertiesDialog,#helpDialog{background:#1c232e!important;color:#e8eef7!important;border:1px solid #49576a!important;border-radius:12px!important;box-shadow:0 24px 70px #0009!important}
+dialog::backdrop{background:#05080db3!important}
+.tabs button.active{background:#2563eb!important;color:#fff!important}
+.toolIcons button:not([hidden]){background:#252f3d!important}
+.toolIcons button:not([hidden]):hover{background:#35465d!important}
+.toolSymbol b{background:#2563eb!important}
+.libraryDanger{background:#40262c!important;color:#ffb8bd!important;border-color:#78404b!important}
+#projectResults tr:last-child{background:#27384e!important}
+@media(max-width:720px){#mainNavigation{gap:4px!important}#mainNavigation button{font-size:12px!important}}
