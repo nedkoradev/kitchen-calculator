@@ -16,15 +16,20 @@ const {openKitchen}=require('./browser-harness.cjs');
    await section.locator('tbody tr').first().getByRole('button',{name:'Промени',exact:true}).click();
    assert.equal(await page.getByRole('heading',{name:'Декор и текстура',exact:true}).count(),1);
    assert.equal(await page.locator('#materialGrainRequired').count(),name==='Кантове'?0:1);
+   await page.getByLabel('Линк към сайта',{exact:true}).fill('https://www.salex.bg/product/'+encodeURIComponent(name));
    await page.locator('#materialTextureUrl').fill('materials/textures/category.png');
    await page.locator('#materialTextureWidth').fill('40');await page.locator('#materialTextureHeight').fill('80');
-   await page.getByRole('button',{name:'Провери снимката в GitHub',exact:true}).click();
-   await page.waitForFunction(()=>document.querySelector('#materialPhotoStatus').textContent.includes('Снимката е достъпна'));
+   await page.getByRole('button',{name:'Провери снимката',exact:true}).click();
+   await page.waitForFunction(()=>document.querySelector('#materialPhotoStatus').textContent.includes('Снимката е проверена'));
    if(name!=='Кантове')await page.locator('#materialGrainRequired').check();
    await page.getByRole('button',{name:'Запази',exact:true}).click();
    await section.locator('tbody tr').first().getByRole('button',{name:'Промени',exact:true}).click();
    assert.equal(await page.locator('#materialTextureUrl').inputValue(),'materials/textures/category.png');
-   assert.equal(await page.locator('#materialTextureWidth').inputValue(),'40');assert.equal(await page.locator('#materialTextureHeight').inputValue(),'80');
+   assert.equal(await page.getByLabel('Линк към сайта',{exact:true}).inputValue(),'https://www.salex.bg/product/'+encodeURIComponent(name));
+   await page.locator('#materialTextureHeight').fill('81');await page.getByRole('button',{name:'Запази',exact:true}).click();
+   await section.locator('tbody tr').first().getByRole('button',{name:'Промени',exact:true}).click();
+   assert.equal(await page.getByLabel('Линк към сайта',{exact:true}).inputValue(),'https://www.salex.bg/product/'+encodeURIComponent(name));
+   assert.equal(await page.locator('#materialTextureWidth').inputValue(),'40');assert.equal(await page.locator('#materialTextureHeight').inputValue(),'81');
    await page.keyboard.press('Escape');
   }
   page.once('dialog',d=>d.accept('All textures'));await page.getByRole('button',{name:'Запази база',exact:true}).click();
@@ -33,7 +38,7 @@ const {openKitchen}=require('./browser-harness.cjs');
   assert.ok(JSON.stringify(saved).includes('category.png'));
   await page.evaluate(()=>new Promise(resolve=>{window.addEventListener('kitchen-v2-cloud-material-loaded',()=>setTimeout(resolve,0),{once:true});const row=window.__firebaseDouble.rows().find(r=>r.path.includes('/materials/'));window.dispatchEvent(new CustomEvent('kitchen-v2-material-load-request',{detail:{id:row.path.split('/').at(-1)}}))}));
   const snapshot=await page.evaluate(()=>window.__textures.capture());
-  for(const key of ['pdcMaterials','edgeMaterials','backMaterials','worktops'])assert.equal(snapshot.materials[key][0].textureUrl,'materials/textures/category.png');
+  for(const key of ['pdcMaterials','edgeMaterials','backMaterials','worktops']){assert.equal(snapshot.materials[key][0].textureUrl,'materials/textures/category.png');assert.ok(snapshot.materials[key][0].url.startsWith('https://www.salex.bg/product/'));assert.notEqual(snapshot.materials[key][0].url,snapshot.materials[key][0].textureUrl)}
   for(const mode of ['constructor','project']){
    await page.locator(mode==='constructor'?'#modeConstructor':'#modeProject').click();
    await page.evaluate(s=>window.__textures.restore(s),snapshot);
