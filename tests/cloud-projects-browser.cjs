@@ -48,23 +48,20 @@ const {openKitchen}=require('./browser-harness.cjs');
   assert.deepEqual(await page.evaluate(()=>window.__projectTest.capture().materials),constructorCatalog);await page.locator('#modeProject').click();await page.waitForTimeout(80);assert.deepEqual(await normalized(),before);
   console.log('PASS full reload and mode switch: room, nested names/null history, geometry, locks, materials, edges, settings');
 
-  const local=[{id:'local-old',name:'Локален стар',room:payload.room,parts:payload.parts}];
-  await page.evaluate(items=>localStorage.setItem('kitchenV2Projects',JSON.stringify(items)),local);
-  // The existing app loads local records at startup, so reload to exercise migration.
-  await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>window.__projectTest&&window.__firebaseDouble);
-  await page.locator('#modeProject').click();await page.locator('#projectQuickOpen').click();await page.locator('#projectCloudLocal').click();await page.locator('#projectLocalOpen').click();await waitClosed();
-  await saveDialog('Мигриран');await waitClosed();assert.equal((await cloudRows()).length,1);
-  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('kitchenV2Projects'))),local);
-  console.log('PASS explicit migration leaves legacy local records unchanged');
+  await page.locator('#projectQuickOpen').click();
+  assert.equal(await page.locator('#projectCloudLocal,#projectLocalList,#projectLocalOpen').count(),0);
+  await close();
+  console.log('PASS cloud project open exposes no local project entry');
 
   await page.evaluate(()=>window.__firebaseDouble.failWrites(true));await saveDialog();
   await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('не е потвърден'));
   assert.equal(await page.locator('#projectCloudDialog').count(),1);await close();await page.evaluate(()=>window.__firebaseDouble.failWrites(false));
-  await page.locator('#projectQuickOpen').click();await page.waitForFunction(()=>document.querySelector('#projectCloudList').options.length===1);
-  page.once('dialog',d=>d.dismiss());await page.locator('#projectCloudDelete').click();assert.equal((await cloudRows()).length,1);
+  await page.locator('#projectQuickOpen').click();await page.waitForFunction(()=>document.querySelector('#projectCloudList').options.length===2);
+  page.once('dialog',d=>d.dismiss());await page.locator('#projectCloudDelete').click();assert.equal((await cloudRows()).length,2);
   await page.evaluate(()=>window.__firebaseDouble.failWrites(true));page.once('dialog',d=>d.accept());await page.locator('#projectCloudDelete').click();
-  await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('не е потвърден'));assert.equal((await cloudRows()).length,1);await page.evaluate(()=>window.__firebaseDouble.failWrites(false));
-  page.once('dialog',d=>d.accept());await page.locator('#projectCloudDelete').click();await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('изтрит'));assert.equal((await cloudRows()).length,0);await close();
+  await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('не е потвърден'));assert.equal((await cloudRows()).length,2);await page.evaluate(()=>window.__firebaseDouble.failWrites(false));
+  page.once('dialog',d=>d.accept());await page.locator('#projectCloudDelete').click();await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('изтрит'));assert.equal((await cloudRows()).length,1);
+  page.once('dialog',d=>d.accept());await page.locator('#projectCloudDelete').click();await page.waitForFunction(()=>document.querySelector('#projectCloudList').options.length===0);assert.equal((await cloudRows()).length,0);await close();
   console.log('PASS failed write has no success; delete cancellation and confirmed delete');
 
   await saveDialog('Само за Alice');await waitClosed();
@@ -81,8 +78,8 @@ const {openKitchen}=require('./browser-harness.cjs');
   await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('не е потвърден'));assert.equal(await page.locator('#projectCloudList option').count(),0);await close();await page.evaluate(()=>window.__firebaseDouble.failReads(false));
   await page.evaluate(()=>window.__firebaseDouble.setUser(null));await page.locator('#projectQuickSave').click();await page.locator('#projectCloudSave').click();
   await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('Първо влез'));await close();
-  await page.locator('#projectQuickOpen').click();await page.locator('#projectCloudLocal').click();await page.locator('#projectLocalOpen').click();await waitClosed();
-  await page.evaluate(()=>window.__firebaseDouble.setUser('alice'));assert.equal(await page.locator('#projectTitle').inputValue(),'Локален стар');
+  await setup([constructorPart]);await page.evaluate(()=>document.querySelector('#projectTitle').value='Незаписана чернова');
+  await page.evaluate(()=>window.__firebaseDouble.setUser('alice'));assert.equal(await page.locator('#projectTitle').inputValue(),'Незаписана чернова');
   assert.equal(await page.evaluate(()=>window.__projectTest.opened()),null);assert.equal((await cloudRows()).length,2);
   assert.deepEqual(errors,[]);
   console.log('PASS account list isolation, cleared identity and signed-out errors; real Firebase is never contacted');

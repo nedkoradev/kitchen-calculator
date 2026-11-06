@@ -18,10 +18,16 @@ window.__test={
  finish:()=>structuredClone(finishes),labels:()=>structuredClone(labels)
 };
 `;
-async function openKitchen({firebaseDouble=false,extraHooks=''}={}){
+async function openKitchen({firebaseDouble=false,extraHooks='',initialStorage=null}={}){
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--enable-unsafe-swiftshader'],proxy:process.env.HTTPS_PROXY?{server:process.env.HTTPS_PROXY,bypass:'127.0.0.1,localhost'}:undefined});
  try{
   const page=await browser.newPage({viewport:{width:1400,height:1000}}),errors=[];
+  if(initialStorage)await page.addInitScript(values=>{
+   if(!sessionStorage.getItem('kitchen-test-seeded')){
+    for(const [key,value] of Object.entries(values))localStorage.setItem(key,value);
+    sessionStorage.setItem('kitchen-test-seeded','yes');
+   }
+  },initialStorage);
   page.on('pageerror',e=>{errors.push(e.message);console.error('PAGEERROR',e.message)});
   page.on('requestfailed',r=>console.error('REQUESTFAILED',r.url(),r.failure().errorText));
   if(process.env.KITCHEN_CDN_CACHE)await page.route('https://cdn.jsdelivr.net/**',r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(process.env.KITCHEN_CDN_CACHE,path.basename(new URL(r.request().url()).pathname)))}));
