@@ -41,3 +41,11 @@ export function validTextureUrl(value){
  }
  try{const url=new URL(input);return url.protocol==='https:'&&!url.username&&!url.password?url.href:null}catch{return null}
 }
+
+// The image vertical direction follows band length; width spans panel thickness.
+export function edgeTextureCoordinates(p,normal,material={},imageAspect=1){
+ const {thickness,axes}=panelAxes(p),length=axes.find(axis=>axis!==normal);
+ const width=Number(material.textureWidthMm)>0?Number(material.textureWidthMm):22;
+ const height=Number(material.textureHeightMm)>0?Number(material.textureHeightMm):width/(Number(imageAspect)>0?Number(imageAspect):1);
+ return {uAxis:thickness,vAxis:length,width,height};
+}
