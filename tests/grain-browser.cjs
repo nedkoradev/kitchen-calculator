@@ -19,17 +19,17 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
   const section=page.locator('.materialSection').filter({has:page.getByRole('heading',{name:'ПДЧ материали',exact:true})});
   await section.getByRole('button',{name:'Нов материал',exact:true}).click();
   await page.getByLabel('Наименование',{exact:true}).fill('Photo and grain');
-  await page.locator('#materialTextureUrl').fill(photo);await page.locator('#materialGrainRequired').check();
+  await page.locator('.materialPhotoHelp summary').click();await page.locator('#materialTextureUrl').fill(photo);
   await page.waitForFunction(()=>document.querySelector('.materialPhotoPreview').naturalWidth===32);
   assert.equal(await page.locator('#materialPhotoUpload').isDisabled(),false);assert.equal(await page.locator('#materialPhotoUpload').getAttribute('accept'),'image/jpeg,image/png,image/webp');
   await page.getByRole('button',{name:'Запази',exact:true}).click();
   assert.equal(await section.locator('.materialTextureThumb').count(),1);
-  const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('kitchenPdcMaterials')).at(-1));assert.equal(stored.textureUrl,photo);assert.equal(stored.grainRequired,true);assert.ok(!JSON.stringify(stored).includes('base64'));
-  const row=section.locator('tbody tr').filter({hasText:'Photo and grain'});await row.getByRole('button',{name:'Промени',exact:true}).click();
+  const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('kitchenPdcMaterials')).at(-1));assert.equal(stored.textureUrl,photo);assert.equal(stored.grainRequired,undefined);assert.ok(!JSON.stringify(stored).includes('base64'));
+  const row=section.locator('tbody tr').filter({hasText:'Photo and grain'});await row.getByRole('button',{name:'Промени',exact:true}).click();await page.locator('.materialPhotoHelp summary').click();
   await page.route(photo+'?replacement=1*',route=>route.fulfill({contentType:'image/png',path:path.join(__dirname,'fixtures/grain.png'),headers:{'access-control-allow-origin':'*'}}));
   await page.locator('#materialTextureUrl').fill(photo+'?replacement=1');await page.waitForFunction(()=>document.querySelector('#materialPhotoStatus').textContent.includes('Снимката е проверена'));await page.getByRole('button',{name:'Запази',exact:true}).click();
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('kitchenPdcMaterials')).at(-1).textureUrl),photo+'?replacement=1');
-  await row.getByRole('button',{name:'Промени',exact:true}).click();
+  await row.getByRole('button',{name:'Промени',exact:true}).click();await page.locator('.materialPhotoHelp summary').click();
   await page.getByRole('button',{name:'Премахни снимката',exact:true}).click();assert.equal(await page.locator('#materialTextureUrl').inputValue(),'');await page.getByRole('button',{name:'Запази',exact:true}).click();assert.equal(await section.locator('.materialTextureThumb').count(),0);
   console.log('PASS material photo metadata/thumbnail/removal, grain checkbox; local picker enabled without automatic upload');
   for(const mode of ['constructor','project']){
@@ -72,7 +72,7 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
   await setup([part]);await page.evaluate(()=>window.__grainTest.finish({material:0,edges:[0,1,2,3],grainAxis:'z'}));
   await page.locator('#navCut').click();const dimension=await page.locator('#projectCutList tbody tr td').nth(4).innerText();assert.match(dimension,/550 × 720/);
   const tableStyle=await page.locator('#projectCutList tbody tr td').first().evaluate(cell=>({padding:parseFloat(getComputedStyle(cell).paddingTop),line:parseFloat(getComputedStyle(cell).lineHeight)}));assert.ok(tableStyle.padding<=4);assert.ok(tableStyle.line<16);
-  const widths=await page.locator('#projectCutList table').evaluate(table=>[table.getBoundingClientRect().width,table.parentElement.getBoundingClientRect().width]);assert.ok(widths[0]<widths[1]-80,'short rows should not stretch across the entire viewport');
+  const widths=await page.locator('#projectCutList table').evaluate(table=>[table.getBoundingClientRect().width,table.parentElement.getBoundingClientRect().width]);assert.ok(Math.abs(widths[0]-widths[1])<3,'cut table uses available width');
   const exportRows=async()=>{await page.evaluate(()=>{XLSX.writeFile=book=>window.__grainExport=XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]],{header:1,defval:''})});await page.locator('#exportProjectCut').click();return page.evaluate(()=>window.__grainExport)};
   let exported=await exportRows();assert.equal(exported[1][3],550);assert.equal(exported[1][4],720);assert.equal(exported[1][8],0);assert.deepEqual(exported[1].slice(10,14),['E0','E1','E2','E3']);assert.equal(exported[0].length,17);
   await page.locator('#navCosts').click();const costBefore=await page.locator('#projectCosts table').innerText();

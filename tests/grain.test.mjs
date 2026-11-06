@@ -41,3 +41,12 @@ test('repository texture paths are portable Pages URLs with strict directory bou
  assert.equal(validTextureUrl('materials/textures/decor.jpg?v=2'),'materials/textures/decor.jpg?v=2');
  for(const input of ['/materials/textures/a.png','../materials/textures/a.png','materials/textures/../secret.png','materials/textures/%2e%2e/secret.png','materials/textures/a%2f..%2fsecret.png','materials/textures/a%255c..png','materials/textures/decor.html','//external.test/a.jpg'])assert.equal(validTextureUrl(input),null,input);
 });
+
+test('per-panel grain overrides legacy material defaults and puts the 3000 mm side first',()=>{
+ const p={w:500,h:3000,d:18};
+ assert.equal(cutLayout(p,{grainRequired:true,grainAxis:'y'},{}).A,3000);
+ assert.equal(cutLayout(p,{grainRequired:true,grainAxis:'x'},{}).A,500);
+ assert.equal(cutLayout(p,{grainRequired:false,grainAxis:'x'},{grainRequired:true}).grainRequired,false);
+ assert.equal(cutLayout(p,{grainAxis:'x'},{grainRequired:true}).A,500);
+ assert.deepEqual(cutLayout(p,{grainRequired:true,grainAxis:'y'}).edgeIndices,[0,1,2,3]);
+});

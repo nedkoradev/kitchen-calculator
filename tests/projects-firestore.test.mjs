@@ -187,3 +187,9 @@ test('grain and HTTPS texture metadata roundtrip without embedding image bytes',
  for(const [i,key] of ['pdcMaterials','edgeMaterials','worktops','backMaterials'].entries())snapshot.materials[key]=[{name:key,url:'https://www.salex.bg/product/'+i,textureUrl:'materials/textures/decor-'+i+'.png',textureWidthMm:20+i,textureHeightMm:500+i,...(key==='edgeMaterials'?{}:{grainRequired:true})}];
  const saved=await store.save({name:'Всички декори',data:snapshot});assert.deepEqual((await store.open(saved.id)).data.materials,snapshot.materials);
  });
+
+test('individual grain requirement and physical axis survive a cloud project roundtrip',async()=>{
+ const {store}=client('alice'),snapshot=data();snapshot.parts[0].part={...snapshot.parts[0].part,w:500,h:3000,d:18};snapshot.parts[0].finish={...snapshot.parts[0].finish,grainRequired:true,grainAxis:'y'};
+ const saved=await store.save({name:'Индивидуален фладер',data:snapshot});assert.deepEqual((await store.open(saved.id)).data,snapshot);
+ const changed=structuredClone(snapshot);changed.parts[0].finish.grainRequired=false;await store.save({...saved,data:changed});assert.equal((await store.open(saved.id)).data.parts[0].finish.grainRequired,false);
+});
