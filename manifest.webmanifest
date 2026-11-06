@@ -1,0 +1,12 @@
+{
+ "id":"./",
+ "name":"Kitchen Designer",
+ "short_name":"Kitchen Designer",
+ "lang":"bg",
+ "start_url":"./",
+ "scope":"./",
+ "display":"standalone",
+ "background_color":"#eef2f6",
+ "theme_color":"#163d68",
+ "icons":[{"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]
+}
