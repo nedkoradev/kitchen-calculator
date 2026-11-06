@@ -41,7 +41,29 @@ export function installMaterialPhotoEditor(form,item,dialog){
  const info=document.createElement('p');info.id='materialPhotoFileInfo';info.className='projectHint';
  const suggestion=document.createElement('p');suggestion.id='materialPhotoSuggestedPath';suggestion.className='projectHint';
  const pendingNote='Снимката още не е проверена. Предишната снимка се запазва.';
- const setStatus=text=>status.textContent=text;
+ const setStatus=text=>{status.textContent=text;if(wizardStatus)wizardStatus.textContent=text;};
+ let wizardStatus=null,wizard=null,wizardTimer=null;
+ function closeWizard(){if(wizardTimer){clearInterval(wizardTimer);wizardTimer=null}wizard?.remove();wizard=null;wizardStatus=null}
+ function openWizard(filename,originalName){
+  closeWizard();
+  wizard=document.createElement('div');wizard.setAttribute('role','dialog');wizard.setAttribute('aria-modal','true');wizard.setAttribute('aria-label','Добавяне на снимка');
+  wizard.style.cssText='position:fixed;inset:0;z-index:99999;background:#152d47a6;display:flex;align-items:center;justify-content:center;padding:16px';
+  const panel=document.createElement('div');panel.style.cssText='background:white;color:#19334e;border-radius:10px;padding:20px;width:min(460px,100%);box-shadow:0 12px 40px #0003;font:14px Arial,sans-serif';
+  const heading=document.createElement('h3');heading.textContent='Добавяне на снимка';heading.style.margin='0 0 14px';
+  const steps=document.createElement('p');steps.textContent='1. Натисни „Качи в GitHub“ и избери същата снимка от компютъра. 2. Натисни зеления „Commit changes“ в GitHub. 3. Върни се тук — приложението ще провери снимката автоматично.';steps.style.lineHeight='1.65';
+  const name=document.createElement('p');name.style.cssText='font-weight:bold;overflow-wrap:anywhere';name.textContent='Име на файла: '+filename;
+  const note=document.createElement('p');note.style.cssText='font-size:12px;line-height:1.5';note.textContent=filename===originalName?'Качи файла със същото име.':'Името за GitHub е различно. Изтегли преименувания файл от бутона по-долу и качи него.';
+  const actionsRow=document.createElement('div');actionsRow.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:14px';
+  const upload=document.createElement('a');upload.href='https://github.com/nedkoradev/kitchen-calculator/upload/main/materials/textures';upload.target='_blank';upload.rel='noopener noreferrer';upload.textContent='Качи в GitHub';upload.style.cssText='background:#163d68;color:white;border-radius:5px;padding:10px 12px;text-decoration:none';
+  const finish=document.createElement('button');finish.type='button';finish.textContent='Затвори';finish.onclick=closeWizard;
+  actionsRow.append(upload);
+  if(filename!==originalName){const renamed=document.createElement('a');renamed.href=previewUrl;renamed.download=filename;renamed.textContent='Изтегли с правилното име';renamed.style.cssText='padding:10px;border:1px solid #bdc9d7;border-radius:5px';actionsRow.append(renamed)}
+  actionsRow.append(finish);
+  wizardStatus=document.createElement('p');wizardStatus.setAttribute('role','status');wizardStatus.style.cssText='margin-top:12px;font-weight:bold;line-height:1.5';wizardStatus.textContent=status.textContent;
+  panel.append(heading,steps,name,note,actionsRow,wizardStatus);wizard.append(panel);document.body.append(wizard);
+  wizardTimer=setInterval(async()=>{if(!wizard||closed||verified)return;await verify();if(verified){wizardStatus.textContent='✓ Снимката е намерена! Затвори прозореца и натисни „Запази“.';finish.textContent='Готово';clearInterval(wizardTimer);wizardTimer=null}},10000);
+ }
+
  function releasePreview(){if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=null;if(download){download.hidden=true;download.removeAttribute('href')}preview.removeAttribute('src');preview.hidden=true}
  function show(decoded){releasePreview();previewUrl=decoded.url;preview.src=previewUrl;preview.hidden=false}
  function invalidate(){clearTimeout(timer);controller?.abort();controller=null;verified=null;return ++epoch}
@@ -96,10 +118,12 @@ export function installMaterialPhotoEditor(form,item,dialog){
    const filename=decodeURIComponent(input.value.split('/').at(-1));
    suggestion.textContent='Име за GitHub: '+filename;
    if(filename!==selected.name){download.href=previewUrl;download.download=filename;download.hidden=false;setStatus('Качи снимката с безопасното име от бутона за изтегляне.')}else setStatus('Проверка дали снимката вече е публикувана…');
+   openWizard(filename,selected.name);
    await verify();
+   if(verified&&wizardStatus){wizardStatus.textContent='✓ Снимката е намерена! Затвори прозореца и натисни „Запази“.';clearInterval(wizardTimer);wizardTimer=null}
   }catch(error){if(closed||token!==epoch)return;setStatus((error.name==='EncodingError'?'Избраната снимка не може да се декодира.':error.message)+' Записаната снимка не е променена.');}
  };
- dialog.addEventListener('close',()=>{closed=true;invalidate();releasePreview();local=null},{once:true});
+ dialog.addEventListener('close',()=>{closed=true;closeWizard();invalidate();releasePreview();local=null},{once:true});
  if(baseline)verify();
  const readPhoto=()=>{
   if(removed)return '';
@@ -108,6 +132,6 @@ export function installMaterialPhotoEditor(form,item,dialog){
   if(verified&&verified.url===current)return verified.url;
   return baseline;
  };
- readPhoto.useColor=()=>{invalidate();local=null;removed=true;input.value='';file.value='';releasePreview();setStatus('Избран е цвят.');};
+ readPhoto.useColor=()=>{closeWizard();invalidate();local=null;removed=true;input.value='';file.value='';releasePreview();setStatus('Избран е цвят.');};
  return readPhoto;
 }
