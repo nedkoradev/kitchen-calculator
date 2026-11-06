@@ -12,7 +12,7 @@
 
 ## Автоматично публикуване
 
-`.github/workflows/pages.yml` запазва GitHub Pages/Jekyll и същия сайт/адрес. При първото изпълнение превключва Pages от implicit branch build към workflow build чрез служебния Actions token с `pages:write`; не създава друга hosting услуга. След това всяка push публикация в main и workflow_dispatch:
+`.github/workflows/pages.yml` запазва GitHub Pages/Jekyll и същия сайт/адрес. Собственикът трябва еднократно да избере Settings → Pages → Build and deployment → Source: GitHub Actions; не се създава друга hosting услуга. Автоматичният опит за PUT на тази административна настройка беше отказан от GitHub с 403 `Resource not accessible by integration` (изисква Pages write и Administration write); Actions token не получава Administration право и не се добавя PAT. След тази настройка всяка push публикация в main и workflow_dispatch:
 
 1. Checkout на точния commit.
 2. `node scripts/repository-space.mjs` измерва свежите source файлове без npm инсталация, API за размери или GitHub PAT.
@@ -20,7 +20,9 @@
 4. Съществуващият Jekyll builder генерира статичния `repository-space.json`: сумира byte полетата и добавя build време, версия и SHA.
 5. Workflow проверява JSON schema, aggregate стойностите и съответствието на build SHA/version **преди** upload/deploy на Pages artifact.
 
-Конкурентността е в група `pages`; няма Firebase операции. Token-ът съществува само в runner-а с минимални Contents read / Pages write / OIDC права, никога в браузъра или публикувания JSON. Не се използва лично GitHub удостоверение. Ако няма генериран опис (например старият implicit build при първоначалния преход), JSON има inventoryReady=false и интерфейсът показва липса на данни.
+Конкурентността е в група `pages`; няма Firebase операции. Build/измерването/JSON проверката се изпълняват и преди настройката. Deployment job проверява source и спира с ясна инструкция, ако той още е implicit branch. След ръчния избор на Source собственикът/агентът може да пусне повторно failed deployment job от Actions, без нов кодов commit.
+
+Token-ът съществува само в runner-а с минимални Contents read / Pages write / OIDC права, никога в браузъра или публикувания JSON. Не се използва лично GitHub удостоверение. Ако няма генериран опис (например старият implicit build при първоначалния преход), JSON има inventoryReady=false и интерфейсът показва липса на данни.
 
 `npm test`/`release:prepare` генерират същия опис и локално; `release:check` засича stale source измерване след последващи редакции. Това е допълнителна проверка, не заместител на автоматичното измерване в Actions. Няма bundler или production npm dependencies.
 
