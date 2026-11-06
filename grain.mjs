@@ -8,6 +8,10 @@ export function physicalGrainAxis(p,finish={}){
  const {axes}=panelAxes(p);
  return axes.includes(finish.grainAxis)?finish.grainAxis:(dimension(p,axes[0])>=dimension(p,axes[1])?axes[0]:axes[1]);
 }
+export function grainFaceOptions(p){
+ const {thickness,axes}=panelAxes(p);
+ return axes.map(axis=>({axis,label:axis==='y'?'По височината':thickness==='y'&&axis==='z'?'По дълбочината':'По ширината',size:Math.round(dimension(p,axis))}));
+}
 export const rotatedGrainAxis=axis=>({x:'z',y:'y',z:'x'})[axis];
 export function cutLayout(p,finish={},material={}){
  const [thickness,short,long]=[p.w,p.h,p.d].map(Math.round).sort((a,b)=>a-b);
