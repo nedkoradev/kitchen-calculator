@@ -74,7 +74,7 @@ main.projectMode #views .projectTab{display:none!important}
 .materialEditDialog h3{font-family:Arial,sans-serif;font-size:18px;font-weight:600}
 .materialSwatch{display:inline-block;width:15px;height:15px;border:1px solid #aaa;border-radius:3px;vertical-align:middle;margin-right:8px}.materialAdd{background:#173d68;color:white;margin-top:12px}.materialEditDialog{border:1px solid #cdd9e8;border-radius:12px;padding:22px;width:min(480px,95vw);max-height:90vh;overflow:auto}.materialEditDialog label{display:block;margin:10px 0}.materialEditDialog input{display:block;width:100%;height:34px;margin-top:4px}.materialActions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}main.catalogMode{grid-template-columns:minmax(0,1fr)}main.catalogMode aside{display:none}main.catalogMode #projectResults{height:100%;padding:0;background:#f1f5f9}main.catalogMode .stage{min-width:0}main.catalogMode #projectExtraPane{min-height:100%;padding:22px 26px}main.projectMode:not(.catalogMode){grid-template-columns:78px minmax(0,1fr)}main.projectMode:not(.catalogMode) aside{width:78px;padding:6px}main.projectMode #projectDashboard{display:none!important}#projectTools{display:none}main.projectMode:not(.catalogMode) #projectTools{display:flex;flex-direction:column;align-items:center;gap:7px}#projectTools button{width:54px;height:54px;font-size:25px;padding:4px;display:grid;place-items:center}#projectTools button:disabled{opacity:.4}#projectTools #projectRotate{display:flex;gap:3px;width:100%;justify-content:center}#projectTools #projectRotate button{width:32px;height:34px;padding:3px;font-size:inherit}#projectTools #projectRotate svg{width:23px;height:23px}#projectResults{max-width:none!important;width:100%;box-sizing:border-box}#projectResults #projectCosts{max-width:none!important;width:100%}#projectCosts .oldStyleCosts{border-collapse:collapse;width:100%;font-size:13px;background:#fff}#projectCosts .oldStyleCosts th,#projectCosts .oldStyleCosts td{border:1px solid #d4dfeb;padding:9px 10px}#projectCosts .oldStyleCosts th{background:#eaf1f7;text-align:left;font-weight:700}#projectCosts .oldStyleCosts td:not(:first-child){text-align:right}#projectCosts .oldStyleCosts td:first-child{min-width:280px}#projectCosts .oldStyleCosts tr.costSection td{background:#f1f5f9;font-weight:bold;text-align:left}#projectCosts .oldStyleCosts tr.costGrandTotal td{background:#e6eef7;font-size:17px;font-weight:800}#projectCosts .oldStyleCosts tr.costSubtotal td{font-weight:700;background:#f6f8fb}#v2MaterialCloudSelect{width:190px!important;min-width:190px!important;max-width:190px!important;flex:0 0 190px!important}#projectExtraPane .materialActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .materialsPage .materialGroup td,.materialsPage .materialGroup th{color:#111827}.materialsPage .materialGroup td a,.materialsPage .materialGroup td a:visited{color:#111827!important;text-decoration:underline;text-underline-offset:2px}.materialsPage .materialGroup td a:hover{color:#164a82!important}</style></head>
-<body><header><strong>Kitchen Designer · 3D v1.64</strong><div id="headerRight"><span id="cloudStatus">Проверка на входа…</span><button id="cloudLogin" type="button">Вход с Google</button><button id="cloudLogout" type="button" hidden>Изход</button></div></header><nav id="mainNavigation"><button id="modeProject" type="button">Проект</button><button id="modeConstructor" type="button">Конструктор</button><button id="navLibrary" type="button">Библиотека</button><button id="navMaterials" type="button">Материали</button><button id="navCut" type="button">Разкрой</button><button id="navCosts" type="button">Разходи</button></nav><main><aside><div class="selection" id="toolsPanel"><div class="toolIcons"><button id="addHorizontal" title="Добави хоризонтален детайл"><span class="toolSymbol">▱<b>+</b></span></button><button id="addVertical" title="Добави вертикален детайл"><span class="toolSymbol">▯<b>+</b></span></button><div class="rotateTools"><button id="rotateLeft" type="button" title="Завърти избрания детайл на 90° наляво в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 24.5 9 A 11 11 0 1 0 25 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 20 8 L 25 8 L 25 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button id="rotateRight" type="button" title="Завърти избрания детайл на 90° надясно в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 7.5 9 A 11 11 0 1 1 7 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 12 8 L 7 8 L 7 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><button id="addPart" hidden>Добави детайл</button><button id="duplicatePart" hidden>Дублирай</button><button id="deletePart" hidden>Изтрий</button><button id="groupParts" hidden>Групирай</button><button id="ungroupParts" hidden>Разгрупирай</button></div><div class="toolIcons" style="margin-top:0"><button id="quickSave" type="button" title="Запази шкаф или проект"><span class="toolSymbol">💾</span></button><button id="quickOpen" type="button" title="Отвори шкаф или проект"><span class="toolSymbol">📂</span></button></div><div id="groupList" hidden></div><div id="groupInfo" hidden></div></div><div class="selection" id="libraryPanel" hidden style="display:none"><strong>Библиотека и проект</strong><label>Режим</label><select id="workspaceMode"><option value="constructor">Конструктор</option><option value="project">Проект</option></select><label>Име на шкафа</label><input id="cabinetName" type="text" placeholder="Напр. Шкаф 600"><button id="saveCabinet" style="width:100%;margin-top:8px">Запази шкаф в библиотеката</button><label>Запазени шкафове</label><select id="savedCabinets"></select><button id="insertCabinet" style="width:100%;margin-top:8px">Добави шкаф в проекта</button><label>Име на проекта</label><input id="projectName" type="text" value="Моят проект"><div style="display:flex;gap:5px;margin-top:8px"><button id="saveProject" style="flex:1">Запази проект</button><button id="newProject" style="flex:1">Нов проект</button></div><label>Запазени проекти</label><select id="savedProjects"></select><button id="openProject" style="width:100%;margin-top:8px">Отвори проект</button><div id="storageStatus" style="font-size:11px;color:#60758a;margin-top:8px"></div></div><div id="projectTools"><button id="projectQuickSave" type="button" title="Запази проект">💾</button><button id="projectQuickOpen" type="button" title="Отвори проект">📂</button><button id="projectQuickAdd" type="button" title="Добави шкаф от библиотеката">▣<span style="font-size:15px">＋</span></button><button id="projectAddHorizontal" type="button" title="Добави хоризонтален детайл"><span class="toolSymbol">▱<b>+</b></span></button><button id="projectAddVertical" type="button" title="Добави вертикален детайл"><span class="toolSymbol">▯<b>+</b></span></button><button id="projectRoomSettings" type="button" title="Размери на стаята" aria-label="Размери на стаята">▣</button><div class="rotateTools" id="projectRotate"><button id="projectRotateLeft" type="button" title="Завърти избрания шкаф на 90° наляво"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 24.5 9 A 11 11 0 1 0 25 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 20 8 L 25 8 L 25 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button id="projectRotateRight" type="button" title="Завърти избрания шкаф на 90° надясно"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 7.5 9 A 11 11 0 1 1 7 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 12 8 L 7 8 L 7 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div><dialog id="projectAddDialog" class="materialEditDialog"><h3>Добави шкаф от библиотеката</h3><p>Избери шкаф от облака:</p><div id="projectAddDialogOptions"></div><div class="materialActions"><button type="button" id="projectAddDialogCancel">Отказ</button><button type="button" id="projectAddDialogConfirm">Добави</button></div></dialog><section id="projectDashboard" hidden>
+<body><header><strong>Kitchen Designer · 3D v1.64</strong><div id="headerRight"><span id="cloudStatus">Проверка на входа…</span><button id="cloudLogin" type="button">Вход с Google</button><button id="cloudLogout" type="button" hidden>Изход</button></div></header><nav id="mainNavigation"><button id="modeProject" type="button">Проект</button><button id="modeConstructor" type="button">Конструктор</button><button id="navLibrary" type="button">Библиотека</button><button id="navMaterials" type="button">Материали</button><button id="navCut" type="button">Разкрой</button><button id="navCosts" type="button">Разходи</button></nav><main><aside><div class="selection" id="toolsPanel"><div class="toolIcons"><button id="addHorizontal" title="Добави хоризонтален детайл"><span class="toolSymbol">▱<b>+</b></span></button><button id="addVertical" title="Добави вертикален детайл"><span class="toolSymbol">▯<b>+</b></span></button><div class="rotateTools"><button id="rotateLeft" type="button" title="Завърти избрания детайл на 90° наляво в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 24.5 9 A 11 11 0 1 0 25 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 20 8 L 25 8 L 25 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button id="rotateRight" type="button" title="Завърти избрания детайл на 90° надясно в изглед отгоре"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 7.5 9 A 11 11 0 1 1 7 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 12 8 L 7 8 L 7 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><button id="addPart" hidden>Добави детайл</button><button id="duplicatePart" hidden>Дублирай</button><button id="deletePart" hidden>Изтрий</button><button id="groupParts" hidden>Групирай</button><button id="ungroupParts" hidden>Разгрупирай</button></div><div class="toolIcons" style="margin-top:0"><button id="quickSave" type="button" title="Запази шкаф или проект"><span class="toolSymbol">💾</span></button><button id="quickOpen" type="button" title="Отвори шкаф или проект"><span class="toolSymbol">📂</span></button></div><div id="groupList" hidden></div><div id="groupInfo" hidden></div></div><div class="selection" id="libraryPanel" hidden style="display:none"><strong>Библиотека и проект</strong><label>Режим</label><select id="workspaceMode"><option value="constructor">Конструктор</option><option value="project">Проект</option></select><label>Име на шкафа</label><input id="cabinetName" type="text" placeholder="Напр. Шкаф 600"><button id="saveCabinet" style="width:100%;margin-top:8px">Запази шкаф в библиотеката</button><label>Запазени шкафове</label><select id="savedCabinets"></select><button id="insertCabinet" style="width:100%;margin-top:8px">Добави шкаф в проекта</button><label>Име на проекта</label><input id="projectName" type="text" value="Моят проект"><div style="display:flex;gap:5px;margin-top:8px"><button id="saveProject" style="flex:1">Запази проект</button><button id="newProject" style="flex:1">Нов проект</button></div><label>Запазени проекти</label><select id="savedProjects"></select><button id="openProject" style="width:100%;margin-top:8px">Отвори проект</button><div id="storageStatus" style="font-size:11px;color:#60758a;margin-top:8px"></div></div><div id="projectTools"><button id="projectQuickSave" type="button" title="Запази проект">💾</button><button id="projectQuickSaveAs" type="button" title="Запази проект като" aria-label="Запази проект като">💾＋</button><button id="projectQuickOpen" type="button" title="Отвори проект">📂</button><button id="projectQuickAdd" type="button" title="Добави шкаф от библиотеката">▣<span style="font-size:15px">＋</span></button><button id="projectAddHorizontal" type="button" title="Добави хоризонтален детайл"><span class="toolSymbol">▱<b>+</b></span></button><button id="projectAddVertical" type="button" title="Добави вертикален детайл"><span class="toolSymbol">▯<b>+</b></span></button><button id="projectRoomSettings" type="button" title="Размери на стаята" aria-label="Размери на стаята">▣</button><div class="rotateTools" id="projectRotate"><button id="projectRotateLeft" type="button" title="Завърти избрания шкаф на 90° наляво"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 24.5 9 A 11 11 0 1 0 25 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 20 8 L 25 8 L 25 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button id="projectRotateRight" type="button" title="Завърти избрания шкаф на 90° надясно"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="2.2" fill="currentColor"/><path d="M 7.5 9 A 11 11 0 1 1 7 23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M 12 8 L 7 8 L 7 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div><dialog id="projectAddDialog" class="materialEditDialog"><h3>Добави шкаф от библиотеката</h3><p>Избери шкаф от облака:</p><div id="projectAddDialogOptions"></div><div class="materialActions"><button type="button" id="projectAddDialogCancel">Отказ</button><button type="button" id="projectAddDialogConfirm">Добави</button></div></dialog><section id="projectDashboard" hidden>
  <h3>Проект</h3><label>Размери на стаята (мм)</label><div id="roomSizeInputs" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><label>Ширина<input id="roomWidth" type="number" min="500" step="1" value="3000"></label><label>Дълбочина<input id="roomDepth" type="number" min="500" step="1" value="3000"></label><label>Височина<input id="roomHeight" type="number" min="500" step="1" value="2600"></label></div><label>Име на проекта</label><input id="projectTitle" value="Нова кухня">
  <label>Шкафове от облака</label><select id="projectCabinetList"><option value="">Зареждане…</option></select>
  <button id="projectAddCabinet" type="button">+ Добави шкаф</button>
@@ -94,6 +94,8 @@ window.addEventListener('keydown',function(e){
 </script>
 <script type="module" src="./cloud.js"></script><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script><script type="module">
 import {translate,resize} from './geometry.mjs';
+import {projectData} from './project-model.mjs';
+import {installProjectUI} from './project-ui.mjs';
 import * as THREE from 'three';import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 const $=id=>document.getElementById(id),host=$('view'),scene=new THREE.Scene();scene.background=new THREE.Color('#f0f3f6');
 let camera=new THREE.PerspectiveCamera(38,1,20,9000);camera.position.set(1300,1050,1450);
@@ -134,7 +136,7 @@ redrawRoom();
 roomLines.visible=true;
 const group=new THREE.Group();scene.add(group);const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();let boards=[],selected=null,viewMode='perspective',dims={w:800,h:720,d:555,t:18};
 const labels={left:'Лява страница',right:'Дясна страница',top:'Таван',bottom:'Дъно',back:'Гръб',partition:'Преграда',shelf:'Рафт'};
-const finishes={};const allEdgeFlags={};const customParts=[];let partCounter=0;const groupSelections=new Set();const assemblies=new Map();let assemblyId=0;let activeAssembly=null;const edgeIds=['edgeLeft','edgeRight','edgeTop','edgeBottom'];let libraryBoards=[],libraryEdges=[];
+const finishes={};const allEdgeFlags={};const customParts=[];let partCounter=0;const groupSelections=new Set();const assemblies=new Map();let assemblyId=0;let activeAssembly=null;const edgeIds=['edgeLeft','edgeRight','edgeTop','edgeBottom'];let libraryBoards=[],libraryEdges=[],publicProjectCatalog=null;
 try{libraryBoards=JSON.parse(localStorage.getItem('kitchenPdcMaterials')||'[]')||[];libraryEdges=JSON.parse(localStorage.getItem('kitchenEdgeMaterials')||'[]')||[]}catch(e){}
 function options(id,arr,blank){const el=$(id);el.innerHTML='';const empty=document.createElement('option');empty.value='';empty.textContent=blank;el.append(empty);arr.forEach((m,i)=>{const o=document.createElement('option');o.value=i;o.textContent=m.name||('Материал '+(i+1));el.append(o)})}
 function refreshMaterials(){options('materialSelect',libraryBoards,'Избери материал');const select=$('materialSelect');const addGroup=(title,type,items)=>{if(!items?.length)return;const group=document.createElement('optgroup');group.label=title;items.forEach((m,i)=>{const option=document.createElement('option');option.value=type+':'+i;option.textContent=m.name||m.title||title+' '+(i+1);group.append(option)});select.append(group)};addGroup('Гръб HDF','back',catalogExtra.backMaterials);addGroup('Плотове','worktop',catalogExtra.worktops);edgeIds.forEach(id=>options(id,libraryEdges,'Без кант'));for(const p of customParts)ensureDefaultFinish(p.key);build(false);updateEditor()}
@@ -144,6 +146,7 @@ async function loadDefaultMaterials(){
   const res=await fetch('./materials/default.json',{cache:'no-store'});
   if(!res.ok)throw new Error('HTTP '+res.status);
   const data=await res.json();
+  publicProjectCatalog=structuredClone({pdcMaterials:data.pdcMaterials||[],edgeMaterials:data.edgeMaterials||[],backMaterials:data.backMaterials||[],worktops:data.worktops||[],servicePrices:data.servicePrices||{},activeBase:''});
   window.projectServicePrices=data.servicePrices||{};
   if(!libraryBoards.length&&Array.isArray(data.pdcMaterials))libraryBoards=data.pdcMaterials;
   if(!catalogExtra.backMaterials.length)catalogExtra.backMaterials=data.backMaterials||[];
@@ -1020,23 +1023,9 @@ $('insertCabinet').onclick=()=>{
  groupSelections.clear();keys.forEach(key=>groupSelections.add(key));selected=keys[0];
  build(false);updateSelection();storageMessage('Шкафът е добавен като отделно копие в проекта.');
 };
-$('saveProject').onclick=()=>{
- const name=$('projectName').value.trim();if(!name){storageMessage('Въведи име на проекта.');return}
- const existing=savedProjects.find(p=>p.name.toLocaleLowerCase('bg')===name.toLocaleLowerCase('bg'));
- if(existing&&!confirm('Проект „'+existing.name+'“ вече съществува. Искаш ли да презапишеш съществуващия проект?'))return;
- const item={id:existing?.id||'project'+Date.now(),name,parts:snapshotParts(),room:{...ROOM}};
- const previous=savedProjects.slice();
- if(existing)Object.assign(existing,item);else savedProjects.push(item);
- try{localStorage.setItem(PROJECTS_KEY,JSON.stringify(savedProjects))}catch(e){savedProjects=previous;storageMessage('Неуспешно записване: '+e.message);return}
- refreshStorageLists();$('savedProjects').value=item.id;storageMessage(existing?'Проектът е презаписан.':'Проектът е запазен.');
-};
-$('newProject').onclick=()=>{$('workspaceMode').value='project';workspaceMode='project';clearWorkspace();$('projectName').value='Нов проект';storageMessage('Нов празен проект.')};
-$('openProject').onclick=()=>{
- const item=savedProjects.find(p=>p.id===$('savedProjects').value);
- if(!item){storageMessage('Избери проект.');return}
- clearWorkspace();if(item.room)applyRoomDimensions(item.room);restoreParts(item.parts);$('projectName').value=item.name;
- $('workspaceMode').value='project';workspaceMode='project';build(false);storageMessage('Проектът е зареден.');
-};
+$('saveProject').onclick=()=>saveCurrentProject();
+$('newProject').onclick=()=>{activateMainNavigation('project');projectCloudUI.detach();projectBackupState=null;projectBackup=null;projectInstances.clear();clearWorkspace();$('projectTitle').value='Нов проект';$('projectName').value='Нов проект';storageMessage('Нов празен проект.')};
+$('openProject').onclick=()=>openSavedProject();
 refreshStorageLists();
 window.addEventListener('kitchen-v2-cloud-data',e=>{
  if(e.detail?.cabinetItems){savedCabinets=e.detail.cabinetItems;savedProjects=e.detail.projectItems;refreshStorageLists()}
@@ -1261,7 +1250,7 @@ function enableMovableDialog(dlg,confirmId){
 enableMovableDialog($('fileDialog'),'fileDialogConfirm');
 enableMovableDialog($('helpDialog'),'helpDone');
 $('propertiesDialog').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing&&!e.target.matches('textarea')){e.preventDefault();e.stopPropagation();$('dialogDone').click()}});
-let currentDesignMode='constructor',constructorBackup=null,projectBackup=null;
+let currentDesignMode='constructor',constructorBackup=null,projectBackup=null,projectBackupState=null,constructorBackupState=null,projectMaterialBase=null,projectViewRestoreEpoch=0;
 const projectInstances=new Map();
 function projectCutDimensions(p){
  const dims=[p.w,p.h,p.d].map(v=>Math.max(1,Math.round(v))).sort((a,b)=>a-b);
@@ -1539,12 +1528,13 @@ $('exportProjectCut').onclick=()=>{
 };
 function changeDesignMode(next){
  if(next===currentDesignMode)return;
- if(currentDesignMode==='constructor')constructorBackup=snapshotParts();
- else projectBackup=snapshotParts();
+ projectViewRestoreEpoch++;
+ if(currentDesignMode==='constructor'){constructorBackup=snapshotParts();constructorBackupState=captureProjectSnapshot()}
+ else {projectBackup=snapshotParts();projectBackupState=captureProjectSnapshot()}
  currentDesignMode=next;
  clearWorkspace();
  const items=next==='constructor'?constructorBackup:projectBackup;
- if(items?.length)restoreParts(items);
+ if(items?.length&&!(next==='project'?projectBackupState:constructorBackupState))restoreParts(items);
 
  document.querySelector('main').classList.toggle('projectMode',next==='project');
  $('projectDashboard').hidden=next!=='project';
@@ -1553,6 +1543,7 @@ function changeDesignMode(next){
  $('rotateLeft').disabled=next==='project';$('rotateRight').disabled=next==='project';
  if(next==='project')window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'));
  build(false);setView('perspective');projectRefresh();
+ const state=next==='project'?projectBackupState:constructorBackupState;if(state)applyProjectSnapshot(state,{resetHistory:false});
 }
 function cabinetPreviewSvg(items){
  const parts=(items||[]).map(i=>i.part||i).filter(p=>p&&['x','y','z','w','h','d'].every(k=>Number.isFinite(Number(p[k])))&&p.w>0&&p.h>0&&p.d>0);
@@ -1672,9 +1663,10 @@ function renderMaterialsPage(){
  if(extraBody.rows.length)services.append(extraTable);
 }
 window.addEventListener('kitchen-v2-cloud-material-list',e=>{const select=$('v2MaterialCloudSelect');if(!select)return;select.replaceChildren(new Option('Избери база…',''));for(const item of e.detail.items||[])select.add(new Option(item.name,item.id));const st=$('v2MaterialCloudStatus');if(st)st.textContent=(e.detail.items||[]).length+' бази в облака.'});
-window.addEventListener('kitchen-v2-cloud-material-saved',e=>{localStorage.setItem('kitchenActiveMaterialBase',e.detail.name);const el=$('v2MaterialCloudStatus');if(el)el.textContent='Запазена база: '+e.detail.name});
+window.addEventListener('kitchen-v2-cloud-material-saved',e=>{projectMaterialBase=e.detail.name;localStorage.setItem('kitchenActiveMaterialBase',e.detail.name);const el=$('v2MaterialCloudStatus');if(el)el.textContent='Запазена база: '+e.detail.name});
 window.addEventListener('kitchen-v2-cloud-material-error',e=>{const el=$('v2MaterialCloudStatus');if(el)el.textContent='Грешка: '+e.detail.message});
 window.addEventListener('kitchen-v2-cloud-material-loaded',e=>{
+ projectMaterialBase=e.detail.name;
  const d=e.detail.data;
  if(Array.isArray(d.pdcMaterials))libraryBoards=d.pdcMaterials;
  if(Array.isArray(d.edgeMaterials))libraryEdges=d.edgeMaterials;
@@ -1683,71 +1675,56 @@ window.addEventListener('kitchen-v2-cloud-material-loaded',e=>{
  localStorage.setItem('kitchenActiveMaterialBase',e.detail.name);storeCatalog();renderMaterialsPage();
  const status=$('v2MaterialCloudStatus');if(status)status.textContent='Заредена база: '+e.detail.name;
 });
-function saveCurrentProject(){
- if(currentDesignMode!=='project')return;
- const dialog=document.createElement('dialog');dialog.className='materialEditDialog';
- const title=document.createElement('h3');title.textContent='Запази проект';
- const label=document.createElement('label');label.textContent='Име на проекта';
- const nameInput=document.createElement('input');nameInput.type='text';nameInput.value=$('projectTitle').value||$('projectName').value||'Нова кухня';
- const targetLabel=document.createElement('label');targetLabel.textContent='Запиши като:';
- const select=document.createElement('select');select.add(new Option('Нов проект (нов запис)',''));
- for(const p of savedProjects)select.add(new Option('Презапиши: '+p.name,p.id));
- select.onchange=()=>{const p=savedProjects.find(p=>p.id===select.value);if(p)nameInput.value=p.name};
- const actions=document.createElement('div');actions.className='materialActions';
- const cancel=document.createElement('button');cancel.textContent='Отказ';cancel.onclick=()=>dialog.close();
- const save=document.createElement('button');save.textContent='Запази';save.className='libraryPrimary';
- save.onclick=()=>{
-  const name=nameInput.value.trim();if(!name){alert('Въведи име на проекта.');return}
-  const chosen=savedProjects.find(p=>p.id===select.value);
-  const duplicate=savedProjects.find(p=>p.name.toLocaleLowerCase('bg')===name.toLocaleLowerCase('bg'));
-  const target=chosen||duplicate;
-  if(target&&!confirm('Да презапиша ли проекта „'+target.name+'“ с текущото съдържание?'))return;
-  const previous=JSON.stringify(savedProjects);
-  const item={id:target?.id||'project'+Date.now(),name,parts:snapshotParts(),room:{...ROOM}};
-  if(target)Object.assign(target,item);else savedProjects.push(item);
-  try{localStorage.setItem(PROJECTS_KEY,JSON.stringify(savedProjects))}
-  catch(err){savedProjects=JSON.parse(previous);alert('Грешка при запис: '+err.message);return}
-  $('projectTitle').value=name;$('projectName').value=name;
-  refreshStorageLists();$('savedProjects').value=item.id;projectBackup=snapshotParts();
-  storageMessage(target?'Проектът е презаписан.':'Проектът е запазен.');
-  dialog.close();
- };
- actions.append(cancel,save);dialog.append(title,label,nameInput,targetLabel,select,actions);
- document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
+function captureProjectSnapshot(){
+ return projectData({parts:snapshotParts(),room:{...ROOM},assemblyNames:Object.fromEntries([...projectInstances].filter(([id])=>customParts.some(p=>p.assembly===id||p.assemblyStack?.includes(id)))),
+  materials:{pdcMaterials:libraryBoards,edgeMaterials:libraryEdges,...catalogExtra,servicePrices:window.projectServicePrices||{},activeBase:projectMaterialBase??localStorage.getItem('kitchenActiveMaterialBase')??''},
+  settings:{viewMode,projectTab:activeProjectTab,camera:{position:camera.position.toArray(),target:controls.target.toArray(),zoom:camera.zoom}}});
 }
-function openSavedProject(){
- if(currentDesignMode!=='project')return;
- const choices=savedProjects||[];
- if(!choices.length){alert('Няма запазени проекти.');return}
- const dialog=document.createElement('dialog');dialog.className='materialEditDialog';
- const title=document.createElement('h3');title.textContent='Отвори проект';
- const select=document.createElement('select');for(const p of choices)select.add(new Option(p.name,p.id));
- const buttons=document.createElement('div');buttons.className='materialActions';
- const cancel=document.createElement('button');cancel.textContent='Отказ';cancel.onclick=()=>dialog.close();
- const ok=document.createElement('button');ok.textContent='Отвори';ok.className='libraryPrimary';ok.onclick=()=>{
-  const p=choices.find(p=>p.id===select.value);if(!p)return;
-  $('savedProjects').value=p.id;$('openProject').click();$('projectTitle').value=p.name;projectBackup=snapshotParts();
-  dialog.close();activateMainNavigation('project');
+function applyProjectSnapshot(input,{resetHistory=true}={}){
+ const viewEpoch=++projectViewRestoreEpoch;
+ const data=projectData(input),previous=captureProjectSnapshot();
+ const install=value=>{
+  clearWorkspace();projectInstances.clear();
+  if(value.materials){
+   projectMaterialBase=value.materials.activeBase||'';
+   libraryBoards=structuredClone(value.materials.pdcMaterials||[]);libraryEdges=structuredClone(value.materials.edgeMaterials||[]);
+   catalogExtra={backMaterials:structuredClone(value.materials.backMaterials||[]),worktops:structuredClone(value.materials.worktops||[])};
+   window.projectServicePrices=structuredClone(value.materials.servicePrices||{});
+  }
+  applyRoomDimensions(value.room);
+  const keys=restoreParts(value.parts),ids=new Map();
+  // Remap display names through the existing loader, without changing grouping.
+  value.parts.forEach((item,i)=>{
+   const loaded=customParts.find(p=>p.key===keys[i]);
+   if(item.part.assembly)ids.set(item.part.assembly,loaded.assembly);
+   (item.part.assemblyStack||[]).forEach((id,j)=>{if(id)ids.set(id,loaded.assemblyStack[j])});
+  });
+  for(const [oldId,name] of Object.entries(value.assemblyNames||{}))if(ids.has(oldId))projectInstances.set(ids.get(oldId),name);
+  refreshMaterials();
+  const settings=value.settings||{},view=['perspective','iso','front','top','left','right'].includes(settings.viewMode)?settings.viewMode:'perspective';
+  setView(view);switchProjectTab(currentDesignMode==='project'&&['3d','cut','costs'].includes(settings.projectTab)?settings.projectTab:'3d');
+  if(settings.camera)requestAnimationFrame(()=>{
+   if(viewEpoch!==projectViewRestoreEpoch)return;
+   camera.position.fromArray(settings.camera.position);controls.target.fromArray(settings.camera.target);camera.zoom=settings.camera.zoom;
+   camera.lookAt(controls.target);camera.updateProjectionMatrix();controls.update();
+  });
+  projectBackup=snapshotParts();
  };
- const remove=document.createElement('button');remove.type='button';remove.textContent='Изтрий';remove.title='Изтрий избрания запазен проект';
- remove.onclick=()=>{
-  const p=savedProjects.find(item=>item.id===select.value);if(!p)return;
-  if(!confirm('Сигурен ли си, че искаш да изтриеш проекта „'+p.name+'“?'))return;
-  const index=savedProjects.findIndex(item=>item.id===p.id);
-  if(index<0)return;
-  const previous=savedProjects.slice();
-  savedProjects.splice(index,1);
-  try{localStorage.setItem(PROJECTS_KEY,JSON.stringify(savedProjects))}
-  catch(err){savedProjects=previous;alert('Проектът не беше изтрит: '+err.message);return}
-  refreshStorageLists();
-  select.querySelector('option[value="'+CSS.escape(p.id)+'"]')?.remove();
-  if(select.options.length)select.selectedIndex=0;
-  else dialog.close();
-  storageMessage('Проектът „'+p.name+'“ е изтрит.');
- };
- buttons.append(cancel,remove,ok);dialog.append(title,select,buttons);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
+ try{install(data)}catch(error){install(previous);throw error}
+ // Undo must not cross a loaded-project/account boundary.
+ if(resetHistory){undoHistory.length=0;redoHistory.length=0;updateHistoryButtons()}
 }
+function emptyProjectSnapshot(){return {parts:[],room:{w:3000,h:2600,d:3000},assemblyNames:{},materials:structuredClone(publicProjectCatalog||{pdcMaterials:[],edgeMaterials:[],backMaterials:[],worktops:[]}),settings:{viewMode:'perspective',projectTab:'3d'}}}
+const projectCloudUI=installProjectUI({snapshot:captureProjectSnapshot,apply:applyProjectSnapshot,localProjects:()=>savedProjects||[],feedback:message=>{storageMessage(message);$('projectFeedback').textContent=message},
+ isProjectMode:()=>currentDesignMode==='project',getName:()=>$('projectTitle').value||'Нов проект',
+ captureDraft:()=>({data:currentDesignMode==='project'?captureProjectSnapshot():projectBackupState,name:$('projectTitle').value}),
+ restoreDraft:draft=>{if(!draft?.data)return;projectBackupState=draft.data;projectBackup=draft.data.parts;if(currentDesignMode==='project')applyProjectSnapshot(draft.data);$('projectTitle').value=draft.name;$('projectName').value=draft.name},
+ clearDraft:()=>{projectBackupState=emptyProjectSnapshot();projectBackup=[];if(currentDesignMode==='project')applyProjectSnapshot(projectBackupState);$('projectTitle').value='Нов проект';$('projectName').value='Нов проект';$('projectFeedback').textContent='';storageMessage('');undoHistory.length=0;redoHistory.length=0;updateHistoryButtons()},
+ onSaved:result=>{$('projectTitle').value=result.name;$('projectName').value=result.name;projectBackup=snapshotParts()}});
+function saveCurrentProject(){return projectCloudUI.save()}
+function openSavedProject(){return projectCloudUI.open()}
 $('projectQuickSave').onclick=saveCurrentProject;
+$('projectQuickSaveAs').onclick=()=>projectCloudUI.save(true);
 $('projectQuickOpen').onclick=openSavedProject;
 $('projectAddHorizontal').onclick=()=>addCustom('horizontal');
 $('projectAddVertical').onclick=()=>addCustom('vertical');

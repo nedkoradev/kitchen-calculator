@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function owner(uid){return request.auth != null && request.auth.uid == uid;}
+  // Existing cabinet and material documents remain private to their owner.
+  match /users/{uid}/v2_cabinets/{id} {
+   allow read, write: if owner(uid);
+  }
+  match /users/{uid}/materials/{id} {
+   allow read, write: if owner(uid);
+  }
+  function projectPath(uid,id){return /databases/$(database)/documents/users/$(uid)/v2_projects/$(id);}
+  function claimPath(uid,key){return /databases/$(database)/documents/users/$(uid)/v2_project_names/$(key);}
+  // Rules lower() folds ASCII only; explicitly fold the Bulgarian alphabet too.
+  function nameKey(name){
+   return name.lower().replace('А','а').replace('Б','б').replace('В','в').replace('Г','г').replace('Д','д').replace('Е','е').replace('Ж','ж').replace('З','з').replace('И','и').replace('Й','й').replace('К','к').replace('Л','л').replace('М','м').replace('Н','н').replace('О','о').replace('П','п').replace('Р','р').replace('С','с').replace('Т','т').replace('У','у').replace('Ф','ф').replace('Х','х').replace('Ц','ц').replace('Ч','ч').replace('Ш','ш').replace('Щ','щ').replace('Ъ','ъ').replace('Ь','ь').replace('Ю','ю').replace('Я','я').replace('Ѝ','ѝ');
+  }
+  function projectShape(d){
+   return d.keys().hasOnly(['schemaVersion','name','nameKey','data','revision','createdAt','updatedAt'])
+    && d.schemaVersion == 1 && d.name is string && d.name.size() > 0 && d.name.size() <= 100
+    && d.name == d.name.trim() && !d.name.matches('.*[/\\x00-\\x1F\\x7F].*') && !d.name.matches('.*  .*')
+    && d.nameKey == nameKey(d.name) && d.nameKey != '.' && d.nameKey != '..' && !d.nameKey.matches('__.*__')
+    && d.data is map && d.data.parts is list && d.data.room is map
+    && d.revision is int && d.revision > 0 && d.createdAt is timestamp && d.updatedAt == request.time;
+  }
+  function claimed(uid,id,d){
+   return getAfter(claimPath(uid,d.nameKey)).data.projectId == id
+    && getAfter(claimPath(uid,d.nameKey)).data.nameKey == d.nameKey;
+  }
+  match /users/{uid}/v2_projects/{id} {
+   allow read: if owner(uid);
+   allow create: if owner(uid) && projectShape(request.resource.data)
+    && request.resource.data.revision == 1 && request.resource.data.createdAt == request.time
+    && claimed(uid,id,request.resource.data);
+   allow update: if owner(uid) && projectShape(request.resource.data)
+    && request.resource.data.revision == resource.data.revision + 1
+    && request.resource.data.createdAt == resource.data.createdAt
+    && claimed(uid,id,request.resource.data)
+    && (resource.data.nameKey == request.resource.data.nameKey || !existsAfter(claimPath(uid,resource.data.nameKey)));
+   allow delete: if owner(uid) && !existsAfter(claimPath(uid,resource.data.nameKey));
+  }
+  match /users/{uid}/v2_project_names/{key} {
+   allow read: if owner(uid);
+   function validClaim(){
+    return request.resource.data.keys().hasOnly(['nameKey','projectId'])
+     && request.resource.data.nameKey == key && request.resource.data.projectId is string
+     && request.resource.data.projectId.matches('[A-Za-z0-9_-]{1,128}')
+     && getAfter(projectPath(uid,request.resource.data.projectId)).data.nameKey == key;
+   }
+   allow create: if owner(uid) && validClaim();
+   allow update: if owner(uid) && validClaim() && request.resource.data.projectId == resource.data.projectId;
+   allow delete: if owner(uid) && (!existsAfter(projectPath(uid,resource.data.projectId))
+    || getAfter(projectPath(uid,resource.data.projectId)).data.nameKey != key);
+  }
+  // This does not override other allows; keep the matches above narrowly scoped.
+  match /{document=**} {
+   allow read, write: if false;
+  }
+
+ }
+}

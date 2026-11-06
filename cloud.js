@@ -1,6 +1,8 @@
+import {createProjectStore} from './project-store.mjs';
+import {projectErrorMessage} from './project-model.mjs';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import {getFirestore,collection,doc,setDoc,getDocs,getDoc,deleteDoc} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import {getFirestore,collection,doc,setDoc,getDocs,getDoc,deleteDoc,getDocsFromServer,getDocFromServer,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 const config={apiKey:"AIzaSyBlrriK3iQAuO0KN-bHkd1p5PoLWoqjTJ4",authDomain:"kitchen-designer-9d437.firebaseapp.com",projectId:"kitchen-designer-9d437",storageBucket:"kitchen-designer-9d437.firebasestorage.app",messagingSenderId:"579302190437",appId:"1:579302190437:web:b2ce4dda4911447588458c"};
 const app=initializeApp(config),auth=getAuth(app),db=getFirestore(app);
 const el=id=>document.getElementById(id),status=msg=>el('cloudStatus').textContent=msg;
@@ -9,6 +11,7 @@ let user=null;
 onAuthStateChanged(auth,u=>{
  user=u;el('cloudLogin').hidden=!!u;el('cloudLogout').hidden=!u;
  status(u?'☁ '+(u.email||'Свързан'):'☁ Не сте влезли');
+ window.dispatchEvent(new CustomEvent('kitchen-project-auth',{detail:{uid:u?.uid||null}}));
  if(u){window.dispatchEvent(new Event('kitchen-v2-material-list-request'));window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'))}
 });
 el('cloudLogin').onclick=async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){status('Вход: '+e.message)}};
@@ -76,4 +79,18 @@ window.addEventListener('kitchen-v2-material-save-request',async e=>{
   emit('material-saved',{name,id});
   window.dispatchEvent(new Event('kitchen-v2-material-list-request'));
  }catch(e){emit('material-error',{message:e.message})}
+});
+
+// Separate request/response channel: existing cabinet/material contracts stay intact.
+const projectStore=createProjectStore({db,sdk:{collection,doc,getDocsFromServer,getDocFromServer,runTransaction,serverTimestamp},getUser:()=>user,isOnline:()=>navigator.onLine});
+window.addEventListener('kitchen-project-auth-request',()=>window.dispatchEvent(new CustomEvent('kitchen-project-auth',{detail:{uid:user?.uid||null}})));
+window.addEventListener('kitchen-project-request',async event=>{
+ const {requestId,action,args}=event.detail||{},uid=user?.uid||null;
+ try{
+  if(!['list','open','save','remove'].includes(action))throw Error('Непозната операция.');
+  const result=await projectStore[action](args);
+  window.dispatchEvent(new CustomEvent('kitchen-project-response',{detail:{requestId,uid,result}}));
+ }catch(error){
+  window.dispatchEvent(new CustomEvent('kitchen-project-response',{detail:{requestId,uid,error:{code:error.code||'unknown',message:projectErrorMessage(error),details:error.details}}}));
+ }
 });

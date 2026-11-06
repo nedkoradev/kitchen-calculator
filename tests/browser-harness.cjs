@@ -18,7 +18,7 @@ window.__test={
  finish:()=>structuredClone(finishes),labels:()=>structuredClone(labels)
 };
 `;
-async function openKitchen(){
+async function openKitchen({firebaseDouble=false,extraHooks=''}={}){
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--enable-unsafe-swiftshader'],proxy:process.env.HTTPS_PROXY?{server:process.env.HTTPS_PROXY,bypass:'127.0.0.1,localhost'}:undefined});
  try{
   const page=await browser.newPage({viewport:{width:1400,height:1000}}),errors=[];
@@ -26,10 +26,13 @@ async function openKitchen(){
   page.on('requestfailed',r=>console.error('REQUESTFAILED',r.url(),r.failure().errorText));
   if(process.env.KITCHEN_CDN_CACHE)await page.route('https://cdn.jsdelivr.net/**',r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(process.env.KITCHEN_CDN_CACHE,path.basename(new URL(r.request().url()).pathname)))}));
   if(process.env.KITCHEN_GEOMETRY_FILE)await page.route('**/geometry.mjs',r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync(process.env.KITCHEN_GEOMETRY_FILE,'utf8')}));
-  await page.route('**/cloud.js',r=>r.fulfill({contentType:'application/javascript',body:'// Isolated test: no Firebase access.'}));
+  if(firebaseDouble){
+   const origin=new URL(process.env.KITCHEN_TEST_URL||'http://127.0.0.1:8000/').origin;
+   await page.route('https://www.gstatic.com/firebasejs/**',r=>r.fulfill({contentType:'application/javascript',body:`export * from '${origin}/tests/firebase-browser-double.mjs';`}));
+  }else await page.route('**/cloud.js',r=>r.fulfill({contentType:'application/javascript',body:'// Isolated test: no Firebase access.'}));
   await page.route(/\/($|index\.html$)/,async r=>{
    if(new URL(r.request().url()).pathname!=='/'&& !r.request().url().endsWith('/index.html'))return r.continue();
-   await r.fulfill({contentType:'text/html',body:source.replace('}build();frame();','}build();frame();'+hooks)});
+   await r.fulfill({contentType:'text/html',body:source.replace('}build();frame();','}build();frame();'+hooks+extraHooks)});
   });
   await page.goto(process.env.KITCHEN_TEST_URL||'http://127.0.0.1:8000/',{waitUntil:'networkidle'});
   await page.waitForFunction(()=>window.__test&&document.querySelector('#materialSelect').options.length>1);
