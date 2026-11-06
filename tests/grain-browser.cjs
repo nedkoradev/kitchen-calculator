@@ -36,7 +36,7 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
    await page.locator(mode==='constructor'?'#modeConstructor':'#modeProject').click();await setup([part]);
    await page.evaluate(photo=>{window.__grainTest.catalog({name:'Decor',grainRequired:true,textureUrl:photo,textureWidthMm:1000,textureHeightMm:0});window.__grainTest.finish({material:0,edges:[0,1,2,3],grainAxis:'x'})},photo);
    const before=await parts();await page.evaluate(()=>window.__grainTest.properties());
-   assert.deepEqual(await page.locator('#grainDirection option').allTextContents(),['По ширината — 720 мм','По дълбочината — 550 мм']);
+   assert.deepEqual(await page.locator('#grainDirection option').allTextContents(),['По дължина — 720 мм (по ширината)','По ширина — 550 мм (по дълбочината)']);
    await page.locator('#grainDirection').selectOption('z');
    assert.equal(await page.evaluate(()=>window.__grainTest.indicator()),'z');
    await page.locator('#materialSelect').selectOption('1');assert.equal(await page.locator('#grainEditor').isVisible(),false);
