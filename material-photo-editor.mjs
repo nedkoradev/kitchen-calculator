@@ -48,7 +48,7 @@ export function installMaterialPhotoEditor(form,item,dialog){
   try{
    const response=await fetch('https://api.github.com/repos/nedkoradev/kitchen-calculator/contents/materials/textures',{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
    if(!response.ok)throw Error('GitHub не върна списъка със снимки ('+response.status+').');
-   const files=(await response.json()).filter(x=>x.type==='file'&&/\\.(?:png|jpe?g|webp)$/i.test(x.name));
+   const files=(await response.json()).filter(x=>x.type==='file'&&/\.(?:png|jpe?g|webp)$/i.test(x.name));
    message.textContent=files.length?'Избери снимка, за да я свържеш с материала.':'Няма намерени снимки в папката.';
    for(const entry of files){
     const tile=document.createElement('button');tile.type='button';tile.style.cssText='background:#293b50;color:white;border:1px solid #566c85;border-radius:9px;padding:8px;min-width:0;cursor:pointer';
