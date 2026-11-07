@@ -1792,7 +1792,12 @@ function projectRefresh(){
  }
  root.textContent=groups.length+' шкафа / групи · '+cutCount+' детайла';
  cut.append(table(['Етикет','Детайл','Материал','Брой','Краен размер','Дебелина','Кантирани ръбове','Кант'],cutRows));
- const sum=document.createElement('div');sum.className='cutEdgeSummary';sum.style.textAlign='right';sum.style.padding='12px 8px';sum.style.fontWeight='bold';sum.textContent='ОБЩО КАНТ: '+meters(totalEdge);cut.append(sum);for(const [name,item] of byEdge){const line=document.createElement('div');line.textContent=name+': '+meters(item.length);sum.append(line)}
+ const cutTableSummary=cut.querySelector('table');if(cutTableSummary){
+  const foot=cutTableSummary.createTFoot();
+  const addSummaryRow=(label,value,isTotal=false)=>{const tr=foot.insertRow();const td=tr.insertCell();td.colSpan=7;td.textContent=label;td.style.textAlign='right';td.style.fontWeight=isTotal?'700':'500';const amount=tr.insertCell();amount.textContent=value;amount.style.textAlign='right';amount.style.whiteSpace='nowrap';amount.style.fontWeight=isTotal?'700':'500';if(isTotal){tr.style.background='#2b3e53';tr.style.color='#fff'}};
+  for(const [name,item] of byEdge)addSummaryRow(name,meters(item.length));
+  addSummaryRow('ОБЩО КАНТ',meters(totalEdge),true);
+ }
  const cutTable=cut.querySelector('table');if(cutTable){
  cutTable.style.width='max-content';cutTable.style.maxWidth='none';cutTable.style.borderCollapse='collapse';cutTable.style.tableLayout='auto';
  cutTable.querySelectorAll('tr').forEach(tr=>{
