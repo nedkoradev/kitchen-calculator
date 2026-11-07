@@ -37,6 +37,28 @@ export function installMaterialPhotoEditor(form,item,dialog){
  const actions=document.createElement('div');actions.className='materialActions';
  const button=(id,text,handler)=>{const element=document.createElement('button');element.type='button';element.id=id;element.textContent=text;element.title=text;element.onclick=handler;actions.append(element);return element};
  button('chooseMaterialPhoto','Избери снимка',()=>file.click());
+ button('githubMaterialGallery','Снимки от GitHub',async()=>{
+  const gallery=document.createElement('dialog');gallery.className='materialEditDialog';
+  gallery.style.cssText='width:min(780px,95vw);max-height:85vh;overflow:auto;background:#202e40;color:#f5f8fc;border:1px solid #51647a;border-radius:12px;padding:18px';
+  const heading=document.createElement('h3');heading.textContent='Снимки от GitHub · materials/textures';
+  const message=document.createElement('p');message.textContent='Зареждане на снимките…';
+  const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px';
+  const close=document.createElement('button');close.type='button';close.textContent='Затвори';close.onclick=()=>gallery.close();
+  gallery.append(heading,message,grid,close);document.body.append(gallery);gallery.addEventListener('close',()=>gallery.remove(),{once:true});gallery.showModal();
+  try{
+   const response=await fetch('https://api.github.com/repos/nedkoradev/kitchen-calculator/contents/materials/textures',{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
+   if(!response.ok)throw Error('GitHub не върна списъка със снимки ('+response.status+').');
+   const files=(await response.json()).filter(x=>x.type==='file'&&/\\.(?:png|jpe?g|webp)$/i.test(x.name));
+   message.textContent=files.length?'Избери снимка, за да я свържеш с материала.':'Няма намерени снимки в папката.';
+   for(const entry of files){
+    const tile=document.createElement('button');tile.type='button';tile.style.cssText='background:#293b50;color:white;border:1px solid #566c85;border-radius:9px;padding:8px;min-width:0;cursor:pointer';
+    const img=document.createElement('img');img.src=entry.download_url;img.alt=entry.name;img.loading='lazy';img.style.cssText='width:100%;height:105px;object-fit:contain;background:#e9edf3;border-radius:5px';
+    const caption=document.createElement('span');caption.textContent=entry.name;caption.style.cssText='display:block;overflow-wrap:anywhere;font-size:12px;margin-top:6px';
+    tile.append(img,caption);tile.onclick=()=>{input.value='materials/textures/'+encodeURIComponent(entry.name);input.dispatchEvent(new Event('input'));gallery.close();setStatus('Проверявам избраната снимка от GitHub…')};
+    grid.append(tile);
+   }
+  }catch(error){message.textContent='Неуспешно зареждане: '+error.message+' Можеш да опиташ отново по-късно.'}
+ });
  const github=document.createElement('a');github.id='uploadMaterialPhoto';github.className='materialPhotoLink';github.textContent='Отвори GitHub за качване';github.href='https://github.com/nedkoradev/kitchen-calculator/upload/main/materials/textures';github.target='_blank';github.rel='noopener noreferrer';actions.append(github);
  const info=document.createElement('p');info.id='materialPhotoFileInfo';info.className='projectHint';
  const suggestion=document.createElement('p');suggestion.id='materialPhotoSuggestedPath';suggestion.className='projectHint';
