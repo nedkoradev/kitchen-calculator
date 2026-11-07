@@ -24,6 +24,10 @@ export function decorateAction(button,name,label,{iconOnly=false}={}){
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
  for(const [key,value] of Object.entries({viewBox:'0 0 24 24',width:'24',height:'24',fill:'none',stroke:'currentColor','stroke-width':'2','stroke-linecap':'round','stroke-linejoin':'round','aria-hidden':'true',focusable:'false',class:'actionSvg'}))svg.setAttribute(key,value);
  svg.innerHTML=paths[name]||paths.settings;
+ if(button.querySelector('.nedPictureIcon')){
+  button.title=label;button.setAttribute('aria-label',label);button.classList.add('iconOnly');
+  return button; // Preserve illustrated icons supplied by the page.
+ }
  if(iconOnly)button.replaceChildren(svg);else button.prepend(svg);
  button.title=label;button.setAttribute('aria-label',label);button.classList.add(iconOnly?'iconOnly':'iconWithText');
  return button;
