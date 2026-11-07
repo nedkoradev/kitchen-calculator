@@ -7,7 +7,7 @@ async function initializeRelease(){
   const release=await response.json();
   if(!/^[a-f0-9]{40}$/.test(release.revision)||!/^\d+\.\d+$/.test(release.version))return;
   const label=document.getElementById('appVersion');
-  if(label){label.textContent=`v${release.version}`;document.documentElement.dataset.buildRevision=release.revision}
+  if(label){document.documentElement.dataset.buildRevision=release.revision}
   if('serviceWorker' in navigator){
    const registration=await navigator.serviceWorker.register(new URL('./sw.js',import.meta.url),{updateViaCache:'none'});
    await registration.update();
