@@ -36,11 +36,11 @@ export function installMaterialPhotoEditor(form,item,dialog){
  const file=document.createElement('input');file.type='file';file.accept='image/jpeg,image/png,image/webp';file.id='materialPhotoUpload';file.hidden=true;file.setAttribute('aria-label','Избери снимка');form.append(file);
  const actions=document.createElement('div');actions.className='materialActions';
  const button=(id,text,handler)=>{const element=document.createElement('button');element.type='button';element.id=id;element.textContent=text;element.title=text;element.onclick=handler;actions.append(element);return element};
- button('chooseMaterialPhoto','Избери снимка',()=>file.click());
- button('githubMaterialGallery','Снимки от GitHub',async()=>{
+ button('chooseMaterialPhoto','Избери снимка',()=>document.getElementById('githubMaterialGallery')?.click());
+ button('githubMaterialGallery','Снимки от хранилището',async()=>{
   const gallery=document.createElement('dialog');gallery.className='materialEditDialog';
   gallery.style.cssText='width:min(780px,95vw);max-height:85vh;overflow:auto;background:#202e40;color:#f5f8fc;border:1px solid #51647a;border-radius:12px;padding:18px';
-  const heading=document.createElement('h3');heading.textContent='Снимки от GitHub · materials/textures';
+  const heading=document.createElement('h3');heading.textContent='Избери снимка за фладер';
   const message=document.createElement('p');message.textContent='Зареждане на снимките…';
   const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px';
   const close=document.createElement('button');close.type='button';close.textContent='Затвори';close.onclick=()=>gallery.close();
@@ -121,7 +121,7 @@ export function installMaterialPhotoEditor(form,item,dialog){
  }
  button('verifyMaterialPhoto','Провери снимката',verify);
  const details=document.createElement('details');details.className='materialPhotoHelp';
- const summary=document.createElement('summary');summary.textContent='ⓘ Информация за снимката';details.append(summary);
+ const summary=document.createElement('summary');summary.textContent='Разширени настройки на снимката';details.append(summary);
  const extraActions=document.createElement('div');extraActions.className='materialActions';
  const copy=button('copyMaterialPhotoPath','Копирай пътя',async()=>{
   const value=validTextureUrl(input.value);if(!value){setStatus('Първо избери снимка или въведи валиден път.');return}
@@ -134,7 +134,8 @@ export function installMaterialPhotoEditor(form,item,dialog){
  const advancedActions=document.createElement('div');advancedActions.className='materialActions';
  for(const action of [...actions.children])if(action.id!=='chooseMaterialPhoto')advancedActions.append(action);
  form.append(actions);
- const note=document.createElement('p');note.className='projectHint';note.textContent='Избери снимка, качи я в GitHub и натисни „Провери снимката“.';details.append(note);
+ // The gallery and upload workflow remain accessible through the settings manager.
+ const note=document.createElement('p');note.className='projectHint';note.textContent='Разширени действия за качване и проверка на снимки.';details.append(note);
  const help=document.createElement('p');help.textContent='JPG, PNG или WebP до 10 MiB. Качи файла в materials/textures/ с показаното име. Изчакай GitHub Pages да го публикува. Фладерът в снимката следва вертикалата. Непроверената снимка не заменя записаната.';
  details.append(label,advancedActions,download,info,suggestion,help,extraActions);form.append(details);
  input.oninput=()=>{invalidate();removed=false;local=null;file.value='';info.textContent='';suggestion.textContent='';releasePreview();setStatus(pendingNote);if(validTextureUrl(input.value))timer=setTimeout(verify,300)};
