@@ -23,7 +23,7 @@ function openManager(){
    info.textContent='Снимки в хранилището: '+files.length;
    for(const file of files){
     const card=make('div',null,'background:#29384a;border:1px solid #50617a;border-radius:9px;padding:8px;min-width:0');
-    const img=make('img');img.src=file.download_url;img.alt=file.name;img.loading='lazy';img.style.cssText='width:100%;height:110px;object-fit:contain;background:#edf1f6;border-radius:5px';
+    const img=make('img');const urls=['https://nedkoradev.github.io/kitchen-calculator/'+DIR+'/'+file.name.split('/').map(encodeURIComponent).join('/'),file.download_url,'https://raw.githubusercontent.com/'+REPO+'/main/'+DIR+'/'+encodeURIComponent(file.name)];let sourceIndex=0;img.onerror=()=>{sourceIndex++;if(sourceIndex<urls.length)img.src=urls[sourceIndex];else{img.alt='Снимката не може да се зареди';img.style.background='#493340';}};img.src=urls[0];img.alt=file.name;img.loading='lazy';img.referrerPolicy='no-referrer';img.style.cssText='width:100%;height:110px;object-fit:contain;background:#edf1f6;border-radius:5px';
     const name=make('div',file.name,'overflow-wrap:anywhere;font-size:12px;margin:6px 0');
     const row=make('div',null,'display:flex;gap:6px;flex-wrap:wrap');
     const view=make('a','Отвори');view.href=file.html_url;view.target='_blank';view.rel='noopener noreferrer';view.className='materialPhotoLink';
