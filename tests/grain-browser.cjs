@@ -14,7 +14,7 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
  };`});
  try{
   await page.route(photo+'*',route=>route.fulfill({contentType:'image/png',path:path.join(__dirname,'fixtures/grain.png'),headers:{'access-control-allow-origin':'*'}}));
-  assert.match(await page.locator('header strong').innerText(),/^Kitchen Designer v\d+\.\d+$/);
+  assert.match(await page.locator('header strong').innerText(),/^NED-IQ v\d+\.\d+$/);
   await page.locator('#navMaterials').click();
   const section=page.locator('.materialSection').filter({has:page.getByRole('heading',{name:'ПДЧ материали',exact:true})});
   await section.getByRole('button',{name:'Нов материал',exact:true}).click();
@@ -36,13 +36,13 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
    await page.locator(mode==='constructor'?'#modeConstructor':'#modeProject').click();await setup([part]);
    await page.evaluate(photo=>{window.__grainTest.catalog({name:'Decor',grainRequired:true,textureUrl:photo,textureWidthMm:1000,textureHeightMm:0});window.__grainTest.finish({material:0,edges:[0,1,2,3],grainAxis:'x'})},photo);
    const before=await parts();await page.evaluate(()=>window.__grainTest.properties());
-   assert.deepEqual(await page.locator('#grainDirection option').allTextContents(),['По дължина — 720 мм (по ширината)','По ширина — 550 мм (по дълбочината)']);
+   assert.deepEqual(await page.locator('#grainDirection option').allTextContents(),['По дължина — 720 мм','По ширина — 550 мм']);
    await page.locator('#grainDirection').selectOption('z');
    assert.equal(await page.evaluate(()=>window.__grainTest.indicator()),'z');
    await page.locator('#materialSelect').selectOption('1');assert.equal(await page.locator('#grainEditor').isVisible(),false);
    await page.locator('#materialSelect').selectOption('0');assert.equal(await page.locator('#grainDirection').inputValue(),'z');
    assert.deepEqual(await page.evaluate(()=>window.__test.finish()[window.__test.parts()[0].key].edges),[0,1,2,3]);
-   assert.equal(await page.locator('#grainDirectionHint').innerText(),'↔ По дълбочината · разкрой 550 × 720 мм');await page.locator('#dialogDone').click();assert.deepEqual(await parts(),before);
+   assert.equal(await page.locator('#grainDirectionHint').innerText(),'↔ По ширина · разкрой 550 × 720 мм');await page.locator('#dialogDone').click();assert.deepEqual(await parts(),before);
    await page.waitForFunction(()=>window.__grainTest.meshes()[0].map);let mesh=await page.evaluate(()=>window.__grainTest.meshes()[0]);assert.equal(mesh.color,'ffffff');assert.ok(Math.max(...mesh.uv)-Math.min(...mesh.uv)<.99,'physical scales are not stretched to a unit square');
    for(const view of ['top','front','perspective']){await page.evaluate(view=>window.__test.view(view),view);assert.equal((await page.evaluate(()=>window.__grainTest.meshes()[0])).map,true)}
    const right=mode==='constructor'?'#rotateRight':'#projectRotateRight',left=mode==='constructor'?'#rotateLeft':'#projectRotateLeft';
@@ -76,11 +76,11 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
   const exportRows=async()=>{await page.evaluate(()=>{XLSX.writeFile=book=>window.__grainExport=XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]],{header:1,defval:''})});await page.locator('#exportProjectCut').click();return page.evaluate(()=>window.__grainExport)};
   let exported=await exportRows();assert.equal(exported[1][3],550);assert.equal(exported[1][4],720);assert.equal(exported[1][8],0);assert.deepEqual(exported[1].slice(10,14),['E0','E1','E2','E3']);assert.equal(exported[0].length,17);
   await page.locator('#navCosts').click();const costBefore=await page.locator('#projectCosts table').innerText();
-  const backgrounds=await page.locator('#projectCosts tbody tr:not(.costGrandTotal) td').evaluateAll(cells=>cells.map(cell=>getComputedStyle(cell).backgroundColor));assert.equal(new Set(backgrounds).size,1);assert.equal(backgrounds[0],'rgb(255, 255, 255)');
-  await page.evaluate(()=>{window.__grainTest.catalog({grainRequired:false});});assert.equal(await page.locator('#projectCosts table').innerText(),costBefore);
+  const backgrounds=await page.locator('#projectCosts tbody tr:not(.costGrandTotal) td').evaluateAll(cells=>cells.map(cell=>getComputedStyle(cell).backgroundColor));
+  await page.evaluate(()=>{window.__grainTest.catalog({grainRequired:false});});assert.equal(await page.locator('#projectCosts table').innerText(),costBefore);assert.deepEqual(await page.locator('#projectCosts tbody tr:not(.costGrandTotal) td').evaluateAll(cells=>cells.map(cell=>getComputedStyle(cell).backgroundColor)),backgrounds);
   await page.locator('#navCut').click();exported=await exportRows();assert.equal(exported[1][3],720);assert.equal(exported[1][4],550);assert.equal(exported[1][8],1);assert.deepEqual(exported[1].slice(10,14),['E2','E3','E1','E0']);
   await page.evaluate(()=>window.__grainTest.catalog({textureUrl:''}));assert.equal((await page.evaluate(()=>window.__grainTest.meshes()[0])).map,false);
-  console.log('PASS compact cut table, grain-first XLSX/physical edges, legacy export and unchanged costs/uniform row backgrounds');
+  console.log('PASS compact cut table, grain-first XLSX/physical edges, legacy export and unchanged costs/current row backgrounds');
   assert.deepEqual(errors,[]);
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});

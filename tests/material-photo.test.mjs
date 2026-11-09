@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {imageMime,checkPhotoFile,proposedTexturePath,MAX_PHOTO_BYTES} from '../material-photo-editor.mjs';
 import {grainFaceOptions} from '../grain.mjs';
 test('grain choices use the actual broad face, with finish.grainAxis values retained',()=>{
- assert.deepEqual(grainFaceOptions({w:550,h:720,d:18}),[{axis:'x',label:'По ширината',size:550},{axis:'y',label:'По височината',size:720}]);
- assert.deepEqual(grainFaceOptions({w:18,h:720,d:550}),[{axis:'z',label:'По ширината',size:550},{axis:'y',label:'По височината',size:720}]);
- assert.deepEqual(grainFaceOptions({w:720,h:18,d:550}),[{axis:'x',label:'По ширината',size:720},{axis:'z',label:'По дълбочината',size:550}]);
+ assert.deepEqual(grainFaceOptions({w:550,h:720,d:18}),[{axis:'x',label:'По дължина',size:550},{axis:'y',label:'По височина',size:720}]);
+ assert.deepEqual(grainFaceOptions({w:18,h:720,d:550}),[{axis:'z',label:'По дължина',size:550},{axis:'y',label:'По височина',size:720}]);
+ assert.deepEqual(grainFaceOptions({w:720,h:18,d:550}),[{axis:'x',label:'По дължина',size:720},{axis:'z',label:'По ширина',size:550}]);
 });
 test('photo validation checks magic bytes, extension, MIME and the size limit',()=>{
  const png=new Uint8Array([137,80,78,71,13,10,26,10]),jpeg=new Uint8Array([255,216,255,0]),webp=new TextEncoder().encode('RIFFxxxxWEBP');
