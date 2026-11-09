@@ -279,5 +279,25 @@ test('regrouped cabinet remains constrained by internal obstacles, room and lock
  assert.ok(bounds(next,'x').max>600&&bounds(next,'x').max<800);assert.ok(next[4].x+9<=519.5);
  assert.equal(next[5].x+next[5].w/2,next[4].x-9);
  assert.equal(bounds(resize(source,[],{...room,w:1500},'w',800),'x').max,750);
- const locked=cabinetWithAddedPanels({partitionX:300});locked[5].locks.w=true;assert.deepEqual(resize(locked,[],room,'w',800),locked);
+ const locked=cabinetWithAddedPanels({partitionX:300});locked[5].locks.w=true;const grown=resize(locked,[],room,'w',800);assert.equal(bounds(grown,'x').max,800);assert.equal(grown[5].w,locked[5].w);assert.equal(grown[4].x,locked[4].x);
+});
+
+test('locked small shelves preserve their bay while the remaining opening resizes',async()=>{
+ const {cabinetWithAddedPanels}=await import('./fixtures.mjs');
+ for(const nested of [false,true])for(const shelfSide of ['left','right']){
+  const source=cabinetWithAddedPanels({nested,partitionX:300,shelfSide});source[5].locks.w=true;const original=structuredClone(source);
+  for(const size of [800,500]){
+   const next=resize(source,[],room,'w',size);assert.equal(bounds(next,'x').max,size);assert.equal(next[5].w,source[5].w);assert.equal(next[4].w,18);
+   assert.equal(next[5].x-next[5].w/2,(shelfSide==='left'?next[0]:next[4]).x+(shelfSide==='left'?next[0]:next[4]).w/2);
+   assert.equal(next[5].x+next[5].w/2,(shelfSide==='left'?next[4]:next[1]).x-(shelfSide==='left'?next[4]:next[1]).w/2);
+   assert.equal(next[4].x-source[4].x,shelfSide==='left'?0:size-600);next.forEach((p,i)=>{for(const key of ['y','z','h','d','locks','assemblyStack'])assert.deepEqual(p[key],source[i][key])});
+  }
+  assert.deepEqual(source,original);
+ }
+});
+test('locked shelf bays still stop at physical minimum, obstacles and room boundaries',async()=>{
+ const {cabinetWithAddedPanels}=await import('./fixtures.mjs');const source=cabinetWithAddedPanels({partitionX:300,shelfSide:'right'});source[5].locks.w=true;
+ const obstacle=part('thin',{x:340,w:1,y:300,h:1,d:1}),next=resize(source,[obstacle],room,'w',900);assert.ok(next[4].x+9<=339.5);assert.ok(bounds(next,'x').max<900);
+ const left=cabinetWithAddedPanels({partitionX:300});left[5].locks.w=true;const shrunk=resize(left,[],room,'w',200);assert.equal(shrunk[5].w,left[5].w);assert.ok(bounds(shrunk,'x').max>=327);
+ assert.equal(bounds(resize(left,[],{...room,w:1500},'w',900),'x').max,750);
 });
