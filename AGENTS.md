@@ -96,6 +96,8 @@
 - Качването на файлове НЕ е активирано. Провереният конфигуриран Storage bucket върна 404 (2026-11-06); няма административна идентичност за проверка на production Storage правила. Не създавай услуга, не активирай upload и не публикувай правила без потвърждение. `docs/GRAIN_AND_TEXTURES.md` описва оставащото. Наличен HTTPS адрес на вече качена снимка може да се използва независимо от upload.
 - При промени изпълни unit `tests/grain.test.mjs`/`tests/material-photo.test.mjs`, browser `tests/grain-browser.cjs`/`tests/material-photo-browser.cjs`, Firestore Emulator и останалите приложими регресии. Провери и двата broad-face orientations, кантовете, XLSX, texture fallback и запазването на старите записи. Cost формулите не се променят заради подредбата на размерите.
 
+- От v2.31 посоката в оригиналната снимка се настройва в „Настройки → Снимки за фладер → Отвори галерията“, по URL, чрез `photo-orientation.mjs`. Пази предпочитанието в браузъра и `textureGrainDirection` с материалите при запис; не връщай полето във всеки материален редактор. Старите материални стойности са fallback. Бутоните в галерията са 40px по изричното искане за компактни икони, с български tooltip/aria-label. Проверявай `tests/texture-manager-browser.cjs` и `tests/grain-face-browser.cjs`, включително 320px и запазване след reload.
+
 ## Проверки при бъдещи промени
 
 Стартирай от корена със статичен HTTP сървър, например `python3 -m http.server 8000`; ES modules/fetch не се проверяват надеждно през file://. Нужни са WebGL и достъп до CDN/Firebase. Не въвеждай build стъпка само за документационна промяна.
