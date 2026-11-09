@@ -253,3 +253,31 @@ test('three flat locked profiles preserve their internal offsets through rounded
   const [a,b]=indices;assert.equal(next[b].x-next[a].x,source[b].x-source[a].x);assert.equal(next[a].w,source[a].w);assert.equal(next[b].w,source[b].w);
  }
 });
+
+test('added shelves follow the rigid interior side faces through regrouped cabinet width changes',async()=>{
+ const {cabinetWithAddedPanels}=await import('./fixtures.mjs');
+ for(const nested of [false,true])for(const partitionX of [200,300,450,500,555])for(const shelfSide of ['left','right']){
+  const source=cabinetWithAddedPanels({nested,partitionX,shelfSide}),before=structuredClone(source);
+  for(const size of [601,800,400]){
+   const next=resize(source,[],room,'w',size),byKey=Object.fromEntries(next.map(p=>[p.key,p])),f=(key,sign)=>byKey[key].x+sign*byKey[key].w/2;
+   assert.equal(bounds(next,'x').max-bounds(next,'x').min,size);assert.equal(bounds(next,'x').min,0);
+   assert.equal(f('added-shelf',-1),f(shelfSide==='left'?'left':'partition',1));assert.equal(f('added-shelf',1),f(shelfSide==='left'?'partition':'right',-1));
+   next.forEach((p,i)=>{for(const k of ['y','z','h','d','locks','assembly','assemblyStack'])assert.deepEqual(p[k],source[i][k]);if(p.locks?.w)assert.equal(p.w,source[i].w)});
+  }
+  assert.deepEqual(source,before);
+ }
+});
+test('attached panel anchoring preserves nested history after rotation and several grouping levels',async()=>{
+ const {cabinetWithAddedPanels}=await import('./fixtures.mjs');
+ const source=cabinetWithAddedPanels().map(p=>({...p,x:p.z,z:p.x,w:p.d,d:p.w,locks:{d:p.locks.w,h:p.locks.h},assemblyStack:[...p.assemblyStack,'middle','outer']}));
+ const next=resize(source,[],room,'d',800);assert.equal(bounds(next,'z').max,800);assert.equal(next[5].z+next[5].d/2,next[4].z-next[4].d/2);
+ next.forEach((p,i)=>{assert.deepEqual(p.assemblyStack,source[i].assemblyStack);assert.deepEqual(p.locks,source[i].locks);assert.equal(p.x,source[i].x);assert.equal(p.w,source[i].w)});
+});
+test('regrouped cabinet remains constrained by internal obstacles, room and locked shelf width',async()=>{
+ const {cabinetWithAddedPanels}=await import('./fixtures.mjs');const source=cabinetWithAddedPanels();
+ const obstacle=part('barrier',{x:520,w:1,y:300,h:1,d:1}),next=resize(source,[obstacle],room,'w',1500);
+ assert.ok(bounds(next,'x').max>600&&bounds(next,'x').max<800);assert.ok(next[4].x+9<=519.5);
+ assert.equal(next[5].x+next[5].w/2,next[4].x-9);
+ assert.equal(bounds(resize(source,[],{...room,w:1500},'w',800),'x').max,750);
+ const locked=cabinetWithAddedPanels({partitionX:300});locked[5].locks.w=true;assert.deepEqual(resize(locked,[],room,'w',800),locked);
+});

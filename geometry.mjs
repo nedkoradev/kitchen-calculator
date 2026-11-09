@@ -306,22 +306,35 @@ function resizeCandidate(members,dim,newSize,affineOnly=false,affineKeys){
   if(value>=innerRight-tolerance&&rightInset>0)return 1;
   return (value-innerLeft)/oldInner;
  };
- const integral=Number.isInteger;
- for(const p of members){
-  const a=p[axis]-p[dim]/2,b=p[axis]+p[dim]/2;
-  if(p.locks?.[dim]){
-   if(leftPanels.includes(p)||rightPanels.includes(p)){
-    if(rightPanels.includes(p)&&!leftPanels.includes(p))p[axis]+=delta;
-    continue;
-   }
+ const integral=Number.isInteger,lockedFaces=[];
+ // Move rigid panels first. Attached shelf endpoints must follow their actual
+ // faces, rather than independently scaling through the panel's thickness.
+ for(const p of locked){
+  const a=face(p,axis,-1),b=face(p,axis,1),center=p[axis];let rate=0;
+  if(leftPanels.includes(p)||rightPanels.includes(p)){
+   if(rightPanels.includes(p)&&!leftPanels.includes(p)){p[axis]+=delta;rate=1}
+  }else{
    const distanceLeft=a-left,distanceRight=right-b;
-   if(distanceRight<distanceLeft&&distanceRight<=Math.max(30,p[dim]*2))p[axis]+=delta;
+   if(distanceRight<distanceLeft&&distanceRight<=Math.max(30,p[dim]*2)){p[axis]+=delta;rate=1}
    else if(distanceLeft>Math.max(30,p[dim]*2)){
-    if(!integral(slope(p[axis]))){affineKeys?.delete(p.key);if(affineOnly)return false}
-    p[axis]+=Math.round(mapFace(p[axis])-p[axis]);
+    rate=slope(center);
+    if(!integral(rate)){affineKeys?.delete(p.key);if(affineOnly)return false}
+    p[axis]+=Math.round(mapFace(center)-center);
    }
-   continue;
   }
+  lockedFaces.push({p,a,b,shift:p[axis]-center,rate});
+ }
+ const otherAxes=axes.filter(k=>k!==axis);
+ const attachedFace=(p,value,sign)=>{
+  const matches=lockedFaces.filter(q=>Math.abs(value-(sign<0?q.b:q.a))<EPS&&
+   otherAxes.every(k=>face(p,k,1)>face(q.p,k,-1)+EPS&&face(q.p,k,1)>face(p,k,-1)+EPS));
+  if(!matches.length)return undefined;
+  if(matches.some(q=>Math.abs(q.shift-matches[0].shift)>EPS))return null;
+  return {value:value+matches[0].shift,rate:matches[0].rate};
+ };
+ for(const p of members){
+  if(p.locks?.[dim])continue;
+  const a=face(p,axis,-1),b=face(p,axis,1);
   let na=mapFace(a),nb=mapFace(b),sa=slope(a),sb=slope(b);
   // Preserve the original edge offsets of spanning shelves and bottoms.
   // Never snap outer-to-outer panels inward by 18 mm per side on the
@@ -336,6 +349,10 @@ function resizeCandidate(members,dim,newSize,affineOnly=false,affineKeys){
     }
    }
   }
+  const attachedLeft=attachedFace(p,a,-1),attachedRight=attachedFace(p,b,1);
+  if(attachedLeft===null||attachedRight===null)return false;
+  if(attachedLeft){na=attachedLeft.value;sa=attachedLeft.rate}
+  if(attachedRight){nb=attachedRight.value;sb=attachedRight.rate}
   if(!integral(sa)||!integral(sb)||nb-na<1){affineKeys?.delete(p.key);if(affineOnly)return false}
   p[dim]=Math.max(1,Math.round(nb-na));
   p[axis]=a+Math.round(na-a)+p[dim]/2;
