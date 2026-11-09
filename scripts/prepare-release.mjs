@@ -4,6 +4,7 @@ import {readFileSync,writeFileSync} from 'node:fs';
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();
 let base={major:1,minor:65};
 try{base=JSON.parse(git('show','origin/main:_data/version.json'))}catch{}
+try{const visible=git('show','origin/main:index.html').match(/id="appVersion">v(\d+)\.(\d+)</);if(visible){const major=Number(visible[1]),minor=Number(visible[2]);if(major>base.major||(major===base.major&&minor>base.minor))base={major,minor}}}catch{}
 const files=git('diff','--name-only','origin/main','--').split('\n');
 const functional=files.some(file=>/^[^/]+\.(html|js|mjs|webmanifest)$/.test(file)||file.startsWith('materials/'));
 const version={major:base.major,minor:base.minor+(functional?1:0)};
