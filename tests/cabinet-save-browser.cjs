@@ -1,0 +1,28 @@
+const assert=require('node:assert/strict');const path=require('node:path');const {openKitchen}=require('./browser-harness.cjs');
+(async()=>{
+ const {browser,page,errors,setup,parts}=await openKitchen({firebaseDouble:true,extraHooks:`window.__saveCase={requests:[],name(value){$('cabinetName').value=value}};window.addEventListener('kitchen-v2-cloud-save-request',e=>window.__saveCase.requests.push(structuredClone(e.detail)),true);`});
+ const records=()=>page.evaluate(()=>window.__firebaseDouble.rows().filter(r=>r.path.includes('/v2_cabinets/')));
+ const waitSaved=()=>page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
+ const open=()=>page.locator('#quickSave').click();const submit=()=>page.locator('#fileDialogConfirm').click();
+ try{
+  await setup([{key:'custom991',x:0,y:200,z:0,w:600,h:18,d:500,locks:{h:true}}]);const initial=await parts();
+  await open();assert.equal(await page.locator('#fileDialogName').inputValue(),'');await submit();assert.equal(await page.locator('#fileDialogName').inputValue(),'');assert.match(await page.locator('#fileDialogStatus').innerText(),/Въведи име/);assert.equal((await records()).length,0);
+  await page.locator('#fileDialogName').fill('К2');await submit();await waitSaved();const first=(await records())[0];assert.equal((await records()).length,1);
+  await open();assert.equal(await page.locator('#fileDialogName').inputValue(),'К2');await page.locator('#fileDialogName').fill(' к2 ');await submit();
+  assert.equal(await page.locator('#fileOverwritePrompt').isVisible(),true);assert.match(await page.locator('#fileOverwriteMessage').innerText(),/Искаш ли да го презапишеш/);assert.equal(await page.locator('dialog:modal').count(),1);assert.equal(await page.locator('.nedConfirmOverlay').count(),0);assert.deepEqual(await records(),[first]);
+  if(process.env.KITCHEN_SCREENSHOTS)await page.screenshot({path:path.join(process.env.KITCHEN_SCREENSHOTS,'cabinet-overwrite-inline.png')});
+  await page.locator('#fileOverwriteCancel').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('#fileOverwritePrompt').isVisible(),false);assert.deepEqual(await records(),[first]);await submit();await submit();await waitSaved();assert.equal((await records()).length,1);assert.equal((await records())[0].path,first.path);
+  // A changed name creates a new record, never overwrites the previously opened ID.
+  await open();await submit();await page.locator('#fileDialogName').fill('К3');assert.equal(await page.locator('#fileOverwritePrompt').isVisible(),false);await submit();await waitSaved();assert.equal((await records()).length,2);assert.equal((await records()).find(r=>r.path===first.path).value.name,'к2');
+  // Cancel/Escape cannot leak a previous overwrite approval into the next open.
+  await open();await submit();await page.keyboard.press('Escape');await waitSaved();await open();await submit();assert.equal(await page.locator('#fileOverwritePrompt').isVisible(),true);await page.locator('#fileDialogCancel').click();await waitSaved();assert.equal((await records()).length,2);
+  // Failed list must not turn an existing name into a duplicate save.
+  await page.evaluate(()=>window.__firebaseDouble.failReads(true));await open();await page.waitForFunction(()=>!document.querySelector('#fileListRetry').hidden);assert.equal(await page.locator('#fileDialogConfirm').isDisabled(),true);assert.equal((await records()).length,2);await page.evaluate(()=>window.__firebaseDouble.failReads(false));await page.locator('#fileListRetry').click();await submit();assert.equal(await page.locator('#fileOverwritePrompt').isVisible(),true);await page.locator('#fileDialogCancel').click();
+  // Error retains the name and dialog; retry requires confirmation again.
+  await open();await submit();await page.evaluate(()=>window.__firebaseDouble.failWrites(true));await submit();await page.waitForFunction(()=>document.querySelector('#fileDialogStatus').textContent.includes('offline fixture'));assert.equal(await page.locator('#fileDialog').evaluate(d=>d.open),true);assert.equal(await page.locator('#fileDialogName').inputValue(),'К3');assert.equal((await records()).length,2);await page.evaluate(()=>window.__firebaseDouble.failWrites(false));await submit();assert.equal(await page.locator('#fileOverwritePrompt').isVisible(),true);await submit();await waitSaved();assert.equal((await records()).length,2);
+  // Two clicks produce one request while a write is pending.
+  await open();await page.locator('#fileDialogName').fill('К4');await page.evaluate(()=>window.__firebaseDouble.holdWrites());const count=await page.evaluate(()=>window.__saveCase.requests.length);await page.evaluate(()=>{document.querySelector('#fileDialogConfirm').click();document.querySelector('#fileDialogConfirm').click()});assert.equal(await page.locator('#fileDialogConfirm').isDisabled(),true);assert.equal(await page.locator('#fileDialogName').isDisabled(),true);await page.evaluate(()=>window.__firebaseDouble.release());await waitSaved();assert.equal(await page.evaluate(()=>window.__saveCase.requests.length),count+1);assert.equal((await records()).length,3);
+  await page.evaluate(()=>window.__saveCase.name(''));await open();assert.equal(await page.locator('#fileDialogName').inputValue(),'');await page.locator('#fileDialogCancel').click();assert.deepEqual(await parts(),initial);assert.deepEqual(errors,[]);
+  console.log('PASS empty name, new save, same-name inline confirmation, unchanged ID/count on overwrite, cancel/Escape, edit name, list/write errors, duplicate clicks and no model changes; Firebase SDK double only');
+ }finally{await browser.close()}
+})().catch(e=>{console.error(e);process.exitCode=1});
