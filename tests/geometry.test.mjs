@@ -208,3 +208,48 @@ test('rounded partition cannot skip a thin obstacle inside the opening',()=>{
  assert.equal(bounds(next,'x').max-bounds(next,'x').min,680);
  assert.ok(next.at(-1).x+9<=obstacle.x-.5);
 });
+
+test('locked multi-part runners change spacing without changing either profile',async()=>{
+ const {lockedRunners}=await import('./fixtures.mjs');
+ for(const nested of [false,true]){
+  const source=lockedRunners(nested),before=structuredClone(source),next=resize(source,[],room,'w',712);
+  assert.equal(bounds(next,'x').max-bounds(next,'x').min,712);
+  for(let i=0;i<4;i++){
+   const delta=i<2?0:200;
+   assert.deepEqual(next[i],{...source[i],x:source[i].x+delta});
+  }
+  assert.deepEqual(source,before);
+  const shrunk=resize(source,[],room,'w',312);assert.equal(bounds(shrunk,'x').max-bounds(shrunk,'x').min,312);
+ }
+});
+
+test('rigid runner spacing stops at collision, room wall and physical minimum',async()=>{
+ const {lockedRunners}=await import('./fixtures.mjs');const source=lockedRunners();
+ const obstacle={key:'stop',x:330,y:115,z:0,w:2,h:60,d:500};
+ const stopped=resize(source,[obstacle],room,'w',900);assert.equal(bounds(stopped,'x').max,329);
+ const minimum=resize(source,[],room,'w',20);assert.equal(bounds(minimum,'x').max-bounds(minimum,'x').min,100);
+ const middleStop={...obstacle,x:0};const shrinking=resize(source,[middleStop],room,'w',100);assert.equal(bounds(shrinking.slice(2),'x').min,1);
+ const tightRoom={w:700,h:2600,d:3000};assert.equal(bounds(resize(source,[],tightRoom,'w',900),'x').max,350);
+ for(const next of [stopped,minimum])for(let i=0;i<source.length;i++)for(const dim of ['w','h','d'])assert.equal(next[i][dim],source[i][dim]);
+});
+test('rotated runners and several saved group levels retain their profiles',async()=>{
+ const {lockedRunners}=await import('./fixtures.mjs');
+ const source=lockedRunners().map(p=>({...p,x:p.z,z:p.x,w:p.d,d:p.w,assemblyStack:[...p.assemblyStack,'pair','outer']}));
+ const next=resize(source,[],room,'d',712);assert.equal(bounds(next,'z').max-bounds(next,'z').min,712);
+ for(let i=0;i<source.length;i++)assert.deepEqual(next[i],{...source[i],z:source[i].z+(i<2?0:200)});
+});
+
+test('a drawer bottom can grow while its nested locked runner pair changes spacing',async()=>{
+ const {lockedRunners}=await import('./fixtures.mjs');
+ const source=lockedRunners().map(p=>({...p,assemblyStack:[...p.assemblyStack,'pair']}));source.push({key:'drawer-bottom',x:0,y:90,z:0,w:512,h:18,d:500,locks:{h:true},assembly:'runners'});
+ const next=resize(source,[],room,'w',712);assert.equal(next.at(-1).w,712);
+ for(let i=0;i<4;i++)assert.deepEqual(next[i],{...source[i],x:source[i].x+(i<2?0:200)});
+});
+test('three flat locked profiles preserve their internal offsets through rounded spacing',async()=>{
+ const {lockedRunners}=await import('./fixtures.mjs');const outer=lockedRunners(false);
+ const middle=outer.slice(0,2).map(p=>({...p,key:'middle-'+p.key,x:p.x+231})),source=[...outer,...middle];
+ const next=resize(source,[],room,'w',713);assert.equal(bounds(next,'x').max-bounds(next,'x').min,713);
+ for(const indices of [[0,1],[2,3],[4,5]]){
+  const [a,b]=indices;assert.equal(next[b].x-next[a].x,source[b].x-source[a].x);assert.equal(next[a].w,source[a].w);assert.equal(next[b].w,source[b].w);
+ }
+});

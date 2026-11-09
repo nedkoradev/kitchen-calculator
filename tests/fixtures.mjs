@@ -8,3 +8,12 @@ export function manyPartCabinet(count=5){
   ...Array.from({length:count-4},(_,i)=>p('shelf'+i,300,36+i*24,564,18))];
 }
 export const largeRoom={w:10000,h:10000,d:10000};
+
+// Two multi-part runner profiles; all physical dimensions are locked.
+export function lockedRunners(nested=true){
+ const runner=(id,left)=>[
+  {key:id+'base',x:left+25,y:101,z:0,w:50,h:2,d:500},
+  {key:id+'lip',x:left+49,y:115,z:0,w:2,h:30,d:500}
+ ].map(p=>({...p,locks:{w:true,h:true,d:true},assembly:'runners',...(nested?{assemblyStack:[id]}:{})}));
+ return [...runner('left',-256),...runner('right',206)];
+}

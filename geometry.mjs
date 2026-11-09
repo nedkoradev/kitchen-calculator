@@ -131,7 +131,7 @@ export function resize(parts,obstacles,room,dim,wanted){
  // joining their exact endpoints (two rounding errors). Prove every pair stays
  // separated, or a rigid interval remains contained. This bypasses iteration
  // for ordinary cabinets with sliding locked interior partitions as well.
- if(target>oldSize&&Number.isInteger(oldSize)&&!original.some(p=>p.assemblyStack?.some(Boolean))){
+ if(target>oldSize&&Number.isInteger(oldSize)&&!original.every(p=>p.locks?.[dim])&&!original.some(p=>p.assemblyStack?.some(Boolean))){
   const rounded=copy(original),affineKeys=new Set(original.map(p=>p.key));
   if(resizeCandidate(rounded,dim,target,false,affineKeys)&&rounded.every(p=>Number.isInteger(p[dim])&&p[dim]>0)&&
     safeRoundedGrowth(original,rounded,room,plan,affineKeys))return rounded;
@@ -176,9 +176,47 @@ function safeRoundedGrowth(before,after,room,plan,affineKeys){
  }
  return true;
 }
+// Locked sizes make each connected profile rigid, not the free space between
+// separate profiles. Derive components from actual contacts, including library
+// groups that were flattened or wrapped in additional assembly levels.
+function rigidComponents(parts){
+ const groups=[];
+ const touches=(a,b)=>axes.every(axis=>face(a,axis,1)>=face(b,axis,-1)-EPS&&face(b,axis,1)>=face(a,axis,-1)-EPS);
+ for(const p of parts){
+  const connected=[];
+  for(let i=0;i<groups.length;i++)if(groups[i].some(q=>touches(p,q)))connected.push(i);
+  if(!connected.length){groups.push([p]);continue}
+  const first=groups[connected[0]];first.push(p);
+  for(let i=connected.length-1;i>0;i--)first.push(...groups.splice(connected[i],1)[0]);
+ }
+ return groups;
+}
+function resizeRigidSpacing(members,dim,size,affineOnly){
+ const axis={w:'x',h:'y',d:'z'}[dim];
+ const groups=rigidComponents(members).map(parts=>({parts,...bounds(parts,axis)})).sort((a,b)=>a.min-b.min);
+ if(groups.length<2)return false;
+ // Overlapping envelopes have no unambiguous gap along this axis. Keep them
+ // rigid rather than detach a joined construction or squeeze parts through it.
+ for(let i=1;i<groups.length;i++)if(groups[i].min<groups[i-1].max-EPS)return false;
+ const originalSize=groups.at(-1).max-groups[0].min;
+ const widths=groups.reduce((total,g)=>total+g.max-g.min,0),gap=originalSize-widths;
+ if(gap<=EPS||size<widths-EPS)return false;
+ let precedingWidth=0;
+ for(let i=0;i<groups.length;i++){
+  const g=groups[i],gapBefore=g.min-groups[0].min-precedingWidth,slope=gapBefore/gap;
+  if(affineOnly&&Math.abs(slope-Math.round(slope))>EPS)return false;
+  const shift=i===groups.length-1?size-originalSize:Math.round(slope*(size-originalSize));
+  for(const p of g.parts)p[axis]+=shift;
+  precedingWidth+=g.max-g.min;
+ }
+ return true;
+}
 // Resize nested cabinets as units before applying each cabinet's own rules.
 // The stack describes saved grouping levels; geometry edits never mutate it.
 function resizeStructure(members,dim,size,stacks=members.map(p=>p.assemblyStack||[]),affineOnly=false){
+ const extent=bounds(members,{w:'x',h:'y',d:'z'}[dim]);
+ if(Math.abs(extent.max-extent.min-size)<EPS)return true;
+ if(members.every(p=>p.locks?.[dim]))return resizeRigidSpacing(members,dim,size,affineOnly);
  if(!stacks.some(stack=>stack.at(-1)))return resizeCandidate(members,dim,size,affineOnly);
  const axis={w:'x',h:'y',d:'z'}[dim],children=new Map();
  for(let i=0;i<members.length;i++){
@@ -203,7 +241,7 @@ function resizeStructure(members,dim,size,stacks=members.map(p=>p.assemblyStack|
  }
  if(groups.length===1)return resizeStructure(members,dim,size,groups[0].stacks,affineOnly);
  const units=groups.map(({parts},i)=>{
-  const unit={key:String(i),locks:parts.length===1?parts[0].locks:undefined};
+  const unit={key:String(i),locks:parts.length===1?parts[0].locks:{[dim]:parts.every(p=>p.locks?.[dim])&&rigidComponents(parts).length===1}};
   for(const k of axes){const b=bounds(parts,k);unit[k]=(b.min+b.max)/2;unit[dimensions[k]]=b.max-b.min}
   return unit;
  });
