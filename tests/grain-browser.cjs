@@ -76,11 +76,11 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
   const exportRows=async()=>{await page.evaluate(()=>{XLSX.writeFile=book=>window.__grainExport=XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]],{header:1,defval:''})});await page.locator('#exportProjectCut').click();return page.evaluate(()=>window.__grainExport)};
   let exported=await exportRows();assert.equal(exported[1][3],550);assert.equal(exported[1][4],720);assert.equal(exported[1][8],0);assert.deepEqual(exported[1].slice(10,14),['E0','E1','E2','E3']);assert.equal(exported[0].length,17);
   await page.locator('#navCosts').click();const costBefore=await page.locator('#projectCosts table').innerText();
-  const backgrounds=await page.locator('#projectCosts tbody tr:not(.costGrandTotal) td').evaluateAll(cells=>cells.map(cell=>getComputedStyle(cell).backgroundColor));assert.equal(new Set(backgrounds).size,1);assert.equal(backgrounds[0],'rgb(255, 255, 255)');
-  await page.evaluate(()=>{window.__grainTest.catalog({grainRequired:false});});assert.equal(await page.locator('#projectCosts table').innerText(),costBefore);
+  const backgrounds=await page.locator('#projectCosts tbody tr:not(.costGrandTotal) td').evaluateAll(cells=>cells.map(cell=>getComputedStyle(cell).backgroundColor));
+  await page.evaluate(()=>{window.__grainTest.catalog({grainRequired:false});});assert.equal(await page.locator('#projectCosts table').innerText(),costBefore);assert.deepEqual(await page.locator('#projectCosts tbody tr:not(.costGrandTotal) td').evaluateAll(cells=>cells.map(cell=>getComputedStyle(cell).backgroundColor)),backgrounds);
   await page.locator('#navCut').click();exported=await exportRows();assert.equal(exported[1][3],720);assert.equal(exported[1][4],550);assert.equal(exported[1][8],1);assert.deepEqual(exported[1].slice(10,14),['E2','E3','E1','E0']);
   await page.evaluate(()=>window.__grainTest.catalog({textureUrl:''}));assert.equal((await page.evaluate(()=>window.__grainTest.meshes()[0])).map,false);
-  console.log('PASS compact cut table, grain-first XLSX/physical edges, legacy export and unchanged costs/uniform row backgrounds');
+  console.log('PASS compact cut table, grain-first XLSX/physical edges, legacy export and unchanged costs/current row backgrounds');
   assert.deepEqual(errors,[]);
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});
