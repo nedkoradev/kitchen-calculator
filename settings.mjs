@@ -32,6 +32,6 @@ export function installSettings(){
   }catch{if(epoch===request)status.textContent='Статистиката не е налична. Опитай отново при връзка или след публикуване.'}
  }
  button.onclick=()=>{document.getElementById('settingsVersion').textContent=document.getElementById('appVersion').textContent;dialog.showModal();load()};
- document.getElementById('settingsClose').onclick=document.getElementById('settingsDone').onclick=()=>dialog.close();
- document.getElementById('spaceRetry').onclick=load;
+ for(const id of ['settingsClose','settingsDone']){const control=document.getElementById(id);if(control)control.onclick=()=>dialog.close();}
+ const retry=document.getElementById('spaceRetry');if(retry)retry.onclick=load;
 }
