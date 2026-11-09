@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {panelAxes,physicalGrainAxis,rotatedGrainAxis,cutLayout,textureCoordinates,validTextureUrl} from '../grain.mjs';
+import {panelAxes,physicalGrainAxis,rotatedGrainAxis,cutLayout,textureCoordinates,edgeTextureCoordinates,validTextureUrl} from '../grain.mjs';
 const horizontal={w:720,h:18,d:550},vertical={w:550,h:720,d:18},side={w:18,h:720,d:550};
 test('grain-free legacy dimensions and Salex edges stay unchanged for all planes',()=>{
  for(const p of [horizontal,vertical,side]){const cut=cutLayout(p);assert.equal(cut.A,720);assert.equal(cut.B,550);assert.equal(cut.thickness,18);assert.equal(cut.grainRequired,false)}
@@ -49,4 +49,18 @@ test('per-panel grain overrides legacy material defaults and puts the 3000 mm si
  assert.equal(cutLayout(p,{grainRequired:false,grainAxis:'x'},{grainRequired:true}).grainRequired,false);
  assert.equal(cutLayout(p,{grainAxis:'x'},{grainRequired:true}).A,500);
  assert.deepEqual(cutLayout(p,{grainRequired:true,grainAxis:'y'}).edgeIndices,[0,1,2,3]);
+});
+
+test('grain face labels describe vertical and horizontal faces, never longest-side aliases',async()=>{
+ const {grainFaceOptions}=await import('../grain.mjs');
+ assert.deepEqual(grainFaceOptions({w:588,h:142,d:18}),[{axis:'x',label:'По дължина',size:588},{axis:'y',label:'По височина',size:142}]);
+ assert.deepEqual(grainFaceOptions({w:142,h:588,d:18}),[{axis:'x',label:'По дължина',size:142},{axis:'y',label:'По височина',size:588}]);
+ assert.deepEqual(grainFaceOptions({w:18,h:588,d:142}),[{axis:'z',label:'По дължина',size:142},{axis:'y',label:'По височина',size:588}]);
+});
+test('source-photo grain orientation changes only UV axes, never cutting or physical edges',()=>{
+ const p={w:588,h:142,d:18},f={grainRequired:true,grainAxis:'x',edges:[0,1,2,3]},before=structuredClone({p,f}),base={textureWidthMm:355,textureHeightMm:489};
+ const vertical=textureCoordinates(p,f,base),horizontal=textureCoordinates(p,f,{...base,textureGrainDirection:'horizontal'});
+ assert.deepEqual(edgeTextureCoordinates(p,'x',{...base,textureGrainDirection:'horizontal'}),{uAxis:'y',vAxis:'z',width:355,height:489});
+ assert.deepEqual(vertical,{uAxis:'y',vAxis:'x',width:355,height:489});assert.deepEqual(horizontal,{uAxis:'x',vAxis:'y',width:355,height:489});
+ assert.deepEqual(cutLayout(p,f,base),cutLayout(p,f,{...base,textureGrainDirection:'horizontal'}));assert.equal(cutLayout(p,f,base).A,588);assert.deepEqual({p,f},before);
 });

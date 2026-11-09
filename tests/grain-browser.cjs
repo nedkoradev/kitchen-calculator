@@ -14,7 +14,7 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
  };`});
  try{
   await page.route(photo+'*',route=>route.fulfill({contentType:'image/png',path:path.join(__dirname,'fixtures/grain.png'),headers:{'access-control-allow-origin':'*'}}));
-  assert.match(await page.locator('header strong').innerText(),/^Kitchen Designer v\d+\.\d+$/);
+  assert.match(await page.locator('header strong').innerText(),/^NED-IQ v\d+\.\d+$/);
   await page.locator('#navMaterials').click();
   const section=page.locator('.materialSection').filter({has:page.getByRole('heading',{name:'ПДЧ материали',exact:true})});
   await section.getByRole('button',{name:'Нов материал',exact:true}).click();
@@ -36,13 +36,13 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
    await page.locator(mode==='constructor'?'#modeConstructor':'#modeProject').click();await setup([part]);
    await page.evaluate(photo=>{window.__grainTest.catalog({name:'Decor',grainRequired:true,textureUrl:photo,textureWidthMm:1000,textureHeightMm:0});window.__grainTest.finish({material:0,edges:[0,1,2,3],grainAxis:'x'})},photo);
    const before=await parts();await page.evaluate(()=>window.__grainTest.properties());
-   assert.deepEqual(await page.locator('#grainDirection option').allTextContents(),['По дължина — 720 мм (по ширината)','По ширина — 550 мм (по дълбочината)']);
+   assert.deepEqual(await page.locator('#grainDirection option').allTextContents(),['По дължина — 720 мм','По ширина — 550 мм']);
    await page.locator('#grainDirection').selectOption('z');
    assert.equal(await page.evaluate(()=>window.__grainTest.indicator()),'z');
    await page.locator('#materialSelect').selectOption('1');assert.equal(await page.locator('#grainEditor').isVisible(),false);
    await page.locator('#materialSelect').selectOption('0');assert.equal(await page.locator('#grainDirection').inputValue(),'z');
    assert.deepEqual(await page.evaluate(()=>window.__test.finish()[window.__test.parts()[0].key].edges),[0,1,2,3]);
-   assert.equal(await page.locator('#grainDirectionHint').innerText(),'↔ По дълбочината · разкрой 550 × 720 мм');await page.locator('#dialogDone').click();assert.deepEqual(await parts(),before);
+   assert.equal(await page.locator('#grainDirectionHint').innerText(),'↔ По ширина · разкрой 550 × 720 мм');await page.locator('#dialogDone').click();assert.deepEqual(await parts(),before);
    await page.waitForFunction(()=>window.__grainTest.meshes()[0].map);let mesh=await page.evaluate(()=>window.__grainTest.meshes()[0]);assert.equal(mesh.color,'ffffff');assert.ok(Math.max(...mesh.uv)-Math.min(...mesh.uv)<.99,'physical scales are not stretched to a unit square');
    for(const view of ['top','front','perspective']){await page.evaluate(view=>window.__test.view(view),view);assert.equal((await page.evaluate(()=>window.__grainTest.meshes()[0])).map,true)}
    const right=mode==='constructor'?'#rotateRight':'#projectRotateRight',left=mode==='constructor'?'#rotateLeft':'#projectRotateLeft';

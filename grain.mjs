@@ -10,7 +10,7 @@ export function physicalGrainAxis(p,finish={}){
 }
 export function grainFaceOptions(p){
  const {thickness,axes}=panelAxes(p);
- return axes.map(axis=>({axis,label:axis==='y'?'По височината':thickness==='y'&&axis==='z'?'По дълбочината':'По ширината',size:Math.round(dimension(p,axis))}));
+ return axes.map(axis=>({axis,label:axis==='y'?'По височина':thickness==='y'&&axis==='z'?'По ширина':'По дължина',size:Math.round(dimension(p,axis))}));
 }
 export const rotatedGrainAxis=axis=>({x:'z',y:'y',z:'x'})[axis];
 export function requiresGrain(finish={},material={}){
@@ -27,7 +27,7 @@ export function textureCoordinates(p,finish={},material={},imageAspect=1){
  const {axes}=panelAxes(p),grain=physicalGrainAxis(p,finish),other=axes.find(axis=>axis!==grain);
  const width=Number(material.textureWidthMm)>0?Number(material.textureWidthMm):1000;
  const height=Number(material.textureHeightMm)>0?Number(material.textureHeightMm):width/(Number(imageAspect)>0?Number(imageAspect):1);
- return {uAxis:other,vAxis:grain,width,height};
+ return material.textureGrainDirection==='horizontal'?{uAxis:grain,vAxis:other,width,height}:{uAxis:other,vAxis:grain,width,height};
 }
 export function validTextureUrl(value){
  if(typeof value!=='string')return null;
@@ -45,10 +45,10 @@ export function validTextureUrl(value){
  try{const url=new URL(input);return url.protocol==='https:'&&!url.username&&!url.password?url.href:null}catch{return null}
 }
 
-// The image vertical direction follows band length; width spans panel thickness.
+// Legacy photos run vertically along the band; explicit horizontal photos use U along its length.
 export function edgeTextureCoordinates(p,normal,material={},imageAspect=1){
  const {thickness,axes}=panelAxes(p),length=axes.find(axis=>axis!==normal);
  const width=Number(material.textureWidthMm)>0?Number(material.textureWidthMm):22;
  const height=Number(material.textureHeightMm)>0?Number(material.textureHeightMm):width/(Number(imageAspect)>0?Number(imageAspect):1);
- return {uAxis:thickness,vAxis:length,width,height};
+ return material.textureGrainDirection==='horizontal'?{uAxis:length,vAxis:thickness,width,height}:{uAxis:thickness,vAxis:length,width,height};
 }

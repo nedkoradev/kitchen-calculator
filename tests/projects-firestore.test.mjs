@@ -193,3 +193,9 @@ test('individual grain requirement and physical axis survive a cloud project rou
  const saved=await store.save({name:'Индивидуален фладер',data:snapshot});assert.deepEqual((await store.open(saved.id)).data,snapshot);
  const changed=structuredClone(snapshot);changed.parts[0].finish.grainRequired=false;await store.save({...saved,data:changed});assert.equal((await store.open(saved.id)).data.parts[0].finish.grainRequired,false);
 });
+
+test('photo source orientation persists without changing the part grain axis',async()=>{
+ const {store}=client('alice'),snapshot=data();snapshot.parts[0].part={...snapshot.parts[0].part,w:588,h:142,d:18};snapshot.parts[0].finish={...snapshot.parts[0].finish,grainRequired:true,grainAxis:'x'};
+ snapshot.materials.pdcMaterials[0]={name:'Decor',textureUrl:'materials/textures/decor.png',textureGrainDirection:'horizontal'};
+ const saved=await store.save({name:'Посока на снимката',data:snapshot});assert.deepEqual((await store.open(saved.id)).data,snapshot);
+});
