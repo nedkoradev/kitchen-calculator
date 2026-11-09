@@ -1,8 +1,10 @@
 import {textureCoordinates,edgeTextureCoordinates,validTextureUrl} from './grain.mjs';
+import {withPhotoOrientation} from './photo-orientation.mjs';
 // One downloaded image per URL; per-panel UVs use physical millimetres.
 export function createMaterialTextures(THREE){
  const entries=new Map(),loader=new THREE.TextureLoader();loader.setCrossOrigin('anonymous');
  function apply(mesh,p,finish,material,edge=null){
+  material=withPhotoOrientation(material);
   const url=validTextureUrl(material?.textureUrl);if(!url)return;
   let entry=entries.get(url);
   if(!entry){

@@ -1,5 +1,8 @@
 // Shared local SVG vocabulary: Lucide-style 24px, 2px strokes, no icon font/CDN.
 const paths={
+ refresh:'<path d="M3 10a9 9 0 0 1 15-6l3 3M21 3v4h-4M21 14a9 9 0 0 1-15 6l-3-3M3 21v-4h4"/>',
+ image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1"/><path d="m3 17 5-5 4 4 4-6 5 7M17 2v6m-3-3h6"/>',
+ edit:'<path d="m15 5 4 4M4 20l1-5L17 3l4 4L9 19l-5 1Z"/>',
  gear:'<path d="M10 2h4l.5 3 2 1 2.8-1 2 3.5-2.3 2v3l2.3 2-2 3.5-2.8-1-2 1-.5 3h-4l-.5-3-2-1-2.8 1-2-3.5 2.3-2v-3l-2.3-2 2-3.5 2.8 1 2-1Z"/><circle cx="12" cy="12" r="3"/>',
  save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M7 3v6h9V3M7 21v-8h10v8"/>',
  saveAs:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h6M14 2v6h6l-6-6Z"/><path d="m16 15 3 3m-7 3 1-4 6-6 3 3-6 6-4 1Z"/>',
