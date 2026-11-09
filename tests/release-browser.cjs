@@ -9,7 +9,7 @@ const first='a'.repeat(40),second='b'.repeat(40);let revision=first;
 const render=source=>source.replace(/^---\n[\s\S]*?\n---\n/,'').replaceAll('{{ site.data.version.major }}',String(version.major)).replaceAll('{{ site.data.version.minor }}',String(version.minor)).replaceAll('{{ site.github.build_revision }}',revision);
 const inventory=JSON.parse(fs.readFileSync(path.join(root,'_data/repository_space.json'),'utf8'));
 const stats=()=>({schemaVersion:1,inventoryReady:true,scope:'published-source-snapshot',includesGitHistory:false,version:visible,revision,measuredAt:'2026-11-06T12:00:00Z',totalBytes:inventory.files.reduce((n,f)=>n+f.bytes,0),fileCount:inventory.files.length,textureBytes:inventory.files.filter(f=>f.texture).reduce((n,f)=>n+f.bytes,0),imageCount:inventory.files.filter(f=>f.image).length,referenceBytes:1024**3});
-const html='<!doctype html><span id="appVersion">v0.0</span><script type="module" src="./app-release.js"></script>';
+const html=`<!doctype html><span id="appVersion">v${visible}</span><script type="module" src="./app-release.js"></script>`;
 const server=http.createServer((req,res)=>{
  const file=decodeURIComponent(new URL(req.url,'http://localhost').pathname).slice(scope.length)||'index.html';
  if(!req.url.startsWith(scope)||file.includes('..')){res.writeHead(404).end();return}

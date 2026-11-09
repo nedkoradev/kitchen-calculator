@@ -20,5 +20,7 @@ test('release numbers advance once per functional update and stay stable on docs
   assert.match(readFileSync(join(directory,'index.html'),'utf8'),/Kitchen Designer <span id="appVersion">v1\.66<\/span>/);
   git('add','.');git('commit','-m','feature');git('update-ref','refs/remotes/origin/main',git('rev-parse','HEAD'));
   writeFileSync(join(directory,'app.js'),'// Next functionality');git('add','app.js');prepare();assert.equal(version().minor,67);
+  writeFileSync(join(directory,'index.html'),readFileSync(join(directory,'index.html'),'utf8').replace('v1.67','v1.80'));git('add','.');git('commit','-m','visible release ahead of metadata');git('update-ref','refs/remotes/origin/main',git('rev-parse','HEAD'));
+  writeFileSync(join(directory,'app.js'),'// Another update');prepare();assert.equal(version().minor,81);prepare('--check');
  }finally{rmSync(directory,{recursive:true,force:true})}
 });
