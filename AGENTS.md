@@ -18,6 +18,7 @@
 
 - Статично приложение: HTML, CSS и JavaScript; няма bundler или задължителна локална build стъпка; Pages използва съществуващия Jekyll build за release metadata. `package.json`/lock съдържат само dev зависимости и тестови команди за облачните проекти; няма production npm зависимости. Геометрични и браузърни тестове са добавени в `tests/` с Поправка №1.
 - `index.html`: целият интерфейс, вграден CSS, начален обработчик за Select All и основен ES module. Three.js **0.160.1** и OrbitControls се зареждат чрез import map от jsDelivr; SheetJS **0.18.5** е отделен глобален script за табличен експорт.
+- `part-labels.mjs`: обща номерация на физическите детайли за 3D/2D етикети, разкрой и Salex. Номерирай пълния модел преди includeInCut/visibility филтри; обединен ред показва всички етикети със запазено количество. Не въвеждай отделни броячи за таблица/експорт. Проверка: `tests/part-labels-browser.cjs`.
 - `geometry.mjs`: общи чисти функции за движение/resize и ограничения. Всички полета и pointer операции ги използват; маршрути, правила и тестове: [docs/GEOMETRY_CONSTRAINTS.md](docs/GEOMETRY_CONSTRAINTS.md).
 - `project-model.mjs`, `project-store.mjs`, `project-ui.mjs`: формат/валидация, транзакции и UI за облачни проекти; [docs/CLOUD_PROJECTS.md](docs/CLOUD_PROJECTS.md) описва правилата, миграцията и тестовите ограничения.
 - `cloud.js`: отделен ES module с Firebase SDK **10.14.1** от gstatic; Google popup Authentication и Firestore. UI и облачният модул общуват чрез `window` CustomEvent събития.
