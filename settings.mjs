@@ -26,7 +26,7 @@ export function installSettings(){
    document.getElementById('textureImageCount').textContent=String(data.imageCount);
    document.getElementById('spaceMeasuredAt').textContent=new Intl.DateTimeFormat('bg-BG',{dateStyle:'medium',timeStyle:'short',timeZone:'Europe/Sofia'}).format(new Date(data.measuredAt))+' (българско време)';
    document.getElementById('spaceSnapshotVersion').textContent=`Измерване за v${data.version} · ${data.fileCount} изходни файла`;
-   const progress=document.getElementById('spaceProgress');progress.max=referenceBytes;progress.value=Math.min(data.totalBytes,referenceBytes);
+   const ratio=Math.min(100,100*data.totalBytes/referenceBytes);const track=document.getElementById('spaceProgressTrack');const fill=document.getElementById('spaceProgressFill');if(track&&fill){track.setAttribute('aria-valuenow',ratio.toFixed(2));fill.style.width=ratio>0?'max(5px, '+ratio+'%)':'0';}
    document.getElementById('spaceProgressLabel').textContent=`${formatBytes(data.totalBytes)} / 1 GiB · ${new Intl.NumberFormat('bg-BG',{maximumFractionDigits:2}).format(data.totalBytes/referenceBytes*100)}%`;
    details.hidden=false;status.textContent='';
   }catch{if(epoch===request)status.textContent='Статистиката не е налична. Опитай отново при връзка или след публикуване.'}
