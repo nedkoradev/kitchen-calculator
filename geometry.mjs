@@ -179,9 +179,11 @@ function safeRoundedGrowth(before,after,room,plan,affineKeys){
 // Locked sizes make each connected profile rigid, not the free space between
 // separate profiles. Derive components from actual contacts, including library
 // groups that were flattened or wrapped in additional assembly levels.
-function rigidComponents(parts){
+function rigidComponents(parts,contactAxis=null){
  const groups=[];
- const touches=(a,b)=>axes.every(axis=>face(a,axis,1)>=face(b,axis,-1)-EPS&&face(b,axis,1)>=face(a,axis,-1)-EPS);
+ const touches=(a,b)=>axes.every(axis=>contactAxis&&axis!==contactAxis?
+  face(a,axis,1)>face(b,axis,-1)+EPS&&face(b,axis,1)>face(a,axis,-1)+EPS:
+  face(a,axis,1)>=face(b,axis,-1)-EPS&&face(b,axis,1)>=face(a,axis,-1)-EPS);
  for(const p of parts){
   const connected=[];
   for(let i=0;i<groups.length;i++)if(groups[i].some(q=>touches(p,q)))connected.push(i);
@@ -307,22 +309,23 @@ function resizeCandidate(members,dim,newSize,affineOnly=false,affineKeys){
   return (value-innerLeft)/oldInner;
  };
  const integral=Number.isInteger,lockedFaces=[];
- // Move rigid panels first. Attached shelf endpoints must follow their actual
- // faces, rather than independently scaling through the panel's thickness.
- for(const p of locked){
-  const a=face(p,axis,-1),b=face(p,axis,1),center=p[axis];let rate=0;
-  if(leftPanels.includes(p)||rightPanels.includes(p)){
-   if(rightPanels.includes(p)&&!leftPanels.includes(p)){p[axis]+=delta;rate=1}
-  }else{
+ // A locked short shelf ties its touching sides into one rigid interval.
+ // Resize the remaining opening, rather than pulling those joints apart.
+ for(const component of rigidComponents(locked,axis)){
+  const extent=bounds(component,axis),a=extent.min,b=extent.max,center=(a+b)/2,width=b-a;
+  const atLeft=Math.abs(a-left)<tolerance,atRight=Math.abs(b-right)<tolerance;
+  if(atLeft&&atRight)return false;
+  let shift=0,rate=0;
+  if(atRight){shift=delta;rate=1}
+  else if(!atLeft){
    const distanceLeft=a-left,distanceRight=right-b;
-   if(distanceRight<distanceLeft&&distanceRight<=Math.max(30,p[dim]*2)){p[axis]+=delta;rate=1}
-   else if(distanceLeft>Math.max(30,p[dim]*2)){
-    rate=slope(center);
-    if(!integral(rate)){affineKeys?.delete(p.key);if(affineOnly)return false}
-    p[axis]+=Math.round(mapFace(center)-center);
+   if(distanceRight<distanceLeft&&distanceRight<=Math.max(30,width*2)){shift=delta;rate=1}
+   else if(distanceLeft>Math.max(30,width*2)){
+    rate=slope(center);shift=Math.round(mapFace(center)-center);
    }
   }
-  lockedFaces.push({p,a,b,shift:p[axis]-center,rate});
+  if(!integral(rate)){component.forEach(p=>affineKeys?.delete(p.key));if(affineOnly)return false}
+  for(const p of component){lockedFaces.push({p,a:face(p,axis,-1),b:face(p,axis,1),shift,rate});p[axis]+=shift}
  }
  const otherAxes=axes.filter(k=>k!==axis);
  const attachedFace=(p,value,sign)=>{
