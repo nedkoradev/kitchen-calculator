@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {panelAxes,physicalGrainAxis,rotatedGrainAxis,cutLayout,textureCoordinates,edgeTextureCoordinates,validTextureUrl} from '../grain.mjs';
 const horizontal={w:720,h:18,d:550},vertical={w:550,h:720,d:18},side={w:18,h:720,d:550};
-test('grain-free legacy dimensions and Salex edges stay unchanged for all planes',()=>{
+test('grain-free dimensions keep their size order and horizontal/side edge mapping',()=>{
  for(const p of [horizontal,vertical,side]){const cut=cutLayout(p);assert.equal(cut.A,720);assert.equal(cut.B,550);assert.equal(cut.thickness,18);assert.equal(cut.grainRequired,false)}
  assert.deepEqual(cutLayout(side).edgeIndices,[0,1,2,3]);assert.deepEqual(cutLayout(horizontal).edgeIndices,[2,3,1,0]);
 });
@@ -69,5 +69,21 @@ test('edge editor swaps horizontal top/bottom and vertical left/right without re
  const {edgeEditorSlots,edgeDirectionNames}=await import('../grain.mjs');
  for(const [p,expected,names] of [[horizontal,[0,1,3,2],['ляво','дясно','долу','горе']],[vertical,[1,0,2,3],['дясно','ляво','горе','долу']],[side,[1,0,2,3],['дясно','ляво','горе','долу']]]){
   const physical=['E0','E1','E2','E3'],before=structuredClone(p),slots=edgeEditorSlots(p),editor=slots.map(i=>physical[i]),stored=[];slots.forEach((slot,i)=>{stored[slot]=editor[i]});assert.deepEqual(slots,expected);assert.deepEqual(stored,physical);assert.deepEqual(edgeDirectionNames(p),names);assert.deepEqual(p,before);
+ }
+});
+
+test('Salex edge diagram aligns A horizontally and letters with the exact XLSX slots',async()=>{
+ const {edgeDiagramLayout}=await import('../grain.mjs');
+ for(const p of [horizontal,vertical,side])for(const finish of [{grainRequired:false},...panelAxes(p).axes.map(grainAxis=>({grainRequired:true,grainAxis}))]){
+  const cut=cutLayout(p,finish),diagram=edgeDiagramLayout(p,finish),physical=[];diagram.slots.forEach((slot,i)=>physical[slot]=['Л','Д','П','З'][i]);
+  assert.deepEqual([diagram.width,diagram.height],[cut.A,cut.B]);assert.deepEqual(cut.edgeIndices.map(i=>physical[i]),['З','П','Д','Л']);
+  if(finish.grainRequired)assert.equal(diagram.axes[0],finish.grainAxis);
+ }
+});
+
+test('grain-free Salex sides match the actual long/short dimensions in every plane',()=>{
+ for(const p of [horizontal,vertical,side,{w:550,h:18,d:720},{w:720,h:550,d:18},{w:18,h:550,d:720}]){
+  const layout=cutLayout(p,{grainRequired:false}),thin=panelAxes(p).thickness,lengths=thin==='x'?[p.h,p.h,p.d,p.d]:thin==='z'?[p.h,p.h,p.w,p.w]:[p.d,p.d,p.w,p.w];
+  assert.deepEqual(layout.edgeIndices.map(i=>lengths[i]),[layout.A,layout.A,layout.B,layout.B]);assert.equal(layout.A,720);assert.equal(layout.B,550);
  }
 });
