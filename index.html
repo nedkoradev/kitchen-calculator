@@ -2482,6 +2482,7 @@ for(const [view,label] of [['perspective','Перспектива'],['front','О
 }
 partNamesToggle.removeAttribute('style');decorateAction(partNamesToggle,'tags','Етикети на детайлите',{iconOnly:true});
 viewDock.append(partNamesToggle);host.append(viewDock);
+$('views').style.setProperty('display','none','important');
 const partNamesLayer=document.createElement('div');
 partNamesLayer.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:11';
 host.append(partNamesLayer);

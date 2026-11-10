@@ -2,6 +2,7 @@ const assert=require('node:assert/strict');const {openKitchen}=require('./browse
 (async()=>{const {browser,page,errors}=await openKitchen({firebaseDouble:true});try{
  await page.waitForFunction(()=>window.__firebaseDouble&&document.querySelector('#cloudStatus').textContent.includes('alice'));
  for(const mode of ['Constructor','Project']){await page.locator('#mode'+mode).click();for(const v of ['perspective','front','top','left','right']){const b=page.locator('#viewControlsDock [data-v="'+v+'"]');await b.click();assert.equal(await b.innerText(),'');assert.ok(await b.getAttribute('title'));assert.match(await b.getAttribute('class'),/active/)}await page.locator('#nedPartNamesToggle').click();assert.equal(await page.locator('#nedPartNamesToggle').innerText(),'');}
+ assert.equal(await page.locator('#views').isVisible(),false);
  assert.equal(await page.locator('#projectQuickSaveAs').isVisible(),false);
  const rows=()=>page.evaluate(()=>window.__firebaseDouble.rows().filter(r=>r.path.includes('/v2_projects/')));
  const save=()=>page.locator('#projectCloudSave').click();const closed=()=>page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
