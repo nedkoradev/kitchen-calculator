@@ -1,3 +1,4 @@
+import {MATERIAL_PREFERENCES_ID} from './material-base-preferences.mjs';
 import {createProjectStore} from './project-store.mjs';
 import {projectErrorMessage} from './project-model.mjs';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
@@ -7,9 +8,9 @@ const config={apiKey:"AIzaSyBlrriK3iQAuO0KN-bHkd1p5PoLWoqjTJ4",authDomain:"kitch
 const app=initializeApp(config),auth=getAuth(app),db=getFirestore(app);
 const el=id=>document.getElementById(id),status=msg=>el('cloudStatus').textContent=msg;
 const emit=(type,detail)=>window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-'+type,{detail}));
-let user=null;
+let user=null,authGeneration=0;
 onAuthStateChanged(auth,u=>{
- user=u;el('cloudLogin').hidden=!!u;el('cloudLogout').hidden=!u;
+ user=u;authGeneration++;el('cloudLogin').hidden=!!u;el('cloudLogout').hidden=!u;
  status(u?'☁ '+(u.email||'Свързан'):'☁ Не сте влезли');
  window.dispatchEvent(new CustomEvent('kitchen-project-auth',{detail:{uid:u?.uid||null}}));
  if(u){window.dispatchEvent(new Event('kitchen-v2-material-list-request'));window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'))}
@@ -62,23 +63,36 @@ window.addEventListener('kitchen-v2-cloud-delete-request',async e=>{
 
 const materialCollection=()=>collection(db,'users',user.uid,'materials');
 window.addEventListener('kitchen-v2-material-list-request',async()=>{
- try{requireUser();const snap=await getDocs(materialCollection());emit('material-list',{items:snap.docs.map(d=>({id:d.id,name:d.data().name||d.id}))})}
- catch(e){emit('material-error',{message:e.message})}
+ const generation=authGeneration;
+ try{requireUser();const uid=user.uid,ref=materialCollection();const [snap,prefs]=await Promise.all([getDocs(ref),getDoc(doc(ref,MATERIAL_PREFERENCES_ID))]);if(generation!==authGeneration)return;emit('material-list',{uid,items:snap.docs.filter(d=>d.id!==MATERIAL_PREFERENCES_ID).map(d=>({id:d.id,name:d.data().name||d.id})),defaultBaseId:prefs.data()?.defaultMaterialBaseId||''})}
+ catch(e){if(generation===authGeneration)emit('material-error',{operation:'list',message:e.message})}
 });
 window.addEventListener('kitchen-v2-material-load-request',async e=>{
- try{requireUser();const snap=await getDoc(doc(materialCollection(),e.detail.id));if(!snap.exists())throw Error('Базата не е намерена');emit('material-loaded',{name:snap.data().name||e.detail.id,data:snap.data()})}
- catch(e){emit('material-error',{message:e.message})}
+ const generation=authGeneration;
+ try{requireUser();const uid=user.uid,id=e.detail.id;if(id===MATERIAL_PREFERENCES_ID)throw Error('Избери материална база.');const snap=await getDoc(doc(materialCollection(),id));if(generation!==authGeneration)return;if(!snap.exists())throw Error('Базата не е намерена');emit('material-loaded',{uid,id,automatic:!!e.detail.automatic,name:snap.data().name||id,data:snap.data()})}
+ catch(error){if(generation===authGeneration)emit('material-error',{operation:'load',automatic:!!e.detail.automatic,message:error.message})}
+});
+window.addEventListener('kitchen-v2-material-default-request',async e=>{
+ const generation=authGeneration;
+ try{requireUser();const uid=user.uid,ref=materialCollection(),id=e.detail.id||'';
+  if(id){if(typeof id!=='string'||id.includes('/')||id===MATERIAL_PREFERENCES_ID)throw Error('Невалидна база.');const base=await getDoc(doc(ref,id));if(!base.exists())throw Error('Базата вече не съществува.');}
+  if(generation!==authGeneration)return;
+  await setDoc(doc(ref,MATERIAL_PREFERENCES_ID),{schemaVersion:1,defaultMaterialBaseId:id,updatedAt:Date.now()},{merge:true});
+  if(generation===authGeneration)emit('material-default-saved',{uid,id});
+ }catch(error){if(generation===authGeneration)emit('material-default-error',{message:error.message})}
 });
 
 window.addEventListener('kitchen-v2-material-save-request',async e=>{
+ const generation=authGeneration;
  try{
-  requireUser();
+  requireUser();const uid=user.uid;
   const name=String(e.detail?.name||'').trim();if(!name)throw Error('Въведи име на базата');
   const id='base_'+name.toLowerCase().replace(/[^a-z0-9а-я]+/gi,'_');
   await setDoc(doc(materialCollection(),id),{...e.detail.data,name,updatedAt:Date.now()});
-  emit('material-saved',{name,id});
+  if(generation!==authGeneration)return;
+  emit('material-saved',{name,id,uid});
   window.dispatchEvent(new Event('kitchen-v2-material-list-request'));
- }catch(e){emit('material-error',{message:e.message})}
+ }catch(e){if(generation===authGeneration)emit('material-error',{message:e.message})}
 });
 
 // Separate request/response channel: existing cabinet/material contracts stay intact.
