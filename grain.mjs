@@ -3,6 +3,15 @@ export function panelAxes(p){
  const thickness=p.w<=p.h&&p.w<=p.d?'x':p.d<=p.w&&p.d<=p.h?'z':'y';
  return {thickness,axes:thickness==='x'?['z','y']:thickness==='z'?['x','y']:['x','z']};
 }
+// Editor order is left, right, top, bottom; stored edges remain physical slots.
+export function edgeEditorSlots(p){
+ if(!p)return [0,1,2,3];
+ return panelAxes(p).thickness==='y'?[0,1,3,2]:[1,0,2,3];
+}
+export function edgeDirectionNames(p){
+ const names=[],directions=['ляво','дясно','горе','долу'];
+ edgeEditorSlots(p).forEach((slot,index)=>{names[slot]=directions[index]});return names;
+}
 const dimension=(p,axis)=>p[{x:'w',y:'h',z:'d'}[axis]];
 export function physicalGrainAxis(p,finish={}){
  const {axes}=panelAxes(p);

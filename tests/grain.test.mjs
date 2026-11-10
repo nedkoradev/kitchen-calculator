@@ -64,3 +64,10 @@ test('source-photo grain orientation changes only UV axes, never cutting or phys
  assert.deepEqual(vertical,{uAxis:'y',vAxis:'x',width:355,height:489});assert.deepEqual(horizontal,{uAxis:'x',vAxis:'y',width:355,height:489});
  assert.deepEqual(cutLayout(p,f,base),cutLayout(p,f,{...base,textureGrainDirection:'horizontal'}));assert.equal(cutLayout(p,f,base).A,588);assert.deepEqual({p,f},before);
 });
+
+test('edge editor swaps horizontal top/bottom and vertical left/right without reinterpreting storage',async()=>{
+ const {edgeEditorSlots,edgeDirectionNames}=await import('../grain.mjs');
+ for(const [p,expected,names] of [[horizontal,[0,1,3,2],['ляво','дясно','долу','горе']],[vertical,[1,0,2,3],['дясно','ляво','горе','долу']],[side,[1,0,2,3],['дясно','ляво','горе','долу']]]){
+  const physical=['E0','E1','E2','E3'],before=structuredClone(p),slots=edgeEditorSlots(p),editor=slots.map(i=>physical[i]),stored=[];slots.forEach((slot,i)=>{stored[slot]=editor[i]});assert.deepEqual(slots,expected);assert.deepEqual(stored,physical);assert.deepEqual(edgeDirectionNames(p),names);assert.deepEqual(p,before);
+ }
+});
