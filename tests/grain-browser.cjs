@@ -56,7 +56,7 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
     await page.locator('#quickSave').click();await page.locator('#fileDialogName').fill('Grain cabinet');await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
     await setup([]);await page.locator('#quickOpen').click();await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
    }else{
-    await page.locator('#projectQuickSaveAs').click();await page.locator('#projectCloudName').fill('Grain project');await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
+    await page.locator('#projectQuickSave').click();await page.locator('#projectCloudName').fill('Grain project');await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
     const payload=await page.evaluate(()=>window.__firebaseDouble.rows().find(row=>row.path.includes('/v2_projects/')).value.data);assert.equal(payload.materials.pdcMaterials[0].textureUrl,photo);assert.ok(!JSON.stringify(payload).includes('base64'));
     await setup([]);await page.locator('#projectQuickOpen').click();await page.locator('#projectCloudOpen').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
    }

@@ -58,17 +58,29 @@ export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,
   const ui=modal(saveAs?'Запази проект като':'Запази проект в облака');
   const label=document.createElement('label');label.textContent='Име на проекта';
   const input=document.createElement('input');input.id='projectCloudName';input.type='text';input.maxLength=100;
-  input.value=saveAs?'':getName();label.htmlFor=input.id;ui.insert(label);ui.insert(input);
-  const saveButton=button('projectCloudSave','Запази',()=>operation(ui,async token=>{
-   const args={name:input.value,data:snapshot(),saveAs,...(!saveAs&&opened?.uid===uid?{id:opened.id,revision:opened.revision}:{})};
-   let result;
-   for(;;){
-    try{result=await call('save',args);break}
-    catch(error){if(error.code!=='confirmation-required'||!confirm(error.message))throw error.code==='confirmation-required'?new ProjectError('cancelled','Записът е отказан. Няма промени в облака.'):error;args.confirmation=error.details}
-   }
-   if(token!==epoch)return;
-   opened=result;onSaved(result);feedback('☁ Проектът „'+result.name+'“ е потвърдено записан в облака.');ui.element.close();
-  }));
+  input.value=saveAs?'':(opened?.name||'');label.htmlFor=input.id;ui.insert(label);ui.insert(input);
+  const prompt=document.createElement('p');prompt.id='projectOverwritePrompt';prompt.hidden=true;ui.insert(prompt);
+  let approval=null,approvedName=null;
+  const reset=()=>{approval=null;approvedName=null;prompt.hidden=true;saveButton.textContent='Запази'};
+  const change=button('projectOverwriteCancel','Не, промени името',()=>{reset();change.hidden=true;input.focus()});change.hidden=true;ui.actions.append(change);
+  input.addEventListener('input',()=>{reset();change.hidden=true});
+  const ask=(message,details)=>{approval=details;approvedName=input.value;prompt.textContent=message;prompt.hidden=false;change.hidden=false;saveButton.textContent='Презапиши'};
+  const saveButton=button('projectCloudSave','Запази',()=>{
+   if(!uid){ui.status.textContent='Първо влез с Google от горния десен ъгъл.';return}
+   if(!input.value.trim()){ui.status.textContent='Въведи име.';input.focus();return}
+   const same=opened?.uid===uid&&input.value.trim().toLocaleLowerCase('bg')===opened.name.toLocaleLowerCase('bg');
+   if(!saveAs&&same&&approvedName!==input.value){ask('Искаш ли да презапишеш проекта „'+opened.name+'“?',null);return}
+   return operation(ui,async token=>{
+    const args={name:input.value,data:snapshot(),saveAs,...(!saveAs&&same?{id:opened.id,revision:opened.revision}:{}),...(approvedName===input.value&&approval?{confirmation:approval}:{})};
+    let result;
+    try{result=await call('save',args)}catch(error){
+     if(error.code==='confirmation-required'){ask(error.message,error.details);ui.status.textContent='';return}
+     reset();change.hidden=true;throw error;
+    }
+    if(token!==epoch)return;
+    opened=result;onSaved(result);feedback('☁ Проектът „'+result.name+'“ е потвърдено записан в облака.');ui.element.close();
+   });
+  });
   saveButton.classList.add('libraryPrimary');ui.actions.append(saveButton);input.focus();
   if(!uid)ui.status.textContent='Първо влез с Google от горния десен ъгъл.';
  }

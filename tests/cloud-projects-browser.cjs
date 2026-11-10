@@ -24,18 +24,13 @@ const {openKitchen}=require('./browser-harness.cjs');
   await page.evaluate(()=>window.__firebaseDouble.release());await waitClosed();
   let rows=await cloudRows();assert.equal(rows.length,1);const id=rows[0].path.split('/').at(-1);
   assert.deepEqual(rows[0].value.data.materials,payload.materials);
-  await saveDialog();await waitClosed();rows=await cloudRows();assert.equal(rows.length,1);assert.equal(rows[0].value.revision,2);assert.ok(rows[0].path.endsWith('/'+id));
+  await saveDialog();await page.locator('#projectCloudSave').click();await waitClosed();rows=await cloudRows();assert.equal(rows.length,1);assert.equal(rows[0].value.revision,2);assert.ok(rows[0].path.endsWith('/'+id));
   console.log('PASS cloud save waits for commit; overwrite keeps ID and all project data');
 
-  await page.locator('#projectQuickSave').click();await page.locator('#projectCloudName').fill('Преименувана');
-  page.once('dialog',d=>d.dismiss());await page.locator('#projectCloudSave').click();
-  await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('отказан'));assert.equal((await cloudRows())[0].value.name,'Моя кухня');
-  page.once('dialog',d=>d.accept());await page.locator('#projectCloudSave').click();await waitClosed();
-  assert.equal((await cloudRows())[0].value.name,'Преименувана');
-  await page.locator('#projectQuickSaveAs').click();await page.locator('#projectCloudName').fill('Преименувана');await page.locator('#projectCloudSave').click();
-  await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('Вече има проект'));assert.equal((await cloudRows()).length,1);
-  await page.locator('#projectCloudName').fill('Копие');await page.locator('#projectCloudSave').click();await waitClosed();assert.equal((await cloudRows()).length,2);
-  console.log('PASS rename confirmation/cancel, Save As and duplicate rejection');
+  await saveDialog('Преименувана');await waitClosed();assert.equal((await cloudRows()).length,2);
+  await page.locator('#projectQuickSave').click();await page.locator('#projectCloudName').fill('Моя кухня');await page.locator('#projectCloudSave').click();
+  await page.waitForFunction(()=>!document.querySelector('#projectOverwritePrompt').hidden);await page.locator('#projectOverwriteCancel').click();assert.equal((await cloudRows()).length,2);
+  await close();console.log('PASS changed name creates copy; collision confirmation can be cancelled');
 
   const savedCamera=(await cloudRows()).find(row=>row.path.endsWith('/'+id)).value.data.settings.camera;
   await setup([]);await page.locator('#projectQuickOpen').click();await page.locator('#projectCloudList').selectOption(id);await page.locator('#projectCloudOpen').click();await waitClosed();await page.waitForTimeout(80);
@@ -53,7 +48,7 @@ const {openKitchen}=require('./browser-harness.cjs');
   await close();
   console.log('PASS cloud project open exposes no local project entry');
 
-  await page.evaluate(()=>window.__firebaseDouble.failWrites(true));await saveDialog();
+  await page.evaluate(()=>window.__firebaseDouble.failWrites(true));await saveDialog();await page.locator('#projectCloudSave').click();
   await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('не е потвърден'));
   assert.equal(await page.locator('#projectCloudDialog').count(),1);await close();await page.evaluate(()=>window.__firebaseDouble.failWrites(false));
   await page.locator('#projectQuickOpen').click();await page.waitForFunction(()=>document.querySelector('#projectCloudList').options.length===2);
