@@ -1,3 +1,4 @@
+import {validTextureUrl} from './grain.mjs';
 // Storage boundaries only: never modify geometry, locks or grouping histories.
 export class ProjectError extends Error{
  constructor(code,message,details={}){super(message);this.code=code;this.details=details}
@@ -28,6 +29,8 @@ export function projectData(input,{maxBytes=Infinity}={}){
    throw new ProjectError('invalid-project','Проектът съдържа невалиден детайл или група.');
   if(item.finish?.note!==undefined&&(typeof item.finish.note!=='string'||item.finish.note.length>1000))
    throw new ProjectError('invalid-project','Забележката трябва да е текст до 1000 знака.');
+  if(p.appliance&&(!Number.isInteger(p.appliance.turn)||p.appliance.turn<0||p.appliance.turn>3||typeof p.appliance.textureUrl!=='string'||(p.appliance.textureUrl&&!validTextureUrl(p.appliance.textureUrl))))
+   throw new ProjectError('invalid-project','Невалиден уред или временна снимка.');
   keys.add(p.key);
  }
  // Existing rotations may leave undefined lock fields. Firestore rejects those;
