@@ -26,6 +26,8 @@ export function projectData(input,{maxBytes=Infinity}={}){
   if(!p||typeof p.key!=='string'||!p.key||keys.has(p.key)||!['x','y','z','w','h','d'].every(k=>Number.isFinite(p[k]))||['w','h','d'].some(k=>p[k]<=0)||
     (p.assemblyStack!==undefined&&(!Array.isArray(p.assemblyStack)||p.assemblyStack.some(id=>id!==null&&typeof id!=='string'))))
    throw new ProjectError('invalid-project','Проектът съдържа невалиден детайл или група.');
+  if(item.finish?.note!==undefined&&(typeof item.finish.note!=='string'||item.finish.note.length>1000))
+   throw new ProjectError('invalid-project','Забележката трябва да е текст до 1000 знака.');
   keys.add(p.key);
  }
  // Existing rotations may leave undefined lock fields. Firestore rejects those;
