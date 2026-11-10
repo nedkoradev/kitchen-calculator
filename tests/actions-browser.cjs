@@ -39,7 +39,7 @@ const panel=(key,x=0)=>({key,x,y:150,z:0,w:101,h:18,d:300,locks:{w:false,h:true,
     await page.locator('#quickSave').click();await page.locator('#fileDialogName').fill('Icon cabinet');await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
     await setup([]);await page.locator('#quickOpen').click();await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);assert.equal((await parts()).length,1);
    }else{
-    await page.locator('#projectQuickSaveAs').click();await page.locator('#projectCloudName').fill('Icon project');await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
+    await page.locator('#projectQuickSave').click();await page.locator('#projectCloudName').fill('Icon project');await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
     await page.locator('#projectQuickSave').click();await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
     await setup([]);await page.locator('#projectQuickOpen').click();assert.equal(await page.locator('#projectCloudLocal').count(),0);await page.locator('#projectCloudOpen').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));assert.equal((await parts()).length,1);
     await page.locator('#projectQuickAdd').click();await page.locator('#projectAddDialogConfirm').click();await page.waitForFunction(()=>window.__test.parts().length===2);

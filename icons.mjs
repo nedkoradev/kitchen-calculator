@@ -1,5 +1,12 @@
 // Shared local SVG vocabulary: Lucide-style 24px, 2px strokes, no icon font/CDN.
 const paths={
+ viewperspective:'<path d="m12 3 9 5v8l-9 5-9-5V8l9-5Zm0 9L3 8m9 4 9-4m-9 4v9"/>',
+ viewfront:'<rect x="3" y="4" width="18" height="16"/><path d="M8 15h8m-4-4 4 4-4 4"/>',
+ viewtop:'<rect x="3" y="4" width="18" height="16"/><path d="M8 7h8M12 17V9m-3 3 3-3 3 3"/>',
+ viewleft:'<rect x="3" y="4" width="18" height="16"/><path d="M7 4v16m10-8H9m3-3-3 3 3 3"/>',
+ viewright:'<rect x="3" y="4" width="18" height="16"/><path d="M17 4v16M7 12h8m-3-3 3 3-3 3"/>',
+ tags:'<path d="M3 3h7l11 11-7 7L3 10V3Z"/><circle cx="7" cy="7" r="1"/>',
+
  refresh:'<path d="M3 10a9 9 0 0 1 15-6l3 3M21 3v4h-4M21 14a9 9 0 0 1-15 6l-3-3M3 21v-4h4"/>',
  image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1"/><path d="m3 17 5-5 4 4 4-6 5 7M17 2v6m-3-3h6"/>',
  edit:'<path d="m15 5 4 4M4 20l1-5L17 3l4 4L9 19l-5 1Z"/>',

@@ -77,7 +77,7 @@ const physical=rows=>rows.map(({assembly,assemblyStack,key,...p})=>p);
    // Snapshot serialization remaps IDs; compare relationships as well as panel data.
    const snapshot=await page.evaluate(()=>window.__groupTest.capture());
    if(mode==='project'){
-    await page.locator('#projectQuickSaveAs').click();await page.locator('#projectCloudName').fill('Grouping roundtrip');
+    await page.locator('#projectQuickSave').click();await page.locator('#projectCloudName').fill('Grouping roundtrip');
     await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
     const id=await page.evaluate(()=>window.__firebaseDouble.rows().find(r=>r.path.includes('/v2_projects/')).path.split('/').at(-1));
     await setup([]);await page.locator('#projectQuickOpen').click();await page.locator('#projectCloudList').selectOption(id);

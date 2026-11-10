@@ -17,7 +17,7 @@ const assert=require('node:assert/strict');const path=require('node:path');const
    if(mode==='constructor'){
     await page.locator('#quickSave').click();await page.locator('#fileDialogName').fill('Locked runner pair');await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);await setup([]);await page.locator('#quickOpen').click();await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
    }else{
-    await page.locator('#projectQuickSaveAs').click();await page.locator('#projectCloudName').fill('Locked runner spacing');await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));await setup([]);await page.locator('#projectQuickOpen').click();await page.locator('#projectCloudOpen').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
+    await page.locator('#projectQuickSave').click();await page.locator('#projectCloudName').fill('Locked runner spacing');await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));await setup([]);await page.locator('#projectQuickOpen').click();await page.locator('#projectCloudOpen').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
    }
    assert.deepEqual(geometry(await parts()),saved);console.log('PASS '+mode+': locked runner profiles, numeric and pointer spacing, Undo/Redo and isolated cloud save/open');
   }
