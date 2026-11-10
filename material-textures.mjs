@@ -16,6 +16,7 @@ export function createMaterialTextures(THREE){
   }
   if(entry.failed)return;
   const updateUV=(aspect=1)=>{
+   if(edge?.image)return;
    const {uAxis,vAxis,width,height}=(edge?edgeTextureCoordinates(p,edge.normal,material,aspect):textureCoordinates(p,finish,material,aspect)),position=mesh.geometry.attributes.position,uv=mesh.geometry.attributes.uv;
    const coordinate=(i,axis)=>axis==='x'?position.getX(i):axis==='y'?position.getY(i):position.getZ(i);
    for(let i=0;i<uv.count;i++)uv.setXY(i,coordinate(i,uAxis)/width+.5,coordinate(i,vAxis)/height+.5);

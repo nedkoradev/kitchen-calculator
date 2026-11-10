@@ -1,5 +1,6 @@
 // Shared local SVG vocabulary: Lucide-style 24px, 2px strokes, no icon font/CDN.
 const paths={
+ appliance:'<rect x="3" y="2" width="18" height="20" rx="2"/><path d="M3 7h18M7 4h.01M11 4h.01M7 10h10v8H7zM8 12h8"/>',
  viewperspective:'<path d="m12 3 9 5v8l-9 5-9-5V8l9-5Zm0 9L3 8m9 4 9-4m-9 4v9"/>',
  viewfront:'<rect x="3" y="4" width="18" height="16"/><path d="M8 15h8m-4-4 4 4-4 4"/>',
  viewtop:'<rect x="3" y="4" width="18" height="16"/><path d="M8 7h8M12 17V9m-3 3 3-3 3 3"/>',
