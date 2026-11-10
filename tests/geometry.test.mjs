@@ -15,7 +15,7 @@ for(const [axis,dim] of [['x','w'],['y','h'],['z','d']]){
  test(`large ${axis} move stops at a thin obstacle`,()=>{
   const p=part('p',{y:200}),o=part('o',{y:200,[axis]:400,[dim]:1});
   const next=translate([p],[o],room,{[axis]:1000})[0];
-  assert.equal(next[axis]+next[dim]/2,o[axis]-o[dim]/2);
+  assert.equal(next[axis]+next[dim]/2,Math.floor(o[axis]-o[dim]/2));
   for(const k of ['w','h','d'])assert.equal(next[k],p[k]);
  });
  test(`${dim} resize stops at first obstacle with integer size`,()=>{
@@ -37,7 +37,7 @@ test('touching blocks inward movement and permits moving away',()=>{
 });
 test('existing intersections can be released but cannot deepen or tunnel into a new part',()=>{
  const p=part('p'),o=part('o',{x:30}),thin=part('thin',{x:-300,w:1});
- assert.equal(translate([p],[o,thin],room,{x:-1000})[0].x,-249.5);
+ assert.equal(translate([p],[o,thin],room,{x:-1000})[0].x,-249);
  assert.equal(translate([p],[o],room,{x:10})[0].x,0);
  assert.equal(translate([p],[o],room,{x:1000})[0].x,0);
  assert.equal(translate([p],[part('same')],room,{x:200})[0].x,200);
@@ -68,7 +68,7 @@ test('cabinet resize preserves locked thickness, contacts, floor and shelf eleva
 test('group translation uses every member and retains internal distances',()=>{
  const source=cabinet(),obstacle=part('o',{x:900,w:1,y:500});
  const next=translate(source,[obstacle],room,{x:1000});
- assert.equal(bounds(next,'x').max,899.5);
+ assert.equal(bounds(next,'x').max,899);
  source.forEach((p,i)=>assert.equal(next[i].x-p.x,next[0].x-source[0].x));
 });
 test('locked spanning member stops an incompatible group resize',()=>{
@@ -108,7 +108,7 @@ test('two nested cabinets resize through their own construction rules',()=>{
 test('negative movement stops at contact and a blocked axis permits sliding',()=>{
  const p=part('p'),o=part('o',{x:-300,w:1});
  const next=translate([p],[o],room,{x:-2000,z:200})[0];
- assert.equal(next.x,-249.5);assert.equal(next.z,200);
+ assert.equal(next.x,-249);assert.equal(next.z,200);
 });
 test('resizing a floating shelf preserves its elevation',()=>{
  const p=part('shelf',{y:509,h:18});
@@ -167,7 +167,7 @@ test('sequential escape along different axes keeps intersection volume non-incre
 });
 test('escape from containment still stops at a new thin obstacle',()=>{
  const p=part('p',{w:40,x:10,y:500}),o=part('o',{y:500}),thin=part('thin',{x:-200,w:1,y:500});
- assert.equal(translate([p],[o,thin],largeRoom,{x:-1000})[0].x,-179.5);
+ assert.equal(translate([p],[o,thin],largeRoom,{x:-1000})[0].x,-179);
 });
 for(const count of [5,50,100,200]){
  test(`600→4000 mm resize preserves construction with ${count} parts`,()=>{
@@ -300,4 +300,25 @@ test('locked shelf bays still stop at physical minimum, obstacles and room bound
  const obstacle=part('thin',{x:340,w:1,y:300,h:1,d:1}),next=resize(source,[obstacle],room,'w',900);assert.ok(next[4].x+9<=339.5);assert.ok(bounds(next,'x').max<900);
  const left=cabinetWithAddedPanels({partitionX:300});left[5].locks.w=true;const shrunk=resize(left,[],room,'w',200);assert.equal(shrunk[5].w,left[5].w);assert.ok(bounds(shrunk,'x').max>=327);
  assert.equal(bounds(resize(left,[],{...room,w:1500},'w',900),'x').max,750);
+});
+
+test('translation snaps wall/floor offsets to whole millimetres, including odd rooms and sizes',()=>{
+ for(const axis of ['x','y','z'])for(const span of [100,101]){
+  const dim={x:'w',y:'h',z:'d'}[axis],r={w:3001,h:2601,d:3001},origin=axis==='y'?0:r[dim]/2;
+  const p=part('grid',{y:300,[dim]:span,[axis]:1000.5-origin+span/2}),before=structuredClone(p);
+  for(const delta of [1.2,-1.2,100.5,-100.5]){const moved=translate([p],[],r,{[axis]:delta})[0],offset=moved[axis]-moved[dim]/2+origin;assert.ok(Number.isInteger(offset));assert.equal(offset,Math.round(1000.5+delta));assert.equal(moved[dim],span)}assert.deepEqual(p,before);
+ }
+});
+test('rotation grid alignment is reversible and never drifts over four turns',async()=>{
+ const {snapPositionToMillimetres}=await import('../geometry.mjs');
+ for(const w of [100,101])for(const d of [400,401])for(const rw of [3000,3001]){
+  const r={...room,w:rw,d:rw},source=[part('odd',{w,d,x:1000-rw/2+w/2,z:1000-rw/2+d/2})];let next=structuredClone(source);
+  const turn=(parts,sign)=>{const x=bounds(parts,'x'),z=bounds(parts,'z'),cx=(x.min+x.max)/2,cz=(z.min+z.max)/2;return snapPositionToMillimetres(parts.map(p=>({...p,x:cx+(sign>0?-(p.z-cz):p.z-cz),z:cz+(sign>0?p.x-cx:-(p.x-cx)),w:p.d,d:p.w})),[],r,['x','z'])};
+  for(let i=0;i<4;i++){next=turn(next,1);assert.ok(Number.isInteger(bounds(next,'x').min+rw/2));assert.ok(Number.isInteger(bounds(next,'z').min+rw/2))}assert.deepEqual(next,source);assert.deepEqual(turn(turn(source,1),-1),source);
+ }
+});
+test('grid alignment tries the other safe side and rejects a trapped fractional position',async()=>{
+ const {snapPositionToMillimetres}=await import('../geometry.mjs'),p=part('odd',{w:101,x:1,y:300}),right=part('right',{x:101.75,y:300});
+ const aligned=snapPositionToMillimetres([p],[right],room,['x']);assert.equal(aligned[0].x,.5);assert.equal(aligned[0].w,101);
+ const left=part('left',{x:-99.75,y:300});assert.equal(snapPositionToMillimetres([p],[left,right],room,['x']),null);
 });
