@@ -32,3 +32,12 @@ test('permission and network failures have readable messages without success',()
  assert.match(projectErrorMessage({code:'unavailable'}),/не е потвърден/);
  assert.equal(projectErrorMessage(new ProjectError('offline','Няма интернет.')),'Няма интернет.');
 });
+test('per-part notes preserve literal text and legacy snapshots; malformed notes are rejected',()=>{
+ const source=fixture();source.parts[0].finish.note='Пробиване\n=SUM(A1:A2) <текст>';
+ assert.equal(projectData(source).parts[0].finish.note,source.parts[0].finish.note);
+ assert.equal(projectData(fixture()).parts[0].finish.note,undefined);
+ for(const note of [null,42,{},'a'.repeat(1001)]){
+  const bad=fixture();bad.parts[0].finish.note=note;
+  assert.throws(()=>projectData(bad),{code:'invalid-project'});
+ }
+});
