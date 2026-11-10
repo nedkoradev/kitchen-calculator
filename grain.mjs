@@ -27,10 +27,18 @@ export function requiresGrain(finish={},material={}){
 }
 export function cutLayout(p,finish={},material={}){
  const [thickness,short,long]=[p.w,p.h,p.d].map(Math.round).sort((a,b)=>a-b);
- if(!requiresGrain(finish,material))return {A:long,B:short,thickness,grainRequired:false,edgeIndices:p.w<=p.h&&p.w<=p.d?[0,1,2,3]:[2,3,1,0]};
- const {thickness:thin,axes}=panelAxes(p),axis=physicalGrainAxis(p,finish),other=axes.find(value=>value!==axis);
+ const grainRequired=requiresGrain(finish,material),{thickness:thin,axes}=panelAxes(p);
+ const axis=grainRequired?physicalGrainAxis(p,finish):(dimension(p,axes[0])>=dimension(p,axes[1])?axes[0]:axes[1]),other=axes.find(value=>value!==axis);
  const edgeIndices=thin==='y'?(axis==='x'?[2,3,1,0]:[0,1,2,3]):axis==='y'?[0,1,2,3]:[3,2,1,0];
+ if(!grainRequired)return {A:long,B:short,thickness,grainRequired:false,edgeIndices};
  return {A:Math.round(dimension(p,axis)),B:Math.round(dimension(p,other)),thickness,grainRequired:true,axis,edgeIndices};
+}
+// Salex diagram: A runs horizontally, B vertically, independent of model plane.
+// cutLayout slots are [A bottom, A top, B right, B left].
+export function edgeDiagramLayout(p,finish={},material={}){
+ const layout=cutLayout(p,finish,material),{axes}=panelAxes(p);
+ const aAxis=layout.axis||(dimension(p,axes[0])>=dimension(p,axes[1])?axes[0]:axes[1]);
+ return {width:layout.A,height:layout.B,axes:[aAxis,axes.find(axis=>axis!==aAxis)],slots:[3,2,1,0].map(i=>layout.edgeIndices[i])};
 }
 export function textureCoordinates(p,finish={},material={},imageAspect=1){
  const {axes}=panelAxes(p),grain=physicalGrainAxis(p,finish),other=axes.find(axis=>axis!==grain);

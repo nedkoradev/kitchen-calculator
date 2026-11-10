@@ -7,7 +7,7 @@ const assert=require('node:assert/strict');const path=require('node:path');const
 
  for(const mode of ['constructor','project']){
   await page.locator(mode==='constructor'?'#modeConstructor':'#modeProject').click();await setup([{key:'custom971',w:588,h:142,d:18,x:0,y:200,z:0,locks:{d:true}}]);await page.evaluate(()=>window.__grainFace.prepare());await setDirection('vertical');
-  await props();await page.locator('#materialSelect').selectOption('0');await page.locator('#partGrainRequired').check();await page.locator('#grainDirection').selectOption('x');await page.locator('#allEdges').check();
+  await props();await page.locator('#materialSelect').selectOption('0');await page.locator('#partGrainRequired').check();await page.locator('#grainDirection').selectOption('x');await page.locator('#openEdgeEditor').click();await page.locator('#visualEdgeAll').selectOption('0');await page.locator('#visualEdgeUseAll').click();await page.locator('#visualEdgeApply').click();
   assert.deepEqual(await page.locator('#grainDirection option').allTextContents(),['По дължина — 588 мм','По височина — 142 мм']);
   const before=await parts(),cut=await page.evaluate(()=>window.__grainFace.cut()),finish=await page.evaluate(()=>Object.values(window.__test.finish())[0]);assert.equal(cut.A,588);assert.equal(cut.B,142);await page.locator('#dialogDone').click();
   await page.waitForFunction(()=>document.querySelector('#view canvas')&&window.__grainFace.snapshot().materials.pdcMaterials[0].textureUrl);await page.waitForFunction(()=>window.__grainFace.image()>0,null,{timeout:10000});const uv=await page.evaluate(()=>window.__grainFace.uv());
