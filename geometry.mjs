@@ -74,18 +74,34 @@ function fraction(before,after,obstacles,room,plan){
 }
 export function translate(parts,obstacles,room,requested){
  let result=copy(parts);
- // Resolve each axis identically for groups and single parts, allowing sliding.
+ // Snap the displayed leading face, not the centre (odd dimensions require
+ // half-mm centres). Clamp to the last safe whole millimetre before contact.
  for(const axis of axes){
-  const delta=requested[axis]||0;
-  if(!Number.isFinite(delta)||Math.abs(delta)<EPS)continue;
-  const target=result.map(p=>({...p,[axis]:p[axis]+Math.round(delta*2)/2}));
-  const t=fraction(result,target,obstacles,room);
-  result=target.map((p,i)=>{
-   const value=result[i][axis]+(p[axis]-result[i][axis])*t,half=Math.round(value*2)/2;
-   return {...p,[axis]:Math.abs(value-half)<EPS?half:value};
-  });
+  const requestedDelta=requested[axis]||0;
+  if(!Number.isFinite(requestedDelta)||Math.abs(requestedDelta)<EPS)continue;
+  const origin=axis==='y'?0:room[dimensions[axis]]/2,start=bounds(result,axis).min+origin;
+  const delta=Math.round(start+requestedDelta)-start;if(Math.abs(delta)<EPS)continue;
+  const target=result.map(p=>({...p,[axis]:p[axis]+delta})),t=fraction(result,target,obstacles,room);
+  const end=start+delta*t,grid=delta>0?Math.floor(end+EPS):Math.ceil(end-EPS),shift=grid-start;
+  if(shift*delta<-EPS)continue; // Do not reverse a blocked legacy fractional move.
+  result=result.map(p=>({...p,[axis]:p[axis]+shift}));
  }
  return result;
+}
+export function snapPositionToMillimetres(parts,obstacles,room,which=axes){
+ let candidates=[copy(parts)];
+ for(const axis of which){
+  const next=[];
+  for(const candidate of candidates){
+   const b=bounds(candidate,axis),offset=b.min+(axis==='y'?0:room[dimensions[axis]]/2);
+   if(Math.abs(offset-Math.round(offset))<EPS){next.push(candidate);continue}
+   const odd=Math.round(b.max-b.min)%2!==0;
+   const targets=[Math.floor(offset),Math.ceil(offset)].sort((a,b)=>Math.abs(a-offset)-Math.abs(b-offset)||(odd?b-a:a-b));
+   for(const value of targets){const moved=translate(candidate,obstacles,room,{[axis]:value-offset}),actual=bounds(moved,axis).min+(axis==='y'?0:room[dimensions[axis]]/2);if(Math.abs(actual-value)<EPS)next.push(moved)}
+  }
+  candidates=next;if(!candidates.length)return null;
+ }
+ return candidates[0]||null;
 }
 function preservesContacts(before,after,axis,pairs){
  for(const [i,j] of pairs){

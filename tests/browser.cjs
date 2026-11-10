@@ -25,12 +25,12 @@ const cabinet=()=>[
   console.log('PASS integer numeric resize, fixed left, undo/redo');
   const fixture=[part('custom100'),part('custom200',{x:300,w:1})];
   await setup(fixture);await field('partX',2500);
-  assert.equal((await parts())[0].x,249.5);
+  assert.equal((await parts())[0].x,249);
   await setup(fixture);
   let point=await page.evaluate(()=>window.__test.face('custom100'));
   await page.mouse.move(point.x,point.y);await page.mouse.down();await page.mouse.move(point.x+7,point.y);await page.mouse.move(point.x+700,point.y);await page.mouse.up();
-  assert.equal((await parts())[0].x,249.5);
-  assert.equal(await page.locator('#partX').inputValue(),'1699.5');
+  assert.equal((await parts())[0].x,249);
+  assert.equal(await page.locator('#partX').inputValue(),'1699');
   console.log('PASS numeric and pointer moves stop at the same thin obstacle');
   await setup(cabinet());before=await parts();
   await clickJitter(await page.evaluate(()=>window.__test.face('custom102')));
@@ -67,7 +67,7 @@ const cabinet=()=>[
   console.log('PASS nested copy, one-level ungroup, reload, materials and four edges');
   await page.locator('#modeProject').click();await page.locator('[data-v="top"]').click();await page.locator('[data-v="perspective"]').click();await page.locator('#modeConstructor').click();
   assert.equal((await parts()).length,saved.length);
-  await setup([part('custom100',{w:101,d:99,locks:{w:true}})]);
+  await setup([part('custom100',{w:101,d:99,x:.5,z:.5,locks:{w:true}})]);
   before=await parts();
   await page.evaluate(()=>window.__test.rotateSelectedPart(1));
   assert.equal((await parts())[0].locks.d,true);
