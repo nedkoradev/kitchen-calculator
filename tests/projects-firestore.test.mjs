@@ -199,3 +199,11 @@ test('photo source orientation persists without changing the part grain axis',as
  snapshot.materials.pdcMaterials[0]={name:'Decor',textureUrl:'materials/textures/decor.png',textureGrainDirection:'horizontal'};
  const saved=await store.save({name:'Посока на снимката',data:snapshot});assert.deepEqual((await store.open(saved.id)).data,snapshot);
 });
+
+test('default material-base preference is private and does not modify the base',async()=>{
+ const alice=client('alice').db,bob=client('bob').db,anon=env.unauthenticatedContext().firestore();
+ const base=sdk.doc(alice,'users/alice/materials/base_a'),prefs=sdk.doc(alice,'users/alice/materials/_app_preferences');
+ const original={name:'A',pdcMaterials:[{name:'Board'}],edgeMaterials:[],backMaterials:[],worktops:[]};await assertSucceeds(sdk.setDoc(base,original));
+ await assertSucceeds(sdk.setDoc(prefs,{schemaVersion:1,defaultMaterialBaseId:'base_a'}));assert.equal((await assertSucceeds(sdk.getDoc(prefs))).data().defaultMaterialBaseId,'base_a');assert.deepEqual((await sdk.getDoc(base)).data(),original);
+ for(const db of [bob,anon]){await assertFails(sdk.getDoc(sdk.doc(db,'users/alice/materials/_app_preferences')));await assertFails(sdk.setDoc(sdk.doc(db,'users/alice/materials/_app_preferences'),{defaultMaterialBaseId:'other'}))}
+});
