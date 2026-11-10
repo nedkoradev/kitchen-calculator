@@ -52,8 +52,8 @@ dialog::backdrop{background:#05080db3!important}
 }
 #toolsPanel .toolSymbol b,#projectTools .toolSymbol b{background:#3b82f6!important;box-shadow:0 1px 5px #0005}
 #mainNavigation button{transition:background .15s,transform .15s!important}
-#mainNavigation button:hover{transform:translateY(-1px)}
-#mainNavigation button.mainNavActive{box-shadow:inset 0 -3px #93c5fd,0 3px 12px #2563eb33!important}
+#mainNavigation button:hover{transform:none}
+#mainNavigation button.mainNavActive{box-shadow:none!important}
 @media(max-width:720px){
  html,body{width:100%;max-width:100%;overflow-x:hidden}
  header{padding:9px 12px!important;gap:8px;align-items:center;flex-wrap:wrap}
