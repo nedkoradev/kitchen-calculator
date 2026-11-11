@@ -28,5 +28,5 @@ export function installStudioLighting(THREE,renderer,scene){
 export function outlineStyle(THREE,color,selected=false){
  if(selected)return {color:0xff8700,opacity:1};
  const c=new THREE.Color(color),luminance=.2126*c.r+.7152*c.g+.0722*c.b;
- return {color:luminance<.12?0xa6b2c1:0x354252,opacity:luminance<.12?.48:.42};
+ return {color:luminance<.12?0xa6b2c1:0x354252,opacity:luminance<.12?.58:.50};
 }
