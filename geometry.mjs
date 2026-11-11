@@ -10,6 +10,11 @@ export function bounds(parts,axis){
 function face(p,axis,sign){return p[axis]+sign*p[dimensions[axis]]/2}
 function intersects(a,b){return axes.every(k=>face(a,k,1)>face(b,k,-1)+EPS&&face(b,k,1)>face(a,k,-1)+EPS)}
 
+// Shared validation for newly inserted ordinary parts; touching faces are valid.
+export function canPlace(parts,obstacles,room){
+ return parts.length>0&&parts.every((p,i)=>axes.every(axis=>{const dim=dimensions[axis],lo=axis==='y'?0:-room[dim]/2,hi=axis==='y'?room.h:room[dim]/2;return Number.isFinite(p[axis])&&Number.isInteger(p[dim])&&p[dim]>0&&face(p,axis,-1)>=lo-EPS&&face(p,axis,1)<=hi+EPS})&&!obstacles.some(b=>intersects(p,b))&&!parts.slice(0,i).some(b=>intersects(p,b)));
+}
+
 // Continuous AABB test: every face is linear over the transition. Testing only
 // the destination (or binary searching its validity) can miss thin obstacles.
 function firstContact(a,next,b,bNext=b){
@@ -117,7 +122,7 @@ function preservesContacts(before,after,axis,pairs){
  }
  return true;
 }
-export function resize(parts,obstacles,room,dim,wanted,derive=null){
+export function resize(parts,obstacles,room,dim,wanted){
  const axis={w:'x',h:'y',d:'z'}[dim];
  if(!axis||!Number.isFinite(wanted)||wanted<=0||!parts.length)return copy(parts);
  const original=copy(parts),b=bounds(parts,axis),oldSize=b.max-b.min;
@@ -127,11 +132,7 @@ export function resize(parts,obstacles,room,dim,wanted,derive=null){
  const plan=resizePlan(original,obstacles,axis),direction=Math.sign(target-oldSize);
  const candidateAt=(size,affineOnly=false)=>{
   const candidate=copy(original);
-  if(derive){
-   const derived=derive(copy(original),size,affineOnly);if(!derived||derived.length!==original.length)return null;
-   for(let i=0;i<candidate.length;i++){if(!Number.isFinite(derived[i][axis]))return null;candidate[i][axis]=derived[i][axis];candidate[i][dim]=derived[i][dim]}
-   const extent=bounds(candidate,axis);if(Math.abs(extent.min-b.min)>EPS||Math.abs(extent.max-extent.min-size)>EPS)return null;
-  }else if(parts.length===1){
+  if(parts.length===1){
    if(parts[0].locks?.[dim])return null;
    candidate[0][dim]=size;candidate[0][axis]=b.min+size/2;
   }else if(!resizeStructure(candidate,dim,size,undefined,affineOnly))return null;
@@ -151,7 +152,7 @@ export function resize(parts,obstacles,room,dim,wanted,derive=null){
  // joining their exact endpoints (two rounding errors). Prove every pair stays
  // separated, or a rigid interval remains contained. This bypasses iteration
  // for ordinary cabinets with sliding locked interior partitions as well.
- if(!derive&&target>oldSize&&Number.isInteger(oldSize)&&!original.every(p=>p.locks?.[dim])&&!original.some(p=>p.assemblyStack?.some(Boolean))){
+ if(target>oldSize&&Number.isInteger(oldSize)&&!original.every(p=>p.locks?.[dim])&&!original.some(p=>p.assemblyStack?.some(Boolean))){
   const rounded=copy(original),affineKeys=new Set(original.map(p=>p.key));
   if(resizeCandidate(rounded,dim,target,false,affineKeys)&&rounded.every(p=>Number.isInteger(p[dim])&&p[dim]>0)&&
     safeRoundedGrowth(original,rounded,room,plan,affineKeys))return rounded;
