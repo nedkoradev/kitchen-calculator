@@ -6,8 +6,9 @@ test('physical labels use all groups and parts rather than filtered or aggregate
 });
 
 test('projected silhouettes reject empty bounding-box corners and retain thin targets',async()=>{
- const {convexHull,silhouetteDistance}=await import('../viewport-helpers.mjs');
+ const {convexHull,silhouetteDistance,silhouetteThickness}=await import('../viewport-helpers.mjs');
  const hull=convexHull([{x:0,y:5},{x:5,y:0},{x:10,y:5},{x:5,y:10},{x:5,y:5}]);
+ const thin=convexHull([{x:0,y:0},{x:200,y:0},{x:200,y:4},{x:0,y:4}]);const diagonal=thin.map(p=>({x:(p.x-p.y)/Math.sqrt(2),y:(p.x+p.y)/Math.sqrt(2)}));assert.ok(Math.abs(silhouetteThickness(thin)-silhouetteThickness(diagonal))<1e-8);assert.ok(silhouetteThickness(diagonal)<4);
  assert.equal(hull.length,4);assert.equal(silhouetteDistance({x:5,y:5},hull),0);assert.ok(silhouetteDistance({x:0,y:0},hull)>3);
  assert.equal(silhouetteDistance({x:4,y:3},convexHull([{x:0,y:0},{x:10,y:0}])) ,3);
 });

@@ -565,7 +565,7 @@ import {installSettings} from './settings.mjs';
 import {chooseDefaultMaterialBase} from './material-base-preferences.mjs';
 import {openApplianceEditor,isAppliance,inCut,applianceFace} from './appliance.mjs';
 import {installStudioLighting,outlineStyle} from './rendering.mjs';
-import {convexHull,silhouetteDistance,visibleSurfaceAnchor} from './viewport-helpers.mjs';
+import {convexHull,silhouetteDistance,silhouetteThickness,visibleSurfaceAnchor} from './viewport-helpers.mjs';
 import {partLabelIndex} from './part-labels.mjs';
 import {photoOrientation,withPhotoOrientation,rememberPhotoOrientations} from './photo-orientation.mjs';
 installSettings();
@@ -1413,12 +1413,10 @@ function pickBoard(e){
   for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1]){
    points.push(screenPos(mesh.localToWorld(new THREE.Vector3(x*part.w/2,y*part.h/2,z*part.d/2))));
   }
-  const minX=Math.min(...points.map(p=>p.x)),maxX=Math.max(...points.map(p=>p.x));
-  const minY=Math.min(...points.map(p=>p.y)),maxY=Math.max(...points.map(p=>p.y));
-  // Exact rays win. Mouse tolerance is reserved for thin silhouettes; touch
-  // retains a larger target, measured against the real projected silhouette.
-  if(e.pointerType!=='touch'&&Math.min(maxX-minX,maxY-minY)>24)continue;
-  const distance=silhouetteDistance({x:e.clientX,y:e.clientY},convexHull(points));
+  const hull=convexHull(points);
+  // Use projected area/perimeter so diagonal thin panels remain easy to hit.
+  if(e.pointerType!=='touch'&&silhouetteThickness(hull)>24)continue;
+  const distance=silhouetteDistance({x:e.clientX,y:e.clientY},hull);
   if(distance<bestDistance){
    bestDistance=distance;
    best={object:mesh,point:center,face:{normal:new THREE.Vector3(0,1,0)},tolerant:true};
@@ -2597,17 +2595,19 @@ function updatePartNames(){
   let leader=partLeaderNodes.get(key);
   if(!leader){
    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+   const halo=document.createElementNS('http://www.w3.org/2000/svg','line');halo.setAttribute('stroke','#f6f8fc');halo.setAttribute('stroke-width','3.5');halo.setAttribute('opacity','.85');
    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
    line.setAttribute('stroke','#273b56');line.setAttribute('stroke-width','1.5');
    dot.setAttribute('r','3');dot.setAttribute('fill','#2563eb');dot.setAttribute('stroke','#fff');dot.setAttribute('stroke-width','1');
-   line.dataset.partLeader=key;dot.dataset.partAnchor=key;partLeaderSvg.append(line,dot);leader={line,dot};partLeaderNodes.set(key,leader);
+   line.dataset.partLeader=key;dot.dataset.partAnchor=key;partLeaderSvg.append(halo,line,dot);leader={line,dot,halo};partLeaderNodes.set(key,leader);
   }
   leader.line.setAttribute('x1',String(ax));leader.line.setAttribute('y1',String(ay));
   const dx=lx-ax,dy=ly-ay,scale=Math.min(1,1/Math.max(Math.abs(dx)/(halfW||1),Math.abs(dy)/(halfH||1)));
   leader.line.setAttribute('x2',String(lx-dx*scale));leader.line.setAttribute('y2',String(ly-dy*scale));
+  for(const attribute of ['x1','y1','x2','y2'])leader.halo.setAttribute(attribute,leader.line.getAttribute(attribute));
   leader.dot.setAttribute('cx',String(ax));leader.dot.setAttribute('cy',String(ay));
  }
- for(const [key,node] of partNameNodes)if(!live.has(key)){node.remove();partNameNodes.delete(key);const leader=partLeaderNodes.get(key);if(leader){leader.line.remove();leader.dot.remove();partLeaderNodes.delete(key)}}
+ for(const [key,node] of partNameNodes)if(!live.has(key)){node.remove();partNameNodes.delete(key);const leader=partLeaderNodes.get(key);if(leader){leader.line.remove();leader.dot.remove();leader.halo.remove();partLeaderNodes.delete(key)}}
 }
 partNamesToggle.onclick=()=>{showPartNames=!showPartNames;localStorage.setItem('nedShowPartNames',String(showPartNames));updatePartNames()};
 function frame(){

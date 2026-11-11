@@ -4,6 +4,10 @@ export function convexHull(points){
  const half=list=>{const out=[];for(const point of list){while(out.length>1&&cross(out.at(-2),out.at(-1),point)<=0)out.pop();out.push(point)}return out};
  if(p.length<2)return p;return [...half(p).slice(0,-1),...half([...p].reverse()).slice(0,-1)];
 }
+export function silhouetteThickness(hull){
+ let area=0,perimeter=0;for(let i=0;i<hull.length;i++){const a=hull[i],b=hull[(i+1)%hull.length];area+=a.x*b.y-b.x*a.y;perimeter+=Math.hypot(b.x-a.x,b.y-a.y)}
+ return perimeter?Math.abs(area)/perimeter:0;
+}
 export function silhouetteDistance(point,hull){
  if(!hull.length)return Infinity;if(hull.length===1)return Math.hypot(point.x-hull[0].x,point.y-hull[0].y);
  let inside=true,min=Infinity;
