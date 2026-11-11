@@ -532,7 +532,7 @@ main:not(.catalogMode) aside .helpDock #helpButton{background:linear-gradient(14
 #partNote{box-sizing:border-box;width:100%;resize:vertical;min-height:70px;padding:8px;border:1px solid #4c5c70;border-radius:5px;background:#131c27;color:#e4eaf2;font:inherit}
 #viewControlsDock .actionSvg{width:24px;height:24px;flex-shrink:0}
 </style></head>
-<body><header><strong>NED-IQ <span id="appVersion">v2.50</span></strong><div id="headerRight"><span id="cloudStatus">Проверка на входа…</span><button id="cloudLogin" type="button">Вход с Google</button><button id="settingsButton" type="button" title="Настройки" aria-label="Настройки">⚙</button><button id="cloudLogout" type="button" hidden>Изход</button></div></header><nav id="mainNavigation"><button id="modeProject" type="button">Проект</button><button id="modeConstructor" type="button">Конструктор</button><button id="navLibrary" type="button">Библиотека</button><button id="navMaterials" type="button">Материали</button><button id="navCut" type="button">Разкрой</button><button id="navCosts" type="button">Разходи</button></nav><main><aside><div class="selection" id="toolsPanel"><div class="toolIcons" style="margin-top:0"><button id="quickSave" type="button" title="Запази шкаф или проект"><img class="nedPictureIcon" src="./assets/icons/save.svg?v=193" alt="" width="30" height="30"></button><button id="quickOpen" type="button" title="Отвори шкаф или проект"><img class="nedPictureIcon" src="./assets/icons/open.svg?v=193" alt="" width="30" height="30"></button></div><div class="toolIcons"><button id="addHorizontal" title="Добави хоризонтален детайл"><img class="nedPictureIcon" src="./assets/icons/horizontal.svg?v=196" alt="" width="34" height="34"></button><button id="addVertical" title="Добави вертикален детайл"><img class="nedPictureIcon" src="./assets/icons/vertical.svg?v=196" alt="" width="34" height="34"></button><div class="rotateTools"><button id="rotateLeft" type="button" title="Завърти избрания детайл на 90° наляво в изглед отгоре"><img class="nedPictureIcon" src="./assets/icons/rotate-left.svg?v=196" alt="" width="34" height="34"></button><button id="rotateRight" type="button" title="Завърти избрания детайл на 90° надясно в изглед отгоре"><img class="nedPictureIcon" src="./assets/icons/rotate-right.svg?v=196" alt="" width="34" height="34"></button></div><button id="addAppliance" type="button" title="Добави уред" aria-label="Добави уред"></button><button id="addPart" hidden>Добави детайл</button><button id="duplicatePart" hidden>Дублирай</button><button id="deletePart" hidden>Изтрий</button><button id="groupParts" type="button" hidden>Групирай</button><button id="ungroupParts" type="button" hidden>Разгрупирай</button></div><div id="groupList" hidden></div><div id="groupInfo" hidden></div></div><div class="selection" id="libraryPanel" hidden style="display:none"><strong>Библиотека и проект</strong><label>Режим</label><select id="workspaceMode"><option value="constructor">Конструктор</option><option value="project">Проект</option></select><label>Име на шкафа</label><input id="cabinetName" type="text" placeholder="Напр. Шкаф 600"><button id="saveCabinet" style="width:100%;margin-top:8px">Запази шкаф в библиотеката</button><label>Запазени шкафове</label><select id="savedCabinets"></select><button id="insertCabinet" style="width:100%;margin-top:8px">Добави шкаф в проекта</button><label>Име на проекта</label><input id="projectName" type="text" value="Моят проект"><div style="display:flex;gap:5px;margin-top:8px"><button id="saveProject" style="flex:1">Запази проект</button><button id="newProject" style="flex:1">Нов проект</button></div><label>Запазени проекти</label><select id="savedProjects"></select><button id="openProject" style="width:100%;margin-top:8px">Отвори проект</button><div id="storageStatus" style="font-size:11px;color:#60758a;margin-top:8px"></div></div><div id="projectTools"><button id="projectQuickSave" type="button" title="Запази проект"><img class="nedPictureIcon" src="./assets/icons/save.svg?v=185" alt="" width="32" height="32"></button><button id="projectQuickSaveAs" hidden type="button" title="Запази проект като" aria-label="Запази проект като"><img class="nedPictureIcon" src="./assets/icons/saveas.svg?v=185" alt="" width="32" height="32"></button><button id="projectQuickOpen" type="button" title="Отвори проект"><img class="nedPictureIcon" src="./assets/icons/open.svg?v=185" alt="" width="32" height="32"></button><button id="projectQuickAdd" type="button" title="Добави шкаф от библиотеката"><img class="nedPictureIcon" src="./assets/icons/cabinet.svg?v=185" alt="" width="32" height="32"></button><button id="projectAddHorizontal" type="button" title="Добави хоризонтален детайл"><img class="nedPictureIcon" src="./assets/icons/horizontal.svg?v=185" alt="" width="32" height="32"></button><button id="projectAddVertical" type="button" title="Добави вертикален детайл"><img class="nedPictureIcon" src="./assets/icons/vertical.svg?v=185" alt="" width="32" height="32"></button><button id="projectRoomSettings" type="button" title="Размери на стаята" aria-label="Размери на стаята"><img class="nedPictureIcon" src="./assets/icons/room.svg?v=185" alt="" width="32" height="32"></button><div class="rotateTools" id="projectRotate"><button id="projectRotateLeft" type="button" title="Завърти избрания шкаф на 90° наляво"><img class="nedPictureIcon" src="./assets/icons/rotate-left.svg?v=187" alt="" width="30" height="30"></button><button id="projectRotateRight" type="button" title="Завърти избрания шкаф на 90° надясно"><img class="nedPictureIcon" src="./assets/icons/rotate-right.svg?v=187" alt="" width="30" height="30"></button></div></div><dialog id="projectAddDialog" class="materialEditDialog"><h3>Добави шкаф от библиотеката</h3><p>Избери шкаф от облака:</p><div id="projectAddDialogOptions"></div><div class="materialActions"><button type="button" id="projectAddDialogCancel">Отказ</button><button type="button" id="projectAddDialogConfirm">Добави</button></div></dialog><section id="projectDashboard" hidden>
+<body><header><strong>NED-IQ <span id="appVersion">v2.51</span></strong><div id="headerRight"><span id="cloudStatus">Проверка на входа…</span><button id="cloudLogin" type="button">Вход с Google</button><button id="settingsButton" type="button" title="Настройки" aria-label="Настройки">⚙</button><button id="cloudLogout" type="button" hidden>Изход</button></div></header><nav id="mainNavigation"><button id="modeProject" type="button">Проект</button><button id="modeConstructor" type="button">Конструктор</button><button id="navLibrary" type="button">Библиотека</button><button id="navMaterials" type="button">Материали</button><button id="navCut" type="button">Разкрой</button><button id="navCosts" type="button">Разходи</button></nav><main><aside><div class="selection" id="toolsPanel"><div class="toolIcons" style="margin-top:0"><button id="quickSave" type="button" title="Запази шкаф или проект"><img class="nedPictureIcon" src="./assets/icons/save.svg?v=193" alt="" width="30" height="30"></button><button id="quickOpen" type="button" title="Отвори шкаф или проект"><img class="nedPictureIcon" src="./assets/icons/open.svg?v=193" alt="" width="30" height="30"></button></div><div class="toolIcons"><button id="addHorizontal" title="Добави хоризонтален детайл"><img class="nedPictureIcon" src="./assets/icons/horizontal.svg?v=196" alt="" width="34" height="34"></button><button id="addVertical" title="Добави вертикален детайл"><img class="nedPictureIcon" src="./assets/icons/vertical.svg?v=196" alt="" width="34" height="34"></button><div class="rotateTools"><button id="rotateLeft" type="button" title="Завърти избрания детайл на 90° наляво в изглед отгоре"><img class="nedPictureIcon" src="./assets/icons/rotate-left.svg?v=196" alt="" width="34" height="34"></button><button id="rotateRight" type="button" title="Завърти избрания детайл на 90° надясно в изглед отгоре"><img class="nedPictureIcon" src="./assets/icons/rotate-right.svg?v=196" alt="" width="34" height="34"></button></div><button id="addAppliance" type="button" title="Добави уред" aria-label="Добави уред"></button><button id="addPart" hidden>Добави детайл</button><button id="duplicatePart" hidden>Дублирай</button><button id="deletePart" hidden>Изтрий</button><button id="groupParts" type="button" hidden>Групирай</button><button id="ungroupParts" type="button" hidden>Разгрупирай</button></div><div id="groupList" hidden></div><div id="groupInfo" hidden></div></div><div class="selection" id="libraryPanel" hidden style="display:none"><strong>Библиотека и проект</strong><label>Режим</label><select id="workspaceMode"><option value="constructor">Конструктор</option><option value="project">Проект</option></select><label>Име на шкафа</label><input id="cabinetName" type="text" placeholder="Напр. Шкаф 600"><button id="saveCabinet" style="width:100%;margin-top:8px">Запази шкаф в библиотеката</button><label>Запазени шкафове</label><select id="savedCabinets"></select><button id="insertCabinet" style="width:100%;margin-top:8px">Добави шкаф в проекта</button><label>Име на проекта</label><input id="projectName" type="text" value="Моят проект"><div style="display:flex;gap:5px;margin-top:8px"><button id="saveProject" style="flex:1">Запази проект</button><button id="newProject" style="flex:1">Нов проект</button></div><label>Запазени проекти</label><select id="savedProjects"></select><button id="openProject" style="width:100%;margin-top:8px">Отвори проект</button><div id="storageStatus" style="font-size:11px;color:#60758a;margin-top:8px"></div></div><div id="projectTools"><button id="projectQuickSave" type="button" title="Запази проект"><img class="nedPictureIcon" src="./assets/icons/save.svg?v=185" alt="" width="32" height="32"></button><button id="projectQuickSaveAs" hidden type="button" title="Запази проект като" aria-label="Запази проект като"><img class="nedPictureIcon" src="./assets/icons/saveas.svg?v=185" alt="" width="32" height="32"></button><button id="projectQuickOpen" type="button" title="Отвори проект"><img class="nedPictureIcon" src="./assets/icons/open.svg?v=185" alt="" width="32" height="32"></button><button id="projectQuickAdd" type="button" title="Добави шкаф от библиотеката"><img class="nedPictureIcon" src="./assets/icons/cabinet.svg?v=185" alt="" width="32" height="32"></button><button id="projectAddHorizontal" type="button" title="Добави хоризонтален детайл"><img class="nedPictureIcon" src="./assets/icons/horizontal.svg?v=185" alt="" width="32" height="32"></button><button id="projectAddVertical" type="button" title="Добави вертикален детайл"><img class="nedPictureIcon" src="./assets/icons/vertical.svg?v=185" alt="" width="32" height="32"></button><button id="projectRoomSettings" type="button" title="Размери на стаята" aria-label="Размери на стаята"><img class="nedPictureIcon" src="./assets/icons/room.svg?v=185" alt="" width="32" height="32"></button><div class="rotateTools" id="projectRotate"><button id="projectRotateLeft" type="button" title="Завърти избрания шкаф на 90° наляво"><img class="nedPictureIcon" src="./assets/icons/rotate-left.svg?v=187" alt="" width="30" height="30"></button><button id="projectRotateRight" type="button" title="Завърти избрания шкаф на 90° надясно"><img class="nedPictureIcon" src="./assets/icons/rotate-right.svg?v=187" alt="" width="30" height="30"></button></div></div><dialog id="projectAddDialog" class="materialEditDialog"><h3>Добави шкаф от библиотеката</h3><p>Избери шкаф от облака:</p><div id="projectAddDialogOptions"></div><div class="materialActions"><button type="button" id="projectAddDialogCancel">Отказ</button><button type="button" id="projectAddDialogConfirm">Добави</button></div></dialog><section id="projectDashboard" hidden>
  <h3>Проект</h3><label>Размери на стаята (мм)</label><div id="roomSizeInputs" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><label>Ширина<input id="roomWidth" type="number" min="500" step="1" value="3000"></label><label>Дълбочина<input id="roomDepth" type="number" min="500" step="1" value="3000"></label><label>Височина<input id="roomHeight" type="number" min="500" step="1" value="2600"></label></div><label>Име на проекта</label><input id="projectTitle" value="Нова кухня">
  <label>Шкафове от облака</label><select id="projectCabinetList"><option value="">Зареждане…</option></select>
  <button id="projectAddCabinet" type="button">+ Добави шкаф</button>
@@ -565,6 +565,7 @@ import {installSettings} from './settings.mjs';
 import {chooseDefaultMaterialBase} from './material-base-preferences.mjs';
 import {openApplianceEditor,isAppliance,inCut,applianceFace} from './appliance.mjs';
 import {installStudioLighting,outlineStyle} from './rendering.mjs';
+import {convexHull,silhouetteDistance,visibleSurfaceAnchor} from './viewport-helpers.mjs';
 import {partLabelIndex} from './part-labels.mjs';
 import {photoOrientation,withPhotoOrientation,rememberPhotoOrientations} from './photo-orientation.mjs';
 installSettings();
@@ -574,7 +575,7 @@ const $=id=>document.getElementById(id),host=$('view'),scene=new THREE.Scene();s
 let camera=new THREE.PerspectiveCamera(38,1,20,9000);camera.position.set(1300,1050,1450);
 const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;host.append(renderer.domElement);
 const materialTextures=createMaterialTextures(THREE);
-const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.08;controls.minDistance=2;controls.zoomSpeed=2.5;controls.maxDistance=12000;controls.zoomToCursor=true;controls.enablePan=true;controls.maxPolarAngle=Math.PI-0.015;
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.10;controls.rotateSpeed=.75;controls.panSpeed=.9;controls.minDistance=2;controls.zoomSpeed=2.2;controls.maxDistance=12000;controls.zoomToCursor=true;controls.enablePan=true;controls.maxPolarAngle=Math.PI-0.015;
 // Use the surface under the pointer as zoom depth, keeping the viewing direction.
 // Otherwise dollying stops at the orbit centre before a small detail fills the view.
 renderer.domElement.addEventListener('wheel',e=>{
@@ -1283,7 +1284,7 @@ document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>setView(b.dataset
 
 let drag=null,down=null;
 const selectionOverlay=new THREE.Group();scene.add(selectionOverlay);
-const markerGeometry=new THREE.BoxGeometry(9,9,9),markerMaterial=new THREE.MeshBasicMaterial({color:0x171a22,depthTest:false});
+const markerGeometry=new THREE.BoxGeometry(9,9,9),markerMaterial=new THREE.MeshBasicMaterial({color:0xffb454,depthTest:false,toneMapped:false});
 let singleMemberSelection=false;
 function syncGizmo(){
  selectionOverlay.children.forEach(o=>{if(o.geometry&&o.geometry!==markerGeometry)o.geometry.dispose();if(o.material&&o.material!==markerMaterial)o.material.dispose()});
@@ -1307,8 +1308,9 @@ function syncGizmo(){
   const mesh=boards.find(b=>b.userData.key===part.key);if(!mesh)continue;
   const center=mesh.getWorldPosition(new THREE.Vector3());
   const tint=new THREE.Mesh(new THREE.BoxGeometry(part.w+.2,part.h+.2,part.d+.2),
-   new THREE.MeshBasicMaterial({color:0x4656df,transparent:true,opacity:.19,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));
+   new THREE.MeshBasicMaterial({color:0xffa64d,transparent:true,opacity:.055,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));
   tint.position.copy(center);selectionOverlay.add(tint);
+  const selectedOutline=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color:0xff8700,transparent:true,opacity:.8,depthTest:false,depthWrite:false,toneMapped:false}));selectedOutline.position.copy(center);selectedOutline.renderOrder=32;selectionOverlay.add(selectedOutline);
   if(!grouped&&part.key===selected&&requiresGrain(finishes[part.key],selectedBoard(finishes[part.key]))){
    const axis=physicalGrainAxis(part,finishes[part.key]),face=panelAxes(part),other=face.axes.find(value=>value!==axis);
    const dim={x:'w',y:'h',z:'d'},length=Math.min(part[dim[axis]]*.38,220),head=Math.min(length*.15,part[dim[other]]*.1);
@@ -1400,7 +1402,7 @@ function pickBoard(e){
  if(exact)return exact;
  // Project all eight corners. A thin panel is still pickable when rendered
  // as a 1px line: a 32px screen-space corridor follows its full silhouette.
- let best=null,bestDistance=32;
+ let best=null,bestDistance=e.pointerType==='touch'?36:32;
  for(const mesh of boards){
   const part=customParts.find(p=>p.key===mesh.userData.key);
   if(!part)continue;
@@ -1413,9 +1415,10 @@ function pickBoard(e){
   }
   const minX=Math.min(...points.map(p=>p.x)),maxX=Math.max(...points.map(p=>p.x));
   const minY=Math.min(...points.map(p=>p.y)),maxY=Math.max(...points.map(p=>p.y));
-  const dx=Math.max(minX-e.clientX,0,e.clientX-maxX);
-  const dy=Math.max(minY-e.clientY,0,e.clientY-maxY);
-  const distance=Math.hypot(dx,dy);
+  // Exact rays win. Mouse tolerance is reserved for thin silhouettes; touch
+  // retains a larger target, measured against the real projected silhouette.
+  if(e.pointerType!=='touch'&&Math.min(maxX-minX,maxY-minY)>24)continue;
+  const distance=silhouetteDistance({x:e.clientX,y:e.clientY},convexHull(points));
   if(distance<bestDistance){
    bestDistance=distance;
    best={object:mesh,point:center,face:{normal:new THREE.Vector3(0,1,0)},tolerant:true};
@@ -2520,7 +2523,7 @@ $('views').style.setProperty('display','none','important');
 const partNamesLayer=document.createElement('div');
 partNamesLayer.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:11';
 host.append(partNamesLayer);
-const partNameNodes=new Map();
+const partNameNodes=new Map(),autoLabelOffsets=new Map();
 const partNameOffsets=(()=>{try{return JSON.parse(localStorage.getItem('nedPartLabelOffsets')||'{}')}catch{return {}}})();
 const partLeaderSvg=document.createElementNS('http://www.w3.org/2000/svg','svg');
 partLeaderSvg.setAttribute('aria-hidden','true');
@@ -2530,74 +2533,66 @@ const partLeaderNodes=new Map();
 let draggingPartLabel=null;
 partNamesLayer.addEventListener('pointerdown',e=>{
  const node=e.target.closest?.('[data-part-label]');
- if(!node)return;
+ if(!node||e.button!==0||draggingPartLabel)return;
  e.preventDefault();e.stopPropagation();
  const key=node.dataset.partLabel;
- draggingPartLabel={key,x:e.clientX,y:e.clientY,startX:(partNameOffsets[key]?.x||0),startY:(partNameOffsets[key]?.y||0)};
+ draggingPartLabel={key,x:e.clientX,y:e.clientY,startX:(partNameOffsets[key]?.x??autoLabelOffsets.get(key)?.x??24),startY:(partNameOffsets[key]?.y??autoLabelOffsets.get(key)?.y??-24),pointerId:e.pointerId};
  node.setPointerCapture(e.pointerId);
 });
 partNamesLayer.addEventListener('pointermove',e=>{
- if(!draggingPartLabel)return;
+ if(!draggingPartLabel||e.pointerId!==draggingPartLabel.pointerId)return;
  const d=draggingPartLabel;
  partNameOffsets[d.key]={x:d.startX+e.clientX-d.x,y:d.startY+e.clientY-d.y};
  updatePartNames();
 });
-function stopPartLabelDrag(){if(!draggingPartLabel)return;draggingPartLabel=null;localStorage.setItem('nedPartLabelOffsets',JSON.stringify(partNameOffsets))}
+function stopPartLabelDrag(e){if(!draggingPartLabel||e&&e.pointerId!==draggingPartLabel.pointerId)return;draggingPartLabel=null;localStorage.setItem('nedPartLabelOffsets',JSON.stringify(partNameOffsets))}
 partNamesLayer.addEventListener('pointerup',stopPartLabelDrag);
 partNamesLayer.addEventListener('pointercancel',stopPartLabelDrag);
-const partLabelRaycaster=new THREE.Raycaster();
-function visiblePartAnchor(mesh){
- mesh.updateWorldMatrix(true,false);
- const dims=[mesh.userData.w,mesh.userData.h,mesh.userData.d];
- const localCamera=mesh.worldToLocal(camera.position.clone());
- const faces=[];
- for(let axis=0;axis<3;axis++){
-  const others=[0,1,2].filter(i=>i!==axis);
-  const a=others[0],b=others[1];
-  const sign=(axis===0?localCamera.x:axis===1?localCamera.y:localCamera.z)>=0?1:-1;
-  const area=dims[a]*dims[b];
-  const samples=[[0,0],[.34,0],[-.34,0],[0,.3],[0,-.3],[.34,.3],[.34,-.3]];
-  for(const [u,v] of samples){
-   const p=[0,0,0];p[axis]=sign*(dims[axis]/2+.08);p[a]=u*dims[a];p[b]=v*dims[b];
-   const world=mesh.localToWorld(new THREE.Vector3(...p));
-   const projected=world.clone().project(camera);
-   if(projected.z<-1||projected.z>1||Math.abs(projected.x)>1||Math.abs(projected.y)>1)continue;
-   const rayOrigin=camera.position.clone(),direction=world.clone().sub(rayOrigin).normalize();
-   partLabelRaycaster.set(rayOrigin,direction);
-   partLabelRaycaster.far=rayOrigin.distanceTo(world)+1;
-   const hits=partLabelRaycaster.intersectObjects(boards,false);
-   if(!hits.length||hits[0].object!==mesh)continue;
-   // Favor broad, clearly visible surfaces and their right side rather than shared edges.
-   const faceFacing=Math.abs((axis===0?localCamera.x:axis===1?localCamera.y:localCamera.z))/(localCamera.length()||1);
-   const score=Math.log1p(area)*2+faceFacing*5+projected.x*.9-(Math.abs(u)+Math.abs(v))*.8;
-   faces.push({world,score});
-  }
- }
- if(!faces.length)return null;
- faces.sort((a,b)=>b.score-a.score);
- return faces[0].world.project(camera);
+const anchorPreferences=new Map(),anchorPoints=new Map();let anchorBoards=null,anchorSignature='',labelLayoutSignature='';
+function refreshPartAnchors(){
+ for(const mesh of boards)mesh.updateWorldMatrix(true,false);
+ const signature=[...camera.matrixWorld.elements,...camera.projectionMatrix.elements,...boards.flatMap(mesh=>[mesh.userData.w,mesh.userData.h,mesh.userData.d,...mesh.matrixWorld.elements])].join(',');
+ if(anchorBoards===boards&&signature===anchorSignature)return false;
+ anchorBoards=boards;anchorSignature=signature;anchorPoints.clear();
+ const live=new Set(boards.map(mesh=>mesh.userData.key));for(const key of anchorPreferences.keys())if(!live.has(key))anchorPreferences.delete(key);for(const key of autoLabelOffsets.keys())if(!live.has(key))autoLabelOffsets.delete(key);
+ for(const mesh of boards){const key=mesh.userData.key,result=visibleSurfaceAnchor(THREE,mesh,boards,camera,anchorPreferences.get(key));if(result){anchorPreferences.set(key,result.id);anchorPoints.set(key,result.point)}}
+ return true;
 }
 function updatePartNames(){
  partNamesToggle.setAttribute('aria-pressed',String(showPartNames));
  partNamesToggle.style.background=showPartNames?'#2563eb':'#e4edf9';
  partNamesToggle.style.color=showPartNames?'white':'#1b3048';
  if(!showPartNames||!host.offsetWidth||!host.offsetHeight||!host.getClientRects().length){
-  for(const node of partNameNodes.values())node.remove();partNameNodes.clear();partLeaderSvg.replaceChildren();partLeaderNodes.clear();return;
+  for(const node of partNameNodes.values())node.remove();partNameNodes.clear();partLeaderSvg.replaceChildren();partLeaderNodes.clear();labelLayoutSignature='';return;
  }
- const width=host.clientWidth,height=host.clientHeight,live=new Set();
+ const anchorsChanged=refreshPartAnchors();
+ const layoutSignature=host.clientWidth+':'+host.clientHeight+':'+JSON.stringify(partNameOffsets);
+ if(!anchorsChanged&&layoutSignature===labelLayoutSignature)return;labelLayoutSignature=layoutSignature;
+ const width=host.clientWidth,height=host.clientHeight,live=new Set(),occupied=[];
  const labelIndex=partLabelIndex(customParts);
  for(const mesh of boards){
   const key=mesh.userData.key,name=labelIndex.get(key)||key;
   if(!name)continue;
-  const point=visiblePartAnchor(mesh);if(!point)continue;
+  const point=anchorPoints.get(key);if(!point)continue;
   if(point.z<-1||point.z>1||Math.abs(point.x)>1.1||Math.abs(point.y)>1.1)continue;
   live.add(key);
   let node=partNameNodes.get(key);
-  if(!node){node=document.createElement('span');node.dataset.partLabel=key;node.style.cssText='position:absolute;transform:translate(-50%,-50%);padding:2px 5px;border-radius:4px;background:#132338e8;color:white;font:600 11px Arial,sans-serif;white-space:nowrap;box-shadow:0 1px 3px #0005;pointer-events:auto;cursor:grab;touch-action:none;user-select:none';partNamesLayer.append(node);partNameNodes.set(key,node)}
-  if(node.textContent!==name)node.textContent=name;
+  if(!node){node=document.createElement('span');node.dataset.partLabel=key;node.style.cssText='position:absolute;transform:translate(-50%,-50%);padding:5px 7px;min-width:40px;min-height:28px;display:grid;place-items:center;box-sizing:border-box;border:1px solid #7792ad;border-radius:5px;background:#132338ee;color:white;font:600 11px Arial,sans-serif;white-space:nowrap;box-shadow:0 1px 3px #0005;pointer-events:auto;cursor:grab;touch-action:none;user-select:none';partNamesLayer.append(node);partNameNodes.set(key,node)}
+  if(node.textContent!==name)node.textContent=name;node.setAttribute('aria-label','Етикет '+name+' — премести с влачене');node.title='Премести етикет '+name;
   const ax=(point.x+1)*width/2,ay=(1-point.y)*height/2;
-  const offset=partNameOffsets[key]||{x:24,y:-24};
-  const lx=ax+offset.x,ly=ay+offset.y;
+  const halfW=node.offsetWidth/2,halfH=node.offsetHeight/2;
+  let offset=partNameOffsets[key];
+  if(!offset){
+   const candidates=[autoLabelOffsets.get(key),{x:24,y:-24},...[[ -40,-30],[42,28],[-45,28],[25,-58],[72,-18],[-72,-18],[42,58],[-45,58],[100,-48],[-100,-48],[90,70],[-90,70]].map(([x,y])=>({x,y}))].filter(Boolean);
+   let best=null,bestScore=Infinity;
+   for(const candidate of candidates){const x=ax+candidate.x,y=ay+candidate.y,rect={left:x-halfW-4,right:x+halfW+4,top:y-halfH-3,bottom:y+halfH+3};
+    const overlap=occupied.reduce((n,r)=>n+Math.max(0,Math.min(rect.right,r.right)-Math.max(rect.left,r.left))*Math.max(0,Math.min(rect.bottom,r.bottom)-Math.max(rect.top,r.top)),0);
+    const overflow=Math.max(0,6-rect.left)+Math.max(0,rect.right-width+6)+Math.max(0,6-rect.top)+Math.max(0,rect.bottom-height+70);
+    const score=overlap+overflow*1000;if(score<bestScore){best=candidate;bestScore=score}if(score===0)break;
+   }
+   offset=best||{x:24,y:-24};autoLabelOffsets.set(key,offset);
+  }
+  const lx=ax+offset.x,ly=ay+offset.y;occupied.push({left:lx-halfW-4,right:lx+halfW+4,top:ly-halfH-3,bottom:ly+halfH+3});
   node.style.left=lx+'px';node.style.top=ly+'px';
   let leader=partLeaderNodes.get(key);
   if(!leader){
@@ -2605,10 +2600,11 @@ function updatePartNames(){
    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
    line.setAttribute('stroke','#273b56');line.setAttribute('stroke-width','1.5');
    dot.setAttribute('r','3');dot.setAttribute('fill','#2563eb');dot.setAttribute('stroke','#fff');dot.setAttribute('stroke-width','1');
-   partLeaderSvg.append(line,dot);leader={line,dot};partLeaderNodes.set(key,leader);
+   line.dataset.partLeader=key;dot.dataset.partAnchor=key;partLeaderSvg.append(line,dot);leader={line,dot};partLeaderNodes.set(key,leader);
   }
   leader.line.setAttribute('x1',String(ax));leader.line.setAttribute('y1',String(ay));
-  leader.line.setAttribute('x2',String(lx));leader.line.setAttribute('y2',String(ly));
+  const dx=lx-ax,dy=ly-ay,scale=Math.min(1,1/Math.max(Math.abs(dx)/(halfW||1),Math.abs(dy)/(halfH||1)));
+  leader.line.setAttribute('x2',String(lx-dx*scale));leader.line.setAttribute('y2',String(ly-dy*scale));
   leader.dot.setAttribute('cx',String(ax));leader.dot.setAttribute('cy',String(ay));
  }
  for(const [key,node] of partNameNodes)if(!live.has(key)){node.remove();partNameNodes.delete(key);const leader=partLeaderNodes.get(key);if(leader){leader.line.remove();leader.dot.remove();partLeaderNodes.delete(key)}}
@@ -2617,7 +2613,7 @@ partNamesToggle.onclick=()=>{showPartNames=!showPartNames;localStorage.setItem('
 function frame(){
  requestAnimationFrame(frame);
  refreshCollisionOverlay();
- controls.update();
+ if(!draggingPartLabel)controls.update();
  studioLighting.update(customParts,ROOM,viewMode,camera.position,controls.target);
  if(camera.isPerspectiveCamera){
   const near=Math.max(.1,Math.min(20,camera.position.distanceTo(controls.target)*.02));

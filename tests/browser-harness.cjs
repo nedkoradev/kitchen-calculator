@@ -21,7 +21,8 @@ window.__test={
 async function openKitchen({firebaseDouble=false,extraHooks='',initialStorage=null}={}){
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--enable-unsafe-swiftshader'],proxy:process.env.HTTPS_PROXY?{server:process.env.HTTPS_PROXY,bypass:'127.0.0.1,localhost'}:undefined});
  try{
-  const page=await browser.newPage({viewport:{width:1400,height:1000}}),errors=[];
+  const page=await browser.newPage({viewport:{width:1400,height:1000}}),errors=[],consoleErrors=[];
+  page.on('console',message=>{if(message.type()==='error')consoleErrors.push({text:message.text(),url:message.location().url})});
   if(initialStorage)await page.addInitScript(values=>{
    if(!sessionStorage.getItem('kitchen-test-seeded')){
     for(const [key,value] of Object.entries(values))localStorage.setItem(key,value);
@@ -47,7 +48,7 @@ async function openKitchen({firebaseDouble=false,extraHooks='',initialStorage=nu
   const parts=()=>page.evaluate(()=>window.__test.parts());
   const field=(id,value)=>page.evaluate(({id,value})=>{const el=document.getElementById(id);el.dispatchEvent(new FocusEvent('focusin',{bubbles:true}));el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}))},{id,value:String(value)});
   const clickJitter=async point=>{await page.mouse.move(point.x,point.y);await page.mouse.down();await page.mouse.move(point.x+2,point.y+2);await page.mouse.up()};
-  return {browser,page,errors,setup,parts,field,clickJitter};
+  return {browser,page,errors,consoleErrors,setup,parts,field,clickJitter};
  }catch(error){await browser.close();throw error}
 }
 module.exports={openKitchen};
