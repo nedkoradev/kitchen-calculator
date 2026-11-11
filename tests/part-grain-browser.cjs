@@ -12,12 +12,15 @@ const {openKitchen}=require('./browser-harness.cjs');
    assert.equal(await page.getByLabel('Линк към сайта',{exact:true}).isVisible(),true);assert.equal(await page.locator('#materialTextureWidth').count(),0);await page.keyboard.press('Escape');
   }
   const s=page.locator('.materialGroup').first();await s.locator('tbody tr').first().getByRole('button',{name:'Промени',exact:true}).click();
-  const chooser=page.waitForEvent('filechooser');await page.locator('#chooseMaterialPhoto').click();await (await chooser).setFiles(path.join(__dirname,'../materials/textures/Screenshot 2026-11-06 135831.png'));
+  // The current primary picker opens the published-photo gallery. Stub only
+  // the external listing; verification and rendering use the real repository PNG.
+  await page.route('https://api.github.com/repos/nedkoradev/kitchen-calculator/contents/materials/textures',r=>r.fulfill({json:[{type:'file',name:'дъб небраска.png',download_url:new URL('materials/textures/'+encodeURIComponent('дъб небраска.png'),process.env.KITCHEN_TEST_URL||'http://127.0.0.1:8106/').href}]}));
+  await page.locator('#chooseMaterialPhoto').click();await page.getByRole('button',{name:/дъб небраска\.png/}).click();
   await page.waitForFunction(()=>document.querySelector('#materialPhotoStatus').textContent.includes('Снимката е проверена'));
-  await page.locator('.photoWizard button').click();assert.equal(await page.locator('.materialPhotoPreview').isVisible(),true);if(process.env.KITCHEN_SCREENSHOTS)await page.screenshot({path:path.join(process.env.KITCHEN_SCREENSHOTS,'part-grain-decor.png')});await page.getByRole('button',{name:'Запази',exact:true}).click();
+  assert.equal(await page.locator('.materialPhotoPreview').isVisible(),true);if(process.env.KITCHEN_SCREENSHOTS)await page.screenshot({path:path.join(process.env.KITCHEN_SCREENSHOTS,'part-grain-decor.png')});await page.getByRole('button',{name:'Запази',exact:true}).click();
   const decor=(await page.evaluate(()=>window.__partGrain.capture())).materials;
   for(const mode of ['constructor','project']){
-   await page.locator(mode==='constructor'?'#modeConstructor':'#modeProject').click();await page.evaluate(materials=>{const s=window.__partGrain.capture();s.materials=materials;window.__partGrain.restore(s)},decor);await setup([{key:'custom990',w:500,h:3000,d:18,x:0,y:1500,z:0,locks:{d:true}}]);await page.locator('#fit').click();
+   await page.locator(mode==='constructor'?'#modeConstructor':'#modeProject').click();await page.evaluate(materials=>{const s=window.__partGrain.capture();s.materials=materials;window.__partGrain.restore(s)},decor);await setup([{key:'custom990',w:500,h:3000,d:18,x:0,y:1500,z:0,locks:{d:true}}]);
    await page.waitForFunction(()=>window.__partGrain.mesh().map);const before=await parts();if(process.env.KITCHEN_SCREENSHOTS)await page.screenshot({path:path.join(process.env.KITCHEN_SCREENSHOTS,`part-grain-${mode}-texture.png`)});
    await props();await page.locator('#partGrainRequired').check();await page.locator('#grainDirection').selectOption('y');assert.equal(await page.evaluate(()=>window.__partGrain.cut().A),3000);
    const uv=await page.evaluate(()=>window.__partGrain.mesh().uv);await page.locator('#grainDirection').selectOption('x');assert.equal(await page.evaluate(()=>window.__partGrain.cut().A),500);assert.notDeepEqual(await page.evaluate(()=>window.__partGrain.mesh().uv),uv);await page.locator('#grainDirection').selectOption('y');await page.locator('#dialogDone').click();assert.deepEqual(await parts(),before);

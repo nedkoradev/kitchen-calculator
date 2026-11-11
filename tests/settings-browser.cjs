@@ -15,21 +15,23 @@ const part={key:'custom901',x:0,y:100,z:0,w:720,h:18,d:550,locks:{h:true}};
    assert.equal(await button.getAttribute('title'),'Настройки');assert.equal(await button.locator('svg').getAttribute('viewBox'),'0 0 24 24');
    assert.equal(await button.evaluate(el=>!!el.closest('#headerRight')),true);
    await button.click();assert.equal(await page.locator('#settingsDialog').evaluate(el=>el.matches(':modal')),true);
-   await page.waitForFunction(()=>!document.querySelector('#spaceDetails').hidden);
+   // Retain the original settings-modal keyboard isolation check before
+   // navigating to the separate statistics subdialog.
+   await page.locator('#settingsDone').focus();await page.keyboard.press('Delete');assert.deepEqual(await parts(),before);
+   await page.locator('#nedSpaceOpen').click();await page.waitForFunction(()=>!document.querySelector('#spaceDetails').hidden);
    assert.equal(await page.locator('#settingsVersion').innerText(),`v${major}.${minor}`);assert.equal(await page.locator('#textureImageCount').innerText(),'2');
    assert.match(await page.locator('#repositoryBytes').innerText(),/KiB/);assert.match(await page.locator('#spaceMeasuredAt').innerText(),/14:00/);assert.match(await page.locator('#spaceReference').innerText(),/не е твърда квота/);
-   assert.equal(await page.locator('#spaceProgress').evaluate(el=>el.max),1024**3);assert.equal(await page.locator('#spaceProgress').evaluate(el=>el.value),50000);
-   await page.locator('#settingsDone').focus();await page.keyboard.press('Delete');assert.deepEqual(await parts(),before);
-   await page.keyboard.press('Escape');assert.equal(await page.locator('#settingsDialog').evaluate(el=>el.open),false);
-   await button.click();await page.waitForFunction(()=>!document.querySelector('#spaceDetails').hidden);
+   assert.equal(await page.locator('#spaceProgressTrack').getAttribute('aria-valuemax'),'100');assert.equal(await page.locator('#spaceProgressTrack').getAttribute('aria-valuenow'),(50000/(1024**3)*100).toFixed(2));
+   await page.keyboard.press('Escape');assert.equal(await page.locator('#nedSpaceDialog').evaluate(el=>el.open),false);
+   await button.click();await page.locator('#nedSpaceOpen').click();await page.waitForFunction(()=>!document.querySelector('#spaceDetails').hidden);
    if(process.env.KITCHEN_SCREENSHOT&&mode==='project')await page.screenshot({path:process.env.KITCHEN_SCREENSHOT});
-   await page.locator('#settingsClose').click();assert.deepEqual(await parts(),before);
+   await page.locator('[data-ned-close=nedSpaceDialog]').first().click();assert.deepEqual(await parts(),before);
    console.log(`PASS ${mode}: shared account-header gear, modal settings/version/stats/date/progress, Escape/close and no model changes`);
   }
-  state='error';await page.locator('#settingsButton').click();await page.waitForFunction(()=>document.querySelector('#spaceStatus').textContent.includes('не е налична'));assert.equal(await page.locator('#spaceDetails').isVisible(),false);
-  state='invalid';await page.locator('#spaceRetry').click();await page.waitForFunction(()=>document.querySelector('#spaceStatus').textContent.includes('не е налична'));assert.equal(await page.locator('#spaceDetails').isVisible(),false);
-  state='valid';stats.imageCount=0;stats.textureBytes=0;stats.totalBytes=2*1024**3;await page.locator('#spaceRetry').click();await page.waitForFunction(()=>!document.querySelector('#spaceDetails').hidden);
-  assert.equal(await page.locator('#textureImageCount').innerText(),'0');assert.equal(await page.locator('#spaceProgress').evaluate(el=>el.value),1024**3);assert.match(await page.locator('#spaceProgressLabel').innerText(),/200%/);await page.locator('#settingsDone').click();
+  state='error';await page.locator('#settingsButton').click();await page.locator('#nedSpaceOpen').click();await page.waitForFunction(()=>document.querySelector('#spaceStatus').textContent.includes('не е налична'));assert.equal(await page.locator('#spaceDetails').isVisible(),false);
+  state='invalid';await page.locator('[data-ned-close=nedSpaceDialog]').first().click();await page.locator('#settingsButton').click();await page.locator('#nedSpaceOpen').click();await page.waitForFunction(()=>document.querySelector('#spaceStatus').textContent.includes('не е налична'));assert.equal(await page.locator('#spaceDetails').isVisible(),false);
+  state='valid';stats.imageCount=0;stats.textureBytes=0;stats.totalBytes=2*1024**3;await page.locator('[data-ned-close=nedSpaceDialog]').first().click();await page.locator('#settingsButton').click();await page.locator('#nedSpaceOpen').click();await page.waitForFunction(()=>!document.querySelector('#spaceDetails').hidden);
+  assert.equal(await page.locator('#textureImageCount').innerText(),'0');assert.equal(await page.locator('#spaceProgressTrack').getAttribute('aria-valuenow'),'100.00');assert.match(await page.locator('#spaceProgressLabel').innerText(),/200%/);await page.locator('[data-ned-close=nedSpaceDialog]').first().click();
   assert.ok(!requests.some(url=>url.includes('api.github.com')));
   // Real same-origin repository image path feeds the existing Three.js loader.
   await page.route('**/materials/textures/test-decor.png',route=>route.fulfill({contentType:'image/png',path:path.join(__dirname,'fixtures/grain.png')}));
