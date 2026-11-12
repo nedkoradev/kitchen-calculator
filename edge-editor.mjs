@@ -1,24 +1,33 @@
 import {requiresGrain,textureCoordinates,edgeDiagramLayout,validTextureUrl} from './grain.mjs';
 import {decorateAction} from './icons.mjs';
 import {withPhotoOrientation} from './photo-orientation.mjs';
-export function openEdgeEditor({part,finish,material,edgeMaterials,allEdges=false,onApply}){
- const make=(tag,text)=>{const node=document.createElement(tag);if(text)node.textContent=text;return node};
- const dialog=make('dialog');dialog.className='visualEdgeDialog';dialog.setAttribute('aria-label','Кантиране на детайла');
- const header=make('div');header.className='dialogHead';header.append(make('strong','Кантиране на детайла'));
- const close=make('button');decorateAction(close,'close','Затвори кантирането',{iconOnly:true});close.type='button';close.setAttribute('aria-label','Затвори кантирането');close.onclick=()=>dialog.close();header.append(close);
+const make=(tag,text)=>{const node=document.createElement(tag);if(text)node.textContent=text;return node};
+export function openEdgeEditor(options){
+ const {onApply}=options,variants=options.variants||[{...options,id:'part',label:'Детайл'}],states=variants.map(v=>({edges:Array.from({length:4},(_,i)=>v.finish.edges?.[i]??null),allEdges:!!v.allEdges}));
+ const dialog=make('dialog');dialog.className='visualEdgeDialog'+(options.variants?' edgeVariantDialog':'');dialog.setAttribute('aria-label',options.title||'Кантиране на детайла');
+ const header=make('div');header.className='dialogHead';header.append(make('strong',options.title||'Кантиране на детайла'));
+ const close=make('button');decorateAction(close,'close','Затвори кантирането',{iconOnly:true});close.type='button';close.onclick=()=>dialog.close();header.append(close);dialog.append(header);
+ const footer=make('div');footer.className='dialogFoot';const cancel=make('button','Отказ');cancel.type='button';cancel.id='visualEdgeCancel';cancel.onclick=()=>dialog.close();const apply=make('button','Приложи');apply.type='button';apply.id='visualEdgeApply';apply.className='nedPrimaryButton';footer.append(cancel,apply);
+ let active=0,panel;
+ function show(index){if(panel){states[active]=panel.read();panel.dispose();panel.body.remove()}active=index;panel=createEdgePanel({...variants[active],finish:{...variants[active].finish,edges:states[active].edges},allEdges:states[active].allEdges,edgeMaterials:options.edgeMaterials});dialog.insertBefore(panel.body,footer)}
+ if(options.variants){const bar=make('div');bar.className='edgeVariantBar';const label=make('label','Детайл за кантиране');const select=make('select');select.id='visualEdgeVariant';variants.forEach((v,i)=>select.add(new Option(v.label,v.id)));select.onchange=()=>show(variants.findIndex(v=>v.id===select.value));label.append(select);bar.append(label);dialog.append(bar)}
+ dialog.append(footer);show(0);
+ apply.onclick=()=>{apply.disabled=true;states[active]=panel.read();try{const result=options.variants?{variants:variants.map((v,i)=>({id:v.id,...states[i]}))}:states[0];if(onApply(result)===false){panel.status.textContent='Детайлът е променен. Затвори и отвори кантирането отново.';apply.disabled=false;return}dialog.close()}catch{panel.status.textContent='Кантирането не е приложено. Опитай отново.';apply.disabled=false}};
+ dialog.addEventListener('keydown',event=>event.stopPropagation());dialog.addEventListener('close',()=>{panel.dispose();dialog.remove()},{once:true});document.body.append(dialog);dialog.showModal();return dialog;
+}
+function createEdgePanel({part,finish,material,edgeMaterials,allEdges=false,slotLabels}){
  const body=make('div');body.className='edgeDialogBody';body.append(make('p','Избери кант за всеки ръб. Тънките червени линии показват кантираните страни.'));
  const draft=Array.from({length:4},(_,i)=>finish.edges?.[i]??null),diagram=edgeDiagramLayout(part,finish,material),slots=diagram.slots,names=['Ширина Б ляво (Л)','Ширина Б дясно (Д)','Дължина А горе (П)','Дължина А долу (З)'];let allMode=allEdges,closed=false;
  function select(label,value){const node=make('select');node.setAttribute('aria-label',label);node.add(new Option('— без кант —',''));edgeMaterials.forEach((edge,i)=>node.add(new Option(edge.name||'Кант '+(i+1),String(i))));if(value!=null&&!edgeMaterials[value])node.add(new Option('Липсващ кант ('+value+')',String(value)));node.value=value==null?'':String(value);return node}
  const allBar=make('div');allBar.className='edgeAllBar';const allLabel=make('label','Кантиране на 4-те страни с:');const uniform=draft.every(v=>v===draft[0])?draft[0]:null,allSelect=select('Кант за четирите страни',uniform);allSelect.id='visualEdgeAll';allLabel.append(allSelect);const useAll=make('button','Кантирай');useAll.type='button';useAll.id='visualEdgeUseAll';allBar.append(allLabel,useAll);body.append(allBar);
  const grid=make('div');grid.className='edgeDiagram';const controls=[];
- for(let i=0;i<4;i++){const label=make('label',names[i]);label.className='edgeSide edgeSide'+i;const input=select(names[i],draft[slots[i]]);input.dataset.edgeSide=String(i);input.onchange=()=>{draft[slots[i]]=input.value===''?null:Number(input.value);allMode=false;paint()};label.append(input);grid.append(label);controls.push(input)}
+ for(let i=0;i<4;i++){const sideName=names[i]+(slotLabels?' — '+slotLabels[slots[i]]:'');const label=make('label',sideName);label.className='edgeSide edgeSide'+i;const input=select(sideName,draft[slots[i]]);input.dataset.edgeSide=String(i);input.dataset.edgeSlot=String(slots[i]);input.onchange=()=>{draft[slots[i]]=input.value===''?null:Number(input.value);allMode=false;paint()};label.append(input);grid.append(label);controls.push(input)}
  const preview=make('div');preview.className='edgePreview';const canvas=make('canvas');canvas.setAttribute('role','img');preview.append(canvas);grid.append(preview);body.append(grid);
  const {axes,width,height}=diagram,grain=requiresGrain(finish,material);
  canvas.setAttribute('aria-label','Детайл А '+width+' × Б '+height+' мм'+(grain?' · фладер по хоризонтала':''));
  const caption=make('p',grain?'↔ Дължина А е по посоката на фладера':'А × Б — ориентация като в Salex XLSX (без задължителен фладер)');caption.className='edgeGrainCaption';body.append(caption);
  const status=make('p');status.setAttribute('role','status');body.append(status);
- const footer=make('div');footer.className='dialogFoot';const cancel=make('button','Отказ');cancel.type='button';cancel.id='visualEdgeCancel';cancel.onclick=()=>dialog.close();const apply=make('button','Приложи');apply.type='button';apply.id='visualEdgeApply';apply.className='nedPrimaryButton';footer.append(cancel,apply);
- let image=null;
+ let image=null,texture=null;
  function paint(){
   if(closed)return;const W=270,H=240,ratio=Math.min(globalThis.devicePixelRatio||1,2);canvas.width=W*ratio;canvas.height=H*ratio;const ctx=canvas.getContext('2d');ctx.scale(ratio,ratio);
   const scale=Math.min((W-48)/width,(H-44)/height),w=width*scale,h=height*scale,x=34+(W-48-w)/2,y=12+(H-44-h)/2;
@@ -30,8 +39,6 @@ export function openEdgeEditor({part,finish,material,edgeMaterials,allEdges=fals
   if(grain){const cx=x+w/2,cy=y+h/2,dx=Math.min(60,w*.65)/2;ctx.strokeStyle='#143e6a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx-dx,cy);ctx.lineTo(cx+dx,cy);for(const sign of [-1,1]){const px=cx+sign*dx;ctx.moveTo(px-sign*6,cy-5);ctx.lineTo(px,cy);ctx.lineTo(px-sign*6,cy+5)}ctx.stroke()}
  }
  useAll.onclick=()=>{const value=allSelect.value===''?null:Number(allSelect.value);draft.fill(value);allMode=value!==null;controls.forEach(input=>input.value=allSelect.value);paint()};
- apply.onclick=()=>{apply.disabled=true;try{if(onApply({edges:[...draft],allEdges:allMode&&draft.every(v=>v===draft[0])})===false){status.textContent='Детайлът е променен. Затвори и отвори кантирането отново.';apply.disabled=false;return}dialog.close()}catch{status.textContent='Кантирането не е приложено. Опитай отново.';apply.disabled=false}};
- dialog.addEventListener('keydown',event=>event.stopPropagation());dialog.addEventListener('close',()=>{closed=true;if(image)image.onload=image.onerror=null;dialog.remove()},{once:true});dialog.append(header,body,footer);document.body.append(dialog);dialog.showModal();paint();
- const url=validTextureUrl(material?.textureUrl);if(url){const texture=new Image();texture.onload=()=>{image=texture;paint()};texture.onerror=()=>{if(!closed)status.textContent='Снимката на декора не се зарежда. Показан е цветът на материала.'};texture.src=url}
- return dialog;
+ const url=validTextureUrl(material?.textureUrl);if(url){texture=new Image();texture.onload=()=>{image=texture;paint()};texture.onerror=()=>{if(!closed)status.textContent='Снимката на декора не се зарежда. Показан е цветът на материала.'};texture.src=url}
+ paint();return {body,status,read:()=>({edges:[...draft],allEdges:allMode&&draft.every(v=>v===draft[0])}),dispose(){closed=true;if(texture)texture.onload=texture.onerror=null}};
 }

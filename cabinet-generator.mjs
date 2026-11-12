@@ -10,7 +10,7 @@ export function materialAt(catalog,value){
  if(!/^\d+$/.test(index)||!items?.[Number(index)])throw Error('Избери наличен материал от активната база.');
  return {type,index:Number(index),item:items[Number(index)]};
 }
-export function generateCabinet(settings,catalog){
+export function generateCabinet(settings,catalog,visit=null){
  const c={...cabinetPresets.base,...settings},items=[];
  const integer=(key,label,min=1,max=30000)=>{if(!Number.isInteger(c[key])||c[key]<min||c[key]>max)throw Error(label+': въведи цяло число от '+min+' до '+max+' мм.');return c[key]};
  const w=integer('w','Ширина'),h=integer('h','Височина'),d=integer('d','Дълбочина'),t=integer('t','Дебелина',1,80),n=integer('shelves','Брой рафтове',0,20),gap=integer('gap','Фуга',0,20);
@@ -19,22 +19,23 @@ export function generateCabinet(settings,catalog){
  const bodyH=h-legH-worktopT,bodyD=d-backT-(c.doors?doorT+2:0),innerW=w-(c.sides?2*t:0),baseY=legH,bodyTop=h-worktopT,rear=-d/2+backT,front=rear+bodyD;
  const lower=baseY+(c.bottom?t:0),sideTop=c.type==='base'?bodyTop:bodyTop-(c.top==='none'?0:t),sideH=sideTop-lower,capWidth=c.type==='base'?innerW:w,upper=bodyTop-(c.top==='none'?0:t),free=upper-lower-n*t;
  if(innerW<1||bodyD<=t||bodyH<1||(c.sides&&sideH<1)||free<n+1)throw Error('Размерите не оставят достатъчен вътрешен отвор за плоскостите и рафтовете.');
- if(n&&bodyD<=10+t)throw Error('Дълбочината не е достатъчна за рафт с предно отстояние 10 мм.');
  const edgeFor=role=>{const value=c.edges?.[role];if(value===null||value===undefined||value==='')return null;if(!Number.isInteger(value)||!catalog.edgeMaterials?.[value])throw Error('Избери наличен кант от активната база.');return value};
- const make=(name,role,p,thin,all=false,cut=true,lateral=false)=>{
+ const make=(name,role,p,thin,all=false,cut=true,lateral=false,profile=role)=>{
   const value=c.materials?.[role]??c.materials?.body??'pdc:0',material=materialAt(catalog,value),part={key:'generated'+items.length,...p,locks:cut?{w:thin==='x',h:thin==='y',d:thin==='z'}:{w:true,h:true,d:true},assembly:'generated-cabinet'};
   if(thin&&axes.some(axis=>axis!==thin&&part[dimensions[axis]]<=part[dimensions[thin]]))throw Error('Лицевите размери на '+name+' трябва да са по-големи от дебелината.');
   const edge=edgeFor(role==='shelves'?'shelves':role==='doors'?'doors':'body'),edges=[null,null,null,null];
   if(cut&&role!=='back'&&role!=='worktop'){if(all)edges.fill(edge);else edges[panelAxes(part).thickness==='x'?1:2]=edge}
   if(lateral)for(const slot of edgeEditorSlots(part).slice(0,2))edges[slot]=edgeFor('bodySides');
-  items.push({part,name,finish:{materialType:material.type,material:material.index,color:material.item.color||'#dfd0bc',grainAxis:physicalGrainAxis(part),edges,includeInCut:cut},allEdges:all&&edge!==null});
+  if(cut&&profile!=='back'&&Object.hasOwn(c.edgeProfiles||{},profile)){const values=c.edgeProfiles[profile];if(!Array.isArray(values)||values.length!==4||values.some(v=>v!==null&&(!Number.isInteger(v)||!catalog.edgeMaterials?.[v])))throw Error('Избери наличен кант за всеки от четирите ръба.');edges.splice(0,4,...values)}
+  items.push({part,name,finish:{materialType:material.type,material:material.index,color:material.item.color||'#dfd0bc',grainAxis:physicalGrainAxis(part),edges,includeInCut:cut},allEdges:edges[0]!==null&&edges.every(v=>v===edges[0])});
+  if(cut)visit?.({id:profile,part,finish:items.at(-1).finish,material:material.item});
  };
- const body=(name,p,thin,lateral=false)=>make(name,'body',p,thin,false,true,lateral);
+ const body=(name,p,thin,lateral=false,profile='bodySide')=>make(name,'body',p,thin,false,true,lateral,profile);
  if(c.sides){body('Лява страница',{w:t,h:sideH,d:bodyD,x:-w/2+t/2,y:lower+sideH/2,z:(rear+front)/2},'x');body('Дясна страница',{w:t,h:sideH,d:bodyD,x:w/2-t/2,y:lower+sideH/2,z:(rear+front)/2},'x')}
- if(c.bottom)body('Дъно',{w,h:t,d:bodyD,x:0,y:baseY+t/2,z:(rear+front)/2},'y',true);
- if(c.top==='panel')body('Таван',{w:capWidth,h:t,d:bodyD,x:0,y:bodyTop-t/2,z:(rear+front)/2},'y');
- if(c.top==='rails'){const rail=integer('railDepth','Дълбочина на царгите',1);if(2*rail>bodyD||rail<=t)throw Error('Двете горни царги трябва да се побират по дълбочина и да са по-широки от дебелината.');for(const [name,z] of [['Задна горна царга',rear+rail/2],['Предна горна царга',front-rail/2]])body(name,{w:capWidth,h:t,d:rail,x:0,y:bodyTop-t/2,z},'y')}
- for(let i=0;i<n;i++)make('Рафт '+(i+1),'shelves',{w:innerW,h:t,d:bodyD-10,x:0,y:lower+i*t+Math.round((i+1)*free/(n+1))+t/2,z:rear+(bodyD-10)/2},'y');
+ if(c.bottom)body('Дъно',{w,h:t,d:bodyD,x:0,y:baseY+t/2,z:(rear+front)/2},'y',true,'bodyBottom');
+ if(c.top==='panel')body('Таван',{w:capWidth,h:t,d:bodyD,x:0,y:bodyTop-t/2,z:(rear+front)/2},'y',false,'bodyTop');
+ if(c.top==='rails'){const rail=integer('railDepth','Дълбочина на царгите',1);if(2*rail>bodyD||rail<=t)throw Error('Двете горни царги трябва да се побират по дълбочина и да са по-широки от дебелината.');for(const [name,z] of [['Задна горна царга',rear+rail/2],['Предна горна царга',front-rail/2]])body(name,{w:capWidth,h:t,d:rail,x:0,y:bodyTop-t/2,z},'y',false,'bodyTop')}
+ for(let i=0;i<n;i++)make('Рафт '+(i+1),'shelves',{w:innerW,h:t,d:bodyD,x:0,y:lower+i*t+Math.round((i+1)*free/(n+1))+t/2,z:rear+bodyD/2},'y');
  if(c.back)make('Гръб','back',{w,h:bodyH,d:backT,x:0,y:baseY+bodyH/2,z:-d/2+backT/2},'z');
  if(c.worktop)make('Плот','worktop',{w,h:worktopT,d,x:0,y:h-worktopT/2,z:0},'y');
  if(c.doors){const available=w-2*gap-(c.doors-1)*gap,doorH=bodyH-2*gap;if(available<c.doors||doorH<=doorT)throw Error('Фугите не оставят достатъчно място за вратите.');let left=-w/2+gap;for(let i=0;i<c.doors;i++){const width=i===0?Math.floor(available/c.doors):available-Math.floor(available/c.doors);make('Врата '+(i+1),'doors',{w:width,h:doorH,d:doorT,x:left+width/2,y:baseY+gap+doorH/2,z:front+2+doorT/2},'z',true);left+=width+gap}}
@@ -43,6 +44,11 @@ export function generateCabinet(settings,catalog){
  // Use the same AABB/room validation as the editor, not a generator collision engine.
  if(!canPlace(items.map(i=>i.part),[],{w,h,d}))throw Error('Конструкцията съдържа невалидни размери или застъпване.');
  return items;
+}
+// Operation-local editor targets; only normal finish.edges enter snapshots.
+export function cabinetEdgeTargets(settings,catalog){
+ const targets=new Map(),labels={bodySide:'Страници',bodyBottom:'Дъно',bodyTop:'Таван / царги',doors:'Врати',shelves:'Рафтове',worktop:'Плот'};
+ generateCabinet(settings,catalog,value=>{if(labels[value.id]&&!targets.has(value.id))targets.set(value.id,{...value,label:labels[value.id],slotLabels:panelAxes(value.part).thickness==='x'?['Заден ръб','Преден ръб','Горен ръб','Долен ръб']:panelAxes(value.part).thickness==='y'?['Ляв ръб','Десен ръб','Преден ръб','Заден ръб']:['Ляв ръб','Десен ръб','Горен ръб','Долен ръб']})});return [...targets.values()];
 }
 export function placeCabinet(items,obstacles,room){
  const parts=items.map(i=>i.part),extent=Object.fromEntries(axes.map(a=>[a,bounds(parts,a)])),size=Object.fromEntries(axes.map(a=>[a,extent[a].max-extent[a].min]));
