@@ -1,5 +1,5 @@
 import {axes,dimensions,bounds,canPlace,snapPositionToMillimetres} from './geometry.mjs';
-import {panelAxes,physicalGrainAxis} from './grain.mjs';
+import {panelAxes,physicalGrainAxis,edgeEditorSlots} from './grain.mjs';
 export const cabinetPresets={
  base:{type:'base',title:'Долен шкаф',w:600,h:858,d:600,t:18,sides:true,bottom:true,top:'rails',railDepth:80,shelves:1,back:true,backT:4,legs:true,legH:100,worktop:true,worktopT:38,doors:2,doorT:18,gap:2},
  wall:{type:'wall',title:'Горен шкаф',w:600,h:720,d:320,t:18,sides:true,bottom:true,top:'panel',railDepth:80,shelves:2,back:true,backT:4,legs:false,legH:100,worktop:false,worktopT:38,doors:2,doorT:18,gap:2},
@@ -21,16 +21,17 @@ export function generateCabinet(settings,catalog){
  if(innerW<1||bodyD<=t||bodyH<1||(c.sides&&sideH<1)||free<n+1)throw Error('Размерите не оставят достатъчен вътрешен отвор за плоскостите и рафтовете.');
  if(n&&bodyD<=10+t)throw Error('Дълбочината не е достатъчна за рафт с предно отстояние 10 мм.');
  const edgeFor=role=>{const value=c.edges?.[role];if(value===null||value===undefined||value==='')return null;if(!Number.isInteger(value)||!catalog.edgeMaterials?.[value])throw Error('Избери наличен кант от активната база.');return value};
- const make=(name,role,p,thin,all=false,cut=true)=>{
+ const make=(name,role,p,thin,all=false,cut=true,lateral=false)=>{
   const value=c.materials?.[role]??c.materials?.body??'pdc:0',material=materialAt(catalog,value),part={key:'generated'+items.length,...p,locks:cut?{w:thin==='x',h:thin==='y',d:thin==='z'}:{w:true,h:true,d:true},assembly:'generated-cabinet'};
   if(thin&&axes.some(axis=>axis!==thin&&part[dimensions[axis]]<=part[dimensions[thin]]))throw Error('Лицевите размери на '+name+' трябва да са по-големи от дебелината.');
   const edge=edgeFor(role==='shelves'?'shelves':role==='doors'?'doors':'body'),edges=[null,null,null,null];
   if(cut&&role!=='back'&&role!=='worktop'){if(all)edges.fill(edge);else edges[panelAxes(part).thickness==='x'?1:2]=edge}
+  if(lateral)for(const slot of edgeEditorSlots(part).slice(0,2))edges[slot]=edgeFor('bodySides');
   items.push({part,name,finish:{materialType:material.type,material:material.index,color:material.item.color||'#dfd0bc',grainAxis:physicalGrainAxis(part),edges,includeInCut:cut},allEdges:all&&edge!==null});
  };
- const body=(name,p,thin)=>make(name,'body',p,thin);
+ const body=(name,p,thin,lateral=false)=>make(name,'body',p,thin,false,true,lateral);
  if(c.sides){body('Лява страница',{w:t,h:sideH,d:bodyD,x:-w/2+t/2,y:lower+sideH/2,z:(rear+front)/2},'x');body('Дясна страница',{w:t,h:sideH,d:bodyD,x:w/2-t/2,y:lower+sideH/2,z:(rear+front)/2},'x')}
- if(c.bottom)body('Дъно',{w,h:t,d:bodyD,x:0,y:baseY+t/2,z:(rear+front)/2},'y');
+ if(c.bottom)body('Дъно',{w,h:t,d:bodyD,x:0,y:baseY+t/2,z:(rear+front)/2},'y',true);
  if(c.top==='panel')body('Таван',{w:capWidth,h:t,d:bodyD,x:0,y:bodyTop-t/2,z:(rear+front)/2},'y');
  if(c.top==='rails'){const rail=integer('railDepth','Дълбочина на царгите',1);if(2*rail>bodyD||rail<=t)throw Error('Двете горни царги трябва да се побират по дълбочина и да са по-широки от дебелината.');for(const [name,z] of [['Задна горна царга',rear+rail/2],['Предна горна царга',front-rail/2]])body(name,{w:capWidth,h:t,d:rail,x:0,y:bodyTop-t/2,z},'y')}
  for(let i=0;i<n;i++)make('Рафт '+(i+1),'shelves',{w:innerW,h:t,d:bodyD-10,x:0,y:lower+i*t+Math.round((i+1)*free/(n+1))+t/2,z:rear+(bodyD-10)/2},'y');
