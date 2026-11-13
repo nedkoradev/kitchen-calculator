@@ -2541,7 +2541,37 @@ for(const [view,label] of [['perspective','Перспектива'],['front','О
 partNamesToggle.removeAttribute('style');decorateAction(partNamesToggle,'tags','Етикети на детайлите',{iconOnly:true});
 viewDock.append(partNamesToggle);
 const transparencyToggle=document.createElement('button');transparencyToggle.type='button';transparencyToggle.id='nedTransparencyToggle';decorateAction(transparencyToggle,'transparency','Прозрачност',{iconOnly:true});transparencyToggle.setAttribute('aria-pressed','false');
-transparencyToggle.onclick=()=>{const enabled=transparency.set(!transparency.enabled,group);transparencyToggle.classList.toggle('active',enabled);transparencyToggle.setAttribute('aria-pressed',String(enabled))};viewDock.append(transparencyToggle);host.append(viewDock);
+transparencyToggle.onclick=()=>{const enabled=transparency.set(!transparency.enabled,group);transparencyToggle.classList.toggle('active',enabled);transparencyToggle.setAttribute('aria-pressed',String(enabled))};viewDock.append(transparencyToggle);
+const dimensionsToggle=document.createElement('button');dimensionsToggle.type='button';dimensionsToggle.id='nedDimensionsToggle';dimensionsToggle.title='Покажи/скрий размерите';dimensionsToggle.setAttribute('aria-label','Покажи/скрий размерите');dimensionsToggle.setAttribute('aria-pressed','false');dimensionsToggle.textContent='↔ мм';dimensionsToggle.style.cssText='font-size:13px;font-weight:750;min-width:46px';
+let showDimensions=false;
+dimensionsToggle.onclick=()=>{showDimensions=!showDimensions;dimensionsToggle.setAttribute('aria-pressed',String(showDimensions));dimensionsToggle.classList.toggle('active',showDimensions);dimensionOverlay.style.display=showDimensions?'block':'none'};
+viewDock.append(dimensionsToggle);host.append(viewDock);
+const dimensionOverlay=document.createElementNS('http://www.w3.org/2000/svg','svg');
+dimensionOverlay.setAttribute('aria-hidden','true');dimensionOverlay.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:12;overflow:visible;display:none';host.append(dimensionOverlay);
+function updateDimensionOverlay(){
+ if(!showDimensions||!boards.length||!host.clientWidth||!host.clientHeight){dimensionOverlay.replaceChildren();return}
+ const bounds=new THREE.Box3();for(const mesh of boards){mesh.updateWorldMatrix(true,false);bounds.expandByObject(mesh)}
+ if(bounds.isEmpty()){dimensionOverlay.replaceChildren();return}
+ const min=bounds.min,max=bounds.max,mid=new THREE.Vector3();bounds.getCenter(mid);
+ const w=host.clientWidth,h=host.clientHeight;dimensionOverlay.setAttribute('viewBox','0 0 '+w+' '+h);
+ const project=p=>{const v=p.clone().project(camera);return {x:(v.x+1)*w/2,y:(1-v.y)*h/2,z:v.z}};
+ const axes=[
+  {a:new THREE.Vector3(min.x,min.y,max.z),b:new THREE.Vector3(max.x,min.y,max.z),value:max.x-min.x},
+  {a:new THREE.Vector3(max.x,min.y,max.z),b:new THREE.Vector3(max.x,max.y,max.z),value:max.y-min.y},
+  {a:new THREE.Vector3(max.x,min.y,min.z),b:new THREE.Vector3(max.x,min.y,max.z),value:max.z-min.z}
+ ];
+ const ns='http://www.w3.org/2000/svg';dimensionOverlay.replaceChildren();
+ for(const axis of axes){if(axis.value<1)continue;const a=project(axis.a),b=project(axis.b);if(![a.x,a.y,b.x,b.y].every(Number.isFinite))continue;
+ const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy);if(len<16)continue;
+ const nx=-dy/len,ny=dx/len,off=19;
+ const x1=a.x+nx*off,y1=a.y+ny*off,x2=b.x+nx*off,y2=b.y+ny*off;
+ const line=(xA,yA,xB,yB,stroke,width=1.5)=>{const e=document.createElementNS(ns,'line');for(const [k,v] of Object.entries({x1:xA,y1:yA,x2:xB,y2:yB,stroke,'stroke-width':width}))e.setAttribute(k,v);dimensionOverlay.append(e)};
+ line(a.x,a.y,x1+nx*5,y1+ny*5,'#64748b',1);line(b.x,b.y,x2+nx*5,y2+ny*5,'#64748b',1);
+ line(x1,y1,x2,y2,'#2563eb',2);
+ for(const [x,y] of [[x1,y1],[x2,y2]])line(x-nx*5,y-ny*5,x+nx*5,y+ny*5,'#2563eb',1.5);
+ const text=document.createElementNS(ns,'text');text.setAttribute('x',(x1+x2)/2+nx*13);text.setAttribute('y',(y1+y2)/2+ny*13);text.setAttribute('text-anchor','middle');text.setAttribute('dominant-baseline','middle');text.setAttribute('font-size','13');text.setAttribute('font-weight','700');text.setAttribute('fill','#153b67');text.setAttribute('stroke','#f4f7fb');text.setAttribute('stroke-width','4');text.setAttribute('paint-order','stroke');text.textContent=Math.round(axis.value)+' мм';dimensionOverlay.append(text);
+ }
+}
 viewPan=installViewPan({THREE,controls,host,onCenter:()=>setView(viewMode)});
 $('views').style.setProperty('display','none','important');
 const partNamesLayer=document.createElement('div');
@@ -2658,5 +2688,6 @@ function frame(){
  }
  renderer.render(scene,camera);
  updatePartNames();
+ updateDimensionOverlay();
 }build();frame();
 </script><script id="ned-settings-navigation-v224">(function(){function modal(id){return document.getElementById(id)}function show(id){const d=modal(id);if(!d)return;try{if(!d.open)d.showModal()}catch(e){console.error('Cannot open '+id,e)}}function close(id){const d=modal(id);if(d?.open)d.close()}document.addEventListener('click',function(e){const b=e.target.closest?.('button');if(!b)return;switch(b.id){case 'settingsButton':e.preventDefault();show('settingsDialog');break;case 'settingsClose':case 'settingsDone':e.preventDefault();close('settingsDialog');break;case 'nedSpaceOpen':case 'nedPhotosOpen':e.preventDefault();show(b.id==='nedSpaceOpen'?'nedSpaceDialog':'nedPhotosDialog');close('settingsDialog');break;default:if(b.dataset.nedClose){e.preventDefault();close(b.dataset.nedClose)}}},true);})();</script></body></html>
