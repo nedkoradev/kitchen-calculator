@@ -53,6 +53,14 @@ test('independent corpus profiles do not bleed into other groups or hidden rails
  for(const item of original){const other=changed.find(p=>p.name===item.name);assert.deepEqual(item.part,other.part);if(item.name!=='Дъно')assert.deepEqual(item.finish,other.finish)}
  const rails=generateCabinet({...options,top:'rails'},catalog);assert.deepEqual(rails.find(i=>i.name==='Предна горна царга').finish.edges,[null,null,null,null]);assert.ok(!cabinetEdgeTargets({...options,top:'rails'},catalog).some(t=>t.id==='bodyTop'));
 });
+test('rail target edits both rails through an independent four-physical-edge profile',()=>{
+ const options={...cabinetPresets.base,materials,top:'rails'},profile=[0,1,2,3],original=generateCabinet(options,catalog),changed=generateCabinet({...options,edgeProfiles:{bodyRails:profile}},catalog);
+ const target=cabinetEdgeTargets(options,catalog).find(t=>t.id==='bodyRails');assert.ok(target);assert.equal(target.label,'Двете горни царги');assert.equal(panelAxes(target.part).thickness,'y');
+ const rails=changed.filter(i=>i.name.endsWith('горна царга'));assert.equal(rails.length,2);
+ for(const item of changed){const before=original.find(i=>i.name===item.name);assert.deepEqual(item.part,before.part);if(rails.includes(item)){assert.deepEqual(item.finish.edges,profile);assert.equal(item.finish.material,before.finish.material);assert.equal(item.finish.materialType,before.finish.materialType);const layout=cutLayout(item.part,item.finish,catalog.pdcMaterials[item.finish.material]);assert.deepEqual(layout.edgeIndices.map(slot=>item.finish.edges[slot]),[2,3,1,0]);}else assert.deepEqual(item,before)}
+ for(const top of ['panel','none'])assert.ok(!cabinetEdgeTargets({...options,top},catalog).some(t=>t.id==='bodyRails'));
+ assert.throws(()=>generateCabinet({...options,edgeProfiles:{bodyRails:[0,999,null,null]}},catalog),/кант/);
+});
 test('independent material thicknesses preserve envelope and exact joints for all cabinet types',()=>{
  const c=structuredClone(catalog);for(const [i,t] of [16,25,19,22].entries())c.pdcMaterials.push({...c.pdcMaterials[0],name:'Custom '+i,thick:t});const k=c.pdcMaterials.length-4;
  for(const type of ['base','wall','tall']){const items=generateCabinet({...cabinetPresets[type],materials:{...materials,bodySide:'pdc:'+k,bodyBottom:'pdc:'+(k+1),bodyTop:'pdc:'+(k+2),shelves:'pdc:'+(k+3)},edgeProfiles:{bodySide:[0,1,null,null],bodyBottom:[1,0,1,null],bodyTop:[null,1,0,null],shelves:[1,null,0,1]}},c);

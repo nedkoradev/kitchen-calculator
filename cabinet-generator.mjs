@@ -58,7 +58,7 @@ function buildCabinet(settings,catalog,visit,requireShelfBand){
 }
 // Operation-local editor targets; only normal finish.edges enter snapshots.
 export function cabinetEdgeTargets(settings,catalog){
- const targets=new Map(),labels={bodySide:'Страници',bodyBottom:'Дъно',bodyTop:'Таван',doors:'Врати',shelves:'Рафтове',worktop:'Плот'};
+ const targets=new Map(),labels={bodySide:'Страници',bodyBottom:'Дъно',bodyTop:'Таван',bodyRails:'Двете горни царги',doors:'Врати',shelves:'Рафтове',worktop:'Плот'};
  buildCabinet(settings,catalog,value=>{if(labels[value.id]&&!targets.has(value.id))targets.set(value.id,{...value,label:labels[value.id],requiredSlots:value.id==='shelves'?[2]:[],slotLabels:panelAxes(value.part).thickness==='x'?['Заден ръб','Преден ръб','Горен ръб','Долен ръб']:panelAxes(value.part).thickness==='y'?['Ляв ръб','Десен ръб','Преден ръб','Заден ръб']:['Ляв ръб','Десен ръб','Горен ръб','Долен ръб']})},false);return [...targets.values()];
 }
 export function placeCabinet(items,obstacles,room){
