@@ -4,11 +4,11 @@ const {openKitchen}=require('./browser-harness.cjs');
  const {browser,page,errors,consoleErrors,field}=await openKitchen({extraHooks:`
  window.__dimensions={
   async seed(){const {generateCabinet,cabinetPresets}=await import('./cabinet-generator.mjs');clearWorkspace();const catalog={pdcMaterials:libraryBoards,edgeMaterials:libraryEdges,...catalogExtra};for(const [type,w,x,y] of [['base',600,-450,0],['wall',900,450,1400]]){const items=generateCabinet({...cabinetPresets[type],w,shelves:0},catalog);items.forEach(i=>{i.part.assembly=type});restoreParts(items,{x,y,z:0})}build(false);setView('perspective')},
-  capture:captureProjectSnapshot,restore:applyProjectSnapshot,
+  capture:captureProjectSnapshot,restore:applyProjectSnapshot,revision:()=>dimensionGeometryRevision,
   edit(){selected=customParts[0].key;singleMemberSelection=false;updateSelection();openProperties();selectTab('sizes')},
   rotate(){selected=customParts[0].key;singleMemberSelection=false;rotateSelectedPart(1)},
   move(){const id=customParts[0].assembly;customParts.filter(p=>p.assembly===id).forEach(p=>p.x+=100);build(false)},
-  orbit(){camera.position.set(-2600,2200,3600);controls.target.set(0,1000,0);controls.update()},
+  orbit(){camera.position.set(-3200,2400,4200);controls.target.set(0,1000,0);controls.update()},
   nest(){groupSelections.clear();customParts.forEach(p=>groupSelections.add(p.key));createAssembly()},
   liveDrag(){assemblies.get(customParts[0].assembly).position.x+=60},
   measure:()=>cabinetMeasurements(customParts,labels,finishes)
@@ -24,13 +24,13 @@ const {openKitchen}=require('./browser-harness.cjs');
   const overlap=()=>page.locator('[data-dimension-label]').evaluateAll(es=>{const bs=es.map(e=>e.getBoundingClientRect());return bs.some((a,i)=>bs.slice(i+1).some(b=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top))});
   assert.equal(await overlap(),false);
   assert.deepEqual(await page.evaluate(()=>window.__test.parts()),before);
-  const old=items.map(i=>i.transform);await page.evaluate(()=>window.__dimensions.orbit());await page.waitForTimeout(500);items=await read();assert.notDeepEqual(items.map(i=>i.transform),old);assert.deepEqual(items.map(i=>i.value),[600,858,900,720]);
+  const revision=await page.evaluate(()=>window.__dimensions.revision());const old=items.map(i=>i.transform);await page.evaluate(()=>window.__dimensions.orbit());await page.waitForTimeout(500);items=await read();assert.notDeepEqual(items.map(i=>i.transform),old);assert.equal(await page.evaluate(()=>window.__dimensions.revision()),revision,'orbit reprojects without resolving cabinet geometry');assert.deepEqual(items.map(i=>i.value),[600,858,900,720]);
   assert.equal(await overlap(),false);
   for(const view of ['front','perspective']){await page.evaluate(v=>window.__test.view(v),view);await wait();assert.deepEqual((await read()).map(i=>i.value),[600,858,900,720])}
   await page.evaluate(()=>window.__dimensions.rotate());await wait();assert.deepEqual((await read()).map(i=>i.value),[600,858,900,720]);
   await page.evaluate(()=>window.__test.undoStep());await page.evaluate(()=>window.__dimensions.edit());await field('partW',700);await page.locator('#dialogDone').click();await page.waitForFunction(()=>[...document.querySelectorAll('[data-dimension="width"]')].some(e=>e.dataset.value==='700'));
   await page.evaluate(()=>window.__test.undoStep());await wait();assert.deepEqual((await read()).map(i=>i.value),[600,858,900,720]);await page.evaluate(()=>window.__test.redoStep());await page.waitForFunction(()=>document.querySelector('[data-dimension="width"]').dataset.value==='700');await page.evaluate(()=>window.__test.undoStep());
-  const prior=(await read()).map(i=>i.transform);await page.evaluate(()=>window.__dimensions.move());await page.waitForTimeout(100);assert.notDeepEqual((await read()).map(i=>i.transform),prior);
+  const prior=(await read()).map(i=>i.transform);await page.evaluate(()=>window.__dimensions.move());await page.waitForTimeout(100);assert.notDeepEqual((await read()).map(i=>i.transform),prior);assert.ok(await page.evaluate(()=>window.__dimensions.revision())>revision);
   const dragBefore=(await read()).map(i=>i.transform);await page.evaluate(()=>window.__dimensions.liveDrag());await page.waitForTimeout(100);assert.notDeepEqual((await read()).map(i=>i.transform),dragBefore);await page.evaluate(()=>window.__test.build());
   await page.evaluate(()=>window.__dimensions.nest());await wait();assert.deepEqual((await read()).map(i=>i.value),[600,858,900,720]);
   await page.evaluate(()=>{const snap=window.__dimensions.capture();window.__dimensions.restore(snap)});await wait();assert.deepEqual((await read()).map(i=>i.value),[600,858,900,720]);
