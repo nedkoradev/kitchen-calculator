@@ -2,7 +2,8 @@ import {requiresGrain,textureCoordinates,edgeDiagramLayout,validTextureUrl} from
 import {decorateAction} from './icons.mjs';
 import {withPhotoOrientation} from './photo-orientation.mjs';
 const make=(tag,text)=>{const node=document.createElement(tag);if(text)node.textContent=text;return node};
-export function openEdgeEditor(options){
+export function openEdgeEditor(options){const {dialog}=createEdgeEditor(options);document.body.append(dialog);dialog.showModal();return dialog}
+export function createEdgeEditor(options){
  const {onApply}=options,variants=options.variants||[{...options,id:'part',label:options.label||'Детайл'}],states=variants.map(v=>({edges:Array.from({length:4},(_,i)=>v.finish.edges?.[i]??null),allEdges:!!v.allEdges}));
  const dialog=make('dialog');dialog.className='visualEdgeDialog'+(options.variants?' edgeVariantDialog':'');dialog.setAttribute('aria-label',options.title||'Кантиране на детайла');
  const header=make('div');header.className='dialogHead';header.append(make('strong',options.title||'Кантиране на детайла'));
@@ -13,7 +14,7 @@ export function openEdgeEditor(options){
  if(options.variants){const bar=make('div');bar.className='edgeVariantBar';const label=make('label','Детайл за кантиране');const select=make('select');select.id='visualEdgeVariant';variants.forEach((v,i)=>select.add(new Option(v.label,v.id)));select.onchange=()=>show(variants.findIndex(v=>v.id===select.value));label.append(select);bar.append(label);dialog.append(bar)}
  dialog.append(footer);show(0);
  apply.onclick=()=>{apply.disabled=true;states[active]=panel.read();if(variants.some((v,i)=>v.requiredSlots?.some(slot=>states[i].edges[slot]===null))){panel.status.textContent='Рафтове: избери кант за предния ръб.';panel.body.querySelector('select[required]')?.focus();apply.disabled=false;return}try{const result=options.variants?{variants:variants.map((v,i)=>({id:v.id,...states[i]}))}:states[0];if(onApply(result)===false){panel.status.textContent='Детайлът е променен. Затвори и отвори кантирането отново.';apply.disabled=false;return}dialog.close()}catch{panel.status.textContent='Кантирането не е приложено. Опитай отново.';apply.disabled=false}};
- dialog.addEventListener('keydown',event=>event.stopPropagation());dialog.addEventListener('close',()=>{panel.dispose();dialog.remove()},{once:true});document.body.append(dialog);dialog.showModal();return dialog;
+ dialog.addEventListener('keydown',event=>event.stopPropagation());dialog.addEventListener('close',()=>{panel.dispose();dialog.remove()},{once:true});return {dialog,dispose:()=>panel.dispose()};
 }
 function createEdgePanel({part,finish,material,edgeMaterials,allEdges=false,slotLabels,requiredSlots=[]}){
  const body=make('div');body.className='edgeDialogBody';body.append(make('p','Избери кант за всеки ръб. Плътните червени линии показват кантираните страни.'));
