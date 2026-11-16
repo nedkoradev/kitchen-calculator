@@ -91,3 +91,20 @@ test('a resting shared worktop raises each cabinet height without borrowing its 
  const floating=cabinetMeasurements([...parts,{...top,y:1000}],labels,finishes);assert.deepEqual(floating.map(m=>m.height),[860,860]);
  const far=cabinetMeasurements([...parts,{...top,z:1800}],labels,finishes);assert.deepEqual(far.map(m=>m.height),[860,860]);
 });
+
+test('one shared height for touching equal cabinets, separate heights for gaps, elevations and L arms',async()=>{
+ const {cabinetHeightGroups}=await import('../cabinet-dimensions.mjs');
+ const seed=cabinet('base'),[base]=cabinetMeasurements(seed.parts,seed.labels,seed.finishes);
+ function at(id,dx,{bottom=base.bottom,top=base.top,...changes}={}){
+  const shift=p=>({...p,x:p.x+dx,y:p.y-base.bottom+bottom});
+  return {...base,id,wide:{min:base.wide.min+dx,max:base.wide.max+dx},center:shift(base.center),bottom,top,height:top-bottom,widthLine:base.widthLine.map(shift),heightLines:base.heightLines.map(line=>line.map((p,i)=>({...shift(p),y:i?top:bottom}))),...changes};
+ }
+ const a=at('a',0),b=at('b',600),c=at('c',1200);
+ const before=structuredClone([a,b,c]),groups=cabinetHeightGroups([c,a,b]);
+ assert.equal(groups.length,1);assert.deepEqual(groups[0].members.map(m=>m.id),['a','b','c']);
+ assert.equal(groups[0].pairs[0][0].x,a.wide.min);assert.equal(groups[0].pairs[1][0].x,c.wide.max);assert.deepEqual([a,b,c],before);
+ assert.equal(cabinetHeightGroups([a,at('gap',650)]).length,2);
+ assert.equal(cabinetHeightGroups([a,at('short',600,{top:800})]).length,2);
+ assert.equal(cabinetHeightGroups([a,at('wall',600,{bottom:1450,top:2308})]).length,2);
+ assert.equal(cabinetHeightGroups([a,{...b,widthAxis:'z',depthAxis:'x'}]).length,2);
+});

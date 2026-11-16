@@ -19,8 +19,8 @@ const {openKitchen}=require('./browser-harness.cjs');
   await page.evaluate(()=>window.__dimensions.seed());const before=await page.evaluate(()=>window.__test.parts());
   const button=page.locator('#nedDimensionsToggle');assert.equal(await button.innerText(),'↔ мм');assert.equal(await button.evaluate(b=>b.previousElementSibling.id),'nedTransparencyToggle');
   await button.click();await wait();let items=await read();assert.deepEqual(items.map(i=>i.value),[600,858,900,720]);assert.ok(items.every(i=>/^\d+ мм$/.test(i.text)));
-  assert.ok(await page.locator('#nedCabinetDimensions line').evaluateAll(es=>es.every(e=>e.getAttribute('stroke')==='#3988ff'&&e.getAttribute('stroke-width')==='1.5')));
-  assert.ok(await page.locator('[data-dimension-label] rect').evaluateAll(es=>es.every(e=>e.getAttribute('fill')==='#f0f6ff'&&e.getAttribute('rx')==='4')));
+  assert.ok(await page.locator('#nedCabinetDimensions line').evaluateAll(es=>es.every(e=>e.getAttribute('stroke')==='#3988ff'&&e.getAttribute('stroke-width')==='1')));
+  assert.equal(await page.locator('[data-dimension-label] rect').count(),0);assert.equal(await page.locator('[data-dimension-arrow]').count(),8);
   const overlap=()=>page.locator('[data-dimension-label]').evaluateAll(es=>{const bs=es.map(e=>e.getBoundingClientRect());return bs.some((a,i)=>bs.slice(i+1).some(b=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top))});
   assert.equal(await overlap(),false);
   assert.deepEqual(await page.evaluate(()=>window.__test.parts()),before);
@@ -39,6 +39,6 @@ const {openKitchen}=require('./browser-harness.cjs');
   await button.click();assert.equal(await page.locator('#nedCabinetDimensions').isVisible(),false);await button.click();await wait();
   await page.setViewportSize({width:1400,height:1000});await page.locator('#modeProject').click();await page.evaluate(()=>window.__dimensions.seed());await wait();assert.deepEqual((await read()).map(i=>i.value),[600,858,900,720]);
   assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors.filter(e=>!e.url?.endsWith('/favicon.ico')),[]);
-  console.log('PASS individual cabinet width/height, 4 labels only, 1.5px blue styling, perspective/orbit, rotation, resize, Undo/Redo, move/live drag, nested groups, snapshot reopen, transparency, Project/Constructor, mobile, collision avoidance, toggle and clean console');
+  console.log('PASS individual cabinet width/height, 4 labels only, 1px blue arrows and background-free labels, perspective/orbit, rotation, resize, Undo/Redo, move/live drag, nested groups, snapshot reopen, transparency, Project/Constructor, mobile, collision avoidance, toggle and clean console');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});

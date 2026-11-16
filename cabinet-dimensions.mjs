@@ -77,7 +77,7 @@ export function cabinetMeasurements(parts,labels={},finishes={},assemblyNames={}
   // The visual center follows the cabinet, even with a shared worktop overhang.
   center[widthAxis]=(wide.min+wide.max)/2;
   const point=(u,y)=>({[widthAxis]:u,y,[depthAxis]:front}),a=widthSign>0?wide.min:wide.max,b=widthSign>0?wide.max:wide.min;
-  return {id,center,width:span(wide),height:span(bounds.y),widthAxis,depthAxis,frontSign,front,bottom:bounds.y.min,top:bounds.y.max,wide,
+  return {id,center,bounds,width:span(wide),height:span(bounds.y),widthAxis,depthAxis,frontSign,front,bottom:bounds.y.min,top:bounds.y.max,wide,
    widthLine:[point(a,bounds.y.min),point(b,bounds.y.min)],heightLines:[[point(a,bounds.y.min),point(a,bounds.y.max)],[point(b,bounds.y.min),point(b,bounds.y.max)]]};
  });
 }
@@ -98,43 +98,91 @@ export function cabinetWidthChains(measurements){
  }
  return lines;
 }
+// Share height only along a connected row with the same bottom AND top.
+// Width labels retain the individual cabinet identity and full height in a title.
+export function cabinetHeightGroups(measurements){
+ const chains=cabinetWidthChains(measurements),groups=[];
+ for(const m of [...measurements].sort((a,b)=>a.wide.min-b.wide.min)){
+  const group=groups.find(g=>chains.get(g.members[0].id).id===chains.get(m.id).id&&Math.abs(g.members[0].bottom-m.bottom)<1&&Math.abs(g.members[0].top-m.top)<1&&m.wide.min<=Math.max(...g.members.map(n=>n.wide.max))+2);
+  if(group)group.members.push(m);else groups.push({members:[m]});
+ }
+ return groups.map(({members})=>{
+  const first=members.reduce((a,b)=>a.wide.min<b.wide.min?a:b),last=members.reduce((a,b)=>a.wide.max>b.wide.max?a:b);
+  const ends=m=>m.heightLines.slice().sort((a,b)=>a[0][m.widthAxis]-b[0][m.widthAxis]);
+  return {members,pairs:[ends(first)[0],ends(last)[1]]};
+ });
+}
 const NS='http://www.w3.org/2000/svg';
+const cross=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
+function hull(points){
+ const sorted=points.slice().sort((a,b)=>a.x-b.x||a.y-b.y),lower=[],upper=[];
+ for(const p of sorted){while(lower.length>1&&cross(lower.at(-2),lower.at(-1),p)<=0)lower.pop();lower.push(p)}
+ for(const p of sorted.reverse()){while(upper.length>1&&cross(upper.at(-2),upper.at(-1),p)<=0)upper.pop();upper.push(p)}
+ return lower.slice(0,-1).concat(upper.slice(0,-1));
+}
+const inside=(p,poly)=>poly.length>2&&poly.every((a,i)=>cross(a,poly[(i+1)%poly.length],p)>=-.01);
+const segmentHit=(a,b,c,d)=>{
+ const ab1=cross(a,b,c),ab2=cross(a,b,d),cd1=cross(c,d,a),cd2=cross(c,d,b);
+ return ab1*ab2<-.01&&cd1*cd2<-.01;
+};
+const lineHits=(a,b,poly)=>inside(a,poly)||inside(b,poly)||poly.some((p,i)=>segmentHit(a,b,p,poly[(i+1)%poly.length]));
+const boxPoly=b=>[{x:b.x,y:b.y},{x:b.x+b.w,y:b.y},{x:b.x+b.w,y:b.y+b.h},{x:b.x,y:b.y+b.h}];
+const polysHit=(a,b)=>a.some(p=>inside(p,b))||b.some(p=>inside(p,a))||a.some((p,i)=>lineHits(p,a[(i+1)%a.length],b));
 export function renderCabinetDimensions(svg,measurements,project,width,height,obstacles=[]){
  svg.setAttribute('viewBox',`0 0 ${width} ${height}`);svg.replaceChildren();
- const occupied=[...obstacles],fragment=document.createDocumentFragment(),chains=cabinetWidthChains(measurements);
+ const occupied=obstacles.map(boxPoly),drawnLines=[],fragment=document.createDocumentFragment(),chains=cabinetWidthChains(measurements);
  const node=(tag,attrs,parent)=>{const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);parent.append(e);return e};
- const overlaps=(a,b)=>a.x<b.x+b.w+3&&a.x+a.w+3>b.x&&a.y<b.y+b.h+3&&a.y+a.h+3>b.y;
- for(const cabinet of measurements){
-  const center=project(cabinet.center);
-  for(const kind of ['width','height']){
-   const value=cabinet[kind];if(value<1)continue;
-   const text=Math.round(value)+' мм',labelWidth=text.length*6.5+10,labelHeight=19,candidates=[];
-   const pairs=kind==='width'?[chains.get(cabinet.id).points]:cabinet.heightLines;
-   for(let side=0;side<pairs.length;side++){
-    const [a,b]=pairs[side].map(project),original=(kind==='width'?cabinet.widthLine:cabinet.heightLines[side]).map(project);
-    if(![a.x,a.y,b.x,b.y].every(Number.isFinite)||a.z<-1||a.z>1||b.z<-1||b.z>1)continue;
-    const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy);if(len<8)continue;
-    let nx=-dy/len,ny=dx/len;const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
-    if(nx*(mx-center.x)+ny*(my-center.y)<0){nx=-nx;ny=-ny;}
-    let angle=Math.atan2(dy,dx)*180/Math.PI;if(angle>90)angle-=180;if(angle<-90)angle+=180;
-    const rad=angle*Math.PI/180,bw=Math.abs(Math.cos(rad))*labelWidth+Math.abs(Math.sin(rad))*labelHeight,bh=Math.abs(Math.sin(rad))*labelWidth+Math.abs(Math.cos(rad))*labelHeight;
-    for(const labelOffset of kind==='width'?[0,13,26]:[12,18,24])for(const t of kind==='width'?[.5,.35,.65,.2,.8]:[.5,.38,.62,.26,.74]){
-     const offset=kind==='width'?0:labelOffset,cx=a.x+dx*t+nx*labelOffset,cy=a.y+dy*t+ny*labelOffset,box={x:cx-bw/2,y:cy-bh/2,w:bw,h:bh};
-     if(box.x<3||box.y<3||box.x+box.w>width-3||box.y+box.h>height-3||obstacles.some(o=>overlaps(box,o)))continue;
-     candidates.push({a,b,original,nx,ny,offset,labelOffset,t,cx,cy,angle,box,score:labelOffset+Math.abs(t-.5)*20+occupied.filter(o=>overlaps(box,o)).length*10000});
-    }
-   }
-   candidates.sort((a,b)=>a.score-b.score);const c=candidates[0];if(!c)continue;occupied.push(c.box);
-   const g=node('g',{'data-cabinet-dimension':cabinet.id,'data-dimension':kind,'data-value':Math.round(value),...(kind==='width'?{'data-dimension-chain':chains.get(cabinet.id).id}:{})},fragment);
-   const line=(x1,y1,x2,y2)=>node('line',{x1,y1,x2,y2,stroke:'#3988ff','stroke-width':1.5,'vector-effect':'non-scaling-stroke'},g);
-   const {a,b,nx,ny,offset}=c,x1=a.x+nx*offset,y1=a.y+ny*offset,x2=b.x+nx*offset,y2=b.y+ny*offset;
-   if(kind==='width'&&c.labelOffset>0)line(a.x+(b.x-a.x)*c.t,a.y+(b.y-a.y)*c.t,c.cx,c.cy);
-   line(c.original[0].x,c.original[0].y,x1+nx*3,y1+ny*3);line(c.original[1].x,c.original[1].y,x2+nx*3,y2+ny*3);line(x1,y1,x2,y2);
-   for(const [x,y] of [[x1,y1],[x2,y2]])line(x-nx*3,y-ny*3,x+nx*3,y+ny*3);
-   const label=node('g',{'data-dimension-label':kind,transform:`translate(${c.cx} ${c.cy}) rotate(${c.angle})`},g);
-   node('rect',{x:-labelWidth/2,y:-labelHeight/2,width:labelWidth,height:labelHeight,rx:4,fill:'#f0f6ff'},label);
-   node('text',{'text-anchor':'middle','dominant-baseline':'central','font-family':'Arial, sans-serif','font-size':11,'font-weight':700,fill:'#153b67'},label).textContent=text;
-  }
+ const silhouettes=new Map(measurements.map(m=>{
+  const b=m.bounds,points=b?['min','max'].flatMap(x=>['min','max'].flatMap(y=>['min','max'].map(z=>project({x:b.x[x],y:b.y[y],z:b.z[z]})))):[...m.widthLine,...m.heightLines.flat()].map(project);
+  return [m.id,hull(points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.z>=-1&&p.z<=1))];
+ }));
+ const furniture=[...silhouettes.values()].filter(p=>p.length>2);
+ const heightGroups=cabinetHeightGroups(measurements),heightGroup=new Map(heightGroups.flatMap(g=>g.members.map(m=>[m.id,g.members.map(n=>n.id).join('|')])));
+ const jobs=measurements.map(m=>({cabinet:m,members:[m],kind:'width',pairs:[chains.get(m.id).points],originals:[m.widthLine]}));
+ for(const group of heightGroups){
+  // Both front and back side corners are physical height anchors; the visible
+  // exterior side changes as the user orbits the cabinet.
+  const backs=group.pairs.map((pair,i)=>{const m=i?group.members.at(-1):group.members[0],back=m.bounds?.[m.depthAxis]?.[m.frontSign>0?'min':'max'];return pair.map(p=>({...p,[m.depthAxis]:back??p[m.depthAxis]}))}),pairs=[...group.pairs,...backs];
+  jobs.push({cabinet:group.members[0],members:group.members,kind:'height',pairs,originals:pairs});
  }
- svg.append(fragment);
+ for(const {cabinet,members,kind,pairs,originals} of jobs){
+  const value=cabinet[kind];if(value<1)continue;
+  const text=Math.round(value)+' мм',labelWidth=text.length*6.5+4,labelHeight=15,candidates=[];
+  const silhouette=members.flatMap(m=>silhouettes.get(m.id)||[]),center=project(cabinet.center);
+  for(let side=0;side<pairs.length;side++){
+   const [a,b]=pairs[side].map(project),original=originals[side].map(project);
+   if(![a.x,a.y,b.x,b.y].every(Number.isFinite)||a.z<-1||a.z>1||b.z<-1||b.z>1)continue;
+   const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy);if(len<8)continue;
+   let nx=-dy/len,ny=dx/len;const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+   if(nx*(mx-center.x)+ny*(my-center.y)<0){nx=-nx;ny=-ny;}
+   // Clear the whole projected silhouette, including the visible side face.
+   const clearance=Math.max(0,...silhouette.map(p=>(p.x-mx)*nx+(p.y-my)*ny))+12;
+   let angle=Math.atan2(dy,dx)*180/Math.PI;if(angle>90)angle-=180;if(angle<-90)angle+=180;
+   const rad=angle*Math.PI/180,ux=Math.cos(rad),uy=Math.sin(rad);
+   for(const extra of [0,12,26,44,68,100,140])for(const t of [.5,.35,.65,.2,.8])for(const labelDistance of [10,0]){
+    const offset=clearance+extra,x1=a.x+nx*offset,y1=a.y+ny*offset,x2=b.x+nx*offset,y2=b.y+ny*offset;
+    const cx=x1+dx*t+nx*labelDistance,cy=y1+dy*t+ny*labelDistance;
+    const poly=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>({x:cx+x*labelWidth/2*ux-y*labelHeight/2*uy,y:cy+x*labelWidth/2*uy+y*labelHeight/2*ux}));
+    const start={x:x1,y:y1},end={x:x2,y:y2};
+    if(poly.some(p=>p.x<3||p.y<3||p.x>width-3||p.y>height-3)||[start,end].some(p=>p.x<3||p.y<3||p.x>width-3||p.y>height-3))continue;
+    if(furniture.some(p=>polysHit(poly,p)||lineHits(start,end,p))||occupied.some(p=>polysHit(poly,p)||lineHits(start,end,p)))continue;
+    // Labels may move along a line, but never onto furniture, controls or labels.
+    const crossings=drawnLines.filter(([a,b])=>segmentHit(a,b,start,end)||lineHits(a,b,poly)).length;
+    candidates.push({original,nx,ny,x1,y1,x2,y2,cx,cy,angle,poly,t,labelDistance,score:(labelDistance===0?2:0)+extra+clearance*.15+Math.abs(t-.5)*30+crossings*1000});
+   }
+  }
+  candidates.sort((a,b)=>a.score-b.score);const c=candidates[0];if(!c)continue;
+  occupied.push(c.poly);drawnLines.push([{x:c.x1,y:c.y1},{x:c.x2,y:c.y2}]);
+  const ids=members.map(m=>m.id),g=node('g',{'data-cabinet-dimension':cabinet.id,'data-cabinet-ids':JSON.stringify(ids),'data-dimension':kind,'data-value':Math.round(value),'data-height-value':Math.round(cabinet.height),'data-height-group':heightGroup.get(cabinet.id),...(kind==='width'?{'data-dimension-chain':chains.get(cabinet.id).id}:{})},fragment);
+  node('title',{},g).textContent=kind==='width'?`широчина ${Math.round(cabinet.width)} мм, височина ${Math.round(cabinet.height)} мм`:`Височина ${text}${ids.length>1?' · '+ids.length+' съседни шкафа':''}`;
+  const line=(x1,y1,x2,y2,role)=>node('line',{x1,y1,x2,y2,stroke:'#3988ff','stroke-width':1,'vector-effect':'non-scaling-stroke','data-dimension-line':role},g);
+  const {x1,y1,x2,y2,nx,ny}=c;
+  line(c.original[0].x,c.original[0].y,x1+nx*3,y1+ny*3,'extension');line(c.original[1].x,c.original[1].y,x2+nx*3,y2+ny*3,'extension');if(c.labelDistance){line(x1,y1,x2,y2,'baseline')}else{const gap=(labelWidth+6)/2/Math.hypot(x2-x1,y2-y1),lo=Math.max(0,c.t-gap),hi=Math.min(1,c.t+gap);line(x1,y1,x1+(x2-x1)*lo,y1+(y2-y1)*lo,'baseline');line(x1+(x2-x1)*hi,y1+(y2-y1)*hi,x2,y2,'baseline')}
+  const len=Math.hypot(x2-x1,y2-y1),ux=(x2-x1)/len,uy=(y2-y1)/len,arrow=Math.min(5,len/4);
+  for(const [x,y,sign] of [[x1,y1,1],[x2,y2,-1]])node('path',{d:`M ${x} ${y} L ${x+sign*ux*arrow-uy*2} ${y+sign*uy*arrow+ux*2} L ${x+sign*ux*arrow+uy*2} ${y+sign*uy*arrow-ux*2} Z`,fill:'#3988ff','data-dimension-arrow':''},g);
+  const label=node('g',{'data-dimension-label':kind,'pointer-events':'auto',transform:`translate(${c.cx} ${c.cy}) rotate(${c.angle})`},g);
+  node('text',{'text-anchor':'middle','dominant-baseline':'central','font-family':'Arial, sans-serif','font-size':11,'font-weight':700,fill:'#153b67'},label).textContent=text;
+ }
+ const order=new Map(measurements.map((m,i)=>[m.id,i]));
+ [...fragment.children].sort((a,b)=>order.get(a.dataset.cabinetDimension)-order.get(b.dataset.cabinetDimension)||(a.dataset.dimension==='width'?-1:1)).forEach(g=>svg.append(g));
 }
