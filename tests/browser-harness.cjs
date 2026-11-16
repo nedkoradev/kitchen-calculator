@@ -18,11 +18,12 @@ window.__test={
  finish:()=>structuredClone(finishes),labels:()=>structuredClone(labels)
 };
 `;
-async function openKitchen({firebaseDouble=false,extraHooks='',initialStorage=null}={}){
+async function openKitchen({firebaseDouble=false,extraHooks='',initialStorage=null,initialScript=null}={}){
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--enable-unsafe-swiftshader'],proxy:process.env.HTTPS_PROXY?{server:process.env.HTTPS_PROXY,bypass:'127.0.0.1,localhost'}:undefined});
  try{
   const page=await browser.newPage({viewport:{width:1400,height:1000}}),errors=[],consoleErrors=[];
   page.on('console',message=>{if(message.type()==='error')consoleErrors.push({text:message.text(),url:message.location().url})});
+  if(initialScript)await page.addInitScript(initialScript);
   if(initialStorage)await page.addInitScript(values=>{
    if(!sessionStorage.getItem('kitchen-test-seeded')){
     for(const [key,value] of Object.entries(values))localStorage.setItem(key,value);

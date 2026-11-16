@@ -3,16 +3,16 @@ const {openKitchen}=require('./browser-harness.cjs');
 const keys=['kitchenV2Cabinets','kitchenV2Projects','kitchenPdcMaterials','kitchenEdgeMaterials','kitchenV2ExtraMaterials','kitchenActiveMaterialBase'];
 const panel=(key,x=.5)=>({key,x,y:150,z:0,w:101,h:18,d:300,locks:{w:false,h:true,d:false}});
 (async()=>{
- const initialStorage=Object.fromEntries(keys.map(key=>[key,'old local record']));initialStorage['firebase:authUser:test']='auth fixture';initialStorage.otherApplication='keep';
+ const initialStorage={kitchenV2Cabinets:'[]',kitchenV2Projects:'[]',kitchenPdcMaterials:JSON.stringify([{name:'Legacy board',color:'#eeeeee',w:2800,h:2070,price:1}]),kitchenEdgeMaterials:JSON.stringify([{name:'Legacy edge',color:'#eeeeee',price:1}]),kitchenV2ExtraMaterials:JSON.stringify({backMaterials:[],worktops:[]}),kitchenActiveMaterialBase:'Legacy base'};initialStorage['firebase:authUser:test']='auth fixture';initialStorage.otherApplication='keep';
  const {browser,page,errors,setup,parts}=await openKitchen({firebaseDouble:true,initialStorage});
  try{
   await page.waitForFunction(()=>window.__firebaseDouble);
-  for(const key of keys)assert.equal(await page.evaluate(key=>localStorage.getItem(key),key),null);
+  for(const key of keys)assert.equal(await page.evaluate(key=>localStorage.getItem(key),key),initialStorage[key]);
   assert.equal(await page.evaluate(()=>localStorage.getItem('firebase:authUser:test')),'auth fixture');assert.equal(await page.evaluate(()=>localStorage.getItem('otherApplication')),'keep');
   await page.evaluate(()=>localStorage.setItem('kitchenActiveMaterialBase','New preference'));
   await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>window.__test&&window.__firebaseDouble);
   assert.equal(await page.evaluate(()=>localStorage.getItem('kitchenActiveMaterialBase')),'New preference');
-  console.log('PASS one-time local cleanup before app reads, auth/other apps retained, new settings survive reload');
+  console.log('PASS existing local catalogues/preferences/auth/other apps retained, new settings survive reload');
   for(const mode of ['constructor','project']){
    await page.locator(mode==='constructor'?'#modeConstructor':'#modeProject').click();
    const rail=mode==='constructor'?'#toolsPanel':'#projectTools';
