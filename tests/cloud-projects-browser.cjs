@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');
 const {openKitchen}=require('./browser-harness.cjs');
 (async()=>{
- const {browser,page,errors,setup,parts}=await openKitchen({firebaseDouble:true,extraHooks:`window.__projectTest={capture:captureProjectSnapshot,apply:applyProjectSnapshot,opened:()=>projectCloudUI.opened};`});
+ const {browser,page,errors,setup,parts}=await openKitchen({firebaseDouble:true,extraHooks:`window.__projectTest={capture:captureProjectSnapshot,apply:applyProjectSnapshot,draftStatus:()=>({owner:draftRecovery?.owner,settled:draftRecovery?.settled}),opened:()=>projectCloudUI.opened};`});
  try{
   await page.waitForFunction(()=>window.__firebaseDouble&&document.querySelector('#cloudStatus').textContent.includes('alice'));
   const constructorPart={key:'custom900',x:0,y:150,z:0,w:18,h:300,d:400,locks:{w:true}};
@@ -16,7 +16,8 @@ const {openKitchen}=require('./browser-harness.cjs');
   await page.waitForTimeout(80);const before=await normalized();
   const cloudRows=()=>page.evaluate(()=>window.__firebaseDouble.rows().filter(r=>r.path.includes('/v2_projects/')));
   const saveDialog=async name=>{await page.locator('#projectQuickSave').click();if(name!==undefined)await page.locator('#projectCloudName').fill(name);await page.locator('#projectCloudSave').click()};
-  const close=async()=>page.locator('#projectCloudCancel').click();
+  async function switchUser(uid,restore=false){await page.evaluate(uid=>window.__firebaseDouble.setUser(uid),uid);await page.waitForFunction(uid=>window.__projectTest.draftStatus()?.settled&&window.__projectTest.draftStatus().owner===(uid||''),uid);if(await page.locator('#draftRecoveryDialog').count()){await page.locator(restore?'#draftRecoverApply':'#draftRecoverSkip').click()}}
+ const close=async()=>page.locator('#projectCloudCancel').click();
   const waitClosed=()=>page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
   await page.evaluate(()=>window.__firebaseDouble.holdWrites());
   await saveDialog('Моя кухня');await page.waitForFunction(()=>window.__releaseProjectWrite);
@@ -61,20 +62,20 @@ const {openKitchen}=require('./browser-harness.cjs');
 
   await saveDialog('Само за Alice');await waitClosed();
   await page.locator('#projectQuickOpen').click();await page.waitForFunction(()=>document.querySelector('#projectCloudList').options.length===1);
-  await page.evaluate(()=>window.__firebaseDouble.setUser('bob'));await waitClosed();assert.equal((await parts()).length,0);
+  await switchUser('bob');await waitClosed();assert.equal((await parts()).length,0);
   await page.locator('#projectQuickOpen').click();await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('Няма запазени'));
   assert.equal(await page.locator('#projectCloudList option').count(),0);await close();
   assert.equal(await page.evaluate(()=>window.__projectTest.opened()),null);
   await saveDialog('Само за Alice');await waitClosed();
   rows=await cloudRows();assert.equal(rows.length,2);assert.ok(rows.some(r=>r.path.startsWith('users/alice/')));assert.ok(rows.some(r=>r.path.startsWith('users/bob/')));
-  await page.evaluate(()=>window.__firebaseDouble.setUser('alice'));assert.equal((await parts()).length,1);
-  await page.evaluate(()=>window.__firebaseDouble.setUser('bob'));assert.equal((await parts()).length,0);
+  await switchUser('alice',true);assert.equal((await parts()).length,1);
+  await switchUser('bob');assert.equal((await parts()).length,0);
   await page.evaluate(()=>window.__firebaseDouble.failReads(true));await page.locator('#projectQuickOpen').click();
   await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('не е потвърден'));assert.equal(await page.locator('#projectCloudList option').count(),0);await close();await page.evaluate(()=>window.__firebaseDouble.failReads(false));
-  await page.evaluate(()=>window.__firebaseDouble.setUser(null));await page.locator('#projectQuickSave').click();await page.locator('#projectCloudSave').click();
+  await switchUser(null);await page.locator('#projectQuickSave').click();await page.locator('#projectCloudSave').click();
   await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('Първо влез'));await close();
   await setup([constructorPart]);await page.evaluate(()=>document.querySelector('#projectTitle').value='Незаписана чернова');
-  await page.evaluate(()=>window.__firebaseDouble.setUser('alice'));assert.equal(await page.locator('#projectTitle').inputValue(),'Незаписана чернова');
+  await switchUser('alice',true);assert.equal(await page.locator('#projectTitle').inputValue(),'Незаписана чернова');
   assert.equal(await page.evaluate(()=>window.__projectTest.opened()),null);assert.equal((await cloudRows()).length,2);
   assert.deepEqual(errors,[]);
   console.log('PASS account list isolation, cleared identity and signed-out errors; real Firebase is never contacted');

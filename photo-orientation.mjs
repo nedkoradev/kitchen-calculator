@@ -1,3 +1,4 @@
+import {appStorage} from './safe-storage.mjs';
 import {validTextureUrl} from './grain.mjs';
 const KEY='kitchenDesigner.photoOrientations';
 const directions=new Map(),catalogDirections=new Map();
@@ -9,7 +10,7 @@ export function photoKey(value){
  return (valid.startsWith(pages)?valid.slice(pages.length):valid).split(/[?#]/)[0];
 }
 try{
- const saved=JSON.parse(globalThis.localStorage?.getItem(KEY)||'{}');
+ const saved=JSON.parse(appStorage.getItem(KEY)||'{}');
  for(const [url,direction] of Object.entries(saved))if(photoKey(url)&&['vertical','horizontal'].includes(direction))directions.set(photoKey(url),direction);
 }catch{}
 export function photoOrientation(material={}){
@@ -22,7 +23,7 @@ export function setPhotoOrientation(url,direction){
  const key=photoKey(url);if(!key||!['vertical','horizontal'].includes(direction))throw Error('Невалидна посока на снимката.');
  const next=new Map(directions);next.set(key,direction);
  // Persist before reporting success; a blocked/full storage must remain visible.
- globalThis.localStorage.setItem(KEY,JSON.stringify(Object.fromEntries(next)));
+ if(!appStorage.setItem(KEY,JSON.stringify(Object.fromEntries(next)),{strict:true}))throw appStorage.lastError||Error('Storage blocked');
  directions.set(key,direction);
  globalThis.dispatchEvent(new CustomEvent('kitchen-photo-orientation-changed',{detail:{url:key,direction}}));
 }

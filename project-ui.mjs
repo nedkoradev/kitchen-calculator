@@ -1,7 +1,7 @@
 import {decorateAction} from './icons.mjs';
 import {ProjectError,projectErrorMessage} from './project-model.mjs';
 
-export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,getName,captureDraft,restoreDraft,clearDraft}){
+export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,getName,captureDraft,restoreDraft,clearDraft,beforeAccountChange}){
  let uid=null,epoch=0,opened=null,busy=false,dialog=null,anonymousDraft=false;
  const pending=new Map(),drafts=new Map();
  function call(action,args){
@@ -22,7 +22,7 @@ export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,
   else job.resolve(response.result);
  });
  window.addEventListener('kitchen-project-auth',event=>{
-  const next=event.detail?.uid||null;if(next===uid)return;
+  const next=event.detail?.uid||null;if(next===uid)return;beforeAccountChange?.(next);
   const keepAnonymous=!uid&&(anonymousDraft||captureDraft()?.data?.parts?.length);
   if(uid){drafts.set(uid,{draft:captureDraft(),opened});clearDraft()}
   uid=next;epoch++;opened=null;
@@ -108,5 +108,5 @@ export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,
    load.disabled=remove.disabled=!select.options.length;ui.status.textContent=result.items.length?'':'Няма запазени облачни проекти.';
   }catch(error){if(token===epoch)ui.status.textContent=projectErrorMessage(error)}
  }
- return {save,open,detach(){opened=null;anonymousDraft=!uid},get opened(){return opened}};
+ return {save,open,get busy(){return busy},detach(){opened=null;anonymousDraft=!uid},get opened(){return opened}};
 }
