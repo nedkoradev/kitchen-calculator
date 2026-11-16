@@ -34,10 +34,12 @@ window.addEventListener('kitchen-v2-cloud-save-request',async e=>{
   const {name,parts,id:requestedId}=e.detail;
   if(!Array.isArray(parts)||!parts.length)throw new Error('Няма детайли.');
   const id=requestedId||'cab_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
-  if(requestedId){const old=await getDoc(doc(cabinetCollection(),id));if(!old.exists())throw new Error('Оригиналният шкаф вече не съществува.');}
-  await setDoc(doc(cabinetCollection(),id),{name,parts,v2:true,updatedAt:Date.now()});
+  const target=doc(cabinetCollection(),id);
+  if(requestedId){const old=await getDoc(target);if(user?.uid!==owner)return;if(!old.exists())throw new Error('Оригиналният шкаф вече не съществува.');}
   if(user?.uid!==owner)return;
-  emit('saved',{id,name,documentId:e.detail.documentId});
+  await setDoc(target,{name,parts,v2:true,updatedAt:Date.now()});
+  if(user?.uid!==owner)return;
+  emit('saved',{id,name,documentId:e.detail.documentId,documentEpoch:e.detail.documentEpoch,operation:e.detail.operation});
   status('☁ Запазено: '+name);
  }catch(err){emit('error',{message:'Грешка при запис: '+err.message})}
 });
@@ -50,7 +52,7 @@ window.addEventListener('kitchen-v2-cloud-open-request',async e=>{
   if(user?.uid!==owner)return;
   const data=snap.data();
   if(!Array.isArray(data.parts))throw new Error('Невалиден формат на шкафа.');
-  emit('opened',{id:e.detail.id,name:data.name||'Без име',parts:data.parts,documentId:e.detail.documentId});
+  emit('opened',{id:e.detail.id,name:data.name||'Без име',parts:data.parts,documentId:e.detail.documentId,documentEpoch:e.detail.documentEpoch,operation:e.detail.operation});
  }catch(err){emit('error',{message:'Грешка при отваряне: '+err.message})}
 });
 

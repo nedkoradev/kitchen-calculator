@@ -66,10 +66,10 @@ const physical=rows=>rows.map(({assembly,assemblyStack,key,...p})=>p);
    assert.deepEqual(await parts(),four);
    console.log(`PASS ${mode}: group + existing group preserves both nested hierarchies`);
 
-   // Load the same saved cabinet twice via the real cloud-open event handler.
+   // Project inserts two copies. Constructor Open replaces; duplication explicitly creates the second copy.
    await setup([]);
    const saved=cabinets().slice(0,2).map((part,i)=>({part,name:'Panel '+i,finish:{material:1,edges:[0,null,1,2]},allEdges:i===0}));
-   await page.evaluate(items=>{for(let i=0;i<2;i++)window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-opened',{detail:{id:'fixture',name:'Cabinet',parts:items}}));window.__test.view('front')},saved);
+   await page.evaluate(({items,mode})=>{for(let i=0;i<2;i++)window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-opened',{detail:{id:'fixture',name:'Cabinet',parts:items}}));if(mode==='constructor'){if(window.__test.parts().length!==items.length)throw Error('Constructor Open must replace');window.__test.duplicateCustom()}window.__test.view('front')},{items:saved,mode});
    const loaded=await parts();assert.equal(loaded.length,4);assert.notEqual(loaded[0].assembly,loaded[2].assembly);
    const beforeFinish=await page.evaluate(()=>window.__test.finish());
    await group(loaded[0].key,loaded[2].key);await assertSamePhysical(loaded);

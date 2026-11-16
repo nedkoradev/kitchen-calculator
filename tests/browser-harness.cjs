@@ -6,7 +6,7 @@ const source=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const hooks=`
 window.__test={
  parts:()=>structuredClone(customParts),
- setup(parts){clearWorkspace();customParts.push(...structuredClone(parts));selected=parts[0]?.key;groupSelections.clear();singleMemberSelection=false;build(false);setView('front')},
+ setup(parts){clearWorkspace();customParts.push(...structuredClone(parts));selected=parts[0]?.key;groupSelections.clear();singleMemberSelection=false;build(false);setView('front');markDocumentSaved()},
  select(key,single=false){selected=key;singleMemberSelection=single;updateSelection()},
  face(key){const p=customParts.find(p=>p.key===key);return screenPos(new THREE.Vector3(p.x,p.y,p.z+p.d/2))},
  handle(axis,sign){const p=customParts.find(p=>p.key===selected),m=customParts.filter(q=>q.assembly===p.assembly);const b=groupBounds(m,axis),x=groupBounds(m,'x'),z=groupBounds(m,'z');const v=new THREE.Vector3(axis==='x'?(sign<0?b.min:b.max)-ROOM.w/2:(x.min+x.max)/2-ROOM.w/2,axis==='y'?(sign<0?b.min:b.max):Math.max(...m.map(p=>p.y+p.h/2))+3,axis==='z'?(sign<0?b.min:b.max)-ROOM.d/2:(z.min+z.max)/2-ROOM.d/2);const a=screenPos(v),c=screenPos(v.clone().add(new THREE.Vector3(axis==='x'?100:0,axis==='y'?100:0,axis==='z'?100:0)));return {...a,dx:(c.x-a.x)/100,dy:(c.y-a.y)/100}},
