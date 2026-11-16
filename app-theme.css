@@ -1,0 +1,54 @@
+/* Shared NED-IQ component theme; the catalogue reads these same live rules. */
+:root{color-scheme:light;--nd-bg:#e9eef4;--nd-panel:#f6f8fb;--nd-raised:#fff;--nd-border:#bbc8d8;--nd-text:#172b42;--nd-muted:#50637a;--nd-accent:#3b82f6;--ned-bg:var(--nd-bg);--ned-surface:var(--nd-panel);--ned-surface-2:#e5edf6;--ned-text:var(--nd-text);--ned-muted:var(--nd-muted);--ned-line:var(--nd-border);--ned-blue:var(--nd-accent);--ned-radius:5px}
+body.ned-shell :is(button,input,select,textarea){font:inherit;box-sizing:border-box;border-radius:5px!important}
+body.ned-shell button{background:#fff!important;color:#254565!important;border:1px solid var(--nd-border)!important;box-shadow:none!important;min-height:36px;transition:background .12s,border-color .12s;transform:none!important;cursor:pointer}
+body.ned-shell button:hover:not(:disabled){background:#e0edff!important;border-color:#8aafe0!important}
+body.ned-shell button:is(.active,.mainNavActive,[aria-pressed=true],.nedPrimaryButton){background:#cee3ff!important;color:#125ba9!important;border-color:#8db8ed!important}
+body.ned-shell button:active:not(:disabled){background:#aacfff!important}
+body.ned-shell button:disabled{opacity:.45!important;cursor:not-allowed}
+body.ned-shell :is(button,input,select,textarea,summary):focus-visible{outline:2px solid #2878d0!important;outline-offset:2px}
+body.ned-shell :is(input,select,textarea){background:#fff!important;color:#19334e!important;border:1px solid #b4c4d7!important;min-height:32px;max-width:100%}
+body.ned-shell :is(input,textarea)::placeholder{color:#75869b}
+body.ned-shell input:is([type=checkbox],[type=radio]){accent-color:#3b82f6;min-height:0;width:auto}
+body.ned-shell input[type=range]{accent-color:#4383d3}
+body.ned-shell :is(h1,h2,h3,h4,h5,strong){color:inherit}
+body.ned-shell :is(label,.projectHint){color:#50637a!important}
+body.ned-shell a{color:#1c62aa}
+body.ned-shell :is(dialog,.materialEditDialog,.nedSettingsSubdialog,.textureManager,.nedConfirmPanel){background:#f6f8fb!important;color:#19334e!important;border:1px solid #b5c4d7!important;border-radius:8px!important;box-shadow:0 16px 50px #18365340!important}
+body.ned-shell dialog::backdrop{background:#172c4770!important}
+body.ned-shell .dialogHead{background:#d9e4f1!important;color:#19334e!important;border-bottom:1px solid #b8c9dd;padding:10px 14px}
+body.ned-shell :is(.dialogFoot,.cabinetGeneratorActions){background:#eef3f9!important;border-color:#bdccde!important}
+body.ned-shell :is(.cabinetSection,.edgeAllBar,.textureManagerCard,.nedSettingsChoice){background:#e9f0f8!important;color:#19334e!important;border-color:#bdccde!important}
+body.ned-shell .nedConfirmPanel h3:before{content:none}
+body.ned-shell .nedConfirmPanel p{color:#374e68!important}
+body.ned-shell :is(.nedDangerButton,.libraryDanger){background:#fff0f0!important;color:#a52436!important;border-color:#dca7b0!important}
+body.ned-shell #nedMaterialSaveToast{background:#17634b!important;color:#fff!important;border-color:#5eaf93!important}
+body.ned-shell #nedMaterialSaveToast.nedNoticeError{background:#8b2f40!important;border-color:#d18a96!important}
+body.ned-shell #shellTools button:hover:not(:disabled){background:#dfeeff!important;border-color:#8aafe0!important}
+body.ned-shell #shellTools button.active{background:#cee3ff!important;color:#125ba9!important}
+body.ned-shell .tabs{background:#eaf0f7!important;border-color:#bdccde!important}
+body.ned-shell :is(#projectResults,#projectExtraPane,.libraryCard,.libraryThumbnail,.materialSection,.materialGroup,.materialAppearance,.textureManagerCard){background:#f6f8fb!important;color:#19334e!important;border-color:#bdccde!important}
+body.ned-shell main.catalogMode #projectResults,body.ned-shell main.catalogMode #projectExtraPane{background:#f6f8fb!important;color:#19334e!important}
+body.ned-shell main.catalogMode #projectResults :is(h1,h2,h3,h4,strong,label,p){color:#19334e!important}
+body.ned-shell main.catalogMode #projectExtraPane :is(button,input,select,textarea){background:#fff!important;color:#254565!important;border-color:#b4c4d7!important}
+body.ned-shell main.catalogMode #projectExtraPane button:hover:not(:disabled){background:#e0edff!important}
+body.ned-shell main.catalogMode #projectExtraPane :is(.materialGroup,.materialSection,.nedBasePanel,.libraryCard){background:#f6f8fb!important;color:#19334e!important;border-color:#bdccde!important}
+body.ned-shell main.catalogMode #projectResults table{background:#fff!important;color:#19334e!important;border-collapse:collapse}
+body.ned-shell main.catalogMode #projectResults table :is(td,th),body.ned-shell #projectExtraPane table :is(td,th){color:#19334e!important;border:1px solid #c5d1df!important;padding:8px}
+body.ned-shell main.catalogMode #projectResults table th{background:#dce7f4!important;color:#19334e!important}
+body.ned-shell main.catalogMode #projectResults table td{background:#fff!important}
+body.ned-shell main.catalogMode #projectResults table tr:nth-child(even) td{background:#f0f5fb!important}
+body.ned-shell main.catalogMode #projectExtraPane .materialGroup table td *{color:#19334e!important}
+body.ned-shell main.catalogMode #projectExtraPane .materialGroup table a{color:#1c62aa!important}
+body.ned-shell #v2MaterialCloudStatus,body.ned-shell #v2MaterialCloudStatus *,body.ned-shell .librarySortControl{color:#50637a!important}
+body.ned-shell #headerRight button{background:transparent!important;color:#f5f8ff!important;border-color:#8197af!important}
+body.ned-shell #headerRight button:hover{background:#3b5876!important}
+body.ned-shell #headerRight #settingsButton{min-height:32px!important}
+body.ned-shell #shellMenus :is(.shellMenu>summary,.shellSettings){cursor:pointer;padding:8px 12px;font-size:13px;font-weight:600;min-height:36px;list-style:none;white-space:nowrap}
+body.ned-shell .shellMenu{position:relative}
+body.ned-shell .shellMenu>summary:hover,body.ned-shell .shellMenu[open]>summary{background:#dbe8f8;border-radius:4px}
+body.ned-shell .shellMenu .documentMenuItems button{width:100%!important;text-align:left}
+body.ned-shell .brandIcon{width:25px;height:25px;vertical-align:-4px;margin-right:8px;stroke:currentColor}
+@media(max-width:720px){body.ned-shell :is(dialog button,dialog input:not([type=checkbox]),dialog select,.treeItem){min-height:44px!important}body.ned-shell #shellMenus .shellMenu>summary{padding:6px 7px;font-size:12px}body.ned-shell #shellMenus .documentMenuItems{position:fixed;left:6px;top:100px;min-width:min(240px,calc(100vw - 12px));max-width:calc(100vw - 12px);max-height:65dvh;overflow:auto}}
+/* Override legacy intrinsic icon widths even while a mode toolbar is hidden. */
+body.ned-shell #shellTools :is(#toolsPanel,#projectTools) button:not([hidden]){width:44px!important;min-width:44px!important;max-width:44px!important;height:44px!important;min-height:44px!important}

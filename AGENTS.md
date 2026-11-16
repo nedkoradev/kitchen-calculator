@@ -42,13 +42,13 @@
 
 ## Икони и локални данни
 
-- Всички action икони използват локалния `icons.mjs`: Lucide стил, SVG viewBox 24×24, stroke 2, currentColor. Използвай `decorateAction()` и общите CSS класове вместо emoji, icon fonts или допълнителни CDN. Иконите имат български tooltip/aria-label и поне 44px touch target; лентите остават компактни и вертикални.
+- Всички action икони използват локалния `icons.mjs`: Lucide стил, SVG viewBox 24×24, stroke 2, currentColor. Използвай `decorateAction()` и общите CSS класове вместо emoji, icon fonts или допълнителни CDN. Иконите имат български tooltip/aria-label и поне 44px touch target; лентите са компактни и хоризонтални по одобрения дизайн; телефонът има отделно адаптивно оформление.
 - Няма видими Group/Ungroup бутони в лентите. Запази групирането през контекстното меню и клавишните комбинации; скритите legacy бутони остават само като вътрешни adapters. Запази общите grouping handlers за двата режима. Не заменяй групиращата логика заради промяна на икона.
-- `tests/actions-browser.cjs` проверява еднократното локално изчистване и променените SVG бутони; при промени в иконите/entry points изпълни него и съществуващите browser регресии.
+- `tests/actions-browser.cjs` проверява запазването на локалните данни и променените SVG бутони; при промени в иконите/entry points изпълни него и съществуващите browser регресии.
 
 ## Настройки и GitHub пространство
 
-- Един общ `settingsButton` със зъбно колело е долу в helpDock и е достъпен в двата режима. `settings.mjs` управлява модалния прозорец и чете само статичния `repository-space.json`, без browser GitHub token/API.
+- Един общ `settingsButton` със зъбно колело е в заглавната лента и е достъпен в двата режима. `settings.mjs` управлява модалния прозорец и чете само статичния `repository-space.json`, без browser GitHub token/API.
 - `.github/workflows/pages.yml` измерва чистия source checkout при всяка публикация, генерира игнорирания `_data/repository_space.json`, използва същия Jekyll/Pages builder и валидира крайния JSON/SHA/version преди deploy. Това е workflow build на съществуващия GitHub Pages сайт; Source трябва еднократно да бъде избран от собственика като GitHub Actions. Автоматичната промяна на Source е отказана с GitHub 403 (Administration write) и не трябва да се повтаря с GITHUB_TOKEN/PAT. Не връщай implicit branch publishing, което не може да измери byte sizes. Няма bot commits в main и няма личен token. Минималният служебен token остава само в Actions.
 - `npm test`/`release:prepare` подготвят и локален опис; `release:check` проверява дали source файловете са променени след измерването. След редакции подготви отново преди финален check. Описът и `_site/` са generated/ignored и не се commit-ват.
 - Статистиката измерва текущите source-file bytes, не Git история/физически Git disk usage или реална quota. 1 GiB е изрично обозначен ориентир, без блокиране на действия. Датата е build aggregation time, показан в Europe/Sofia; версията на измерването е обозначена.
@@ -137,3 +137,5 @@
 - Одобреният план от 2026-11-16 изисква запазване на съществуващите локални данни и настройки. От v2.68 историческото изчистване в local-reset.js е прекратено; не изтривай legacy ключове или стария marker. Новите чернови са само в ned-iq-working-drafts-v1 и nedIQ.draft.emergency.v1.* по профил. При отказ на storage редакторът работи в паметта с видимо предупреждение и export/import. Възстановяването е изрично, без облачен запис; валидирай целия bundle и history преди замяна. Документните Undo/Redo са отделни; в локален bundle се пазят до 10 последни стъпки. Преглед: docs/APP_REDESIGN.md.
 
 - От v2.73 app-shell.mjs/app-shell.css определят работната рамка, document-tree.mjs чете assembly/assemblyStack, а inspector.mjs премества оригиналния detailSettings в десен панел. Не създавай втори набор редакционни полета. Контекстното Свойства и selectTab са съвместими adapters към инспектора; телефонът използва прибиращ се панел. Вложената папка избира съществуващата външна група; изборът на лист задава singleMemberSelection, без промяна на геометричните правила.
+
+- От v2.74 app-theme.css е общата светла компонентна тема вместо professional-dark.css. UI каталогът копира реалния body контекст в изолираните примери и чете същия CSSOM. shell-menus.mjs използва adapters към истинските действия; не добавяй паралелни обработчици за геометрия/облак.
