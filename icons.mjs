@@ -32,6 +32,7 @@ const paths={
  copy:'<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V3H3v13h5"/>',
  settings:'<path d="M4 7h16M4 17h16M8 4v6m8 4v6"/>'
 };
+export const iconNames=Object.freeze(Object.keys(paths));
 export function decorateAction(button,name,label,{iconOnly=false}={}){
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
  for(const [key,value] of Object.entries({viewBox:'0 0 24 24',width:'24',height:'24',fill:'none',stroke:'currentColor','stroke-width':'2','stroke-linecap':'round','stroke-linejoin':'round','aria-hidden':'true',focusable:'false',class:'actionSvg'}))svg.setAttribute(key,value);

@@ -7,7 +7,8 @@ export function applianceFace(p){
  const turn=((p.appliance?.turn||0)%4+4)%4,angle=-turn*Math.PI/2;
  return {width:turn%2?p.d:p.w,height:p.h,angle,x:[0,-1,0,1][turn]*(p.w/2+.15),z:[1,0,-1,0][turn]*(p.d/2+.15)};
 }
-export function openApplianceEditor({part,name='',onSave}){
+export function openApplianceEditor(options){const {dialog,focus}=createApplianceEditor(options);document.body.append(dialog);dialog.showModal();focus.focus();return dialog}
+export function createApplianceEditor({part,name='',onSave}){
  const dialog=document.createElement('dialog');dialog.id='applianceDialog';dialog.className='materialEditDialog';dialog.style.cssText='width:min(480px,94vw);max-height:88dvh;overflow:auto';
  const title=document.createElement('h3');title.textContent=part?'Свойства на уреда':'Добави уред';dialog.append(title);
  const form=document.createElement('div');dialog.append(form);
@@ -21,5 +22,5 @@ export function openApplianceEditor({part,name='',onSave}){
  const actions=document.createElement('div');actions.className='materialActions';const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Отказ';cancel.onclick=()=>dialog.close();
  const save=document.createElement('button');save.id='applianceSave';save.type='button';save.textContent=part?'Приложи':'Добави';decorateAction(save,'save',save.textContent);
  save.onclick=()=>{const size=Object.fromEntries(Object.entries(dims).map(([k,input])=>[k,Number(input.value)]));if(!titleInput.value.trim()||Object.values(size).some(v=>!Number.isInteger(v)||v<1||v>30000)){status.textContent='Въведи име и цели размери от 1 до 30000 мм.';return}try{onSave({name:titleInput.value.trim(),...size,appliance:{turn:part?.appliance.turn||0,textureUrl:validTextureUrl(readPhoto())||''}});dialog.close()}catch(e){status.textContent=e.message}};
- actions.append(cancel,save);dialog.append(actions);dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();titleInput.focus();
+ actions.append(cancel,save);dialog.append(actions);dialog.addEventListener('close',()=>dialog.remove(),{once:true});return {dialog,focus:titleInput};
 }

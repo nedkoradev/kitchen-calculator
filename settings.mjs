@@ -1,3 +1,4 @@
+import {installUICatalog} from './ui-catalog.mjs';
 const referenceBytes=1024**3;
 export function formatBytes(bytes){
  if(bytes<1024)return `${bytes} B`;
@@ -10,6 +11,7 @@ export function validSpaceStats(value){
  ['totalBytes','textureBytes','imageCount','fileCount'].every(key=>Number.isSafeInteger(value[key])&&value[key]>=0)&&value.totalBytes>=value.textureBytes&&value.fileCount>=value.imageCount&&value.referenceBytes===referenceBytes;
 }
 export function installSettings(){
+ installUICatalog();
  const dialog=document.getElementById('settingsDialog'),button=document.getElementById('settingsButton');
  dialog.addEventListener('keydown',event=>event.stopPropagation());
  const status=document.getElementById('spaceStatus'),details=document.getElementById('spaceDetails');
