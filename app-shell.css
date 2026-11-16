@@ -39,3 +39,14 @@ body.ned-shell #outlinePanel>.helpDock{display:none!important}
 @media(max-width:1000px){body.ned-shell>main,body.ned-shell>main.projectMode:not(.catalogMode){grid-template-columns:180px minmax(0,1fr) 230px!important}body.ned-shell #cloudStatus{display:none}}
 @media(max-width:720px){body.ned-shell #documentHeading{font-size:12px}body.ned-shell>header{gap:6px!important;padding:5px 8px!important;flex-wrap:wrap!important}body.ned-shell>header>strong{font-size:18px!important}body.ned-shell #headerRight{gap:3px!important}body.ned-shell #shellMenus{padding:0 4px}body.ned-shell #shellMenus button,body.ned-shell #fileMenu>summary{padding:6px 7px!important;font-size:12px!important}body.ned-shell #shellTools{gap:6px;padding:4px}body.ned-shell #shellModes{padding-right:4px}body.ned-shell #shellModes button{font-size:11px;padding:6px}body.ned-shell>main,body.ned-shell>main.projectMode:not(.catalogMode){grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(240px,1fr) auto!important;overflow:auto!important}body.ned-shell main:not(.catalogMode)>#outlinePanel{order:2!important;max-height:180px!important}body.ned-shell #inspectorPanel{display:none}body.ned-shell #view{min-height:240px!important}body.ned-shell #shellTools #viewControlsDock{flex-wrap:nowrap!important}}
 body.ned-shell #shellTools #shellModes button{width:auto!important;min-width:0!important;max-width:none!important;flex:none!important;padding:8px 12px!important}
+body.ned-shell .documentTree,body.ned-shell .documentTree ul{list-style:none;padding:0;margin:0}
+body.ned-shell .documentTree ul{padding-left:14px;border-left:1px solid #d5dfeb;margin-left:7px}
+body.ned-shell .documentTree summary{cursor:pointer;padding:8px 4px;overflow-wrap:anywhere;font-weight:600;color:#25415f}
+body.ned-shell .documentTree .treeItem{display:flex;align-items:center;gap:7px;width:100%;min-height:36px;text-align:left;padding:6px;border:1px solid transparent!important;border-radius:3px!important;background:transparent!important;color:#273d55!important;box-shadow:none!important;font-size:12px}
+body.ned-shell .documentTree .treeItem span{overflow-wrap:anywhere;min-width:0}
+body.ned-shell .documentTree .treeItem svg{width:18px;height:18px;flex:none;stroke:currentColor}
+body.ned-shell .documentTree .treeItem[aria-pressed=true]{background:#c7e1ff!important;border-color:#91bff4!important;color:#124f96!important}
+body.ned-shell .documentTree .treeItem:hover{background:#e0ebf8!important}
+body.ned-shell .outlineActions{display:flex;gap:6px;padding:8px;border-top:1px solid var(--nd-border);position:sticky;bottom:0;background:#f4f7fb}
+body.ned-shell .outlineActions button{width:44px;height:44px;padding:10px;background:#fff!important;color:#294967!important;border-color:var(--nd-border)!important}
+body.ned-shell .outlineActions svg{width:22px;height:22px}
