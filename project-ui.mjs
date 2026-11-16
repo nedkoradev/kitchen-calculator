@@ -58,7 +58,7 @@ export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,
   const ui=modal(saveAs?'Запази проект като':'Запази проект в облака');
   const label=document.createElement('label');label.textContent='Име на проекта';
   const input=document.createElement('input');input.id='projectCloudName';input.type='text';input.maxLength=100;
-  input.value=saveAs?'':(opened?.name||'');label.htmlFor=input.id;ui.insert(label);ui.insert(input);
+  input.value=saveAs?'':(opened?.name||(!['Нов проект','Нова кухня'].includes(getName?.())?getName?.():'')||'');label.htmlFor=input.id;ui.insert(label);ui.insert(input);
   const prompt=document.createElement('p');prompt.id='projectOverwritePrompt';prompt.hidden=true;ui.insert(prompt);
   let approval=null,approvedName=null;
   const reset=()=>{approval=null;approvedName=null;prompt.hidden=true;saveButton.textContent='Запази'};

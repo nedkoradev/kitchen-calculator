@@ -1,0 +1,15 @@
+export function createDocumentCommands({getContext,actions,confirmReplace=()=>true,feedback=()=>{}}){
+ const keys=['new','open','save','saveAs'];
+ return {getContext,keys,async execute(key,args){const context=getContext();if(!keys.includes(key)||context.busy)return false;if(['save','saveAs'].includes(key)&&context.kind==='constructor'&&!context.hasParts)return false;if(['new','open'].includes(key)&&context.dirty&&!await confirmReplace(context))return false;const now=getContext();if(now.id!==context.id||now.kind!==context.kind||now.epoch!==context.epoch||now.busy)return false;try{await actions[key](now,args);return true}catch(error){feedback(error.message||'Командата не е изпълнена.');return false}}};
+}
+export function installDocumentCommands(options){
+ const api=createDocumentCommands(options),bar=document.createElement('nav');bar.id='documentMenus';bar.setAttribute('aria-label','Меню на документа');
+ const menu=document.createElement('details');menu.id='fileMenu';const summary=document.createElement('summary');summary.textContent='Файл';const items=document.createElement('div');items.className='documentMenuItems';items.setAttribute('role','menu');menu.append(summary,items);bar.append(menu);document.getElementById('mainNavigation').before(bar);
+ const ids={new:'commandFileNew',open:'commandFileOpen',save:'commandFileSave',saveAs:'commandFileSaveAs'};
+ function render(){const ctx=options.getContext(),noun=ctx.kind==='project'?'проект':'модел',labels={new:'Нов '+noun,open:'Отвори '+noun+'…',save:'Запази '+noun,saveAs:'Запази '+noun+' като…'};for(const key of api.keys){let b=document.getElementById(ids[key]);if(!b){b=document.createElement('button');b.id=ids[key];b.type='button';b.dataset.command='file.'+key;b.setAttribute('role','menuitem');b.onclick=()=>{menu.open=false;api.execute(key)};items.append(b)}b.textContent=labels[key];b.disabled=ctx.busy||(['save','saveAs'].includes(key)&&ctx.kind==='constructor'&&!ctx.hasParts)}}
+ menu.addEventListener('toggle',render);menu.addEventListener('keydown',e=>{const buttons=[...items.querySelectorAll('button:not(:disabled)')];if(e.key==='Escape'){menu.open=false;summary.focus();e.stopPropagation()}if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)&&buttons.length){e.preventDefault();menu.open=true;const i=buttons.indexOf(document.activeElement),n=e.key==='Home'?0:e.key==='End'?buttons.length-1:(i+(e.key==='ArrowUp'?-1:1)+buttons.length)%buttons.length;buttons[n].focus()}});
+ window.addEventListener('ned-document-change',render);window.addEventListener('ned-document-state',render);
+ document.addEventListener('click',e=>{if(!menu.contains(e.target))menu.open=false});
+ document.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey)||e.altKey)return;const key=e.key.toLowerCase(),action=key==='n'?'new':key==='o'?'open':key==='s'?(e.shiftKey?'saveAs':'save'):null;if(action){e.preventDefault();if(document.querySelector('dialog:modal'))return;if(document.activeElement?.matches('input,textarea,select'))document.activeElement.blur();api.execute(action)}});
+ render();return {...api,render};
+}
