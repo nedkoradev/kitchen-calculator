@@ -54,7 +54,7 @@ const cabinet=()=>[
   await page.evaluate(()=>window.__test.select('custom101'));
   await page.evaluate(()=>{window.__test.selectAll();window.__test.createAssembly()});
   before=await parts();await page.evaluate(()=>window.__test.duplicateCustom());
-  const duplicated=await parts();
+  const duplicated=await parts();assert.equal(new Set(duplicated.map(p=>p.key)).size,duplicated.length,'duplicates retain unique document part IDs');
   assert.notEqual(duplicated[4].assemblyStack[0],before[0].assemblyStack[0]);
   await page.evaluate(()=>window.__test.ungroupAssembly(window.__test.parts().at(-1).assembly));
   assert.deepEqual((await parts()).slice(0,4),before);
