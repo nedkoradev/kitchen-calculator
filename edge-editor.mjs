@@ -1,4 +1,4 @@
-import {requiresGrain,textureCoordinates,edgeDiagramLayout,validTextureUrl} from './grain.mjs';
+import {physicalEdgeDirections,requiresGrain,textureCoordinates,edgeDiagramLayout,validTextureUrl} from './grain.mjs';
 import {decorateAction} from './icons.mjs';
 import {withPhotoOrientation} from './photo-orientation.mjs';
 const make=(tag,text)=>{const node=document.createElement(tag);if(text)node.textContent=text;return node};
@@ -22,11 +22,11 @@ function createEdgePanel({part,finish,material,edgeMaterials,allEdges=false,slot
  function select(label,value){const node=make('select');node.setAttribute('aria-label',label);node.add(new Option('— без кант —',''));edgeMaterials.forEach((edge,i)=>node.add(new Option(edge.name||'Кант '+(i+1),String(i))));if(value!=null&&!edgeMaterials[value])node.add(new Option('Липсващ кант ('+value+')',String(value)));node.value=value==null?'':String(value);return node}
  const allBar=make('div');allBar.className='edgeAllBar';const allLabel=make('label','Кантиране на 4-те страни с:');const uniform=draft.every(v=>v===draft[0])?draft[0]:null,allSelect=select('Кант за четирите страни',uniform);allSelect.id='visualEdgeAll';allLabel.append(allSelect);const useAll=make('button','Кантирай');useAll.type='button';useAll.id='visualEdgeUseAll';allBar.append(allLabel,useAll);body.append(allBar);
  const grid=make('div');grid.className='edgeDiagram';const controls=[];
- for(let i=0;i<4;i++){const sideName=names[i]+(slotLabels?' — '+slotLabels[slots[i]]:'')+(requiredSlots.includes(slots[i])?' — задължителен':'');const label=make('label',sideName);label.className='edgeSide edgeSide'+i;const input=select(sideName,draft[slots[i]]);input.required=requiredSlots.includes(slots[i]);input.dataset.edgeSide=String(i);input.dataset.edgeSlot=String(slots[i]);input.onchange=()=>{draft[slots[i]]=input.value===''?null:Number(input.value);allMode=false;paint()};label.append(input);grid.append(label);controls.push(input)}
+ for(let i=0;i<4;i++){const physical=physicalEdgeDirections(part)[slots[i]],sideName=(slotLabels?.[slots[i]]||physical.name)+' ('+physical.axis.toUpperCase()+(physical.sign>0?'+':'−')+') — '+names[i]+' в схемата'+(requiredSlots.includes(slots[i])?' — задължителен':'');const label=make('label',sideName);label.className='edgeSide edgeSide'+i;const input=select(sideName,draft[slots[i]]);input.required=requiredSlots.includes(slots[i]);input.dataset.edgeSide=String(i);input.dataset.edgeSlot=String(slots[i]);input.onchange=()=>{draft[slots[i]]=input.value===''?null:Number(input.value);allMode=false;paint()};label.append(input);grid.append(label);controls.push(input)}
  const preview=make('div');preview.className='edgePreview';const canvas=make('canvas');canvas.setAttribute('role','img');preview.append(canvas);grid.append(preview);body.append(grid);
  const {axes,width,height}=diagram,grain=requiresGrain(finish,material);
  canvas.setAttribute('aria-label','Детайл А '+width+' × Б '+height+' мм'+(grain?' · фладер по хоризонтала':''));
- const caption=make('p',grain?'↔ Дължина А е по посоката на фладера':'А × Б — ориентация като в Salex XLSX (без задължителен фладер)');caption.className='edgeGrainCaption';body.append(caption);
+ const caption=make('p',grain?'↔ Дължина А е по посоката на фладера':'А × Б — ориентация като в Salex XLSX (без задължителен фладер)');caption.className='edgeGrainCaption';body.append(caption,make('p','Преден/заден/ляв/десен са физическите ръбове на детайла. Позицията в схемата следва ориентацията на разкроя и Salex.'));
  const status=make('p');status.setAttribute('role','status');body.append(status);
  let image=null,texture=null;
  function paint(){
@@ -35,7 +35,7 @@ function createEdgePanel({part,finish,material,edgeMaterials,allEdges=false,slot
   const scale=Math.min((W-48)/width,(H-44)/height),w=Math.max(12,Math.round(width*scale)),h=Math.max(12,Math.round(height*scale)),x=Math.round(34+(W-48-w)/2),y=Math.round(12+(H-44-h)/2);
   ctx.fillStyle=material?.color||finish.color||'#dfd0bc';ctx.fillRect(x,y,w,h);
   if(image){const uv=textureCoordinates(part,finish,withPhotoOrientation(material),image.naturalWidth/image.naturalHeight),pattern=ctx.createPattern(image,'repeat');if(pattern){const u=uv.width*scale/image.naturalWidth,v=uv.height*scale/image.naturalHeight;pattern.setTransform(new DOMMatrix(uv.uAxis===axes[0]?[u,0,0,v,x,y]:[0,u,v,0,x,y]));ctx.fillStyle=pattern;ctx.fillRect(x,y,w,h)}}
-  ctx.strokeStyle='#a9b9ca';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,y+h+7);ctx.lineTo(x+w,y+h+7);ctx.moveTo(x-9,y);ctx.lineTo(x-9,y+h);ctx.stroke();ctx.font='12px Arial';ctx.fillStyle='#edf4fc';ctx.textAlign='center';ctx.fillText('А: '+Math.round(width)+' мм',x+w/2,y+h+23);ctx.save();ctx.translate(x-18,y+h/2);ctx.rotate(-Math.PI/2);ctx.fillText('Б: '+Math.round(height)+' мм',0,0);ctx.restore();
+  ctx.strokeStyle='#a9b9ca';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,y+h+7);ctx.lineTo(x+w,y+h+7);ctx.moveTo(x-9,y);ctx.lineTo(x-9,y+h);ctx.stroke();ctx.font='12px Arial';ctx.fillStyle=getComputedStyle(body).color;ctx.textAlign='center';ctx.fillText('А: '+Math.round(width)+' мм',x+w/2,y+h+23);ctx.save();ctx.translate(x-18,y+h/2);ctx.rotate(-Math.PI/2);ctx.fillText('Б: '+Math.round(height)+' мм',0,0);ctx.restore();
   if(grain){const cx=x+w/2,cy=y+h/2,dx=Math.min(60,w*.65)/2;ctx.strokeStyle='#143e6a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx-dx,cy);ctx.lineTo(cx+dx,cy);for(const sign of [-1,1]){const px=cx+sign*dx;ctx.moveTo(px-sign*6,cy-5);ctx.lineTo(px,cy);ctx.lineTo(px-sign*6,cy+5)}ctx.stroke()}
   // One inset fill mechanism for every side: exact CSS-pixel thickness, no centred
   // strokes, clipping or orientation-dependent antialiasing. Draw bands last.

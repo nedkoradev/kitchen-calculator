@@ -8,6 +8,11 @@ export function edgeEditorSlots(p){
  if(!p)return [0,1,2,3];
  return panelAxes(p).thickness==='y'?[0,1,3,2]:[1,0,2,3];
 }
+// Stored slots match the actual narrow strip faces in box(), never Salex's rotated diagram sides.
+export function physicalEdgeDirections(p){
+ const thin=panelAxes(p).thickness;
+ return (thin==='x'?[['z',-1,'Заден'],['z',1,'Преден'],['y',1,'Горен'],['y',-1,'Долен']]:thin==='z'?[['x',-1,'Ляв'],['x',1,'Десен'],['y',1,'Горен'],['y',-1,'Долен']]:[['x',-1,'Ляв'],['x',1,'Десен'],['z',1,'Преден'],['z',-1,'Заден']]).map(([axis,sign,name])=>({axis,sign,name:name+' ръб'}));
+}
 export function edgeDirectionNames(p){
  const names=[],directions=['ляво','дясно','горе','долу'];
  edgeEditorSlots(p).forEach((slot,index)=>{names[slot]=directions[index]});return names;
