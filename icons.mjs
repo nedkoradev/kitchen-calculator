@@ -1,5 +1,7 @@
 // Shared local SVG vocabulary: Lucide-style 24px, 2px strokes, no icon font/CDN.
 const paths={
+ up:'<path d="M12 20V4m-7 7 7-7 7 7"/>',
+ down:'<path d="M12 4v16m-7-7 7 7 7-7"/>',
  home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-8H9v8H4a1 1 0 0 1-1-1V10Z"/>',
  semitransparency:'<circle cx="12" cy="12" r="9"/><path d="M12 3v18M12 6h5m-5 4h8m-8 4h8m-8 4h5"/>',
  transparency:'<rect x="3" y="3" width="12" height="12" rx="1"/><rect x="9" y="9" width="12" height="12" rx="1" stroke-dasharray="3 2"/><path d="m4 10 6-6m-3 10 7-7"/>',
