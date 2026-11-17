@@ -7,7 +7,7 @@ export function createReportContext(document,snapshot,scope={kind:'whole'}){
  if(scope.kind==='cabinet-set'){
   if(document.kind!=='project'||!ids.length||ids.some(id=>typeof id!=='string'||!data.parts.some(e=>e.part.assembly===id||e.part.assemblyStack?.includes(id))))throw Error('Избраните шкафове не съществуват в този проект.');
  }
- const content=JSON.stringify([data.parts,data.room,data.materials]),code=[2166136261,5381];for(const c of content){code[0]=Math.imul(code[0]^c.charCodeAt(0),16777619);code[1]=Math.imul(code[1],33)^c.charCodeAt(0)}
+ const content=JSON.stringify([data.parts,data.room,data.materials,data.settings?.sheetUtilization??80]),code=[2166136261,5381];for(const c of content){code[0]=Math.imul(code[0]^c.charCodeAt(0),16777619);code[1]=Math.imul(code[1],33)^c.charCodeAt(0)}
  return freeze({documentId:document.id,kind:document.kind,name:document.name||'Без име',revision:code.map(n=>(n>>>0).toString(16)).join('-'),scope:scope.kind==='whole'?{kind:'whole'}:{kind:'cabinet-set',cabinetIds:ids},snapshot:data});
 }
 export function reportInputs(context){

@@ -1,3 +1,4 @@
+import {documentUtilization} from './parameters.mjs';
 import {validTextureUrl} from './grain.mjs';
 // Storage boundaries only: never modify geometry, locks or grouping histories.
 export class ProjectError extends Error{
@@ -16,6 +17,7 @@ export function projectData(input,{maxBytes=Infinity}={}){
  if(input.materials){
   for(const key of ['pdcMaterials','edgeMaterials','backMaterials','worktops'])if(!Array.isArray(input.materials[key]))throw new ProjectError('invalid-project','Невалидна материална база на проекта.');
  }
+ try{documentUtilization(input.settings)}catch{throw new ProjectError('invalid-project','Невалидна използваемост на плочата.')}
  if(input.settings?.camera){
   const camera=input.settings.camera;
   if(!['position','target'].every(k=>Array.isArray(camera[k])&&camera[k].length===3&&camera[k].every(Number.isFinite))||!Number.isFinite(camera.zoom)||camera.zoom<=0)

@@ -22,6 +22,7 @@ function buildCabinet(settings,catalog,visit,requireShelfBand){
  const integer=(key,label,min=1,max=30000)=>{if(!Number.isInteger(c[key])||c[key]<min||c[key]>max)throw Error(label+': въведи цяло число от '+min+' до '+max+' мм.');return c[key]};
  const w=integer('w','Ширина'),h=integer('h','Височина'),d=integer('d','Дълбочина'),t=integer('t','Дебелина',1,80),n=integer('shelves','Брой рафтове',0,20),gap=integer('gap','Фуга',0,20);
  if(!['none','panel','rails'].includes(c.top)||![0,1,2].includes(c.doors))throw Error('Избери валидна конструкция и брой врати.');
+ const sideGap=c.sideGap===undefined?gap:integer('sideGap','Странични фуги',0,20);
  const legH=c.legs?integer('legH','Височина на краката',1,500):0,worktopT=c.worktop?integer('worktopT','Дебелина на плота',1,100):0,backT=c.back?integer('backT','Дебелина на гърба',1,80):0,doorT=c.doors?integer('doorT','Дебелина на вратите',1,80):0;
  const thickness=(role,fallback)=>{const value=c.materials?.[role];if(!value)return fallback;const m=materialAt(catalog,value).item,n=Number(m.thick??m.thickness??fallback);if(!Number.isInteger(n)||n<1||n>80)throw Error('Избраният материал трябва да има цяла дебелина от 1 до 80 мм.');return n};
  const railThickness=role=>c.materials?.[role]?thickness(role,t):thickness('bodySide',t);
@@ -51,7 +52,7 @@ function buildCabinet(settings,catalog,visit,requireShelfBand){
  for(let i=0;i<n;i++)make('Рафт '+(i+1),'shelves',{w:innerW,h:shelfT,d:bodyD,x:0,y:lower+i*shelfT+Math.round((i+1)*free/(n+1))+shelfT/2,z:rear+bodyD/2},'y');
  if(c.back)make('Гръб','back',{w,h:bodyH,d:backT,x:0,y:baseY+bodyH/2,z:-d/2+backT/2},'z');
  if(c.worktop)make('Плот','worktop',{w,h:worktopT,d,x:0,y:h-worktopT/2,z:0},'y');
- if(c.doors){const available=w-2*gap-(c.doors-1)*gap,doorH=bodyH-2*gap;if(available<c.doors||doorH<=doorT)throw Error('Фугите не оставят достатъчно място за вратите.');let left=-w/2+gap;for(let i=0;i<c.doors;i++){const width=i===0?Math.floor(available/c.doors):available-Math.floor(available/c.doors);make('Врата '+(i+1),'doors',{w:width,h:doorH,d:doorT,x:left+width/2,y:baseY+gap+doorH/2,z:front+2+doorT/2},'z',true);left+=width+gap}}
+ if(c.doors){const available=w-2*sideGap-(c.doors-1)*gap,doorH=bodyH-2*gap;if(available<c.doors||doorH<=doorT)throw Error('Фугите не оставят достатъчно място за вратите.');let left=-w/2+sideGap;for(let i=0;i<c.doors;i++){const width=i===0?Math.floor(available/c.doors):available-Math.floor(available/c.doors);make('Врата '+(i+1),'doors',{w:width,h:doorH,d:doorT,x:left+width/2,y:baseY+gap+doorH/2,z:front+2+doorT/2},'z',true);left+=width+gap}}
  if(c.legs){if(w<160||bodyD<160)throw Error('За четири крака 50 × 50 мм са нужни поне 160 мм ширина и дълбочина на корпуса.');for(const x of [-w/2+55,w/2-55])for(const z of [rear+55,front-55])make('Крак '+(items.filter(i=>i.name.startsWith('Крак')).length+1),'body',{w:50,h:legH,d:50,x,y:legH/2,z},null,false,false)}
  if(!items.length)throw Error('Избери поне един конструктивен елемент.');
  // Use the same AABB/room validation as the editor, not a generator collision engine.
