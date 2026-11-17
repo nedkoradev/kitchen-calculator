@@ -5,7 +5,7 @@ import {generateCabinet,cabinetPresets} from '../cabinet-generator.mjs';
 import {cabinetMeasurements} from '../cabinet-dimensions.mjs';
 const catalog=JSON.parse(readFileSync(new URL('../materials/default.json',import.meta.url)));
 function cabinet(type,overrides={}){
- const items=generateCabinet({...cabinetPresets[type],shelves:0,...overrides},catalog);
+ const items=generateCabinet({...cabinetPresets[type],h:type==='base'?858:cabinetPresets[type].h,shelves:0,...overrides},catalog);
  return {parts:items.map(i=>i.part),labels:Object.fromEntries(items.map(i=>[i.part.key,i.name])),finishes:Object.fromEntries(items.map(i=>[i.part.key,i.finish]))};
 }
 test('individual base height includes real legs and worktop, wall height excludes mounting elevation',()=>{

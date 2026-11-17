@@ -3,7 +3,7 @@ const {openKitchen}=require('./browser-harness.cjs');
 (async()=>{
  const {browser,page,errors,consoleErrors,field}=await openKitchen({extraHooks:`
  window.__dimensions={
-  async seed(){const {generateCabinet,cabinetPresets}=await import('./cabinet-generator.mjs');clearWorkspace();const catalog={pdcMaterials:libraryBoards,edgeMaterials:libraryEdges,...catalogExtra};for(const [type,w,x,y] of [['base',600,-450,0],['wall',900,450,1400]]){const items=generateCabinet({...cabinetPresets[type],w,shelves:0},catalog);items.forEach(i=>{i.part.assembly=type});restoreParts(items,{x,y,z:0})}build(false);setView('perspective')},
+  async seed(){const {generateCabinet,cabinetPresets}=await import('./cabinet-generator.mjs');clearWorkspace();const catalog={pdcMaterials:libraryBoards,edgeMaterials:libraryEdges,...catalogExtra};for(const [type,w,x,y] of [['base',600,-450,0],['wall',900,450,1400]]){const items=generateCabinet({...cabinetPresets[type],h:type==='base'?858:cabinetPresets[type].h,w,shelves:0},catalog);items.forEach(i=>{i.part.assembly=type});restoreParts(items,{x,y,z:0})}build(false);setView('perspective')},
   capture:captureProjectSnapshot,restore:applyProjectSnapshot,revision:()=>dimensionGeometryRevision,
   edit(){selected=customParts[0].key;singleMemberSelection=false;updateSelection();openProperties();selectTab('sizes')},
   rotate(){selected=customParts[0].key;singleMemberSelection=false;rotateSelectedPart(1)},
@@ -17,7 +17,7 @@ const {openKitchen}=require('./browser-harness.cjs');
  const wait=async()=>{await page.waitForFunction(()=>document.querySelectorAll('[data-cabinet-dimension]').length===4)};
  try{
   await page.evaluate(()=>window.__dimensions.seed());const before=await page.evaluate(()=>window.__test.parts());
-  const button=page.locator('#nedDimensionsToggle');assert.equal(await button.innerText(),'↔ мм');assert.equal(await button.evaluate(b=>b.previousElementSibling.id),'nedTransparencyToggle');
+  const button=page.locator('#nedDimensionsToggle');assert.equal(await button.innerText(),'↔ мм');assert.equal(await button.evaluate(b=>b.previousElementSibling.id),'nedSemitransparencyToggle');
   await button.click();await wait();let items=await read();assert.deepEqual(items.map(i=>i.value),[600,858,900,720]);assert.ok(items.every(i=>/^\d+ мм$/.test(i.text)));
   assert.ok(await page.locator('#nedCabinetDimensions line').evaluateAll(es=>es.every(e=>e.getAttribute('stroke')==='#3988ff'&&e.getAttribute('stroke-width')==='1')));
   assert.equal(await page.locator('[data-dimension-label] rect').count(),0);assert.equal(await page.locator('[data-dimension-arrow]').count(),8);

@@ -5,7 +5,7 @@ const assert=require('node:assert/strict');const {openKitchen}=require('./browse
  const choose=async section=>{const d=page.locator('.cabinetSection').filter({has:page.locator('summary').filter({hasText:section})});if(!await d.evaluate(e=>e.open))await d.locator('summary').click()};
  const input=(k)=>page.locator('#newCabinet-'+k);
  try{assert.equal(await page.locator('#cabinetParameters').count(),0);await page.evaluate(()=>window.__generatorCase.seed());
- for(const [type,count,dims] of [['base',14,[600,858,600]],['wall',9,[600,720,320]],['tall',15,[600,2100,600]]]){
+ for(const [type,count,dims] of [['base',14,[600,900,600]],['wall',9,[600,720,320]],['tall',15,[600,2100,600]]]){
   await setup([]);await (async()=>{await page.locator('#toolsMenu>summary').click();await page.locator('#toolsMenu .documentMenuItems>button').filter({hasText:'Нов шкаф…'}).click()})();assert.ok(await page.locator('#newCabinet svg').count());await input('type').selectOption(type);
   await choose('Материали');await input('material-doors').selectOption('pdc:2');assert.equal(await input('doorT').inputValue(),'19');await setGeneratorEdges(page,'body',{bodySide:[null,0,null,null],bodyBottom:[null,null,0,null],bodyTop:[null,null,0,null]});await setGeneratorEdges(page,'shelves',{shelves:[null,null,1,null]});await setGeneratorEdges(page,'doors',{doors:[2,2,2,2]});
   await page.locator('#newCabinetCheck').click();assert.ok(await page.locator('#newCabinetPreview svg').isVisible());assert.deepEqual(await parts(),[]);await page.keyboard.press('Delete');assert.deepEqual(await parts(),[]);
