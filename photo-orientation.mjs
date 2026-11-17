@@ -6,8 +6,10 @@ export function rememberPhotoOrientations(materials){catalogDirections.clear();f
 // Settings belong to the image URL, across materials and design modes.
 export function photoKey(value){
  const valid=validTextureUrl(value);if(!valid)return null;
- const pages='https://nedkoradev.github.io/kitchen-calculator/';
- return (valid.startsWith(pages)?valid.slice(pages.length):valid).split(/[?#]/)[0];
+ // Known public deployment aliases share an image key; stored URLs stay untouched.
+ const bases=['https://nedkoradev.github.io/kitchen-calculator/','https://nediq.eu/','https://www.nediq.eu/'];
+ const base=bases.find(prefix=>valid.startsWith(prefix));
+ return (base?valid.slice(base.length):valid).split(/[?#]/)[0];
 }
 try{
  const saved=JSON.parse(appStorage.getItem(KEY)||'{}');

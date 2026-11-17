@@ -1,0 +1,75 @@
+# NED-IQ → nediq.eu: план за одобрение
+
+Статус: само подготовка. Няма промяна на DNS, Pages custom domain, Firebase production настройки или Security Rules. PR не се слива преди изричното одобрение за прехвърляне. Публикуваната версия остава v2.83 (`3ad8e61073098753bed10101f635abdbcb485b50`); подготвената версия е v2.84.
+
+## Проверено преди промени — 17.11.2026
+
+- `nedkoradev/kitchen-calculator`: main е публикуваната v2.83. GitHub API показва активен Pages сайт. Няма CNAME в main. `.github/workflows/pages.yml` запазва Source GitHub Actions, Jekyll, измерването на source, release/SHA проверките и deploy-pages. Старият HTTPS адрес връща актуалния HTML с ned-booting.
+- `nedkoradev/nediq`: GitHub API показва активен Pages сайт, CNAME съдържа `nediq.eu`, а index.html е временната страница „Сайтът е в процес на разработка“. Хранилището не се изтрива.
+- GET Pages settings не е достъпен през GitHub конектора; терминалният API е отказан. Следователно live cname/source/https_enforced/certificate на двата сайта НЕ са потвърдени административно. CNAME в Git е доказателство за конфигурационен файл, не за валиден текущ сертификат. Преди cutover собственикът проверява Settings → Pages в двете хранилища и запазва стойностите.
+- DNS и HTTPS към nediq.eu/www.nediq.eu са отказани от allowlist proxy (403); локалното DNS разрешаване също не е достъпно. Текущите A/AAAA/CNAME/CAA/NS/TTL и сертификатът остават непроверени. Нужен е read-only достъп до nediq.eu, www.nediq.eu, dns.google или export на записите от SuperHosting.BG. Това е предварително условие за прехвърляне, а не основание да заменяме непроверени записи.
+- Публичният Firebase getProjectConfig потвърди Authorized Domains: localhost, kitchen-designer-9d437.firebaseapp.com, kitchen-designer-9d437.web.app, nedkoradev.github.io. Новите два домейна липсват. Не е изпращан admin update.
+
+## Необходими промени в приложението
+
+JS/CSS/importmap/икони/default materials, local texture URLs, release.json и worker registration са относителни. Manifest id/start_url/scope са `./`; worker кешът е по registration.scope + SHA. Няма нужда да се сменят с hardcoded root пътища — така приложението остава съвместимо и с двата адреса.
+
+Единствената runtime корекция в PR е photoKey: старият Pages URL, https://nediq.eu/ и https://www.nediq.eu/ разпознават еднакъв ключ за текстурната ориентация. Запазените URL, материали и проекти не се пренаписват. HTTPS адреси към други доставчици остават различни. Относителните текстури са препоръчителни за нови записи; старите абсолютни URL се проверяват след cutover за redirect/CORS, без масова миграция. GitHub upload/API връзките остават към оригиналното хранилище.
+
+Няма CNAME в този PR: при GitHub Actions publishing той не конфигурира домейна; решаваща е Pages настройката. Няма промяна на Firebase config/authDomain/projectId или Firestore Rules. Draft PR #78 за споделен достъп остава отделен.
+
+## Етапи след одобрение
+
+1. **Инвентар и резервни копия.** Потвърждаваме текущите DNS записи и Pages настройки и ги запазваме за rollback. Проверяваме CAA/сертификата, собствеността на домейна и дали DNS зоната действително се управлява при SuperHosting.BG. При възможност първо верифицираме домейна в GitHub account Settings → Pages с точния TXT challenge от GitHub (не измисляме стойност). Не променяме NS, MX, mail/SPF/DKIM/DMARC или други услуги. Преди redirect всички нужни локални чернови се изтеглят по процедурата по-долу.
+2. **Firebase подготовка.** Собственикът отваря https://console.firebase.google.com/project/kitchen-designer-9d437/authentication/settings → Authorized domains → Add domain: `nediq.eu` и `www.nediq.eu` (без https, slash или path). Запазва старите домейни. Authentication → Sign-in method → Google остава включен. `authDomain` остава `kitchen-designer-9d437.firebaseapp.com`; Google OAuth handler остава `https://kitchen-designer-9d437.firebaseapp.com/__/auth/handler`. Не добавяме `https://nediq.eu/__/auth/handler` — GitHub Pages не хоства Firebase auth handler. Ако API key има HTTP-referrer ограничения в Google Cloud Console → APIs & Services → Credentials, проверяваме и след одобрение добавяме `https://nediq.eu/*` и `https://www.nediq.eu/*`, без премахване на старите. Ограниченията не са проверени административно от тази среда.
+3. **Публикуване на подготвения PR.** След успешните проверки и одобрение публикуваме v2.84 първо на действащия Pages адрес и проверяваме версия/SHA. Без промяна на source workflow и без нова база.
+4. **Прехвърляне на Pages binding.** В https://github.com/nedkoradev/nediq/settings/pages записваме съществуващите настройки и премахваме Custom domain `nediq.eu`, ако все още е там. При branch publishing премахването създава/изисква промяна на CNAME; не оставяме следващ deploy да върне binding. Не изтриваме repo/историята/началната страница. В https://github.com/nedkoradev/kitchen-calculator/settings/pages запазваме Source GitHub Actions, задаваме Custom domain `nediq.eu` и Save. Не правим това преди изтеглянето на черновите. Възможен е кратък прозорец на недостъпност при прехвърлянето; не обещаваме zero downtime.
+5. **DNS само при разлика.** Прилагаме записите по таблицата по-долу само след сравнение с текущата зона. Ако вече сочат към GitHub Pages, не се сменят излишно. Изчакваме DNS check и издаването/обновяването на сертификата за apex и www. След валиден сертификат включваме Enforce HTTPS. GitHub посочва до 24 часа за DNS разпространение; сертификатът може да изисква допълнително време. Не изключваме TLS проверката като решение за потребителите.
+6. **Приемателни проверки.** Двата HTTPS адреса, каноничен redirect www → apex, HTTP → HTTPS, release version/SHA, всички ресурси от `/`, mobile, 3D/Конструктор, библиотека/папки/добавяне, материали/текстури, Разкрой/Разходи/Salex XLSX/JPEG/PDF, F5/Ctrl+F5/бавна мрежа без legacy flash и PWA/worker scope. Google вход/изход със съществуващ акаунт; прочит на съществуващ проект без промяна, Save As в отделен тестов проект с уникално име и повторно отваряне. Не презаписваме оригиналния проект. Собственикът изпълнява интерактивния вход, ако няма удостоверена сесия. Мокнат тест не е доказателство за реален Google вход.
+
+## DNS за SuperHosting.BG — целево състояние, НЕ е приложено
+
+Използва се DNS редакторът за активната зона (или cPanel → Zone Editor, ако зоната е там). `@` означава nediq.eu; ако панелът иска пълно име, въвежда се nediq.eu. TTL примерно 300 секунди, ако доставчикът го позволява; запазваме старите TTL за връщане.
+
+| Тип | Име | Стойност |
+|---|---|---|
+| A | @ | 185.199.108.153 |
+| A | @ | 185.199.109.153 |
+| A | @ | 185.199.110.153 |
+| A | @ | 185.199.111.153 |
+| CNAME | www | nedkoradev.github.io. |
+
+За IPv6 по желание/ако има съществуващи AAAA: използват се само `2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153` за @. Не оставяме конфликтни стари AAAA, сочещи друг хост. За www не се съчетава CNAME с A/AAAA на същото име. CNAME не съдържа https:// или /kitchen-calculator/. Не добавяме wildcard. При CAA ограничения първо проверяваме дали позволяват CA, използван от GitHub Pages (Let's Encrypt), вместо сляпо да изтриваме ограниченията. Domain ownership TXT записът от GitHub се запазва.
+
+## Локални чернови и origin
+
+Облачните записи остават в същия Firebase проект и users/{uid}; същият Google акаунт получава същия UID. Новият origin обаче има отделни localStorage, IndexedDB, authentication persistence, caches и PWA инсталация. Първият вход на nediq.eu е отделен; старият service worker не може да контролира новия домейн.
+
+**Преди промяната на Pages domain:**
+
+1. Отвори стария сайт в същия браузърен профил, в който е работено. Влез със същия Google акаунт.
+2. Ако желаната работа е само в запазена локална версия: Файл → Възстанови локална работа… → избери версията → Възстанови. Това променя само работната среда, без облачен запис. Не изтегляй празната начална работа вместо старата версия.
+3. Файл → Изтегли локалните чернови… създава NED-IQ-local-drafts.json с двата текущи работни документа и Undo/Redo историята. За няколко нужни стари версии повтори избора/изтеглянето с отделни имена на файловете. Може да се използва и „Изтегли версията“ в прозореца за възстановяване.
+4. След cutover: влез на nediq.eu със същия акаунт → Файл → Отвори файл с чернови… → избери изтегления JSON → Възстанови. Провери двата режима. Файл от друг профил се отказва; не редактирай owner UID за заобикаляне на тази защита. Анонимните чернови се възстановяват в анонимния контекст.
+5. Запис в облака е отделно изрично действие. Нищо не се презаписва автоматично. При блокирано хранилище изтегляй файл преди затваряне; старите данни не се изтриват. Локални настройки извън draft bundle не се обещават като автоматично пренесени; облачните материали/настройки се зареждат чрез същия акаунт. Не копираме Firebase tokens или целия localStorage.
+
+Ако старият URL вече пренасочва и потребителят не е изтеглил чернова, спираме и организираме контролиран rollback/временен достъп до стария origin за възстановяване. Не обещаваме, че новият домейн може да прочете старото browser storage. Старите данни остават локално, докато потребителят не ги изтрие; ние не ги чистим.
+
+## Старият адрес и ограничения
+
+Документацията на GitHub Pages описва пренасочване към custom domain, но конкретният HTTP redirect, запазването на paths и HTTPS се проверяват след binding-а. Не добавяме JavaScript redirect или неподдържан `.htaccess`. Същият Pages сайт няма да поддържа независимо две production origin копия чрез custom-domain настройката. Ако старият адрес/стар абсолютен texture URL не се пренасочи правилно, това се отчита като неуспешна приемателна проверка и се връщаме към предишната конфигурация. Допълнителен redirect host би бил отделно решение.
+
+## Връщане назад
+
+При неуспешен вход, HTTPS, ресурси или критична функция: премахваме custom domain от kitchen-calculator, връщаме потвърдените предишни Pages настройки и домейна към nediq (включително CNAME при branch publishing), и възстановяваме само променените DNS записи/TTL от export. Приложението продължава на стария Pages адрес с относителните си пътища. При нужда връщаме app commit чрез PR, без force-push/изтриване. Новите Firebase Authorized Domains могат да останат или да бъдат премахнати след одобрение; старите се запазват през целия процес. Няма копиране/rollback на Firestore данни, защото не ги мигрираме. Проверяваме и стария адрес след rollback; DNS/TLS кеширането може да забави възстановяването.
+
+Източник за GitHub Actions/CNAME, A/AAAA и www:
+https://github.com/github/docs/blob/main/content/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site.md
+
+## Изпълнени проверки на подготвения PR
+
+- `npm test`: 175/175 unit теста PASS, включително еквивалентност на текстурните URL и отказ да се слеят външни lookalike домейни.
+- `KITCHEN_RELEASE_SCOPE=/ node tests/release-browser.cjs` и стандартният `/kitchen-calculator/` вариант: PASS с реален Chromium service worker, manifest resolution, scoped caches, обновяване между две версии, offline fallback и запазени локални данни.
+- 9 приложни browser набора: initial-render (6 сценария open/F5/ignoreCache desktop/mobile при бавен module), actions, library-dialog, document-recovery, domain-drafts, all-material-textures, edge-directions/Salex XLSX, report-context и responsive-workspace. Взети заедно с двата release варианта: 11 успешни изпълнения. Браузърните cloud сценарии използват SDK double; не доказват реален Google вход/запис.
+- domain-drafts-browser.cjs използва различни HTTP origins (127.0.0.1 и localhost), изтегля и импортира истински draft JSON през съществуващите контроли и проверява двата документа, материали, камера, Undo/Redo, отказ на чужд профил и нула облачни записи. Оригиналните чернови не се изтриват.
+- Реалните проверки на новия DNS, сертификат, redirects, Google вход и production документи остават за след одобрение и осигурен мрежов/административен достъп. Не са отбелязани като успешни.
