@@ -12,7 +12,7 @@ let user=null,authGeneration=0;
 onAuthStateChanged(auth,u=>{
  user=u;authGeneration++;el('cloudLogin').hidden=!!u;el('cloudLogout').hidden=!u;
  status(u?'☁ '+(u.email||'Свързан'):'☁ Не сте влезли');
- window.dispatchEvent(new CustomEvent('kitchen-project-auth',{detail:{uid:u?.uid||null}}));
+ window.dispatchEvent(new CustomEvent('kitchen-project-auth',{detail:{uid:u?.uid||null,email:u?.email||''}}));
  if(u){window.dispatchEvent(new Event('kitchen-v2-material-list-request'));window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'))}
 });
 el('cloudLogin').onclick=async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){status('Вход: '+e.message)}};
@@ -23,7 +23,7 @@ window.addEventListener('kitchen-v2-cloud-list-request',async()=>{
  try{
   requireUser();
   const snap=await getDocs(cabinetCollection());
-  const items=snap.docs.map(d=>({id:d.id,name:d.data().name||'Без име',parts:d.data().parts||[],updatedAt:d.data().updatedAt||0})).sort((a,b)=>a.name.localeCompare(b.name,'bg'));
+  const items=snap.docs.map(d=>({id:d.id,name:d.data().name||'Без име',parts:d.data().parts||[],category:d.data().category||'',updatedAt:d.data().updatedAt||0})).sort((a,b)=>a.name.localeCompare(b.name,'bg'));
   emit('list',{items});
  }catch(e){emit('error',{message:'Грешка при зареждане: '+e.message})}
 });
@@ -37,11 +37,20 @@ window.addEventListener('kitchen-v2-cloud-save-request',async e=>{
   const target=doc(cabinetCollection(),id);
   if(requestedId){const old=await getDoc(target);if(user?.uid!==owner)return;if(!old.exists())throw new Error('Оригиналният шкаф вече не съществува.');}
   if(user?.uid!==owner)return;
-  await setDoc(target,{name,parts,v2:true,updatedAt:Date.now()});
+  await setDoc(target,{name,parts,v2:true,updatedAt:Date.now()},{merge:true});
   if(user?.uid!==owner)return;
   emit('saved',{id,name,documentId:e.detail.documentId,documentEpoch:e.detail.documentEpoch,operation:e.detail.operation});
   status('☁ Запазено: '+name);
  }catch(err){emit('error',{message:'Грешка при запис: '+err.message})}
+});
+window.addEventListener('kitchen-v2-cloud-category-request',async e=>{
+ const owner=user?.uid;
+ try{requireUser();const {id,category}=e.detail;
+  if(!['','Горни шкафове','Долни шкафове','Гардероби','Спални','Комоди','Електроуреди'].includes(category))throw new Error('Непозната категория.');
+  const target=doc(cabinetCollection(),id);
+  await runTransaction(db,async transaction=>{const old=await transaction.get(target);if(user?.uid!==owner)throw new Error('Профилът е променен.');if(!old.exists())throw new Error('Моделът вече не съществува.');transaction.set(target,{...old.data(),category})});
+  if(user?.uid===owner)emit('category-saved',{id,category});
+ }catch(error){if(user?.uid===owner)emit('error',{message:'Категорията не е записана: '+error.message})}
 });
 window.addEventListener('kitchen-v2-cloud-open-request',async e=>{
  const owner=user?.uid;
@@ -103,7 +112,7 @@ window.addEventListener('kitchen-v2-material-save-request',async e=>{
 
 // Separate request/response channel: existing cabinet/material contracts stay intact.
 const projectStore=createProjectStore({db,sdk:{collection,doc,getDocsFromServer,getDocFromServer,runTransaction,serverTimestamp},getUser:()=>user,isOnline:()=>navigator.onLine});
-window.addEventListener('kitchen-project-auth-request',()=>window.dispatchEvent(new CustomEvent('kitchen-project-auth',{detail:{uid:user?.uid||null}})));
+window.addEventListener('kitchen-project-auth-request',()=>window.dispatchEvent(new CustomEvent('kitchen-project-auth',{detail:{uid:user?.uid||null,email:user?.email||''}})));
 window.addEventListener('kitchen-project-request',async event=>{
  const {requestId,action,args}=event.detail||{},uid=user?.uid||null;
  try{

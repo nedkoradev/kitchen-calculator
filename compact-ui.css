@@ -38,3 +38,28 @@ body.ned-shell button:is(.iconOnly,.iconWithText)>svg.actionSvg{width:20px!impor
 body.ned-shell #shellMenus details>summary{list-style:none}
 body.ned-shell #shellMenus details>summary::marker{content:''}
 body.ned-shell #shellMenus details>summary::after{content:'▾';font-size:10px;margin-left:5px}
+/* v2.78 menu reference: editing above, history and views below the workspace. */
+body.ned-shell #mainNavigation[hidden]{display:none!important}
+body.ned-shell #shellBottomTools{display:flex;align-items:center;gap:10px;flex:none;padding:4px 8px;background:#e9eff7;border-top:1px solid var(--nd-border);overflow-x:auto;min-height:52px}
+body.ned-shell #shellBottomTools .historyTools{display:flex;flex:none;gap:4px;margin:0;padding:0}
+body.ned-shell #shellBottomTools #viewControlsDock{position:static!important;display:flex!important;flex:none;align-items:center;flex-wrap:nowrap!important;transform:none!important;gap:4px;padding:0 0 0 8px!important;margin:0!important;width:max-content!important;max-width:none!important;background:transparent!important;border:0!important;border-left:1px solid var(--nd-border)!important;box-shadow:none!important}
+body.ned-shell #shellBottomTools button{display:inline-flex!important;align-items:center;justify-content:center;flex:none!important;width:44px!important;min-width:44px!important;height:44px!important;min-height:44px!important;padding:9px!important;background:#f8fafd!important;color:#294967!important;border:1px solid #b5c6dc!important;border-radius:4px!important}
+body.ned-shell #shellBottomTools button.active{background:#cee3ff!important;color:#125ba9!important}
+body.ned-shell #shellBottomTools button:disabled{opacity:.4;cursor:default}
+body.ned-shell #shellBottomTools button:hover:not(:disabled){background:#dbe8f8!important}
+body.ned-shell #shellBottomTools #nedDimensionsToggle{font-size:11px!important;padding:2px!important}
+body.ned-shell #shellBottomTools svg.actionSvg{width:20px!important;height:20px!important;stroke-width:2!important}
+body.ned-shell #shellBottomTools #shellViewTools{padding:0;border:0;overflow:visible}
+body.ned-shell #shellMenus{overflow:visible}
+body.ned-shell #shellTools :is(#quickSave,#quickOpen,#projectQuickSave,#projectQuickOpen,#projectRoomSettings){display:none!important}
+body.ned-shell:has(main.catalogMode) #shellBottomTools{display:none}
+@media(max-width:900px){body.ned-shell #shellMenus{flex-wrap:wrap!important;overflow:visible!important}body.ned-shell #shellBottomTools{gap:5px;padding:3px 4px}body.ned-shell #shellBottomTools #viewControlsDock{padding-left:4px!important}}
+body.ned-shell #shellBottomTools{flex-direction:row!important;flex-wrap:nowrap!important}
+body.ned-shell #shellBottomTools .historyTools{flex-direction:row!important;flex-wrap:nowrap!important;width:auto!important;max-width:none!important}
+@media(max-width:900px){body.ned-shell #shellBottomTools #shellViewTools{display:block!important;flex:none!important}}
+body.ned-shell #headerRight #cloudLogout{display:none!important}
+body.ned-shell #generalViewSettings{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+body.ned-shell #generalViewSettings h3{flex-basis:100%;margin:0 0 4px}
+body.ned-shell #generalViewSettings button[aria-pressed=true]{background:#cee3ff!important;color:#125ba9!important}
+
+body.ned-shell #shellTools :is(#newCabinet,#addAppliance,#projectQuickAdd){display:none!important}

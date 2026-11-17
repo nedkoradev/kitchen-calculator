@@ -20,7 +20,7 @@ const panel=(key,x=.5)=>({key,x,y:150,z:0,w:101,h:18,d:300,locks:{w:false,h:true
     const icon=button.querySelector('svg,.nedPictureIcon'),r=button.getBoundingClientRect(),s=icon.getBoundingClientRect();
     return {id:button.id,title:button.title,label:button.getAttribute('aria-label'),svg:icon.tagName.toLowerCase()==='svg',stroke:icon.getAttribute('stroke-width'),src:icon.getAttribute('src'),w:s.width,h:s.height,bw:r.width,bh:r.height,content:button.textContent.trim()};
    }));
-   assert.ok(icons.length>=6);
+   assert.ok(icons.length>=4);for(const suffix of ['Horizontal','Vertical','Left','Right'])assert.ok(icons.some(icon=>icon.id.endsWith(suffix)),suffix);
    for(const icon of icons){if(icon.svg){assert.equal(icon.w,20,icon.id);assert.equal(icon.h,20,icon.id);assert.equal(icon.stroke,'2')}else{assert.match(icon.src,/^\.\/assets\/icons\//);assert.ok(icon.w>=22&&icon.w<=40&&icon.h>=22&&icon.h<=40,JSON.stringify(icon))}assert.ok(icon.bw>=40&&icon.bh>=40,icon.id);assert.ok(icon.title&&icon.label);assert.equal(icon.content,'')}
    await setup([]);
    const horizontal=mode==='constructor'?'#addHorizontal':'#projectAddHorizontal',vertical=mode==='constructor'?'#addVertical':'#projectAddVertical';
@@ -36,28 +36,28 @@ const panel=(key,x=.5)=>({key,x,y:150,z:0,w:101,h:18,d:300,locks:{w:false,h:true
    await page.locator(mode==='constructor'?'#rotateLeft':'#projectRotateLeft').click();assert.deepEqual(await parts(),[panel('custom703')]);
    await page.locator('#helpButton').click();await page.locator('#helpClose').click();assert.equal(await page.locator('#helpDialog').evaluate(el=>el.open),false);
    if(mode==='constructor'){
-    await page.locator('#quickSave').click();await page.locator('#fileDialogName').fill('Icon cabinet');await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
-    await setup([]);await page.locator('#quickOpen').click();await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);assert.equal((await parts()).length,1);
+    await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSave').click()})();await page.locator('#fileDialogName').fill('Icon cabinet');await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
+    await setup([]);await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileOpen').click()})();await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);assert.equal((await parts()).length,1);
    }else{
-    await page.locator('#projectQuickSave').click();await page.locator('#projectCloudName').fill('Icon project');await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
-    await page.locator('#projectQuickSave').click();await page.locator('#projectCloudSave').click();await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
-    await setup([]);await page.locator('#projectQuickOpen').click();assert.equal(await page.locator('#projectCloudLocal').count(),0);await page.locator('#projectCloudOpen').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));assert.equal((await parts()).length,1);
-    await page.locator('#projectQuickAdd').click();await page.locator('#projectAddDialogConfirm').click();await page.waitForFunction(()=>window.__test.parts().length===2);
-    await page.locator('#projectRoomSettings').click();await page.getByRole('button',{name:'Отказ',exact:true}).click();
+    await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSave').click()})();await page.locator('#projectCloudName').fill('Icon project');await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
+    await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSave').click()})();await page.locator('#projectCloudSave').click();await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
+    await setup([]);await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileOpen').click()})();assert.equal(await page.locator('#projectCloudLocal').count(),0);await page.locator('#projectCloudOpen').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));assert.equal((await parts()).length,1);
+    await (async()=>{await page.locator('#toolsMenu>summary').click();await page.locator('#toolsMenu .documentMenuItems>button').filter({hasText:'Добави шкаф от библиотеката…'}).click()})();await page.locator('#projectAddDialogConfirm').click();await page.waitForFunction(()=>window.__test.parts().length===2);
+    await (async()=>{await page.locator('#shellSettings>summary').click();await page.locator('#shellSettings button').filter({hasText:'Размери на стаята'}).click()})();await page.getByRole('button',{name:'Отказ',exact:true}).click();
    }
    console.log(`PASS ${mode}: uniform icons/tooltips/touch targets, add, group/ungroup, rotations, save/open and dialogs`);
   }
-  await page.locator('#navLibrary').click();
+  await page.locator('#libraryMenu>summary').click();await page.locator('#navLibrary').click();
   await page.getByRole('button',{name:'Отвори в конструктора',exact:true}).first().click();
   await page.waitForFunction(()=>document.querySelector('#modeConstructor').classList.contains('mainNavActive'));
-  await page.locator('#navLibrary').click();
+  await page.locator('#libraryMenu>summary').click();await page.locator('#navLibrary').click();
   await page.getByRole('button',{name:'Дублирай',exact:true}).first().click();await page.locator('.nedPromptInput').fill('Icon cabinet copy');await page.locator('.nedConfirmPanel').getByRole('button',{name:'Дублирай',exact:true}).click();
   await page.waitForFunction(()=>window.__firebaseDouble.rows().filter(row=>row.path.includes('/v2_cabinets/')).length===2);
-  await page.locator('#navLibrary').click();
+  await page.locator('#libraryMenu>summary').click();await page.locator('#navLibrary').click();
   await page.locator('.libraryCard').filter({hasText:'Icon cabinet copy'}).getByRole('button',{name:'Изтрий',exact:true}).click();await page.locator('.nedConfirmPanel').getByRole('button',{name:'Изтрий',exact:true}).click();
   await page.waitForFunction(()=>window.__firebaseDouble.rows().filter(row=>row.path.includes('/v2_cabinets/')).length===1);
-  await page.locator('#modeConstructor').click();await page.locator('#quickSave').click();await page.locator('#fileDialogClose').click();
-  await page.locator('#navMaterials').click();
+  await page.locator('#modeConstructor').click();await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSave').click()})();await page.locator('#fileDialogClose').click();
+  await page.locator('#shellSettings>summary').click();await page.locator('#navMaterials').click();
   await page.getByRole('button',{name:'Запази база',exact:true}).click();await page.locator('.nedPromptInput').fill('Icon materials');await page.locator('.nedConfirmOverlay .nedPrimaryButton').click();
   await page.waitForFunction(()=>window.__firebaseDouble.rows().some(row=>row.path.includes('/materials/')));
   await page.waitForFunction(()=>document.querySelector('#v2MaterialCloudSelect').options.length>1);

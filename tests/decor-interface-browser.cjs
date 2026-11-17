@@ -5,7 +5,7 @@ const {openKitchen}=require('./browser-harness.cjs');
  const {page,browser,errors,setup,parts}=await openKitchen({firebaseDouble:true,extraHooks:`window.__decorUI={prepare(){libraryBoards[0]={name:'Oak grain',color:'#ccaa77',grainRequired:true,textureUrl:'materials/textures/ui.png',textureWidthMm:1000,textureHeightMm:2000};refreshMaterials()},cut:()=>cutLayout(customParts.find(p=>p.key===selected),finishes[selected],selectedBoard(finishes[selected])),uv:()=>Array.from(boards.find(b=>b.userData.key===selected).geometry.attributes.uv.array)};`});
  try{
   await page.route('**/materials/textures/ui.png*',r=>r.fulfill({contentType:'image/png',path:path.join(__dirname,'fixtures/grain.png')}));
-  await page.setViewportSize({width:1280,height:800});await page.locator('#navMaterials').click();
+  await page.setViewportSize({width:1280,height:800});await page.locator('#shellSettings>summary').click();await page.locator('#navMaterials').click();
   for(const [i,name] of ['ПДЧ материали','Кантове','Плотове','Гръб HDF'].entries()){
    const section=page.locator('.materialSection').filter({has:page.getByRole('heading',{name,exact:true})});
    await section.locator('tbody tr').first().getByRole('button',{name:'Промени',exact:true}).click();

@@ -5,7 +5,7 @@ const {openKitchen}=require('./browser-harness.cjs');
  const png=fs.readFileSync(path.join(__dirname,'fixtures/grain.png'));
  try{
   await page.route('**/materials/textures/guided.png*',r=>{checks++;return r.fulfill({status:published?200:404,contentType:published?'image/png':'text/html',body:published?png:'Not published'})});
-  await page.locator('#navMaterials').click();await page.locator('.materialGroup').first().locator('tbody tr').first().getByRole('button',{name:'Промени',exact:true}).click();
+  await page.locator('#shellSettings>summary').click();await page.locator('#navMaterials').click();await page.locator('.materialGroup').first().locator('tbody tr').first().getByRole('button',{name:'Промени',exact:true}).click();
   const pick=async()=>{await page.locator('#materialPhotoUpload').setInputFiles({name:'guided.png',mimeType:'image/png',buffer:png});await page.locator('.photoWizard').waitFor()};
   await pick();assert.equal(await page.locator('.photoWizard').evaluate(el=>el.matches(':modal')),true);
   assert.ok(await page.locator('.photoWizard').innerText().then(t=>t.includes('guided.png')));

@@ -25,7 +25,7 @@ const oldUrl='https://images.example.test/old.png';
    const create=URL.createObjectURL.bind(URL),revoke=URL.revokeObjectURL.bind(URL);window.__photoUrls=new Set();
    URL.createObjectURL=blob=>{const url=create(blob);window.__photoUrls.add(url);return url};URL.revokeObjectURL=url=>{window.__photoUrls.delete(url);return revoke(url)};
   });
-  await page.locator('#navMaterials').click();await page.evaluate(()=>window.__photoTest.setup());
+  await page.locator('#shellSettings>summary').click();await page.locator('#navMaterials').click();await page.evaluate(()=>window.__photoTest.setup());
   await editor();await page.waitForFunction(()=>document.querySelector('#materialPhotoStatus').textContent.includes('Снимката е проверена'));
   assert.equal(await page.locator('#chooseMaterialPhoto').innerText(),'Избери снимка');assert.equal(await page.locator('#materialPhotoUpload').isVisible(),false);
   await select();await page.waitForFunction(()=>document.querySelector('#materialPhotoFileInfo').textContent.includes('Декор нов.png'));

@@ -7,10 +7,10 @@ const assert=require('node:assert/strict');const path=require('node:path');const
  try{
   assert.equal(await page.evaluate(()=>window.__baseline.initialMode),'project');
   await setup([{key:'customBASE',w:600,h:720,d:18,x:0,y:360,z:0,locks:{}}]);
-  await page.locator('#quickSave').click();await page.locator('#fileDialogName').fill('Базов модел');await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
+  await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSave').click()})();await page.locator('#fileDialogName').fill('Базов модел');await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
   const original=await rows(),constructor=normalized(await capture());
   await page.locator('#modeProject').click();
-  for(let i=0;i<2;i++){await page.locator('#projectQuickAdd').click();await page.waitForFunction(()=>!!document.querySelector('#projectCabinetList').value);await page.locator('#projectAddDialogConfirm').click();await page.waitForFunction(n=>window.__test.parts().length===n,i+1)}
+  for(let i=0;i<2;i++){await (async()=>{await page.locator('#toolsMenu>summary').click();await page.locator('#toolsMenu .documentMenuItems>button').filter({hasText:'Добави шкаф от библиотеката…'}).click()})();await page.waitForFunction(()=>!!document.querySelector('#projectCabinetList').value);await page.locator('#projectAddDialogConfirm').click();await page.waitForFunction(n=>window.__test.parts().length===n,i+1)}
   assert.equal((await capture()).parts.length,2);await page.evaluate(()=>window.__baseline.edit());await field('materialSelect','1');await page.locator('#dialogDone').click();
   assert.deepEqual(await rows(),original,'editing an inserted copy never writes its library record');
   await page.evaluate(()=>window.__test.view('perspective'));
