@@ -1,3 +1,5 @@
+import {createSharingStore} from './sharing-store.mjs';
+import {installSharingUI} from './sharing-ui.mjs';
 import {defaultFolders,validateFolders,resolveFolder} from './library-folders.mjs';
 import {validateParameters,documentUtilization} from './parameters.mjs';
 import {MATERIAL_PREFERENCES_ID} from './material-base-preferences.mjs';
@@ -5,95 +7,138 @@ import {createProjectStore} from './project-store.mjs';
 import {projectErrorMessage} from './project-model.mjs';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import {getFirestore,collection,doc,setDoc,getDocs,getDoc,deleteDoc,getDocsFromServer,getDocFromServer,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import {getFirestore,collection,doc,setDoc,getDocs,getDoc,deleteDoc,getDocsFromServer,getDocFromServer,runTransaction,serverTimestamp,onSnapshot} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 const config={apiKey:"AIzaSyBlrriK3iQAuO0KN-bHkd1p5PoLWoqjTJ4",authDomain:"kitchen-designer-9d437.firebaseapp.com",projectId:"kitchen-designer-9d437",storageBucket:"kitchen-designer-9d437.firebasestorage.app",messagingSenderId:"579302190437",appId:"1:579302190437:web:b2ce4dda4911447588458c"};
 const app=initializeApp(config),auth=getAuth(app),db=getFirestore(app);
 const el=id=>document.getElementById(id),status=msg=>el('cloudStatus').textContent=msg;
 const emit=(type,detail)=>window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-'+type,{detail}));
-let user=null,authGeneration=0;
+let user=null,ownerUid=null,role=null,authGeneration=0,selectionGeneration=0,stopMembership=null;
+const sharing=createSharingStore({db,sdk:{collection,doc,setDoc,getDocsFromServer,getDocFromServer,runTransaction,serverTimestamp},getUser:()=>user});
+const account=()=>({uid:ownerUid,actorUid:user?.uid||null,email:user?.email||'',role});
+function publishAccount(){
+ window.dispatchEvent(new CustomEvent('kitchen-project-auth',{detail:account()}));
+}
+function setBase(uid,nextRole){
+ selectionGeneration++;
+ stopMembership?.();stopMembership=null;
+ ownerUid=uid;role=nextRole;authGeneration++;
+ publishAccount();
+ if(!uid)return;
+ window.dispatchEvent(new Event('kitchen-v2-material-list-request'));
+ window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'));
+ if(role==='owner')return;
+ const actor=user.uid;
+ stopMembership=onSnapshot(doc(db,'users',uid,'members',actor),{includeMetadataChanges:true},snap=>{
+  if(user?.uid!==actor||ownerUid!==uid||snap.metadata.fromCache)return;
+  const data=snap.data();
+  if(data?.status!=='active'||!['viewer','editor'].includes(data.role)){
+   setBase(actor,'owner');status('Достъпът до споделената база е отнет.');
+  }else if(role!==data.role){
+   role=data.role;publishAccount();
+  }
+ },error=>{
+  if(user?.uid===actor&&ownerUid===uid&&error.code==='permission-denied'){
+   setBase(actor,'owner');status('Достъпът до споделената база е отнет.');
+  }
+ });
+}
+async function selectBase(uid){
+ requireUser();
+ const actor=user.uid,selection=++selectionGeneration;
+ const nextRole=uid===actor?'owner':(await sharing.membership(uid))?.role;
+ if(selection!==selectionGeneration||actor!==user?.uid)throw Error('Профилът или базата са променени.');
+ if(!nextRole)throw Error('Нямаш достъп до тази база.');
+ if(uid!==ownerUid||role!==nextRole)setBase(uid,nextRole);
+}
 onAuthStateChanged(auth,u=>{
- user=u;authGeneration++;el('cloudLogin').hidden=!!u;el('cloudLogout').hidden=!u;
+ selectionGeneration++;
+ user=u;el('cloudLogin').hidden=!!u;el('cloudLogout').hidden=!u;
  status(u?'☁ '+(u.email||'Свързан'):'☁ Не сте влезли');
- window.dispatchEvent(new CustomEvent('kitchen-project-auth',{detail:{uid:u?.uid||null,email:u?.email||''}}));
- if(u){window.dispatchEvent(new Event('kitchen-v2-material-list-request'));window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'))}
+ setBase(u?.uid||null,u?'owner':null);
 });
+installSharingUI({sharing,account,selectBase});
 el('cloudLogin').onclick=async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){status('Вход: '+e.message)}};
 el('cloudLogout').onclick=async()=>{try{await signOut(auth)}catch(e){status('Изход: '+e.message)}};
-const cabinetCollection=()=>collection(db,'users',user.uid,'v2_cabinets');
+const cabinetCollection=()=>collection(db,'users',ownerUid,'v2_cabinets');
 function requireUser(){if(!user)throw new Error('Първо влез с Google от горния десен ъгъл.')}
+function requireWrite(){requireUser();if(role==='viewer')throw Error('Тази база е само за преглед.')}
+const readDoc=ref=>role==='owner'?getDoc(ref):getDocFromServer(ref);
+const readList=ref=>role==='owner'?getDocs(ref):getDocsFromServer(ref);
 window.addEventListener('kitchen-v2-cloud-list-request',async()=>{
  const generation=authGeneration;
  try{
   requireUser();
-  const snap=await getDocs(cabinetCollection());if(generation!==authGeneration)return;
+  const snap=await readList(cabinetCollection());if(generation!==authGeneration)return;
   const items=snap.docs.map(d=>({id:d.id,name:d.data().name||'Без име',parts:d.data().parts||[],category:d.data().category||'',folderId:d.data().folderId,updatedAt:d.data().updatedAt||0})).sort((a,b)=>a.name.localeCompare(b.name,'bg'));
   emit('list',{items});
  }catch(e){if(generation===authGeneration)emit('error',{message:'Грешка при зареждане: '+e.message})}
 });
 window.addEventListener('kitchen-v2-cloud-save-request',async e=>{
- const owner=user?.uid;
+ const generation=authGeneration;
  try{
-  requireUser();
+  requireWrite();
   const {name,parts,id:requestedId}=e.detail;
   if(!Array.isArray(parts)||!parts.length)throw new Error('Няма детайли.');
   const id=requestedId||'cab_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
   const target=doc(cabinetCollection(),id);
-  if(requestedId){const old=await getDoc(target);if(user?.uid!==owner)return;if(!old.exists())throw new Error('Оригиналният шкаф вече не съществува.');}
-  if(user?.uid!==owner)return;
+  if(requestedId){const old=await readDoc(target);if(authGeneration!==generation)return;if(!old.exists())throw new Error('Оригиналният шкаф вече не съществува.');}
+  if(authGeneration!==generation)return;
   const calculationSettings={sheetUtilization:documentUtilization(e.detail.calculationSettings)};
   await setDoc(target,{name,parts,calculationSettings,v2:true,updatedAt:Date.now()},{merge:true});
-  if(user?.uid!==owner)return;
+  if(authGeneration!==generation)return;
   emit('saved',{id,name,documentId:e.detail.documentId,documentEpoch:e.detail.documentEpoch,operation:e.detail.operation});
   status('☁ Запазено: '+name);
- }catch(err){emit('error',{message:'Грешка при запис: '+err.message})}
+ }catch(err){if(generation===authGeneration)emit('error',{message:'Грешка при запис: '+err.message})}
 });
 window.addEventListener('kitchen-v2-cloud-category-request',async e=>{
- const owner=user?.uid;
- try{requireUser();const {id,category}=e.detail;
+ const generation=authGeneration;
+ try{requireWrite();const {id,category}=e.detail;
   if(!['','Горни шкафове','Долни шкафове','Гардероби','Спални','Комоди','Електроуреди'].includes(category))throw new Error('Непозната категория.');
   const target=doc(cabinetCollection(),id);
-  await runTransaction(db,async transaction=>{const old=await transaction.get(target);if(user?.uid!==owner)throw new Error('Профилът е променен.');if(!old.exists())throw new Error('Моделът вече не съществува.');transaction.set(target,{...old.data(),category})});
-  if(user?.uid===owner)emit('category-saved',{id,category});
- }catch(error){if(user?.uid===owner)emit('error',{message:'Категорията не е записана: '+error.message})}
+  await runTransaction(db,async transaction=>{const old=await transaction.get(target);if(authGeneration!==generation)throw new Error('Профилът е променен.');if(!old.exists())throw new Error('Моделът вече не съществува.');transaction.set(target,{...old.data(),category})});
+  if(authGeneration===generation)emit('category-saved',{id,category});
+ }catch(error){if(authGeneration===generation)emit('error',{message:'Категорията не е записана: '+error.message})}
 });
 window.addEventListener('kitchen-v2-cloud-open-request',async e=>{
- const owner=user?.uid;
+ const generation=authGeneration;
  try{
   requireUser();
-  const snap=await getDoc(doc(cabinetCollection(),e.detail.id));
+  const snap=await readDoc(doc(cabinetCollection(),e.detail.id));
   if(!snap.exists())throw new Error('Шкафът не е намерен.');
-  if(user?.uid!==owner)return;
+  if(authGeneration!==generation)return;
   const data=snap.data();
   if(!Array.isArray(data.parts))throw new Error('Невалиден формат на шкафа.');
   emit('opened',{id:e.detail.id,name:data.name||'Без име',parts:data.parts,calculationSettings:data.calculationSettings,documentId:e.detail.documentId,documentEpoch:e.detail.documentEpoch,operation:e.detail.operation});
- }catch(err){emit('error',{message:'Грешка при отваряне: '+err.message})}
+ }catch(err){if(generation===authGeneration)emit('error',{message:'Грешка при отваряне: '+err.message})}
 });
 
 window.addEventListener('kitchen-v2-cloud-delete-request',async e=>{
+ const generation=authGeneration;
  try{
-  requireUser();
+  requireWrite();
   const id=e.detail?.id;
   if(typeof id!=='string'||!id.startsWith('cab_'))throw new Error('Невалиден идентификатор.');
   await deleteDoc(doc(cabinetCollection(),id));
+  if(generation!==authGeneration)return;
   emit('deleted',{id});
   status('☁ Шкафът е изтрит.');
- }catch(err){emit('error',{message:'Грешка при изтриване: '+err.message})}
+ }catch(err){if(generation===authGeneration)emit('error',{message:'Грешка при изтриване: '+err.message})}
 });
 
-const materialCollection=()=>collection(db,'users',user.uid,'materials');
+const materialCollection=()=>collection(db,'users',ownerUid,'materials');
 window.addEventListener('kitchen-v2-material-list-request',async()=>{
  const generation=authGeneration;
- try{requireUser();const uid=user.uid,ref=materialCollection();const [snap,prefs]=await Promise.all([getDocs(ref),getDoc(doc(ref,MATERIAL_PREFERENCES_ID))]);if(generation!==authGeneration)return;emit('material-list',{uid,items:snap.docs.filter(d=>d.id!==MATERIAL_PREFERENCES_ID).map(d=>({id:d.id,name:d.data().name||d.id})),defaultBaseId:prefs.data()?.defaultMaterialBaseId||''})}
+ try{requireUser();const uid=ownerUid,ref=materialCollection();const [snap,prefs]=await Promise.all([readList(ref),readDoc(doc(ref,MATERIAL_PREFERENCES_ID))]);if(generation!==authGeneration)return;emit('material-list',{uid,items:snap.docs.filter(d=>d.id!==MATERIAL_PREFERENCES_ID).map(d=>({id:d.id,name:d.data().name||d.id})),defaultBaseId:prefs.data()?.defaultMaterialBaseId||''})}
  catch(e){if(generation===authGeneration)emit('material-error',{operation:'list',message:e.message})}
 });
 window.addEventListener('kitchen-v2-material-load-request',async e=>{
  const generation=authGeneration;
- try{requireUser();const uid=user.uid,id=e.detail.id;if(id===MATERIAL_PREFERENCES_ID)throw Error('Избери материална база.');const snap=await getDoc(doc(materialCollection(),id));if(generation!==authGeneration)return;if(!snap.exists())throw Error('Базата не е намерена');emit('material-loaded',{uid,id,automatic:!!e.detail.automatic,name:snap.data().name||id,data:snap.data()})}
+ try{requireUser();const uid=ownerUid,id=e.detail.id;if(id===MATERIAL_PREFERENCES_ID)throw Error('Избери материална база.');const snap=await readDoc(doc(materialCollection(),id));if(generation!==authGeneration)return;if(!snap.exists())throw Error('Базата не е намерена');emit('material-loaded',{uid,id,automatic:!!e.detail.automatic,name:snap.data().name||id,data:snap.data()})}
  catch(error){if(generation===authGeneration)emit('material-error',{operation:'load',automatic:!!e.detail.automatic,message:error.message})}
 });
 window.addEventListener('kitchen-v2-material-default-request',async e=>{
  const generation=authGeneration;
- try{requireUser();const uid=user.uid,ref=materialCollection(),id=e.detail.id||'';
+ try{requireWrite();const uid=ownerUid,ref=materialCollection(),id=e.detail.id||'';
   if(id){if(typeof id!=='string'||id.includes('/')||id===MATERIAL_PREFERENCES_ID)throw Error('Невалидна база.');const base=await getDoc(doc(ref,id));if(!base.exists())throw Error('Базата вече не съществува.');}
   if(generation!==authGeneration)return;
   await setDoc(doc(ref,MATERIAL_PREFERENCES_ID),{schemaVersion:1,defaultMaterialBaseId:id,updatedAt:Date.now()},{merge:true});
@@ -104,7 +149,7 @@ window.addEventListener('kitchen-v2-material-default-request',async e=>{
 window.addEventListener('kitchen-v2-material-save-request',async e=>{
  const generation=authGeneration;
  try{
-  requireUser();const uid=user.uid;
+  requireWrite();const uid=ownerUid;
   const name=String(e.detail?.name||'').trim();if(!name)throw Error('Въведи име на базата');
   const id='base_'+name.toLowerCase().replace(/[^a-z0-9а-я]+/gi,'_');
   await setDoc(doc(materialCollection(),id),{...e.detail.data,name,updatedAt:Date.now()});
@@ -115,22 +160,23 @@ window.addEventListener('kitchen-v2-material-save-request',async e=>{
 });
 
 // Separate request/response channel: existing cabinet/material contracts stay intact.
-const projectStore=createProjectStore({db,sdk:{collection,doc,getDocsFromServer,getDocFromServer,runTransaction,serverTimestamp},getUser:()=>user,isOnline:()=>navigator.onLine});
-window.addEventListener('kitchen-project-auth-request',()=>window.dispatchEvent(new CustomEvent('kitchen-project-auth',{detail:{uid:user?.uid||null,email:user?.email||''}})));
+const projectStore=createProjectStore({db,sdk:{collection,doc,getDocsFromServer,getDocFromServer,runTransaction,serverTimestamp},getUser:()=>user&&{uid:ownerUid},getSessionVersion:()=>authGeneration,isOnline:()=>navigator.onLine});
+window.addEventListener('kitchen-project-auth-request',publishAccount);
 window.addEventListener('kitchen-project-request',async event=>{
- const {requestId,action,args}=event.detail||{},uid=user?.uid||null;
+ const {requestId,action,args}=event.detail||{},uid=ownerUid||null,generation=authGeneration;
  try{
   if(!['list','open','save','remove'].includes(action))throw Error('Непозната операция.');
+  if(action==='save'||action==='remove')requireWrite();
   const result=await projectStore[action](args);
-  window.dispatchEvent(new CustomEvent('kitchen-project-response',{detail:{requestId,uid,result}}));
+  if(generation===authGeneration)window.dispatchEvent(new CustomEvent('kitchen-project-response',{detail:{requestId,uid,result}}));
  }catch(error){
-  window.dispatchEvent(new CustomEvent('kitchen-project-response',{detail:{requestId,uid,error:{code:error.code||'unknown',message:projectErrorMessage(error),details:error.details}}}));
+  if(generation===authGeneration)window.dispatchEvent(new CustomEvent('kitchen-project-response',{detail:{requestId,uid,error:{code:error.code||'unknown',message:projectErrorMessage(error),details:error.details}}}));
  }
 });
 
 window.addEventListener('ned-config-request',async e=>{
- const {id,action,args={}}=e.detail||{},generation=authGeneration,uid=user?.uid;
- try{requireUser();const ref=doc(materialCollection(),MATERIAL_PREFERENCES_ID);let result;
+ const {id,action,args={}}=e.detail||{},generation=authGeneration,uid=ownerUid;
+ try{if(action==='load')requireUser();else requireWrite();const ref=doc(materialCollection(),MATERIAL_PREFERENCES_ID);let result;
  if(action==='load'){result=(await getDocFromServer(ref)).data()||{}}
  else if(action==='saveParameters'){const parameters=validateParameters(args.parameters);result=await runTransaction(db,async tx=>{const old=(await tx.get(ref)).data()||{};if((old.configRevision||0)!==args.revision)throw Error('Настройките са променени от друг прозорец. Затвори и отвори отново.');if(generation!==authGeneration)throw Error('Профилът е променен.');const configRevision=(old.configRevision||0)+1;tx.set(ref,{...old,parameters,configRevision});return {configRevision}})}
  else if(action==='saveFolders'){const folders=validateFolders(args.folders);result=await runTransaction(db,async tx=>{const old=(await tx.get(ref)).data()||{};if((old.folderRevision||0)!==args.revision)throw Error('Папките са променени от друг прозорец. Отвори ги отново.');if(generation!==authGeneration)throw Error('Профилът е променен.');const folderRevision=(old.folderRevision||0)+1;tx.set(ref,{...old,folders,folderRevision});return {folderRevision}})}

@@ -13,3 +13,30 @@ test('revocation blocks the next requests and prevents invitation reuse; fresh i
 test('expired/cancelled invitations and anonymous access are refused',async()=>{const owner=client('owner'),id=await owner.share.invite('owner','guest@example.test','viewer');await env.withSecurityRulesDisabled(async c=>sdk.updateDoc(sdk.doc(c.firestore(),'users','owner','access_invites',id),{expiresAt:new Date(Date.now()-1000)}));await assertFails(client('guest').share.accept('owner',id));await sdk.deleteDoc(owner.ref('access_invites',id));await assertFails(client('guest').share.accept('owner',id));const db=env.unauthenticatedContext().firestore();for(const collection of ['v2_cabinets','materials','v2_projects','v2_project_names','members','access_invites'])await assertFails(sdk.getDoc(sdk.doc(db,'users','owner',collection,'x')));});
 test('a pending invitation cannot be consumed with a forged role or identity',async()=>{const owner=client('owner'),guest=client('guest'),id=await owner.share.invite('owner','guest@example.test','viewer');const invitation=owner.ref('access_invites',id),data=(await sdk.getDoc(invitation)).data();const batch=sdk.writeBatch(guest.db);batch.set(guest.ref('members','guest'),{uid:'guest',ownerUid:'owner',email:'guest@example.test',role:'editor',status:'active',inviteId:id});batch.set(guest.ref('access_invites',id),{...data,state:'accepted',acceptedBy:'guest',acceptedAt:sdk.serverTimestamp()});await assertFails(batch.commit());assert.equal((await sdk.getDoc(invitation)).data().state,'pending');await assertSucceeds(guest.share.accept('owner',id));await assertFails(sdk.updateDoc(owner.ref('members','guest'),{uid:'other',ownerUid:'other'}));});
 test('editors cannot bypass unique-name claims or revision increments, and revocation blocks every work collection',async()=>{const {owner,member}=await joined();const store=createProjectStore({db:member.db,sdk,getUser:()=>({uid:'owner'})});const saved=await store.save({name:'Защитена',data:data()});const model=(await sdk.getDoc(member.ref('v2_projects',saved.id))).data();await assertFails(sdk.setDoc(member.ref('v2_projects','bypass'),{...model,createdAt:sdk.serverTimestamp(),updatedAt:sdk.serverTimestamp()}));await assertFails(sdk.updateDoc(member.ref('v2_projects',saved.id),{revision:3,updatedAt:sdk.serverTimestamp()}));await assertFails(sdk.deleteDoc(member.ref('v2_projects',saved.id)));await sdk.setDoc(member.ref('v2_cabinets','cab_test'),{name:'Cabinet'});await sdk.setDoc(member.ref('materials','_app_preferences'),{parameters:{utilization:80},folders:[]});await owner.share.revoke('owner','editor');for(const [collection,id]of [['v2_cabinets','cab_test'],['materials','_app_preferences'],['v2_projects',saved.id],['v2_project_names',model.nameKey]]){await assertFails(sdk.getDocFromServer(member.ref(collection,id)));await assertFails(sdk.getDocsFromServer(sdk.collection(member.db,'users','owner',collection)))}await assertFails(store.save({name:'След отнемане',data:data()}));const forged=env.authenticatedContext('stranger',{role:'editor',ownerUid:'owner'}).firestore();await assertFails(sdk.getDocFromServer(sdk.doc(forged,'users','owner','materials','_app_preferences')));});
+
+test('owner lists and cancels pending invitations; accepted invitations cannot be cancelled',async()=>{
+ const {owner,member,id}=await joined('viewer');
+ const pending=await owner.share.invite('owner','waiting@example.test','editor');
+ assert.deepEqual((await owner.share.invitations('owner')).map(i=>i.state).sort(),['accepted','pending']);
+ await assert.rejects(member.share.invitations('owner'));
+ await assert.rejects(owner.share.cancel('owner',id));
+ await owner.share.cancel('owner',pending);
+ await assertFails(client('waiting').share.accept('owner',pending));
+});
+
+test('live role changes govern the next server operation and never grant user management',async()=>{
+ const {owner,member}=await joined('viewer');
+ const material=member.ref('materials','shared');
+ await assertFails(sdk.setDoc(material,{name:'viewer'}));
+ await owner.share.changeRole('owner','viewer','editor');
+ assert.equal((await member.share.membership('owner')).role,'editor');
+ await assertSucceeds(sdk.setDoc(material,{name:'editor'}));
+ await assertFails(sdk.deleteDoc(member.ref('members','viewer')));
+ await assertFails(sdk.getDoc(client('viewer','viewer@example.test',true,'password').ref('materials','shared')));
+ await owner.share.changeRole('owner','viewer','viewer');
+ await assertSucceeds(sdk.getDoc(material));
+ await assertFails(sdk.deleteDoc(material));
+ await owner.share.revoke('owner','viewer');
+ assert.equal(await member.share.membership('owner'),null);
+ await assertFails(sdk.getDoc(material));
+});

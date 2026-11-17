@@ -5,8 +5,8 @@ service cloud.firestore {
   function memberPath(uid,actor){return /databases/$(database)/documents/users/$(uid)/members/$(actor);}
   function invitePath(uid,id){return /databases/$(database)/documents/users/$(uid)/access_invites/$(id);}
   function google(){return request.auth != null && request.auth.token.email_verified == true && request.auth.token.firebase.sign_in_provider == 'google.com';}
-  function canRead(uid){return owner(uid) || (request.auth != null && get(memberPath(uid,request.auth.uid)).data.status == 'active' && get(memberPath(uid,request.auth.uid)).data.role in ['editor','viewer']);}
-  function canEdit(uid){return owner(uid) || (request.auth != null && get(memberPath(uid,request.auth.uid)).data.status == 'active' && get(memberPath(uid,request.auth.uid)).data.role == 'editor');}
+  function canRead(uid){return owner(uid) || (google() && get(memberPath(uid,request.auth.uid)).data.status == 'active' && get(memberPath(uid,request.auth.uid)).data.role in ['editor','viewer']);}
+  function canEdit(uid){return owner(uid) || (google() && get(memberPath(uid,request.auth.uid)).data.status == 'active' && get(memberPath(uid,request.auth.uid)).data.role == 'editor');}
   function accepts(uid,actor,d){
    let invitation=get(invitePath(uid,d.inviteId)).data;
    let accepted=getAfter(invitePath(uid,d.inviteId)).data;
@@ -43,7 +43,7 @@ service cloud.firestore {
     && request.resource.data.acceptedAt == request.time
     && getAfter(memberPath(uid,request.auth.uid)).data.inviteId == id
     && getAfter(memberPath(uid,request.auth.uid)).data.status == 'active';
-   allow delete: if owner(uid);
+   allow delete: if owner(uid) && resource.data.state == 'pending';
   }
   match /users/{actor}/shared_bases/{uid} {
    allow read: if request.auth != null && request.auth.uid == actor;
