@@ -1,3 +1,4 @@
+import {validateParameters,documentUtilization} from './parameters.mjs';
 import {MATERIAL_PREFERENCES_ID} from './material-base-preferences.mjs';
 import {createProjectStore} from './project-store.mjs';
 import {projectErrorMessage} from './project-model.mjs';
@@ -37,7 +38,8 @@ window.addEventListener('kitchen-v2-cloud-save-request',async e=>{
   const target=doc(cabinetCollection(),id);
   if(requestedId){const old=await getDoc(target);if(user?.uid!==owner)return;if(!old.exists())throw new Error('Оригиналният шкаф вече не съществува.');}
   if(user?.uid!==owner)return;
-  await setDoc(target,{name,parts,v2:true,updatedAt:Date.now()},{merge:true});
+  const calculationSettings={sheetUtilization:documentUtilization(e.detail.calculationSettings)};
+  await setDoc(target,{name,parts,calculationSettings,v2:true,updatedAt:Date.now()},{merge:true});
   if(user?.uid!==owner)return;
   emit('saved',{id,name,documentId:e.detail.documentId,documentEpoch:e.detail.documentEpoch,operation:e.detail.operation});
   status('☁ Запазено: '+name);
@@ -61,7 +63,7 @@ window.addEventListener('kitchen-v2-cloud-open-request',async e=>{
   if(user?.uid!==owner)return;
   const data=snap.data();
   if(!Array.isArray(data.parts))throw new Error('Невалиден формат на шкафа.');
-  emit('opened',{id:e.detail.id,name:data.name||'Без име',parts:data.parts,documentId:e.detail.documentId,documentEpoch:e.detail.documentEpoch,operation:e.detail.operation});
+  emit('opened',{id:e.detail.id,name:data.name||'Без име',parts:data.parts,calculationSettings:data.calculationSettings,documentId:e.detail.documentId,documentEpoch:e.detail.documentEpoch,operation:e.detail.operation});
  }catch(err){emit('error',{message:'Грешка при отваряне: '+err.message})}
 });
 
@@ -122,4 +124,14 @@ window.addEventListener('kitchen-project-request',async event=>{
  }catch(error){
   window.dispatchEvent(new CustomEvent('kitchen-project-response',{detail:{requestId,uid,error:{code:error.code||'unknown',message:projectErrorMessage(error),details:error.details}}}));
  }
+});
+
+window.addEventListener('ned-config-request',async e=>{
+ const {id,action,args={}}=e.detail||{},generation=authGeneration,uid=user?.uid;
+ try{requireUser();const ref=doc(materialCollection(),MATERIAL_PREFERENCES_ID);let result;
+ if(action==='load'){result=(await getDocFromServer(ref)).data()||{}}
+ else if(action==='saveParameters'){const parameters=validateParameters(args.parameters);result=await runTransaction(db,async tx=>{const old=(await tx.get(ref)).data()||{};if((old.configRevision||0)!==args.revision)throw Error('Настройките са променени от друг прозорец. Затвори и отвори отново.');if(generation!==authGeneration)throw Error('Профилът е променен.');const configRevision=(old.configRevision||0)+1;tx.set(ref,{...old,parameters,configRevision});return {configRevision}})}
+ else throw Error('Непозната настройка.');
+ if(generation===authGeneration)window.dispatchEvent(new CustomEvent('ned-config-response',{detail:{id,uid,result}}));
+ }catch(error){if(generation===authGeneration)window.dispatchEvent(new CustomEvent('ned-config-response',{detail:{id,uid,error:error.message}}))}
 });

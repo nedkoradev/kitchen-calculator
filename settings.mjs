@@ -13,11 +13,6 @@ export function validSpaceStats(value){
 export function installSettings(){
  installUICatalog();
  const dialog=document.getElementById('settingsDialog'),button=document.getElementById('settingsButton');
- const general=document.createElement('section');general.id='generalViewSettings';const title=document.createElement('h3');title.textContent='Общи настройки — изглед';general.append(title);
- for(const [id,label] of [['nedPartNamesToggle','Етикети на детайлите'],['nedDimensionsToggle','Размери на шкафовете'],['nedSemitransparencyToggle','Полупрозрачност 50%']]){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>{const target=document.getElementById(id);target?.click();sync()};b.dataset.viewSetting=id;general.append(b)}
- function sync(){for(const b of general.querySelectorAll('button'))b.setAttribute('aria-pressed',document.getElementById(b.dataset.viewSetting)?.getAttribute('aria-pressed')||'false')}
- dialog.querySelector('.dialogBody').prepend(general);dialog.addEventListener('toggle',sync);
-
  dialog.addEventListener('keydown',event=>event.stopPropagation());
  const status=document.getElementById('spaceStatus'),details=document.getElementById('spaceDetails');
  let request=0;
