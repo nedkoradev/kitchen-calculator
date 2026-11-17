@@ -1,5 +1,6 @@
 // Shared local SVG vocabulary: Lucide-style 24px, 2px strokes, no icon font/CDN.
 const paths={
+ home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-8H9v8H4a1 1 0 0 1-1-1V10Z"/>',
  transparency:'<rect x="3" y="3" width="12" height="12" rx="1"/><rect x="9" y="9" width="12" height="12" rx="1" stroke-dasharray="3 2"/><path d="m4 10 6-6m-3 10 7-7"/>',
  appliance:'<rect x="3" y="2" width="18" height="20" rx="2"/><path d="M3 7h18M7 4h.01M11 4h.01M7 10h10v8H7zM8 12h8"/>',
  viewperspective:'<path d="m12 3 9 5v8l-9 5-9-5V8l9-5Zm0 9L3 8m9 4 9-4m-9 4v9"/>',
@@ -37,10 +38,7 @@ export function decorateAction(button,name,label,{iconOnly=false}={}){
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
  for(const [key,value] of Object.entries({viewBox:'0 0 24 24',width:'24',height:'24',fill:'none',stroke:'currentColor','stroke-width':'2','stroke-linecap':'round','stroke-linejoin':'round','aria-hidden':'true',focusable:'false',class:'actionSvg'}))svg.setAttribute(key,value);
  svg.innerHTML=paths[name]||paths.settings;
- if(button.querySelector('.nedPictureIcon')){
-  button.title=label;button.setAttribute('aria-label',label);button.classList.add('iconOnly');
-  return button; // Preserve illustrated icons supplied by the page.
- }
+ button.querySelectorAll('.nedPictureIcon,.actionSvg').forEach(icon=>icon.remove());
  if(iconOnly)button.replaceChildren(svg);else button.prepend(svg);
  button.title=label;button.setAttribute('aria-label',label);button.classList.add(iconOnly?'iconOnly':'iconWithText');
  return button;

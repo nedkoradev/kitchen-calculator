@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict');const path=require('node:path');
 const {openKitchen}=require('./browser-harness.cjs');
-const photo='materials/textures/Screenshot%202026-11-06%20135831.png';
+const photo='materials/textures/'+encodeURIComponent('дъб небраска.png');
 (async()=>{
  const {browser,page,errors,setup,parts}=await openKitchen({firebaseDouble:true,extraHooks:`window.__nebraska={mode:()=>currentDesignMode,mesh:()=>{const m=boards[0];return {map:!!m?.material.map,image:m?.material.map?.image?.width,uv:Array.from(m?.geometry.attributes.uv.array||[])}},cut:()=>cutLayout(customParts[0],finishes[customParts[0].key],selectedBoard(finishes[customParts[0].key])),catalog:()=>captureProjectSnapshot().materials};`});
  async function props(){const key=(await parts())[0].key;const p=await page.evaluate(k=>window.__test.face(k),key);await page.mouse.click(p.x,p.y,{button:'right'});await page.getByRole('button',{name:'Свойства…',exact:true}).click();await page.locator('[data-tab="material"]').click()}
@@ -22,9 +22,9 @@ const photo='materials/textures/Screenshot%202026-11-06%20135831.png';
    const first=await page.evaluate(()=>({mesh:window.__nebraska.mesh(),cut:window.__nebraska.cut()}));await page.locator('#grainDirection').selectOption('x');
    const next=await page.evaluate(()=>({mesh:window.__nebraska.mesh(),cut:window.__nebraska.cut()}));assert.equal(first.cut.A,800);assert.equal(next.cut.A,600);assert.notDeepEqual(first.mesh.uv,next.mesh.uv);
    await page.locator('#dialogDone').click();
-   await page.locator('[data-v="front"]').click();await page.locator('#fit').click();await page.waitForTimeout(250);
+   await page.locator('[data-v="front"]').click();await page.locator('#viewPanCenter').click();await page.waitForTimeout(250);
    if(process.env.KITCHEN_SCREENSHOTS)await page.screenshot({path:path.join(process.env.KITCHEN_SCREENSHOTS,`nebraska-${mode}-2d.png`)});
-   await page.locator('[data-v="perspective"]').click();await page.locator('#fit').click();await page.waitForTimeout(250);
+   await page.locator('[data-v="perspective"]').click();await page.locator('#viewPanCenter').click();await page.waitForTimeout(250);
    if(process.env.KITCHEN_SCREENSHOTS)await page.screenshot({path:path.join(process.env.KITCHEN_SCREENSHOTS,`nebraska-${mode}-3d.png`)});
    await props();if(process.env.KITCHEN_SCREENSHOTS)await page.screenshot({path:path.join(process.env.KITCHEN_SCREENSHOTS,`nebraska-${mode}-grain.png`)});await page.locator('#dialogDone').click();
   }

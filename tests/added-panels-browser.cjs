@@ -16,7 +16,9 @@ const assert=require('node:assert/strict');const {openKitchen}=require('./browse
    await page.mouse.click(point.x,point.y,{button:'right'});await page.locator('#assemblyContext').getByRole('button',{name:'Свойства…',exact:true}).click();await page.locator('[data-tab="sizes"]').click();await field('partW',800);
    let next=await parts();assert.equal(width(next),800);check(next);assert.equal(await page.locator('#partW').inputValue(),'800');await page.locator('#dialogDone').click();
    await page.evaluate(()=>window.__test.undoStep());assert.equal(width(await parts()),600);await page.evaluate(()=>window.__test.redoStep());assert.equal(width(await parts()),800);
-   const h=await page.evaluate(()=>window.__test.handle('x',1));await page.mouse.move(h.x,h.y);await page.mouse.down();await page.mouse.move(h.x+h.dx*70,h.y+h.dy*70,{steps:10});await page.mouse.up();next=await parts();assert.ok(width(next)>840);check(next);
+   await page.locator('#viewPanCenter').click();
+   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   const h=await page.evaluate(()=>window.__test.handle('x',1));await page.mouse.move(h.x,h.y);await page.mouse.down();const ux=h.dx/Math.hypot(h.dx,h.dy)*7,uy=h.dy/Math.hypot(h.dx,h.dy)*7;await page.mouse.move(h.x+ux,h.y+uy);await page.mouse.move(h.x+ux+h.dx*70,h.y+uy+h.dy*70,{steps:10});await page.mouse.up();next=await parts();assert.ok(width(next)>840);check(next);
    const saved=geometry(next);
    // One-level ungroup restores K1 as a whole and the added loose panels.
    await page.evaluate(()=>window.__test.ungroupAssembly(window.__test.parts()[0].assembly));const restored=await parts();assert.ok(restored.slice(0,4).every(p=>p.assembly===restored[0].assembly));assert.ok(restored[0].assembly);assert.ok(!restored[4].assembly&&!restored[5].assembly);assert.deepEqual(geometry(restored),saved);

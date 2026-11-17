@@ -29,7 +29,7 @@ const {openKitchen}=require('./browser-harness.cjs');
    assert.equal(await page.getByLabel('Линк към сайта',{exact:true}).inputValue(),'https://www.salex.bg/product/'+encodeURIComponent(name));
    await page.keyboard.press('Escape');
   }
-  page.once('dialog',d=>d.accept('All textures'));await page.getByRole('button',{name:'Запази база',exact:true}).click();
+  await page.getByRole('button',{name:'Запази база',exact:true}).click();await page.locator('.nedPromptInput').fill('All textures');await page.locator('.nedConfirmActions .nedPrimaryButton').click();
   await page.waitForFunction(()=>window.__firebaseDouble.rows().some(r=>r.path.includes('/materials/')));
   const saved=await page.evaluate(()=>window.__firebaseDouble.rows().find(r=>r.path.includes('/materials/')).value);
   assert.ok(JSON.stringify(saved).includes('category.png'));

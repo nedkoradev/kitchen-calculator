@@ -47,7 +47,7 @@ const oldUrl='https://images.example.test/old.png';
   published.set(proposed,other);await page.locator('#verifyMaterialPhoto').click();await page.waitForFunction(()=>document.querySelector('#materialPhotoStatus').textContent.includes('не съвпада'));
   published.set(proposed,png);await page.locator('#verifyMaterialPhoto').click();await page.waitForFunction(()=>document.querySelector('#materialPhotoStatus').textContent.includes('Снимката е проверена'));
   assert.equal((await material()).textureUrl,oldUrl);await save();assert.equal((await material()).textureUrl,proposed);await page.waitForFunction(()=>window.__photoUrls.size===0);
-  page.once('dialog',dialog=>dialog.accept('Verified decor base'));await page.getByRole('button',{name:'Запази база',exact:true}).click();
+  await page.getByRole('button',{name:'Запази база',exact:true}).click();await page.locator('.nedPromptInput').fill('Verified decor base');await page.locator('.nedConfirmActions .nedPrimaryButton').click();
   await page.waitForFunction(()=>window.__firebaseDouble.rows().some(row=>row.path.includes('/materials/')));
   const payload=await page.evaluate(()=>window.__firebaseDouble.rows().find(row=>row.path.includes('/materials/')).value.pdcMaterials[0]);assert.equal(payload.textureUrl,proposed);assert.equal(payload.textureWidthMm,1234);assert.ok(!JSON.stringify(payload).match(/blob:|data:|base64/));
   console.log('PASS pending save retains old photo, 404/mismatch rejected, published bytes verified before save and Firebase metadata contains only public path');

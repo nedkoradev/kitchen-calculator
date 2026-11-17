@@ -11,7 +11,9 @@ const assert=require('node:assert/strict');const path=require('node:path');const
    const face=await page.evaluate(()=>window.__test.face('leftlip'));await page.mouse.click(face.x,face.y,{button:'right'});await page.getByRole('button',{name:'Свойства…',exact:true}).click();await page.locator('[data-tab="sizes"]').click();
    await field('partW',712);let next=await parts();assert.equal(width(next),712);checkProfiles(source,next);await page.locator('#dialogDone').click();
    await page.evaluate(()=>window.__test.undoStep());assert.equal(width(await parts()),512);await page.evaluate(()=>window.__test.redoStep());assert.equal(width(await parts()),712);
-   const h=await page.evaluate(()=>window.__test.handle('x',1));await page.mouse.move(h.x,h.y);await page.mouse.down();await page.mouse.move(h.x+h.dx*40,h.y+h.dy*40,{steps:8});await page.mouse.up();next=await parts();assert.ok(width(next)>735);checkProfiles(source,next);
+   await page.locator('#viewPanCenter').click();
+   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   const h=await page.evaluate(()=>window.__test.handle('x',1));await page.mouse.move(h.x,h.y);await page.mouse.down();const ux=h.dx/Math.hypot(h.dx,h.dy)*7,uy=h.dy/Math.hypot(h.dx,h.dy)*7;await page.mouse.move(h.x+ux,h.y+uy);await page.mouse.move(h.x+ux+h.dx*40,h.y+uy+h.dy*40,{steps:8});await page.mouse.up();next=await parts();assert.ok(width(next)>735);checkProfiles(source,next);
    if(process.env.KITCHEN_SCREENSHOTS)await page.screenshot({path:path.join(process.env.KITCHEN_SCREENSHOTS,`runner-spacing-${mode}.png`)});
    const saved=geometry(next);
    if(mode==='constructor'){
