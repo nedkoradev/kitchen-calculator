@@ -6,7 +6,7 @@ const source=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const hooks=`
 window.__test={
  parts:()=>structuredClone(customParts),
- setup(parts){clearWorkspace();customParts.push(...structuredClone(parts));selected=parts[0]?.key;groupSelections.clear();singleMemberSelection=false;build(false);setView('front');markDocumentSaved()},
+ setup(parts){clearWorkspace();customParts.push(...structuredClone(parts));syncDocumentCounters();selected=parts[0]?.key;groupSelections.clear();singleMemberSelection=false;build(false);setView('front');markDocumentSaved()},
  select(key,single=false){selected=key;singleMemberSelection=single;updateSelection()},
  face(key){const p=customParts.find(p=>p.key===key);return screenPos(new THREE.Vector3(p.x,p.y,p.z+p.d/2))},
  handle(axis,sign){const p=customParts.find(p=>p.key===selected),m=customParts.filter(q=>q.assembly===p.assembly);const b=groupBounds(m,axis),x=groupBounds(m,'x'),z=groupBounds(m,'z');const v=new THREE.Vector3(axis==='x'?(sign<0?b.min:b.max)-ROOM.w/2:(x.min+x.max)/2-ROOM.w/2,axis==='y'?(sign<0?b.min:b.max):Math.max(...m.map(p=>p.y+p.h/2))+3,axis==='z'?(sign<0?b.min:b.max)-ROOM.d/2:(z.min+z.max)/2-ROOM.d/2);const a=screenPos(v),c=screenPos(v.clone().add(new THREE.Vector3(axis==='x'?100:0,axis==='y'?100:0,axis==='z'?100:0)));return {...a,dx:(c.x-a.x)/100,dy:(c.y-a.y)/100}},
@@ -30,7 +30,7 @@ async function openKitchen({firebaseDouble=false,extraHooks='',initialStorage=nu
     sessionStorage.setItem('kitchen-test-seeded','yes');
    }
   },initialStorage);
-  page.on('pageerror',e=>{errors.push(e.message);console.error('PAGEERROR',e.message)});
+  page.on('pageerror',e=>{errors.push(e.message);console.error('PAGEERROR',e.stack||e.message)});
   page.on('requestfailed',r=>console.error('REQUESTFAILED',r.url(),r.failure().errorText));
   if(process.env.KITCHEN_CDN_CACHE)await page.route('https://cdn.jsdelivr.net/**',r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(process.env.KITCHEN_CDN_CACHE,path.basename(new URL(r.request().url()).pathname)))}));
   if(process.env.KITCHEN_GEOMETRY_FILE)await page.route('**/geometry.mjs',r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync(process.env.KITCHEN_GEOMETRY_FILE,'utf8')}));
