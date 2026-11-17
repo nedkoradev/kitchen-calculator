@@ -6,7 +6,7 @@
 
 - `nedkoradev/kitchen-calculator`: main е публикуваната v2.83. GitHub API показва активен Pages сайт. Няма CNAME в main. `.github/workflows/pages.yml` запазва Source GitHub Actions, Jekyll, измерването на source, release/SHA проверките и deploy-pages. Старият HTTPS адрес връща актуалния HTML с ned-booting.
 - `nedkoradev/nediq`: GitHub API показва активен Pages сайт, CNAME съдържа `nediq.eu`, а index.html е временната страница „Сайтът е в процес на разработка“. Хранилището не се изтрива.
-- GET Pages settings не е достъпен през GitHub конектора; терминалният API е отказан. Следователно live cname/source/https_enforced/certificate на двата сайта НЕ са потвърдени административно. CNAME в Git е доказателство за конфигурационен файл, не за валиден текущ сертификат. Преди cutover собственикът проверява Settings → Pages в двете хранилища и запазва стойностите.
+- **Ръчно потвърдено от собственика в Settings → Pages:** `nediq`: Source Deploy from a branch, main / (root), Custom domain nediq.eu, Enforce HTTPS включено, DNS Check In Progress, показван адрес https://nediq.eu. `kitchen-calculator`: Source GitHub Actions, Custom domain празно, Enforce HTTPS включено за стандартния адрес, показван адрес https://nedkoradev.github.io/kitchen-calculator/. Това е предоставена от собственика административна проверка; API достъпът от средата остава недостъпен. DNS Check In Progress и включено Enforce HTTPS не доказват валиден текущ сертификат за apex/www. Тези две външни проверки остават задължителни преди cutover.
 - DNS и HTTPS към nediq.eu/www.nediq.eu са отказани от allowlist proxy (403); локалното DNS разрешаване също не е достъпно. Текущите A/AAAA/CNAME/CAA/NS/TTL и сертификатът остават непроверени. Нужен е read-only достъп до nediq.eu, www.nediq.eu, dns.google или export на записите от SuperHosting.BG. Това е предварително условие за прехвърляне, а не основание да заменяме непроверени записи.
 - Публичният Firebase getProjectConfig потвърди Authorized Domains: localhost, kitchen-designer-9d437.firebaseapp.com, kitchen-designer-9d437.web.app, nedkoradev.github.io. Новите два домейна липсват. Не е изпращан admin update.
 
@@ -17,6 +17,25 @@ JS/CSS/importmap/икони/default materials, local texture URLs, release.json 
 Единствената runtime корекция в PR е photoKey: старият Pages URL, https://nediq.eu/ и https://www.nediq.eu/ разпознават еднакъв ключ за текстурната ориентация. Запазените URL, материали и проекти не се пренаписват. HTTPS адреси към други доставчици остават различни. Относителните текстури са препоръчителни за нови записи; старите абсолютни URL се проверяват след cutover за redirect/CORS, без масова миграция. GitHub upload/API връзките остават към оригиналното хранилище.
 
 Няма CNAME в този PR: при GitHub Actions publishing той не конфигурира домейна; решаваща е Pages настройката. Няма промяна на Firebase config/authDomain/projectId или Firestore Rules. Draft PR #78 за споделен достъп остава отделен.
+
+## Окончателен ред и условия за спиране
+
+Кодът, историята и автоматичното публикуване остават единствено в `nedkoradev/kitchen-calculator`. На nediq.eu се обслужва неговият коренов index.html, без iframe, междинна страница, бутон или копиране в nediq. Домейнът сам по себе си не променя началния работен режим. Изразът „директно конструктора“ се уточнява отделно, ако означава промяна на текущия старт в режим Проект към режим Конструктор; този PR засега не променя режимите.
+
+**Преди разрешение за промени:** запазваме посочените по-горе Pages стойности; довършваме read-only DNS/TLS проверката и получаваме DNS export/TTL. Докато DNS Check е In Progress и причината не е изяснена, не освобождаваме домейна от nediq. Ако записите вече сочат към GitHub Pages, смяната на хранилището не изисква DNS промяна: и двете Pages конфигурации използват същите GitHub IP адреси.
+
+**След отделно одобрение, в този ред:**
+
+1. Във всички използвани браузърни профили се изтеглят нужните чернови от стария origin; запазват се копията локално. Не се чисти browser storage.
+2. Добавят се двата Firebase Authorized Domains и при необходимост разрешените API-key referrers. Съществуващият Firebase проект, OAuth handler, UID и Rules не се сменят.
+3. Слива се провереният PR #80 и се изчаква успешното публикуване на v2.84 на стария адрес с точния release SHA. При неуспешен deploy се спира преди промяна на домейна.
+4. В nediq Settings → Pages → Custom domain → Remove. Понеже сайтът е branch-based, проверяваме, че CNAME е премахнат от main; ако GitHub не го е премахнал, премахването се прави като отделна ограничена промяна след одобрението. Кодът на временния сайт и repo се запазват.
+5. Веднага след освобождаването: kitchen-calculator Settings → Pages → Custom domain = nediq.eu → Save; Source остава GitHub Actions. Не се добавя CNAME като заместител на тази настройка. Ако домейнът е „already taken“ или Save е отказан, не се променя DNS; проверява се освобождаването, а при нерешен проблем домейнът се връща към nediq.
+6. Само при установени разлики се коригират DNS записите от таблицата. www сочи с CNAME към nedkoradev.github.io, а не към nediq.eu и не към repo path. При DNS, който вече е правилен, тази стъпка се пропуска.
+7. Изчакват се успешният DNS Check и сертификат, валиден за nediq.eu и www.nediq.eu. На новия Pages binding се проверява и включва Enforce HTTPS, когато GitHub го разреши. Настройката от стария repo не се приема за автоматично наследена. При забавяне не се заобикаля сертификатът и не се обявява готовност. Не обещаваме непрекъсната достъпност в краткия интервал между двата binding-а.
+8. Проверяват се canonical www → apex и старият Pages адрес, след което се изпълняват всички реални приемателни сценарии по-долу. Ако стар абсолютен texture URL се пренасочва с грешен path/CORS, това е причина за спиране и rollback, а не за масова промяна на записите. При успешни проверки се възстановяват желаните чернови на новия origin и се отчита публикуваната версия.
+
+**Rollback по фаза:** преди стъпка 4 старият binding не е засегнат; спираме подготовката. След стъпка 4 и преди успешен нов binding връщаме nediq.eu в nediq Settings → Pages и CNAME в main. След нов binding първо премахваме домейна от kitchen-calculator и после го връщаме към nediq; не опитваме да го държим едновременно на двете хранилища. DNS се връща от export само ако е бил променян. Старият адрес на приложението се проверява след освобождаването му от custom domain. Ако само сертификатът се издава бавно, решението дали да изчакаме или да върнем binding-а се взема със собственика според допустимото прекъсване, без необратими промени. Публикуваната v2.84 може да остане на стария адрес — съвместима е и с двата пътя.
 
 ## Етапи след одобрение
 
