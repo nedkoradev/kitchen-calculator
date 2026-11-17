@@ -1,0 +1,7 @@
+# Първоначално изобразяване — v2.83
+
+Причината за проблясването е статичният legacy HTML (стар aside/navigation и картинни икони), който става видим преди основният module graph да се изтегли и installAppShell/installActionIcons/installShellMenus/installResponsiveWorkspace да преобразуват реалните DOM контроли. Темата се зарежда чрез обичайните render-blocking stylesheet links в head; бавни CDN модули удължават видимото междинно състояние. Service worker е network-first за публичните ресурси и не е причината за DOM преобразуването.
+
+Минималният начален екран е inline в HTML, със същите тъмносин/светъл фон като текущата тема. Класът ned-booting е в първия html tag; критичният CSS е преди всички външни ресурси. visibility:hidden пази измеримото оформление/размерите на WebGL canvas и скрива старите контроли от рисуване и фокус. След последния синхронен shell installer класът и началният екран се премахват незабавно. Няма таймер, допълнителна заявка, изчакване на Firebase/вход или forced reload/skipWaiting. Данни, чернови, геометрия и изчисления са непроменени.
+
+initial-render-browser.cjs задържа истинския Three.js module отговор, наблюдава animation frames, проверява начален екран и готов shell/SVG на desktop/mobile при open, reload (F5) и CDP ignoreCache reload (Ctrl+F5). release-browser.cjs проверява реален service worker, кеш и обновяване между две версии. Браузърните Firebase регресии използват SDK double, без production записи. Публикуваният сайт се проверява отделно.
