@@ -1,3 +1,4 @@
+import {defaultFolders,validateFolders,resolveFolder} from './library-folders.mjs';
 import {validateParameters,documentUtilization} from './parameters.mjs';
 import {MATERIAL_PREFERENCES_ID} from './material-base-preferences.mjs';
 import {createProjectStore} from './project-store.mjs';
@@ -21,12 +22,13 @@ el('cloudLogout').onclick=async()=>{try{await signOut(auth)}catch(e){status('И�
 const cabinetCollection=()=>collection(db,'users',user.uid,'v2_cabinets');
 function requireUser(){if(!user)throw new Error('Първо влез с Google от горния десен ъгъл.')}
 window.addEventListener('kitchen-v2-cloud-list-request',async()=>{
+ const generation=authGeneration;
  try{
   requireUser();
-  const snap=await getDocs(cabinetCollection());
-  const items=snap.docs.map(d=>({id:d.id,name:d.data().name||'Без име',parts:d.data().parts||[],category:d.data().category||'',updatedAt:d.data().updatedAt||0})).sort((a,b)=>a.name.localeCompare(b.name,'bg'));
+  const snap=await getDocs(cabinetCollection());if(generation!==authGeneration)return;
+  const items=snap.docs.map(d=>({id:d.id,name:d.data().name||'Без име',parts:d.data().parts||[],category:d.data().category||'',folderId:d.data().folderId,updatedAt:d.data().updatedAt||0})).sort((a,b)=>a.name.localeCompare(b.name,'bg'));
   emit('list',{items});
- }catch(e){emit('error',{message:'Грешка при зареждане: '+e.message})}
+ }catch(e){if(generation===authGeneration)emit('error',{message:'Грешка при зареждане: '+e.message})}
 });
 window.addEventListener('kitchen-v2-cloud-save-request',async e=>{
  const owner=user?.uid;
@@ -131,6 +133,8 @@ window.addEventListener('ned-config-request',async e=>{
  try{requireUser();const ref=doc(materialCollection(),MATERIAL_PREFERENCES_ID);let result;
  if(action==='load'){result=(await getDocFromServer(ref)).data()||{}}
  else if(action==='saveParameters'){const parameters=validateParameters(args.parameters);result=await runTransaction(db,async tx=>{const old=(await tx.get(ref)).data()||{};if((old.configRevision||0)!==args.revision)throw Error('Настройките са променени от друг прозорец. Затвори и отвори отново.');if(generation!==authGeneration)throw Error('Профилът е променен.');const configRevision=(old.configRevision||0)+1;tx.set(ref,{...old,parameters,configRevision});return {configRevision}})}
+ else if(action==='saveFolders'){const folders=validateFolders(args.folders);result=await runTransaction(db,async tx=>{const old=(await tx.get(ref)).data()||{};if((old.folderRevision||0)!==args.revision)throw Error('Папките са променени от друг прозорец. Отвори ги отново.');if(generation!==authGeneration)throw Error('Профилът е променен.');const folderRevision=(old.folderRevision||0)+1;tx.set(ref,{...old,folders,folderRevision});return {folderRevision}})}
+ else if(action==='moveCabinet'){result=await runTransaction(db,async tx=>{const config=(await tx.get(ref)).data()||{},folders=validateFolders(config.folders||defaultFolders()),target=doc(cabinetCollection(),args.id),snap=await tx.get(target);if(!snap.exists())throw Error('Моделът не съществува.');const folderId=args.folderId;if(folderId!==null&&!folders.some(f=>f.id===folderId&&!f.deleted))throw Error('Папката не съществува. Запази папките и опитай отново.');if(generation!==authGeneration)throw Error('Профилът е променен.');tx.set(target,{...snap.data(),folderId});return {id:args.id,folderId}})}
  else throw Error('Непозната настройка.');
  if(generation===authGeneration)window.dispatchEvent(new CustomEvent('ned-config-response',{detail:{id,uid,result}}));
  }catch(error){if(generation===authGeneration)window.dispatchEvent(new CustomEvent('ned-config-response',{detail:{id,uid,error:error.message}}))}
