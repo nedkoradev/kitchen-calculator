@@ -141,3 +141,5 @@
 - От v2.74 app-theme.css е общата светла компонентна тема вместо professional-dark.css. UI каталогът копира реалния body контекст в изолираните примери и чете същия CSSOM. shell-menus.mjs използва adapters към истинските действия; не добавяй паралелни обработчици за геометрия/облак.
 
 - От v2.75 responsive-workspace.mjs/.css управляват панелите и лентата за изгледи при ≤900 px. Преместват същите DOM възли; никога не клонирай редактори или Three.js сцена за телефон. Работните панели имат затваряне/Escape, а ↔ мм запазва съществуващия handler. Проверки: tests/responsive-workspace-browser.cjs и финалните сценарии в docs/APP_REDESIGN.md.
+
+- От v2.76 празен click и камерата запазват селекцията; Esc я изчиства. Canvas връща фокуса за Delete, а typing/modal guards защитават въвеждането. deleteCustom използва общите deletionKeys и собствена Undo стъпка. locks.w/h/d остават размерни заключвания. physicalEdgeDirections означава физическите тесни 3D ръбове, без промяна на stored slots или Salex ориентацията; виж docs/POST_REDESIGN_FIXES.md и новите selection-delete/physical-edge-labels browser тестове.
