@@ -36,11 +36,12 @@ function buildCabinet(settings,catalog,visit,requireShelfBand){
   const edge=edgeFor(role==='shelves'?'shelves':role==='doors'?'doors':'body'),edges=[null,null,null,null];
   if(cut&&role!=='back'&&role!=='worktop'){if(all)edges.fill(edge);else edges[panelAxes(part).thickness==='x'?1:2]=edge}
   if(lateral)for(const slot of edgeEditorSlots(part).slice(0,2))edges[slot]=edgeFor('bodySides');
-  if(cut&&profile!=='back'&&Object.hasOwn(c.edgeProfiles||{},profile)){const values=c.edgeProfiles[profile];if(!Array.isArray(values)||values.length!==4||values.some(v=>v!==null&&(!Number.isInteger(v)||!catalog.edgeMaterials?.[v])))throw Error('Избери наличен кант за всеки от четирите ръба.');edges.splice(0,4,...values)}
+  const edgeProfile=Object.hasOwn(c.edgeProfiles||{},materialRole)?materialRole:profile;
+  if(cut&&profile!=='back'&&Object.hasOwn(c.edgeProfiles||{},edgeProfile)){const values=c.edgeProfiles[edgeProfile];if(!Array.isArray(values)||values.length!==4||values.some(v=>v!==null&&(!Number.isInteger(v)||!catalog.edgeMaterials?.[v])))throw Error('Избери наличен кант за всеки от четирите ръба.');edges.splice(0,4,...values)}
   if(profile==='shelves'&&!Object.hasOwn(c.edgeProfiles||{},'shelves')&&!Object.hasOwn(c.edges||{},'shelves'))edges[2]=matchingShelfEdge(material.item,catalog.edgeMaterials,part.h);
   if(profile==='shelves'&&requireShelfBand&&edges[2]===null)throw Error(catalog.edgeMaterials?.length?'Рафтове: избери кант за предния ръб чрез „Кантове“.':'Рафтове: в базата няма кантове. Добави кант в материалната база и избери предния ръб.');
   items.push({part,name,finish:{materialType:material.type,material:material.index,color:material.item.color||'#dfd0bc',grainAxis:physicalGrainAxis(part),edges,includeInCut:cut},allEdges:edges[0]!==null&&edges.every(v=>v===edges[0])});
-  if(cut)visit?.({id:profile,part,finish:items.at(-1).finish,material:material.item});
+  if(cut)visit?.({id:profile==='bodyRails'?materialRole:profile,part,finish:items.at(-1).finish,material:material.item});
  };
  const body=(name,p,thin,lateral=false,profile='bodySide',materialRole=profile)=>make(name,'body',p,thin,false,true,lateral,profile,materialRole);
  if(c.sides){body('Лява страница',{w:sideT,h:sideH,d:bodyD,x:-w/2+sideT/2,y:lower+sideH/2,z:(rear+front)/2},'x');body('Дясна страница',{w:sideT,h:sideH,d:bodyD,x:w/2-sideT/2,y:lower+sideH/2,z:(rear+front)/2},'x')}
@@ -59,7 +60,7 @@ function buildCabinet(settings,catalog,visit,requireShelfBand){
 }
 // Operation-local editor targets; only normal finish.edges enter snapshots.
 export function cabinetEdgeTargets(settings,catalog){
- const targets=new Map(),labels={bodySide:'Страници',bodyBottom:'Дъно',bodyTop:'Таван',bodyRails:'Двете горни царги',doors:'Врати',shelves:'Рафтове',worktop:'Плот'};
+ const targets=new Map(),labels={bodySide:'Страници',bodyBottom:'Дъно',bodyTop:'Таван',bodyRailRear:'Задна горна царга',bodyRailFront:'Предна горна царга',doors:'Врати',shelves:'Рафтове',worktop:'Плот'};
  buildCabinet(settings,catalog,value=>{if(labels[value.id]&&!targets.has(value.id))targets.set(value.id,{...value,label:labels[value.id],requiredSlots:value.id==='shelves'?[2]:[],slotLabels:panelAxes(value.part).thickness==='x'?['Заден ръб','Преден ръб','Горен ръб','Долен ръб']:panelAxes(value.part).thickness==='y'?['Ляв ръб','Десен ръб','Преден ръб','Заден ръб']:['Ляв ръб','Десен ръб','Горен ръб','Долен ръб']})},false);return [...targets.values()];
 }
 export function placeCabinet(items,obstacles,room){
