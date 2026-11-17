@@ -55,10 +55,10 @@ test('independent corpus profiles do not bleed into other groups or hidden rails
 });
 test('rail target edits both rails through an independent four-physical-edge profile',()=>{
  const options={...cabinetPresets.base,materials,top:'rails'},profile=[0,1,2,3],original=generateCabinet(options,catalog),changed=generateCabinet({...options,edgeProfiles:{bodyRails:profile}},catalog);
- const target=cabinetEdgeTargets(options,catalog).find(t=>t.id==='bodyRails');assert.ok(target);assert.equal(target.label,'Двете горни царги');assert.equal(panelAxes(target.part).thickness,'y');
+ const target=cabinetEdgeTargets(options,catalog).find(t=>t.id==='bodyRailRear');assert.ok(target);assert.equal(target.label,'Задна горна царга');assert.equal(panelAxes(target.part).thickness,'y');
  const rails=changed.filter(i=>i.name.endsWith('горна царга'));assert.equal(rails.length,2);
  for(const item of changed){const before=original.find(i=>i.name===item.name);assert.deepEqual(item.part,before.part);if(rails.includes(item)){assert.deepEqual(item.finish.edges,profile);assert.equal(item.finish.material,before.finish.material);assert.equal(item.finish.materialType,before.finish.materialType);const layout=cutLayout(item.part,item.finish,catalog.pdcMaterials[item.finish.material]);assert.deepEqual(layout.edgeIndices.map(slot=>item.finish.edges[slot]),[2,3,1,0]);}else assert.deepEqual(item,before)}
- for(const top of ['panel','none'])assert.ok(!cabinetEdgeTargets({...options,top},catalog).some(t=>t.id==='bodyRails'));
+ for(const top of ['panel','none'])assert.ok(!cabinetEdgeTargets({...options,top},catalog).some(t=>t.id==='bodyRailRear'||t.id==='bodyRailFront'));
  assert.throws(()=>generateCabinet({...options,edgeProfiles:{bodyRails:[0,999,null,null]}},catalog),/кант/);
 });
 test('independent material thicknesses preserve envelope and exact joints for all cabinet types',()=>{
@@ -77,4 +77,13 @@ test('front/rear rails use independent materials and real thickness, retaining s
  const explicitFallback=generateCabinet({...cabinetPresets.base,shelves:0,materials:{...materials,bodySide:'pdc:'+last,bodyRailRear:'pdc:0'}},c);assert.equal(part(explicitFallback,'Задна горна царга').h,18);assert.equal(part(explicitFallback,'Предна горна царга').h,25);
  const legacy=create({materials:{...materials,bodySide:'pdc:1'}});for(const item of legacy.filter(i=>i.name.endsWith('горна царга')))assert.equal(item.finish.material,1);
  assert.throws(()=>create({materials:{...materials,bodyRailRear:'pdc:9999'}}),/материал/);
+});
+
+test('each rail overrides the legacy shared edge profile independently without geometric or material changes',()=>{
+ const options={...cabinetPresets.base,materials,shelves:0},before=generateCabinet(options,catalog),front=[0,null,2,null],rear=[null,1,null,3];
+ const items=generateCabinet({...options,edgeProfiles:{bodyRails:[3,3,3,3],bodyRailFront:front,bodyRailRear:rear}},catalog);
+ assert.deepEqual(items.map(i=>i.part),before.map(i=>i.part));for(const item of items){const original=before.find(i=>i.name===item.name);if(item.name==='Предна горна царга')assert.deepEqual(item.finish.edges,front);else if(item.name==='Задна горна царга')assert.deepEqual(item.finish.edges,rear);else assert.deepEqual(item,original);assert.equal(item.finish.material,original.finish.material)}
+ const targets=cabinetEdgeTargets({...options,edgeProfiles:{bodyRailFront:front,bodyRailRear:rear}},catalog);for(const [id,profile] of [['bodyRailFront',front],['bodyRailRear',rear]])assert.deepEqual(targets.find(t=>t.id===id).finish.edges,profile);
+ const partial=generateCabinet({...options,edgeProfiles:{bodyRails:rear,bodyRailFront:front}},catalog);assert.deepEqual(partial.find(i=>i.name==='Задна горна царга').finish.edges,rear);assert.deepEqual(partial.find(i=>i.name==='Предна горна царга').finish.edges,front);
+ assert.throws(()=>generateCabinet({...options,edgeProfiles:{bodyRailFront:[0,999,null,null]}},catalog),/кант/);
 });

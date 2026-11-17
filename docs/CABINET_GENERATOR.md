@@ -51,3 +51,7 @@ Renderer, ротация, разкрой, количества, цени и Sale
 ## v2.79
 
 Нов долен шкаф започва с обща височина 900 mm: крака 100 mm, корпус 762 mm, плот 38 mm при началната конфигурация. Другите presets и отварянето на стари snapshots не са променени. Царгите имат отделни materials.bodyRailRear/bodyRailFront; при липса се използва старият bodySide/body fallback. Реалната дебелина на всяка царга определя собствената ѝ геометрия, а вътрешният отвор се ограничава от по-дебелата. Записват се само обикновените part/finish данни, без нова схема на документа. Общият edgeProfiles.bodyRails и Salex mapping са запазени. Проверки: constructor-improvements-browser, selection-delete-browser, generator/unit/materials/rail-edges и cabinet-dimensions.
+
+## v2.80 — независими кантове на царгите
+
+До материала на всяка горна царга има отделен бутон „Кантове“. Общият видим ред е премахнат. Единният openEdgeEditor рисува реалния детайл и прилага само неговите четири ръба; Cancel/Escape не променят избора. bodyRailRear/bodyRailFront имат отделни edgeProfiles, с приоритет пред legacy bodyRails. Старите programmatic bodyRails настройки остават fallback, а записаните модели не се мигрират: snapshot-ите съдържат само finish.edges. Геометрия, материали, общи формули и Salex mapping са непроменени. Проверки: cabinet-generator.test.mjs, rail-edges-browser.cjs, visual-edge/edge-directions, constructor-improvements и UI каталог.
