@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');const path=require('node:path');const
  const {browser,page,errors,setup,parts}=await openKitchen({firebaseDouble:true,extraHooks:`window.__saveCase={requests:[],name(value){$('cabinetName').value=value}};window.addEventListener('kitchen-v2-cloud-save-request',e=>window.__saveCase.requests.push(structuredClone(e.detail)),true);`});
  const records=()=>page.evaluate(()=>window.__firebaseDouble.rows().filter(r=>r.path.includes('/v2_cabinets/')));
  const waitSaved=()=>page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
- const open=()=>page.locator('#quickSave').click();const submit=()=>page.locator('#fileDialogConfirm').click();
+ const open=()=>(async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSave').click()})();const submit=()=>page.locator('#fileDialogConfirm').click();
  try{
   await setup([{key:'custom991',x:0,y:200,z:0,w:600,h:18,d:500,locks:{h:true}}]);const initial=await parts();
   await open();assert.equal(await page.locator('#fileDialogName').inputValue(),'');await submit();assert.equal(await page.locator('#fileDialogName').inputValue(),'');assert.match(await page.locator('#fileDialogStatus').innerText(),/Въведи име/);assert.equal((await records()).length,0);

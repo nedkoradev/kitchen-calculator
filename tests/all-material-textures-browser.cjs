@@ -9,7 +9,7 @@ const {openKitchen}=require('./browser-harness.cjs');
  };`});
  try{
   await page.route('**/materials/textures/category.png*',r=>r.fulfill({contentType:'image/png',path:path.join(__dirname,'fixtures/grain.png')}));
-  await page.locator('#navMaterials').click();
+  await page.locator('#shellSettings>summary').click();await page.locator('#navMaterials').click();
   const names=['ПДЧ материали','Гръб HDF','Плотове','Кантове'];
   for(const name of names){
    const section=page.locator('.materialSection').filter({has:page.getByRole('heading',{name,exact:true})});

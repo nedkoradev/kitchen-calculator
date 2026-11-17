@@ -8,7 +8,7 @@ const photo='materials/textures/'+encodeURIComponent('дъб небраска.pn
   for(const mode of ['constructor','project']){
    await page.locator(mode==='constructor'?'#modeConstructor':'#modeProject').click();await setup([{key:'custom891',w:600,h:800,d:18,x:0,y:550,z:0,locks:{d:true}}]);
    await props();await page.locator('#materialSelect').selectOption({label:'Дъб Небраска н.H3331 ST10 EGGER'});await page.locator('#dialogDone').click();
-   const before=await parts();await page.locator('#navMaterials').click();
+   const before=await parts();await page.locator('#shellSettings>summary').click();await page.locator('#navMaterials').click();
    const row=page.locator('.materialGroup').first().locator('tbody tr').filter({hasText:'Дъб Небраска'});await row.getByRole('button',{name:'Промени',exact:true}).click();
    await page.locator('.materialPhotoHelp summary').click();await page.locator('#materialTextureUrl').fill(photo);
    await page.locator('#verifyMaterialPhoto').click();await page.waitForFunction(()=>document.querySelector('#materialPhotoStatus').textContent.includes('Снимката е проверена'));

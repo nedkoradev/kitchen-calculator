@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict');const path=require('node:path');const {openKitchen}=require('./browser-harness.cjs');
 (async()=>{const {browser,page,errors,setup}=await openKitchen({firebaseDouble:true});try{
- await page.setViewportSize({width:1400,height:1000});await page.locator('#navMaterials').click();
+ await page.setViewportSize({width:1400,height:1000});await page.locator('#shellSettings>summary').click();await page.locator('#navMaterials').click();
  const groups=page.locator('.materialGroup');assert.equal(await groups.count(),4);
  for(let i=0;i<4;i++){
   const result=await groups.nth(i).evaluate(section=>{const table=section.querySelector('table'),cell=table.querySelector('tbody td');return {first:cell.getBoundingClientRect().width,table:table.getBoundingClientRect().width,area:section.clientWidth-36,left:table.getBoundingClientRect().left-section.getBoundingClientRect().left,headers:table.querySelectorAll('thead th').length}});

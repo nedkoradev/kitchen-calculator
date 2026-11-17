@@ -15,7 +15,7 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
  try{
   await page.route(photo+'*',route=>route.fulfill({contentType:'image/png',path:path.join(__dirname,'fixtures/grain.png'),headers:{'access-control-allow-origin':'*'}}));
   assert.match((await page.locator('header strong').innerText()).replace(/\s+/g,' '),/^NED-IQ v\d+\.\d+$/);
-  await page.locator('#navMaterials').click();
+  await page.locator('#shellSettings>summary').click();await page.locator('#navMaterials').click();
   const section=page.locator('.materialSection').filter({has:page.getByRole('heading',{name:'ПДЧ материали',exact:true})});
   await section.getByRole('button',{name:'Нов материал',exact:true}).click();
   await page.getByLabel('Наименование',{exact:true}).fill('Photo and grain');
@@ -53,12 +53,12 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
    const copied=await parts();await page.evaluate(()=>{window.__test.selectAll();window.__test.createAssembly()});await page.evaluate(()=>window.__test.ungroupAssembly(window.__test.parts()[0].assembly));assert.deepEqual(JSON.parse(JSON.stringify(await parts())),JSON.parse(JSON.stringify(copied)));
    await page.evaluate(()=>window.__test.undoStep());await page.evaluate(()=>window.__test.redoStep());assert.deepEqual(JSON.parse(JSON.stringify(await parts())),JSON.parse(JSON.stringify(copied)));
    if(mode==='constructor'){
-    await page.locator('#quickSave').click();await page.locator('#fileDialogName').fill('Grain cabinet');await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
-    await setup([]);await page.locator('#quickOpen').click();await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
+    await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSave').click()})();await page.locator('#fileDialogName').fill('Grain cabinet');await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
+    await setup([]);await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileOpen').click()})();await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
    }else{
-    await page.locator('#projectQuickSave').click();await page.locator('#projectCloudName').fill('Grain project');await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
+    await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSave').click()})();await page.locator('#projectCloudName').fill('Grain project');await page.locator('#projectCloudSave').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
     const payload=await page.evaluate(()=>window.__firebaseDouble.rows().find(row=>row.path.includes('/v2_projects/')).value.data);assert.equal(payload.materials.pdcMaterials[0].textureUrl,photo);assert.ok(!JSON.stringify(payload).includes('base64'));
-    await setup([]);await page.locator('#projectQuickOpen').click();await page.locator('#projectCloudOpen').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
+    await setup([]);await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileOpen').click()})();await page.locator('#projectCloudOpen').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
    }
    assert.equal((await parts()).length,2);assert.ok(Object.values(await page.evaluate(()=>window.__test.finish())).every(f=>f.grainAxis==='z'));
    assert.equal(await page.locator('#groupParts:visible,#ungroupParts:visible,#projectGroupParts:visible,#projectUngroupParts:visible').count(),0);

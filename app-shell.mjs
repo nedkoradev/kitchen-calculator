@@ -5,8 +5,8 @@ export function installAppShell({getContext}){
  const header=document.querySelector('header'),title=document.createElement('span');title.id='documentHeading';header.querySelector('strong').after(title);
  const menus=document.createElement('div');menus.id='shellMenus';header.after(menus);menus.append($('documentMenus'),$('mainNavigation'));
  const tools=document.createElement('div');tools.id='shellTools';menus.after(tools);const modes=document.createElement('div');modes.id='shellModes';tools.append(modes);modes.append($('modeProject'),$('modeConstructor'));decorateAction($('modeProject'),'home','Проект');decorateAction($('modeConstructor'),'viewperspective','Конструктор');
- tools.append($('toolsPanel'),$('projectTools'));const history=document.querySelector('.historyTools');tools.append(history);
- const viewDock=$('viewControlsDock');if(viewDock)tools.append(viewDock);
+ tools.append($('toolsPanel'),$('projectTools'));const history=document.querySelector('.historyTools');const bottom=document.createElement('div');bottom.id='shellBottomTools';bottom.setAttribute('role','toolbar');bottom.setAttribute('aria-label','История, изгледи и размери');main.after(bottom);bottom.append(history);
+ const viewDock=$('viewControlsDock');if(viewDock)bottom.append(viewDock);
  const aside=main.querySelector('aside');for(const dialog of aside.querySelectorAll('dialog'))document.body.append(dialog);aside.id='outlinePanel';const outlineHead=document.createElement('h2');outlineHead.id='outlineHeading';aside.prepend(outlineHead);aside.append($('groupList'));$('groupList').hidden=false;
  const inspector=document.createElement('section');inspector.id='inspectorPanel';inspector.setAttribute('aria-label','Свойства');inspector.innerHTML='<h2>Свойства</h2><p class="projectHint">Изберете детайл или група. Свойствата са достъпни и от контекстното меню.</p>';main.append(inspector);
  const help=$('helpButton');menus.append(help);help.textContent='Помощ';
