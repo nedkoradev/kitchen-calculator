@@ -52,4 +52,5 @@ async function openKitchen({firebaseDouble=false,extraHooks='',initialStorage=nu
   return {browser,page,errors,consoleErrors,setup,parts,field,clickJitter};
  }catch(error){await browser.close();throw error}
 }
-module.exports={openKitchen};
+async function expandTree(page){while(await page.locator('#groupList details:not([open])').count())await page.locator('#groupList details:not([open])').first().locator(':scope>summary').click({position:{x:3,y:14}})}
+module.exports={openKitchen,expandTree};

@@ -1,6 +1,6 @@
 import {projectData} from './project-model.mjs';
 import {appStorage} from './safe-storage.mjs';
-export function validDraftBundle(value){return value?.schemaVersion===1&&Number.isFinite(value.updatedAt)&&Array.isArray(value.records)&&value.records.length===2&&['project','constructor'].every(kind=>value.records.filter(r=>r.kind===kind&&r.id==='working-'+kind&&r.snapshot&&Array.isArray(r.snapshot.parts)&&r.snapshot.room).length===1)}
+export function validDraftBundle(value){return value?.schemaVersion===1&&Number.isFinite(value.updatedAt)&&Array.isArray(value.records)&&value.records.length===2&&['project','constructor'].every(kind=>value.records.filter(r=>r&&r.kind===kind&&r.id==='working-'+kind&&r.snapshot&&Array.isArray(r.snapshot.parts)&&r.snapshot.room).length===1)}
 export function createDraftStore({getDB=()=>globalThis.indexedDB,storage=appStorage}={}){
  let database;
  function open(){return database??=new Promise((resolve,reject)=>{let request;try{request=getDB().open('ned-iq-working-drafts-v1',1)}catch(e){reject(e);return}const timer=setTimeout(()=>reject(Error('Draft database timeout')),1800);request.onupgradeneeded=()=>request.result.createObjectStore('drafts');request.onerror=()=>{clearTimeout(timer);reject(request.error)};request.onblocked=()=>{clearTimeout(timer);reject(Error('Draft database blocked'))};request.onsuccess=()=>{clearTimeout(timer);const db=request.result;db.onversionchange=()=>db.close();resolve(db)}})}

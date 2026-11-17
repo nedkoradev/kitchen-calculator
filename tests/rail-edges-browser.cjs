@@ -21,7 +21,7 @@ const assert=require('node:assert/strict');const {openKitchen}=require('./browse
   await page.locator('#newCabinetCreate').click();await page.locator('#newCabinetDialog').waitFor({state:'detached'});const original=await parts();let rails=await checkRails();
   await page.evaluate(()=>window.__test.undoStep());assert.deepEqual(await parts(),[]);await page.evaluate(()=>window.__test.redoStep());assert.deepEqual(await parts(),original);await checkRails();
   // Manufacturing export must use each rail's actual physical slot mapping.
-  await page.locator('#navCut').click();await page.evaluate(()=>{XLSX.writeFile=b=>window.__railXlsx=XLSX.utils.sheet_to_json(b.Sheets[b.SheetNames[0]],{header:1,defval:''})});await page.locator('#exportProjectCut').click();const rows=await page.evaluate(()=>window.__railXlsx);
+  await page.locator('#reportsMenu>summary').click();await page.locator('#navCut').click();await page.evaluate(()=>{XLSX.writeFile=b=>window.__railXlsx=XLSX.utils.sheet_to_json(b.Sheets[b.SheetNames[0]],{header:1,defval:''})});await page.locator('#exportProjectCut').click();const rows=await page.evaluate(()=>window.__railXlsx);
   for(const rail of rails){const row=rows.find(r=>String(r[9]).split(', ').includes(rail.label));assert.ok(row,'Salex rail row '+rail.label);assert.deepEqual(row.slice(10,14),rail.layout.edgeIndices.map(slot=>'Rail band '+rail.finish.edges[slot]))}
   await page.locator('#modeConstructor').click();await page.evaluate(()=>window.__rails.rotate());await checkRails([2,3,1,0]);await page.evaluate(()=>window.__test.undoStep());await checkRails();
   // Existing per-part editor still works independently after generation.

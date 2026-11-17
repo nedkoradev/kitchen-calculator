@@ -1,7 +1,8 @@
+import {nedConfirmDelete} from './ui-messages.mjs';
 import {decorateAction} from './icons.mjs';
 import {ProjectError,projectErrorMessage} from './project-model.mjs';
 
-export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,getName,captureDraft,restoreDraft,clearDraft,beforeAccountChange}){
+export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,getName,captureDraft,restoreDraft,clearDraft,beforeAccountChange,confirmDelete=nedConfirmDelete}){
  let uid=null,epoch=0,opened=null,busy=false,dialog=null,anonymousDraft=false;
  const pending=new Map(),drafts=new Map();
  function call(action,args){
@@ -94,7 +95,8 @@ export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,
   }));
   const remove=button('projectCloudDelete','Изтрий',()=>operation(ui,async token=>{
    const option=select.selectedOptions[0];if(!option)return;
-   if(!confirm('Да изтрия ли облачния проект „'+option.textContent+'“?')){ui.status.textContent='Изтриването е отказано.';return}
+   if(!await confirmDelete('Да изтрия ли облачния проект „'+option.textContent+'“?')){ui.status.textContent='Изтриването е отказано.';return}
+   if(token!==epoch||!ui.element.isConnected)return;
    const id=option.value;
    await call('remove',{id,revision:Number(option.dataset.revision)});if(token!==epoch)return;
    option.remove();if(opened?.id===id)opened=null;feedback('☁ Изтриването е потвърдено от облака.');ui.status.textContent='Проектът е изтрит.';

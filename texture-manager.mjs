@@ -1,3 +1,4 @@
+import {nedPromptName,nedConfirmDelete,materialSaveNotice} from './ui-messages.mjs';
 import {decorateAction} from './icons.mjs';
 import {photoOrientation,setPhotoOrientation} from './photo-orientation.mjs';
 const REPO='nedkoradev/kitchen-calculator',DIR='materials/textures';
@@ -35,8 +36,8 @@ function openManager(){
     direction.onchange=()=>{try{setPhotoOrientation(url,direction.value);info.textContent='Посоката е запазена за „'+file.name+'“.'}catch(error){direction.value=photoOrientation({textureUrl:url});info.textContent='Посоката не е запазена: '+error.message}};label.append(direction);
     const row=make('div');row.className='textureManagerActions';
     const view=icon('a','open','Отвори');view.href=file.html_url;view.target='_blank';view.rel='noopener noreferrer';
-    const rename=icon('button','edit','Преименувай');rename.onclick=()=>{const v=prompt('Ново име на снимката (без промяна на разширението):',file.name);if(!v||v===file.name)return;alert('Преименуването на изображение изисква качване на файла с новото име в GitHub и изтриване на стария файл. Отвори GitHub, за да направиш промяната.');window.open(folder,'_blank','noopener')};
-    const remove=icon('button','trash','Изтрий');remove.onclick=()=>{if(confirm('Отвори GitHub за изтриване на „'+file.name+'“?'))window.open(file.html_url,'_blank','noopener')};
+    const rename=icon('button','edit','Преименувай');rename.onclick=async()=>{const v=await nedPromptName('Ново име на снимката (без промяна на разширението):',file.name);if(!v||v===file.name)return;materialSaveNotice('Преименуването на изображение изисква качване на файла с новото име в GitHub и изтриване на стария файл. Отвори GitHub, за да направиш промяната.');window.open(folder,'_blank','noopener')};
+    const remove=icon('button','trash','Изтрий');remove.onclick=async()=>{if(await nedConfirmDelete('Отвори GitHub за изтриване на „'+file.name+'“?'))window.open(file.html_url,'_blank','noopener')};
     row.append(view,rename,remove);card.append(img,name,label,row);grid.append(card);
    }
   }catch(err){if(request===epoch&&dlg.isConnected)info.textContent='Неуспешно зареждане: '+err.message}

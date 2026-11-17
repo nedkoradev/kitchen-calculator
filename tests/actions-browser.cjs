@@ -21,7 +21,7 @@ const panel=(key,x=.5)=>({key,x,y:150,z:0,w:101,h:18,d:300,locks:{w:false,h:true
     return {id:button.id,title:button.title,label:button.getAttribute('aria-label'),svg:icon.tagName.toLowerCase()==='svg',stroke:icon.getAttribute('stroke-width'),src:icon.getAttribute('src'),w:s.width,h:s.height,bw:r.width,bh:r.height,content:button.textContent.trim()};
    }));
    assert.ok(icons.length>=6);
-   for(const icon of icons){if(icon.svg){assert.equal(icon.w,24,icon.id);assert.equal(icon.h,24,icon.id);assert.equal(icon.stroke,'2')}else{assert.match(icon.src,/^\.\/assets\/icons\//);assert.ok(icon.w>=22&&icon.w<=40&&icon.h>=22&&icon.h<=40,JSON.stringify(icon))}assert.ok(icon.bw>=44&&icon.bh>=44,icon.id);assert.ok(icon.title&&icon.label);assert.equal(icon.content,'')}
+   for(const icon of icons){if(icon.svg){assert.equal(icon.w,20,icon.id);assert.equal(icon.h,20,icon.id);assert.equal(icon.stroke,'2')}else{assert.match(icon.src,/^\.\/assets\/icons\//);assert.ok(icon.w>=22&&icon.w<=40&&icon.h>=22&&icon.h<=40,JSON.stringify(icon))}assert.ok(icon.bw>=40&&icon.bh>=40,icon.id);assert.ok(icon.title&&icon.label);assert.equal(icon.content,'')}
    await setup([]);
    const horizontal=mode==='constructor'?'#addHorizontal':'#projectAddHorizontal',vertical=mode==='constructor'?'#addVertical':'#projectAddVertical';
    await page.locator(horizontal).click();assert.equal((await parts()).at(-1).h,18);
@@ -57,8 +57,8 @@ const panel=(key,x=.5)=>({key,x,y:150,z:0,w:101,h:18,d:300,locks:{w:false,h:true
   await page.locator('.libraryCard').filter({hasText:'Icon cabinet copy'}).getByRole('button',{name:'Изтрий',exact:true}).click();await page.locator('.nedConfirmPanel').getByRole('button',{name:'Изтрий',exact:true}).click();
   await page.waitForFunction(()=>window.__firebaseDouble.rows().filter(row=>row.path.includes('/v2_cabinets/')).length===1);
   await page.locator('#modeConstructor').click();await page.locator('#quickSave').click();await page.locator('#fileDialogClose').click();
-  await page.locator('#navMaterials').click();page.once('dialog',dialog=>dialog.accept('Icon materials'));
-  await page.getByRole('button',{name:'Запази база',exact:true}).click();
+  await page.locator('#navMaterials').click();
+  await page.getByRole('button',{name:'Запази база',exact:true}).click();await page.locator('.nedPromptInput').fill('Icon materials');await page.locator('.nedConfirmOverlay .nedPrimaryButton').click();
   await page.waitForFunction(()=>window.__firebaseDouble.rows().some(row=>row.path.includes('/materials/')));
   await page.waitForFunction(()=>document.querySelector('#v2MaterialCloudSelect').options.length>1);
   await page.getByRole('button',{name:'Отвори база',exact:true}).click();await page.evaluate(()=>localStorage.setItem('kitchenActiveMaterialBase','Before load'));await page.locator('#v2MaterialCloudSelect').selectOption({index:1});

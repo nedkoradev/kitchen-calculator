@@ -14,7 +14,7 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
  };`});
  try{
   await page.route(photo+'*',route=>route.fulfill({contentType:'image/png',path:path.join(__dirname,'fixtures/grain.png'),headers:{'access-control-allow-origin':'*'}}));
-  assert.match(await page.locator('header strong').innerText(),/^NED-IQ v\d+\.\d+$/);
+  assert.match((await page.locator('header strong').innerText()).replace(/\s+/g,' '),/^NED-IQ v\d+\.\d+$/);
   await page.locator('#navMaterials').click();
   const section=page.locator('.materialSection').filter({has:page.getByRole('heading',{name:'ПДЧ материали',exact:true})});
   await section.getByRole('button',{name:'Нов материал',exact:true}).click();
@@ -70,15 +70,15 @@ const part={key:'custom881',w:720,h:18,d:550,x:0,y:200,z:0,locks:{w:false,h:true
    console.log(`PASS ${mode}: physical grain and textures in 2D/3D, rotation, copy, grouping, Undo/Redo and cloud roundtrip`);
   }
   await setup([part]);await page.evaluate(()=>window.__grainTest.finish({material:0,edges:[0,1,2,3],grainAxis:'z'}));
-  await page.locator('#navCut').click();const dimension=await page.locator('#projectCutList tbody tr td').nth(3).innerText();assert.match(dimension,/550 × 720/);
+  await page.locator('#reportsMenu>summary').click();await page.locator('#navCut').click();const dimension=await page.locator('#projectCutList tbody tr td').nth(3).innerText();assert.match(dimension,/550 × 720/);
   const tableStyle=await page.locator('#projectCutList tbody tr td').first().evaluate(cell=>({padding:parseFloat(getComputedStyle(cell).paddingTop),line:parseFloat(getComputedStyle(cell).lineHeight)}));assert.ok(tableStyle.padding<=4);assert.ok(tableStyle.line<16);
   const widths=await page.locator('#projectCutList table').evaluate(table=>[table.getBoundingClientRect().width,table.parentElement.getBoundingClientRect().width]);assert.ok(widths[0]<widths[1]-40,'short cut rows use compact content width');
   const exportRows=async()=>{await page.evaluate(()=>{XLSX.writeFile=book=>window.__grainExport=XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]],{header:1,defval:''})});await page.locator('#exportProjectCut').click();return page.evaluate(()=>window.__grainExport)};
   let exported=await exportRows();assert.equal(exported[1][3],550);assert.equal(exported[1][4],720);assert.equal(exported[1][8],0);assert.deepEqual(exported[1].slice(10,14),['E0','E1','E2','E3']);assert.equal(exported[0].length,17);
-  await page.locator('#navCosts').click();const costBefore=await page.locator('#projectCosts table').innerText();
+  await page.locator('#reportsMenu>summary').click();await page.locator('#navCosts').click();const costBefore=await page.locator('#projectCosts table').innerText();
   const backgrounds=await page.locator('#projectCosts tbody tr:not(.costGrandTotal) td').evaluateAll(cells=>cells.map(cell=>getComputedStyle(cell).backgroundColor));
   await page.evaluate(()=>{window.__grainTest.catalog({grainRequired:false});});assert.equal(await page.locator('#projectCosts table').innerText(),costBefore);assert.deepEqual(await page.locator('#projectCosts tbody tr:not(.costGrandTotal) td').evaluateAll(cells=>cells.map(cell=>getComputedStyle(cell).backgroundColor)),backgrounds);
-  await page.locator('#navCut').click();exported=await exportRows();assert.equal(exported[1][3],720);assert.equal(exported[1][4],550);assert.equal(exported[1][8],1);assert.deepEqual(exported[1].slice(10,14),['E2','E3','E1','E0']);
+  await page.locator('#reportsMenu>summary').click();await page.locator('#navCut').click();exported=await exportRows();assert.equal(exported[1][3],720);assert.equal(exported[1][4],550);assert.equal(exported[1][8],1);assert.deepEqual(exported[1].slice(10,14),['E2','E3','E1','E0']);
   await page.evaluate(()=>window.__grainTest.catalog({textureUrl:''}));assert.equal((await page.evaluate(()=>window.__grainTest.meshes()[0])).map,false);
   console.log('PASS compact cut table, grain-first XLSX/physical edges, legacy export and unchanged costs/current row backgrounds');
   assert.deepEqual(errors,[]);

@@ -1,0 +1,40 @@
+/* v2.77 refinements of the approved navy/light/blue system. */
+body.ned-shell #shellTools #shellModes button{display:inline-flex;align-items:center;gap:7px;background:#f7f9fc!important;color:#294967!important}
+body.ned-shell #shellTools #shellModes button[aria-pressed=true]{background:#2679c9!important;color:#fff!important;border-color:#1965ac!important}
+body.ned-shell #shellTools #shellModes svg{stroke:currentColor!important;width:20px;height:20px;flex:none}
+body.ned-shell>main:not(.catalogMode),body.ned-shell>main.projectMode:not(.catalogMode){grid-template-columns:280px minmax(0,1fr) 280px!important}
+body.ned-shell .documentTree summary{display:flex;align-items:center;gap:2px;padding:0 2px}
+body.ned-shell .documentTree summary::before{content:'▸';flex:none;font-size:12px;width:12px;cursor:pointer}
+body.ned-shell .documentTree summary::marker{content:''}
+body.ned-shell .documentTree details[open]>summary::before{content:'▾'}
+body.ned-shell .documentTree .treeItem{min-width:0;flex:1;overflow:hidden;min-height:32px}
+body.ned-shell .documentTree .treeItem span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;min-width:0;flex:1}
+body.ned-shell .documentTree li,body.ned-shell .documentTree details{min-width:0}
+body.ned-shell .documentTree ul{padding-left:10px;margin-left:5px}
+body.ned-shell #outlineHeading{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.ned-shell #documentOverview{display:grid;grid-template-columns:1fr;gap:3px;margin:4px 12px 16px}
+body.ned-shell #documentOverview dt{font-size:11px;color:var(--nd-muted);margin-top:8px}
+body.ned-shell #documentOverview dd{margin:0;overflow-wrap:anywhere;font-size:13px;font-weight:600;color:var(--nd-text)}
+body.ned-shell #shellTools .toolIcons,body.ned-shell #shellTools .rotateTools,body.ned-shell #shellTools .historyTools,body.ned-shell #shellTools #viewControlsDock{border-left:1px solid var(--nd-border)!important;padding-left:6px!important}
+body.ned-shell #shellTools :is(#toolsPanel,#projectTools) button:not([hidden]),body.ned-shell #shellTools :is(.historyTools,#viewControlsDock) button{width:40px!important;min-width:40px!important;max-width:40px!important;height:40px!important;min-height:40px!important;padding:9px!important}
+body.ned-shell #shellTools :is(.toolIcons,#projectTools,.historyTools,#viewControlsDock) svg.actionSvg{width:20px!important;height:20px!important;stroke-width:2!important;filter:none!important;stroke:currentColor!important}
+body.ned-shell #shellTools #nedDimensionsToggle{font-size:10px!important;padding:2px!important}
+body.ned-shell .nedConfirmPanel,body.ned-shell .nedPromptPanel{font:inherit;border-radius:8px!important;padding:20px!important}
+body.ned-shell .nedConfirmPanel h3{font-size:16px;color:var(--nd-text)}
+body.ned-shell .nedConfirmPanel p{font-size:13px;line-height:1.5}
+body.ned-shell .nedConfirmActions button{font-size:13px;min-height:36px}
+body.ned-shell #draftRecoveryDialog .dialogFoot{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:6px;margin-top:16px;padding:10px 0 0}
+body.ned-shell #draftRecoveryBar[hidden]{display:none!important}
+body.ned-shell #draftRecoveryBar:not([hidden]){display:flex;align-items:center;gap:10px;padding:6px 12px;background:#fff3da!important;color:#684d13!important;font-size:12px}
+body.ned-shell #draftRecoveryBar button{margin-left:auto}
+body.ned-shell #fileMenu hr{width:100%;border:0;border-top:1px solid var(--nd-border);margin:4px 0}
+@media(max-width:1100px) and (min-width:901px){body.ned-shell>main:not(.catalogMode),body.ned-shell>main.projectMode:not(.catalogMode){grid-template-columns:230px minmax(0,1fr) 250px!important}}
+@media(max-width:900px){body.ned-shell .documentTree .treeItem{min-height:44px}body.ned-shell #shellTools :is(#toolsPanel,#projectTools) button:not([hidden]),body.ned-shell #shellTools .historyTools button{width:44px!important;min-width:44px!important;max-width:44px!important;height:44px!important;min-height:44px!important}body.ned-shell #shellTools svg.actionSvg{width:20px!important;height:20px!important}}
+body.ned-shell #shellTools button svg.actionSvg{width:20px!important;min-width:20px!important;max-width:20px!important;height:20px!important;min-height:20px!important;max-height:20px!important;flex:0 0 20px!important;stroke-width:2!important}
+@media(max-width:900px){body.ned-shell #shellMenus{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:thin;min-height:40px}body.ned-shell #shellMenus>*{flex:none}}
+body.ned-shell dialog.nedConfirmOverlay{position:fixed;inset:0;margin:auto;width:min(440px,calc(100vw - 24px));height:fit-content;max-height:90dvh;overflow:auto;display:flex;padding:0!important;background:transparent!important;border:0!important;border-radius:8px!important;box-shadow:0 16px 50px #18365340!important}
+body.ned-shell dialog.nedConfirmOverlay .nedConfirmPanel{width:100%;max-width:100%;margin:0;box-shadow:none!important}
+body.ned-shell button:is(.iconOnly,.iconWithText)>svg.actionSvg{width:20px!important;min-width:20px!important;max-width:20px!important;height:20px!important;min-height:20px!important;max-height:20px!important;stroke-width:2!important}
+body.ned-shell #shellMenus details>summary{list-style:none}
+body.ned-shell #shellMenus details>summary::marker{content:''}
+body.ned-shell #shellMenus details>summary::after{content:'▾';font-size:10px;margin-left:5px}

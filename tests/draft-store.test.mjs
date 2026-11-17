@@ -6,3 +6,5 @@ test('draft fallback isolates profiles and preserves corrupt data for manual res
 test('malformed imported history is rejected before installation',()=>{const value=bundle();value.records[0].session={undo:['{}']};assert.throws(()=>validateDraftForRestore(value),/Invalid history/);assert.equal(value.records[0].snapshot.parts.length,0)});
 
 test('edited empty rooms are recoverable without requiring any cabinet',()=>{const value=bundle();assert.equal(hasDraftWork(value),false);value.records[0].snapshot.room.w=4000;assert.equal(hasDraftWork(value),true)});
+
+test('malformed nullable draft records are rejected without breaking startup',()=>{assert.equal(validDraftBundle({schemaVersion:1,updatedAt:1,records:[null,null]}),false);assert.equal(validDraftBundle({schemaVersion:1,updatedAt:1,records:[{},null]}),false)});
