@@ -72,14 +72,24 @@ window.addEventListener('kitchen-v2-cloud-save-request',async e=>{
  const generation=authGeneration;
  try{
   requireWrite();
-  const {name,parts,id:requestedId}=e.detail;
+  const {parts,id:requestedId}=e.detail;
+  let {name}=e.detail;
   if(!Array.isArray(parts)||!parts.length)throw new Error('Няма детайли.');
   const id=requestedId||'cab_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
   const target=doc(cabinetCollection(),id);
-  if(requestedId){const old=await readDoc(target);if(authGeneration!==generation)return;if(!old.exists())throw new Error('Оригиналният шкаф вече не съществува.');}
-  if(authGeneration!==generation)return;
   const calculationSettings={sheetUtilization:documentUtilization(e.detail.calculationSettings)};
-  await setDoc(target,{name,parts,calculationSettings,v2:true,updatedAt:Date.now()},{merge:true});
+  const data={name,parts,calculationSettings,v2:true,updatedAt:Date.now()};
+  if(requestedId){
+   name=await runTransaction(db,async tx=>{
+    const old=await tx.get(target);
+    if(authGeneration!==generation)throw Error('Базата е сменена.');
+    requireWrite();
+    if(!old.exists())throw Error('Оригиналният шкаф вече не съществува.');
+    const current=old.data();
+    tx.set(target,{...current,parts,calculationSettings,v2:true,updatedAt:data.updatedAt});
+    return current.name||name;
+   });
+  }else await setDoc(target,data,{merge:true});
   if(authGeneration!==generation)return;
   emit('saved',{id,name,documentId:e.detail.documentId,documentEpoch:e.detail.documentEpoch,operation:e.detail.operation});
   status('☁ Запазено: '+name);
