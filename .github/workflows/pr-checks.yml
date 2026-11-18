@@ -15,7 +15,7 @@ concurrency:
 jobs:
   checks:
     name: Node 24 / unit, release, Chromium and diff
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       BASE_SHA: ${{ github.event.pull_request.base.sha }}
