@@ -15,7 +15,7 @@ const {openKitchen}=require('./browser-harness.cjs');
   });
   await page.waitForTimeout(80);const before=await normalized();
   const cloudRows=()=>page.evaluate(()=>window.__firebaseDouble.rows().filter(r=>r.path.includes('/v2_projects/')));
-  const saveDialog=async name=>{await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSave').click()})();if(name!==undefined)await page.locator('#projectCloudName').fill(name);await page.locator('#projectCloudSave').click()};
+  const saveDialog=async (name,as=false)=>{await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator(as?'#commandFileSaveAs':'#commandFileSave').click()})();if(name!==undefined)await page.locator('#projectCloudName').fill(name);await page.locator('#projectCloudSave').click()};
   async function switchUser(uid,restore=false){await page.evaluate(uid=>window.__firebaseDouble.setUser(uid),uid);await page.waitForFunction(uid=>window.__projectTest.draftStatus()?.settled&&window.__projectTest.draftStatus().owner===(uid||''),uid);if(restore){await page.locator('#fileMenu>summary').click();await page.locator('#draftRestore').click();await page.locator('#draftRecoverApply').click()}}
  const close=async()=>page.locator('#projectCloudCancel').click();
   const waitClosed=()=>page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
@@ -28,8 +28,8 @@ const {openKitchen}=require('./browser-harness.cjs');
   await saveDialog();await page.locator('#projectCloudSave').click();await waitClosed();rows=await cloudRows();assert.equal(rows.length,1);assert.equal(rows[0].value.revision,2);assert.ok(rows[0].path.endsWith('/'+id));
   console.log('PASS cloud save waits for commit; overwrite keeps ID and all project data');
 
-  await saveDialog('Преименувана');await waitClosed();assert.equal((await cloudRows()).length,2);
-  await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSave').click()})();await page.locator('#projectCloudName').fill('Моя кухня');await page.locator('#projectCloudSave').click();
+  await saveDialog('Преименувана',true);await waitClosed();assert.equal((await cloudRows()).length,2);
+  await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSaveAs').click()})();await page.locator('#projectCloudName').fill('Моя кухня');await page.locator('#projectCloudSave').click();
   await page.waitForFunction(()=>!document.querySelector('#projectOverwritePrompt').hidden);await page.locator('#projectOverwriteCancel').click();assert.equal((await cloudRows()).length,2);
   await close();console.log('PASS changed name creates copy; collision confirmation can be cancelled');
 

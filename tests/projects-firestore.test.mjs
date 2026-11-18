@@ -44,10 +44,16 @@ test('collision while editing preserves the source and updates the explicitly co
  assert.equal(result.id,b.id);assert.equal((await store.open(a.id)).revision,1);
  assert.equal((await store.list()).items.length,2);
 });
-test('Save As creates a new ID and never overwrites on a duplicate name',async()=>{
+test('Save As creates a new ID and confirms a duplicate target',async()=>{
  const {store}=client('alice'),a=await create(store,'A');
  const b=await store.save({...a,name:'B',data:data(),saveAs:true});assert.notEqual(a.id,b.id);
- await assert.rejects(store.save({...a,name:'B',data:data(),saveAs:true}),{code:'duplicate-name'});
+ const args={...a,name:'B',data:data(),saveAs:true};
+ let stale;
+ await assert.rejects(store.save(args),error=>{stale=error.details;return error.code==='confirmation-required'});
+ const overwritten=await confirmed(store,args);
+ assert.equal(overwritten.id,b.id);
+ assert.equal(overwritten.revision,2);
+ await assert.rejects(store.save({...args,confirmation:stale}),{code:'conflict'});
  assert.equal((await store.open(a.id)).revision,1);
 });
 test('delete removes both project and name; name may be reused',async()=>{
