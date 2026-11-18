@@ -64,3 +64,11 @@ body.ned-shell #inspectorPanel .inspectorFoot button,body.ned-shell #inspectorPa
 body.ned-shell #inspectorPanel #openEdgeEditor{width:calc(100% - 16px);margin:8px}
 body.ned-shell #inspectorPanel #edgeEditorSummary{padding:0 8px;color:#50637a}
 @media(max-width:720px){body.ned-shell #inspectorPanel.inspectorOpen{display:block;position:fixed;right:6px;top:140px;bottom:6px;width:min(320px,calc(100vw - 12px));z-index:50;box-shadow:0 12px 40px #152e5060}body.ned-shell #inspectorPanel .inspectorFoot{position:sticky;bottom:0;background:#f0f5fa}body.ned-shell #inspectorPanel input:not([type=checkbox]),body.ned-shell #inspectorPanel select{height:44px}}
+
+#sharedBaseStatus:not([hidden]){display:inline-flex;align-items:center;min-width:0;max-width:min(42vw,360px);white-space:pre}
+#sharedBaseStatus span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#sharedBaseStatus span:last-child{flex:none}
+@media(max-width:480px){
+ #headerRight #sharedBaseStatus:not([hidden]){max-width:56vw}
+ #headerRight #cloudStatus:has(+ #sharedBaseStatus:not([hidden])){display:none!important}
+}

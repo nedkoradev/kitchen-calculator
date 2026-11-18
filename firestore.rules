@@ -2,66 +2,42 @@ rules_version = '2';
 service cloud.firestore {
  match /databases/{database}/documents {
   function owner(uid){return request.auth != null && request.auth.uid == uid;}
-  function memberPath(uid,actor){return /databases/$(database)/documents/users/$(uid)/members/$(actor);}
-  function invitePath(uid,id){return /databases/$(database)/documents/users/$(uid)/access_invites/$(id);}
-  function directoryPath(uid,actor){return /databases/$(database)/documents/users/$(actor)/shared_bases/$(uid);}
-  function google(){return request.auth != null && request.auth.token.email_verified == true && request.auth.token.firebase.sign_in_provider == 'google.com';}
-  function canRead(uid){return owner(uid) || (google() && get(memberPath(uid,request.auth.uid)).data.status == 'active' && get(memberPath(uid,request.auth.uid)).data.role in ['editor','viewer']);}
-  function canEdit(uid){return owner(uid) || (google() && get(memberPath(uid,request.auth.uid)).data.status == 'active' && get(memberPath(uid,request.auth.uid)).data.role == 'editor');}
-  function accepts(uid,actor,d){
-   let invitation=get(invitePath(uid,d.inviteId)).data;
-   let accepted=getAfter(invitePath(uid,d.inviteId)).data;
-   return google() && request.auth.uid == actor && actor != uid
-    && d.keys().hasOnly(['uid','ownerUid','email','role','status','inviteId'])
-    && d.uid == actor && d.ownerUid == uid && d.status == 'active'
-    && d.role in ['editor','viewer'] && d.role == invitation.role && d.email == invitation.email
-    && invitation.ownerUid == uid && invitation.state == 'pending' && invitation.expiresAt > request.time
-    && invitation.email == request.auth.token.email.lower()
-    && accepted.state == 'accepted' && accepted.acceptedBy == actor && accepted.acceptedAt == request.time
-    && getAfter(directoryPath(uid,actor)).data.ownerUid == uid
-    && getAfter(directoryPath(uid,actor)).data.joinedAt == request.time;
+  function ownerGrant(uid,email){
+   return /databases/$(database)/documents/users/$(uid)/access_grants/$(email);
   }
-  match /users/{uid}/members/{actor} {
-   allow get: if owner(uid) || (request.auth != null && request.auth.uid == actor);
-   allow list: if owner(uid);
-   allow create: if accepts(uid,actor,request.resource.data);
-   allow update: if (owner(uid) && resource.data.status == 'active'
-    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role','status'])
-    && ((request.resource.data.status == 'active' && request.resource.data.role in ['editor','viewer'])
-     || (request.resource.data.status == 'revoked' && request.resource.data.role == resource.data.role
-      && !existsAfter(directoryPath(uid,actor)))))
-    || (resource.data.status == 'revoked' && accepts(uid,actor,request.resource.data));
+  function recipientGrant(uid,email){
+   return /databases/$(database)/documents/nediq_access/$(email)/bases/$(uid);
   }
-  match /users/{uid}/access_invites/{id} {
-   allow get: if owner(uid) || (google() && resource.data.email == request.auth.token.email.lower());
-   allow list: if owner(uid);
-   allow create: if owner(uid) && request.resource.data.keys().hasOnly(['ownerUid','email','role','state','createdAt','expiresAt'])
-    && request.resource.data.ownerUid == uid && request.resource.data.email is string
-    && request.resource.data.email.matches('[^ /@]+@[^ /@]+') && request.resource.data.email == request.resource.data.email.lower()
-    && request.resource.data.role in ['editor','viewer'] && request.resource.data.state == 'pending'
-    && request.resource.data.createdAt == request.time && request.resource.data.expiresAt > request.time
-    && request.resource.data.expiresAt <= request.time + duration.value(8,'d');
-   allow update: if google() && resource.data.state == 'pending' && resource.data.expiresAt > request.time
-    && resource.data.email == request.auth.token.email.lower()
-    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['state','acceptedBy','acceptedAt'])
-    && request.resource.data.state == 'accepted' && request.resource.data.acceptedBy == request.auth.uid
-    && request.resource.data.acceptedAt == request.time
-    && getAfter(memberPath(uid,request.auth.uid)).data.inviteId == id
-    && getAfter(memberPath(uid,request.auth.uid)).data.status == 'active';
-   allow delete: if owner(uid) && resource.data.state == 'pending';
+  function google(){
+   return request.auth != null && request.auth.token.email_verified == true
+    && request.auth.token.email is string && request.auth.token.firebase.sign_in_provider == 'google.com';
   }
-  match /users/{actor}/shared_bases/{uid} {
-   allow read: if request.auth != null && request.auth.uid == actor;
-   function linkedAcceptance(){
-    let member=getAfter(memberPath(uid,actor)).data;
-    let accepted=getAfter(invitePath(uid,member.inviteId)).data;
-    return member.status == 'active' && member.ownerUid == uid && member.uid == actor
-     && accepted.state == 'accepted' && accepted.acceptedBy == actor && accepted.acceptedAt == request.time;
-   }
-   allow create,update: if google() && request.auth.uid == actor
-    && request.resource.data.keys().hasOnly(['ownerUid','joinedAt']) && request.resource.data.ownerUid == uid
-    && request.resource.data.joinedAt == request.time && linkedAcceptance();
-   allow delete: if owner(uid) && getAfter(memberPath(uid,actor)).data.status == 'revoked';
+  function recipient(email){return google() && request.auth.token.email.lower() == email;}
+  function manages(uid){return owner(uid) && google();}
+  function sharedRole(uid,roles){
+   return google() && get(ownerGrant(uid,request.auth.token.email.lower())).data.role in roles;
+  }
+  function canRead(uid){return owner(uid) || sharedRole(uid,['editor','viewer']);}
+  function canEdit(uid){return owner(uid) || sharedRole(uid,['editor']);}
+  function validGrant(uid,email,data){
+   return email.size() <= 254 && email.matches('[^ /@]+@[^ /@]+[.][^ /@]+') && email == email.lower()
+    && email != '.' && email != '..' && !recipient(email)
+    && data.keys().hasOnly(['ownerUid','role','ownerName']) && data.ownerUid == uid
+    && data.role in ['editor','viewer'] && data.ownerName is string
+    && data.ownerName.size() > 0 && data.ownerName.size() <= 120;
+  }
+  match /users/{uid}/access_grants/{email} {
+   allow read: if manages(uid);
+   allow create,update: if manages(uid) && validGrant(uid,email,request.resource.data)
+    && getAfter(recipientGrant(uid,email)).data == request.resource.data;
+   allow delete: if manages(uid) && !existsAfter(recipientGrant(uid,email));
+  }
+  match /nediq_access/{email}/bases/{uid} {
+   allow get: if recipient(email) || manages(uid);
+   allow list: if recipient(email);
+   allow create,update: if manages(uid) && validGrant(uid,email,request.resource.data)
+    && getAfter(ownerGrant(uid,email)).data == request.resource.data;
+   allow delete: if manages(uid) && !existsAfter(ownerGrant(uid,email));
   }
   // Original owner paths remain unchanged; membership gates shared working data.
   match /users/{uid}/v2_cabinets/{id} {

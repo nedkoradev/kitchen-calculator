@@ -12,29 +12,29 @@ const config={apiKey:"AIzaSyBlrriK3iQAuO0KN-bHkd1p5PoLWoqjTJ4",authDomain:"kitch
 const app=initializeApp(config),auth=getAuth(app),db=getFirestore(app);
 const el=id=>document.getElementById(id),status=msg=>el('cloudStatus').textContent=msg;
 const emit=(type,detail)=>window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-'+type,{detail}));
-let user=null,ownerUid=null,role=null,authGeneration=0,selectionGeneration=0,stopMembership=null;
+let user=null,ownerUid=null,role=null,ownerName='',authGeneration=0,selectionGeneration=0,stopMembership=null;
 const sharing=createSharingStore({db,sdk:{collection,doc,setDoc,getDocsFromServer,getDocFromServer,runTransaction,serverTimestamp},getUser:()=>user});
-const account=()=>({uid:ownerUid,actorUid:user?.uid||null,email:user?.email||'',role});
+const account=()=>({uid:ownerUid,actorUid:user?.uid||null,email:user?.email||'',role,ownerName});
 function publishAccount(){
  window.dispatchEvent(new CustomEvent('kitchen-project-auth',{detail:account()}));
 }
-function setBase(uid,nextRole){
+function setBase(uid,nextRole,name=''){
  selectionGeneration++;
  stopMembership?.();stopMembership=null;
- ownerUid=uid;role=nextRole;authGeneration++;
+ ownerUid=uid;role=nextRole;ownerName=name;authGeneration++;
  publishAccount();
  if(!uid)return;
  window.dispatchEvent(new Event('kitchen-v2-material-list-request'));
  window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'));
  if(role==='owner')return;
  const actor=user.uid,generation=authGeneration;
- stopMembership=onSnapshot(doc(db,'users',uid,'members',actor),{includeMetadataChanges:true},snap=>{
+ stopMembership=onSnapshot(sharing.membershipRef(user.email,uid),{includeMetadataChanges:true},snap=>{
   if(generation!==authGeneration||user?.uid!==actor||ownerUid!==uid||snap.metadata.fromCache)return;
   const data=snap.data();
-  if(data?.status!=='active'||!['viewer','editor'].includes(data.role)){
+  if(!['viewer','editor'].includes(data?.role)){
    setBase(actor,'owner');status('Достъпът до споделената база е отнет.');
-  }else if(role!==data.role){
-   role=data.role;publishAccount();
+  }else if(role!==data.role||ownerName!==data.ownerName){
+   role=data.role;ownerName=data.ownerName;publishAccount();
   }
  },error=>{
   if(generation===authGeneration&&user?.uid===actor&&ownerUid===uid&&error.code==='permission-denied'){
@@ -45,18 +45,20 @@ function setBase(uid,nextRole){
 async function selectBase(uid){
  requireUser();
  const actor=user.uid,selection=++selectionGeneration;
- const nextRole=uid===actor?'owner':(await sharing.membership(uid))?.role;
+ const membership=uid===actor?{role:'owner'}:await sharing.membership(uid);
+ const nextRole=membership?.role;
  if(selection!==selectionGeneration||actor!==user?.uid)throw Error('Профилът или базата са променени.');
  if(!nextRole)throw Error('Нямаш достъп до тази база.');
- if(uid!==ownerUid||role!==nextRole)setBase(uid,nextRole);
+ if(uid!==ownerUid||role!==nextRole)setBase(uid,nextRole,membership.ownerName);
 }
+const sharingUI=installSharingUI({sharing,account,selectBase});
 onAuthStateChanged(auth,u=>{
  selectionGeneration++;
  user=u;el('cloudLogin').hidden=!!u;el('cloudLogout').hidden=!u;
  status(u?'☁ '+(u.email||'Свързан'):'☁ Не сте влезли');
  setBase(u?.uid||null,u?'owner':null);
+ sharingUI.discover();
 });
-installSharingUI({sharing,account,selectBase});
 el('cloudLogin').onclick=async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){status('Вход: '+e.message)}};
 el('cloudLogout').onclick=async()=>{try{await signOut(auth)}catch(e){status('Изход: '+e.message)}};
 const cabinetCollection=()=>collection(db,'users',ownerUid,'v2_cabinets');

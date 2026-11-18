@@ -1,31 +1,42 @@
-// Transactions are conveniences only: firestore.rules is the authoritative enforcement.
+const roles=['editor','viewer'];
+export const normalizeEmail=email=>String(email||'').trim().toLowerCase();
+
 export function createSharingStore({db,sdk,getUser}){
- const actor=()=>{const u=getUser();if(!u?.uid)throw Error('Влез с Google.');return u};
- const ref=(owner,collection,id)=>sdk.doc(db,'users',owner,collection,id);
- const ownerOnly=owner=>{if(actor().uid!==owner)throw Error('Само собственикът управлява достъпа.')};
- return {
- async invite(owner,email,role){ownerOnly(owner);email=String(email).trim().toLowerCase();if(!/^[^\s/@]+@[^\s/]+\.[^\s/]+$/.test(email)||!['editor','viewer'].includes(role))throw Error('Невалиден имейл или роля.');const target=sdk.doc(sdk.collection(db,'users',owner,'access_invites'));await sdk.setDoc(target,{ownerUid:owner,email,role,state:'pending',createdAt:sdk.serverTimestamp(),expiresAt:new Date(Date.now()+7*86400000)});return target.id},
- async accept(owner,id){const user=actor();return sdk.runTransaction(db,async tx=>{const invitation=ref(owner,'access_invites',id),snap=await tx.get(invitation);if(!snap.exists())throw Error('Поканата не съществува.');const invite=snap.data();const membership=ref(owner,'members',user.uid);await tx.get(membership);const directory=ref(user.uid,'shared_bases',owner);tx.set(membership,{uid:user.uid,ownerUid:owner,email:invite.email,role:invite.role,status:'active',inviteId:id});tx.set(invitation,{...invite,state:'accepted',acceptedBy:user.uid,acceptedAt:sdk.serverTimestamp()});tx.set(directory,{ownerUid:owner,joinedAt:sdk.serverTimestamp()});return {ownerUid:owner,role:invite.role}})},
- async changeRole(owner,uid,role){ownerOnly(owner);if(!['editor','viewer'].includes(role))throw Error('Невалидна роля.');return sdk.runTransaction(db,async tx=>{const target=ref(owner,'members',uid),snap=await tx.get(target);if(!snap.exists())throw Error('Членството не съществува.');tx.set(target,{...snap.data(),role})})},
- async revoke(owner,uid){ownerOnly(owner);return sdk.runTransaction(db,async tx=>{const target=ref(owner,'members',uid),snap=await tx.get(target);if(!snap.exists())throw Error('Членството не съществува.');if(snap.data().status!=='revoked')tx.set(target,{...snap.data(),status:'revoked'});tx.delete(ref(uid,'shared_bases',owner))})},
- async invitations(owner){
-  ownerOnly(owner);
-  return (await sdk.getDocsFromServer(sdk.collection(db,'users',owner,'access_invites'))).docs.map(d=>({id:d.id,...d.data()}));
- },
- async cancel(owner,id){
-  ownerOnly(owner);
+ function actor(){
+  const user=getUser();
+  if(!user?.uid||!user.emailVerified||!user.email)throw Error('Влез с потвърден Google акаунт.');
+  return user;
+ }
+ const own=(uid,email)=>sdk.doc(db,'users',uid,'access_grants',email);
+ const inbox=(email,uid)=>sdk.doc(db,'nediq_access',email,'bases',uid);
+ function entry(email){
+  email=normalizeEmail(email);
+  if(email.length>254||!/^\S+@[^\s/@]+\.[^\s/@]+$/.test(email)||email.includes('/')||email.split('@').length!==2)
+   throw Error('Въведи валиден Google имейл.');
+  return email;
+ }
+ async function change(email,role,{existing=false,remove=false}={}){
+  const user=actor();
+  email=entry(email);
+  if(email===normalizeEmail(user.email))throw Error('Вече си собственик на тази база.');
+  if(!remove&&!roles.includes(role))throw Error('Невалидна роля.');
+  const local=own(user.uid,email),remote=inbox(email,user.uid);
   return sdk.runTransaction(db,async tx=>{
-   const target=ref(owner,'access_invites',id),snap=await tx.get(target);
-   if(!snap.exists()||snap.data().state!=='pending')throw Error('Поканата вече не чака приемане.');
-   tx.delete(target);
+   const old=await tx.get(local);
+   if(getUser()?.uid!==user.uid)throw Error('Профилът е сменен.');
+   if(existing!==old.exists())throw Error(existing?'Достъпът вече е премахнат.':'Потребителят вече има достъп. Промени ролята му в списъка.');
+   if(remove){tx.delete(local);tx.delete(remote);return}
+   const grant={ownerUid:user.uid,role,ownerName:(user.displayName?.trim()||user.email).slice(0,120)};
+   tx.set(local,grant);tx.set(remote,grant);
   });
- },
- async membership(owner){
-  const snap=await sdk.getDocFromServer(ref(owner,'members',actor().uid));
-  const member=snap.data();
-  return member?.status==='active'&&['editor','viewer'].includes(member.role)?member:null;
- },
- async members(owner){ownerOnly(owner);return (await sdk.getDocsFromServer(sdk.collection(db,'users',owner,'members'))).docs.map(d=>({id:d.id,...d.data()}))},
- async bases(){return (await sdk.getDocsFromServer(sdk.collection(db,'users',actor().uid,'shared_bases'))).docs.map(d=>d.data())}
+ }
+ return {
+  add:(email,role)=>change(email,role),
+  changeRole:(email,role)=>change(email,role,{existing:true}),
+  revoke:email=>change(email,null,{existing:true,remove:true}),
+  async members(){return (await sdk.getDocsFromServer(sdk.collection(db,'users',actor().uid,'access_grants'))).docs.map(d=>({email:d.id,...d.data()}))},
+  async bases(){return (await sdk.getDocsFromServer(sdk.collection(db,'nediq_access',normalizeEmail(actor().email),'bases'))).docs.map(d=>d.data())},
+  async membership(uid){return (await sdk.getDocFromServer(inbox(normalizeEmail(actor().email),uid))).data()},
+  membershipRef:(email,uid)=>inbox(normalizeEmail(email),uid)
  };
 }

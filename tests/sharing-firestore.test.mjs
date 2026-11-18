@@ -1,109 +1,116 @@
-import test,{before,after,beforeEach} from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';import * as sdk from 'firebase/firestore';import {createSharingStore} from '../sharing-store.mjs';import {createProjectStore} from '../project-store.mjs';
-if(!/^(127\.0\.0\.1|localhost):\d+$/.test(process.env.FIRESTORE_EMULATOR_HOST||''))throw Error('Local demo emulator required');let env;
-before(async()=>env=await initializeTestEnvironment({projectId:'demo-kitchen-projects',firestore:{rules:readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')}}));after(async()=>env?.cleanup());beforeEach(async()=>env.clearFirestore());
-function client(uid,email=uid+'@example.test',verified=true,provider='google.com'){const db=env.authenticatedContext(uid,{email,email_verified:verified,firebase:{sign_in_provider:provider}}).firestore();const user={uid,email};return {uid,db,share:createSharingStore({db,sdk,getUser:()=>user}),ref:(collection,id)=>sdk.doc(db,'users','owner',collection,id)}}
-async function joined(role='editor'){const owner=client('owner'),member=client(role);const id=await owner.share.invite('owner',role+'@example.test',role);await member.share.accept('owner',id);return {owner,member,id}}
-const data=()=>({parts:[{part:{key:'p',w:600,h:18,d:400,x:0,y:9,z:0},name:'Детайл',finish:{edges:[null,null,null,null]}}],room:{w:3000,h:2600,d:3000},materials:{pdcMaterials:[],edgeMaterials:[],backMaterials:[],worktops:[]},settings:{sheetUtilization:80}});
-test('verified Google invitation is atomically bound to UID, directory and fixed role',async()=>{const {owner,member,id}=await joined();assert.equal((await sdk.getDoc(member.ref('members','editor'))).data().role,'editor');assert.equal((await member.share.bases())[0].ownerUid,'owner');assert.equal((await sdk.getDoc(owner.ref('access_invites',id))).data().state,'accepted');await assertFails(member.share.accept('owner',id));});
-test('wrong email, unverified identity and non-Google providers cannot accept',async()=>{const owner=client('owner'),id=await owner.share.invite('owner','guest@example.test','viewer');for(const c of [client('evil'),client('guest','guest@example.test',false),client('guest','guest@example.test',true,'password')])await assertFails(c.share.accept('owner',id));assert.equal((await sdk.getDoc(owner.ref('access_invites',id))).data().state,'pending');});
-test('self-assigned roles, forged memberships, invitation ownership and directory spoofing are refused',async()=>{const {member,id}=await joined('viewer');await assertFails(sdk.updateDoc(member.ref('members','viewer'),{role:'editor'}));await assertFails(sdk.setDoc(member.ref('members','evil'),{uid:'evil',ownerUid:'owner',email:'evil@example.test',role:'editor',status:'active',inviteId:id}));await assertFails(sdk.setDoc(member.ref('access_invites','forged'),{ownerUid:'owner',email:'evil@example.test',role:'editor',state:'pending',createdAt:sdk.serverTimestamp(),expiresAt:new Date(Date.now()+10000)}));await assertFails(sdk.setDoc(sdk.doc(member.db,'users','viewer','shared_bases','foreign'),{ownerUid:'foreign',joinedAt:sdk.serverTimestamp()}));});
-test('all ordinary collections and settings are readable to viewers, writable only to owner/editor',async()=>{const {owner,member:editor}=await joined('editor');const id=await owner.share.invite('owner','viewer@example.test','viewer'),viewer=client('viewer');await viewer.share.accept('owner',id);const outsider=client('stranger');for(const collection of ['v2_cabinets','materials'])for(const id of collection==='materials'?['_app_preferences','base_one']:['cab_one']){await assertSucceeds(sdk.setDoc(editor.ref(collection,id),{name:'Working data',parameters:{utilization:80},folders:[]}));await assertSucceeds(sdk.getDoc(viewer.ref(collection,id)));await assertSucceeds(sdk.getDocs(sdk.collection(viewer.db,'users','owner',collection)));await assertFails(sdk.setDoc(viewer.ref(collection,id),{name:'overwrite'}));await assertFails(sdk.deleteDoc(viewer.ref(collection,id)));await assertFails(sdk.getDoc(outsider.ref(collection,id)));await assertSucceeds(sdk.deleteDoc(editor.ref(collection,id)))}await assertFails(sdk.getDocs(sdk.collection(editor.db,'users','owner','members')));await assertFails(sdk.getDocs(sdk.collection(viewer.db,'users','owner','access_invites')));await assertFails(sdk.setDoc(editor.ref('security','settings'),{role:'owner'}));});
-test('editor can transact projects and unique names in owner namespace; viewer cannot bypass invariants',async()=>{const {owner,member}=await joined();const store=createProjectStore({db:member.db,sdk,getUser:()=>({uid:'owner'})});const saved=await assertSucceeds(store.save({name:'Кухня',data:data()}));assert.equal(saved.revision,1);await assert.rejects(store.save({name:'кухня',data:data()}),e=>e.code==='confirmation-required');await assertFails(sdk.setDoc(member.ref('v2_projects','forged'),{name:'Forged'}));const token=await owner.share.invite('owner','viewer@example.test','viewer'),viewer=client('viewer');await viewer.share.accept('owner',token);const readOnly=createProjectStore({db:viewer.db,sdk,getUser:()=>({uid:'owner'})});assert.equal((await readOnly.open(saved.id)).name,'Кухня');await assertFails(readOnly.save({name:'Other',data:data()}));await assertFails(readOnly.remove(saved));await assertSucceeds(store.remove(saved));});
-test('revocation blocks the next requests and prevents invitation reuse; fresh invitation permits rejoin',async()=>{const {owner,member,id}=await joined();await sdk.setDoc(member.ref('materials','base'),{name:'A'});await owner.share.revoke('owner','editor');await assertFails(sdk.getDocFromServer(member.ref('materials','base')));await assertFails(sdk.setDoc(member.ref('materials','base'),{name:'B'}));await assertFails(member.share.accept('owner',id));assert.equal((await member.share.bases()).length,0);const next=await owner.share.invite('owner','editor@example.test','viewer');await assertSucceeds(member.share.accept('owner',next));await assertSucceeds(sdk.getDocFromServer(member.ref('materials','base')));await assertFails(sdk.setDoc(member.ref('materials','base'),{name:'B'}));});
-test('expired/cancelled invitations and anonymous access are refused',async()=>{const owner=client('owner'),id=await owner.share.invite('owner','guest@example.test','viewer');await env.withSecurityRulesDisabled(async c=>sdk.updateDoc(sdk.doc(c.firestore(),'users','owner','access_invites',id),{expiresAt:new Date(Date.now()-1000)}));await assertFails(client('guest').share.accept('owner',id));await sdk.deleteDoc(owner.ref('access_invites',id));await assertFails(client('guest').share.accept('owner',id));const db=env.unauthenticatedContext().firestore();for(const collection of ['v2_cabinets','materials','v2_projects','v2_project_names','members','access_invites'])await assertFails(sdk.getDoc(sdk.doc(db,'users','owner',collection,'x')));});
-test('a pending invitation cannot be consumed with a forged role or identity',async()=>{const owner=client('owner'),guest=client('guest'),id=await owner.share.invite('owner','guest@example.test','viewer');const invitation=owner.ref('access_invites',id),data=(await sdk.getDoc(invitation)).data();const batch=sdk.writeBatch(guest.db);batch.set(guest.ref('members','guest'),{uid:'guest',ownerUid:'owner',email:'guest@example.test',role:'editor',status:'active',inviteId:id});batch.set(guest.ref('access_invites',id),{...data,state:'accepted',acceptedBy:'guest',acceptedAt:sdk.serverTimestamp()});await assertFails(batch.commit());assert.equal((await sdk.getDoc(invitation)).data().state,'pending');await assertSucceeds(guest.share.accept('owner',id));await assertFails(sdk.updateDoc(owner.ref('members','guest'),{uid:'other',ownerUid:'other'}));});
-test('editors cannot bypass unique-name claims or revision increments, and revocation blocks every work collection',async()=>{const {owner,member}=await joined();const store=createProjectStore({db:member.db,sdk,getUser:()=>({uid:'owner'})});const saved=await store.save({name:'Защитена',data:data()});const model=(await sdk.getDoc(member.ref('v2_projects',saved.id))).data();await assertFails(sdk.setDoc(member.ref('v2_projects','bypass'),{...model,createdAt:sdk.serverTimestamp(),updatedAt:sdk.serverTimestamp()}));await assertFails(sdk.updateDoc(member.ref('v2_projects',saved.id),{revision:3,updatedAt:sdk.serverTimestamp()}));await assertFails(sdk.deleteDoc(member.ref('v2_projects',saved.id)));await sdk.setDoc(member.ref('v2_cabinets','cab_test'),{name:'Cabinet'});await sdk.setDoc(member.ref('materials','_app_preferences'),{parameters:{utilization:80},folders:[]});await owner.share.revoke('owner','editor');for(const [collection,id]of [['v2_cabinets','cab_test'],['materials','_app_preferences'],['v2_projects',saved.id],['v2_project_names',model.nameKey]]){await assertFails(sdk.getDocFromServer(member.ref(collection,id)));await assertFails(sdk.getDocsFromServer(sdk.collection(member.db,'users','owner',collection)))}await assertFails(store.save({name:'След отнемане',data:data()}));const forged=env.authenticatedContext('stranger',{role:'editor',ownerUid:'owner'}).firestore();await assertFails(sdk.getDocFromServer(sdk.doc(forged,'users','owner','materials','_app_preferences')));});
+import test,{before,after,beforeEach} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
+import * as sdk from 'firebase/firestore';
+import {createSharingStore} from '../sharing-store.mjs';
+import {createProjectStore} from '../project-store.mjs';
 
-test('owner lists and cancels pending invitations; accepted invitations cannot be cancelled',async()=>{
- const {owner,member,id}=await joined('viewer');
- const pending=await owner.share.invite('owner','waiting@example.test','editor');
- assert.deepEqual((await owner.share.invitations('owner')).map(i=>i.state).sort(),['accepted','pending']);
- await assert.rejects(member.share.invitations('owner'));
- await assert.rejects(owner.share.cancel('owner',id));
- await owner.share.cancel('owner',pending);
- await assertFails(client('waiting').share.accept('owner',pending));
+if(!/^(127\.0\.0\.1|localhost):\d+$/.test(process.env.FIRESTORE_EMULATOR_HOST||''))throw Error('Local demo emulator required');
+let env;
+before(async()=>env=await initializeTestEnvironment({projectId:'demo-kitchen-projects',firestore:{rules:readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')}}));
+after(async()=>env?.cleanup());
+beforeEach(async()=>env.clearFirestore());
+
+function client(uid,{email=uid+'@example.test',verified=true,provider='google.com'}={}){
+ const db=env.authenticatedContext(uid,{email,email_verified:verified,firebase:{sign_in_provider:provider}}).firestore();
+ const user={uid,email,emailVerified:verified,displayName:uid};
+ return {db,uid,email,sharing:createSharingStore({db,sdk,getUser:()=>user}),ref:(owner,collection,id)=>sdk.doc(db,'users',owner,collection,id),directory:(email,owner)=>sdk.doc(db,'nediq_access',email,'bases',owner)};
+}
+const data={parts:[{part:{key:'p',w:600,h:18,d:400,x:0,y:9,z:0},name:'Детайл'}],room:{w:3000,h:2600,d:3000}};
+const grant={ownerUid:'owner',role:'editor',ownerName:'owner'};
+
+test('grants a normalized Google email before first login, with no recipient-side write',async()=>{
+ const owner=client('owner');
+ await owner.sharing.add('  NEW@EXAMPLE.TEST ', 'editor');
+ assert.deepEqual(await owner.sharing.members(),[{email:'new@example.test',...grant}]);
+ const first=client('new-firebase-uid',{email:'New@Example.Test'});
+ assert.deepEqual(await first.sharing.bases(),[grant]);
+ assert.deepEqual(await first.sharing.membership('owner'),grant);
+ await assertSucceeds(sdk.setDoc(first.ref('owner','v2_cabinets','cab_test'),{name:'Шкаф'}));
+ await assert.rejects(owner.sharing.add('new@example.test','viewer'),/вече има достъп/);
+ await assert.rejects(owner.sharing.add(owner.email,'viewer'),/собственик/);
 });
 
-test('live role changes govern the next server operation and never grant user management',async()=>{
- const {owner,member}=await joined('viewer');
- const material=member.ref('materials','shared');
- await assertFails(sdk.setDoc(material,{name:'viewer'}));
- await owner.share.changeRole('owner','viewer','editor');
- assert.equal((await member.share.membership('owner')).role,'editor');
- await assertSucceeds(sdk.setDoc(material,{name:'editor'}));
- await assertFails(sdk.deleteDoc(member.ref('members','viewer')));
- await assertFails(sdk.getDoc(client('viewer','viewer@example.test',true,'password').ref('materials','shared')));
- await owner.share.changeRole('owner','viewer','viewer');
- await assertSucceeds(sdk.getDoc(material));
- await assertFails(sdk.deleteDoc(material));
- await owner.share.revoke('owner','viewer');
- assert.equal(await member.share.membership('owner'),null);
- await assertFails(sdk.getDoc(material));
+test('forbids enumeration, forged role changes, partial updates and other identities',async()=>{
+ const owner=client('owner'),member=client('guest'),outsider=client('outsider');
+ const canonical=owner.ref('owner','access_grants',member.email);
+ const directory=member.directory(member.email,'owner');
+ await assertFails(sdk.setDoc(canonical,grant));
+ await assertFails(sdk.setDoc(directory,grant));
+ await owner.sharing.add(member.email,'viewer');
+ await assertFails(sdk.updateDoc(member.ref('owner','access_grants',member.email),{role:'editor'}));
+ await assertFails(sdk.updateDoc(directory,{role:'editor'}));
+ await assertFails(sdk.deleteDoc(directory));
+ await assertFails(sdk.deleteDoc(canonical));
+ await assertFails(sdk.updateDoc(canonical,{role:'editor'}));
+ await assertFails(sdk.getDoc(outsider.directory(member.email,'owner')));
+ await assertFails(sdk.getDocs(sdk.collection(outsider.db,'nediq_access',member.email,'bases')));
+ await assertFails(sdk.getDocs(sdk.collection(member.db,'users','owner','access_grants')));
+ await assertFails(sdk.getDocs(sdk.collectionGroup(member.db,'bases')));
+ for(const options of [{verified:false},{provider:'password'},{email:'other@example.test'}]){
+  const wrong=client(member.uid,options);
+  await assertFails(sdk.getDoc(wrong.directory(member.email,'owner')));
+  await assertFails(sdk.getDoc(wrong.ref('owner','materials','sample')));
+ }
+ const anonymous=env.unauthenticatedContext().firestore();
+ await assertFails(sdk.getDoc(sdk.doc(anonymous,'nediq_access',member.email,'bases','owner')));
 });
 
-test('membership and directory are created and removed together; owners cannot bypass fresh acceptance',async()=>{
- const {owner,member,id}=await joined();
- const membership=owner.ref('members','editor');
- const ownerPath=sdk.doc(owner.db,'users','editor','shared_bases','owner');
- const memberPath=sdk.doc(member.db,'users','editor','shared_bases','owner');
-
- await assertFails(sdk.deleteDoc(memberPath));
- await assertFails(sdk.deleteDoc(ownerPath));
- await assertFails(sdk.updateDoc(membership,{status:'revoked'}));
- await assertFails(sdk.deleteDoc(membership));
- await assertFails(sdk.setDoc(memberPath,{ownerUid:'owner',joinedAt:sdk.serverTimestamp()}));
- assert.equal((await member.share.bases()).length,1);
-
- await owner.share.revoke('owner','editor');
- await owner.share.revoke('owner','editor');
- assert.deepEqual(await member.share.bases(),[]);
- await assertFails(sdk.updateDoc(membership,{status:'active'}));
- await assertFails(sdk.updateDoc(membership,{status:'active',role:'viewer'}));
- await assertFails(sdk.deleteDoc(membership));
- await assertFails(member.share.accept('owner',id));
- assert.equal(await member.share.membership('owner'),null);
-
- const fresh=await owner.share.invite('owner','editor@example.test','viewer');
- const invitation=member.ref('access_invites',fresh);
- const old=(await sdk.getDoc(invitation)).data();
- const batch=sdk.writeBatch(member.db);
- batch.set(invitation,{...old,state:'accepted',acceptedBy:'editor',acceptedAt:sdk.serverTimestamp()});
- batch.set(member.ref('members','editor'),{uid:'editor',ownerUid:'owner',email:old.email,role:'viewer',status:'active',inviteId:fresh});
- await assertFails(batch.commit());
- assert.equal((await sdk.getDoc(invitation)).data().state,'pending');
- assert.deepEqual(await member.share.bases(),[]);
-
- await member.share.accept('owner',fresh);
- assert.equal((await member.share.membership('owner')).role,'viewer');
- assert.deepEqual((await member.share.bases()).map(base=>base.ownerUid),['owner']);
- await assertFails(member.share.accept('owner',fresh));
+test('protects all working collections, scopes two owners, and retains project invariants for editors',async()=>{
+ const a=client('alpha'),b=client('beta'),member=client('guest');
+ await a.sharing.add(member.email,'editor');
+ await b.sharing.add(member.email,'viewer');
+ assert.deepEqual((await member.sharing.bases()).map(x=>x.ownerUid).sort(),['alpha','beta']);
+ for(const owner of [a,b]){
+  for(const [collection,id] of [['materials','base'],['materials','_app_preferences'],['v2_cabinets','cab_x']]){
+   await sdk.setDoc(owner.ref(owner.uid,collection,id),{name:owner.uid});
+   const target=member.ref(owner.uid,collection,id);
+   assert.equal((await sdk.getDocFromServer(target)).data().name,owner.uid);
+   await (owner===a?assertSucceeds:assertFails)(sdk.setDoc(target,{name:'update'}));
+  }
+ }
+ const store=createProjectStore({db:member.db,sdk,getUser:()=>({uid:'alpha'})});
+ const created=await store.save({name:'Кухня',data});
+ assert.equal(created.revision,1);
+ assert.equal((await store.list()).items.length,1);
+ await assertFails(sdk.updateDoc(member.ref('alpha','v2_projects',created.id),{revision:8}));
+ await assertFails(sdk.deleteDoc(member.ref('alpha','v2_projects',created.id)));
+ const betaStore=createProjectStore({db:b.db,sdk,getUser:()=>({uid:'beta'})});
+ const betaProject=await betaStore.save({name:'Кухня',data});
+ await assertSucceeds(sdk.getDoc(member.ref('beta','v2_projects',betaProject.id)));
+ await assertSucceeds(sdk.getDoc(member.ref('beta','v2_project_names','кухня')));
+ await assertFails(sdk.updateDoc(member.ref('beta','v2_projects',betaProject.id),{revision:2}));
+ assert.deepEqual((await member.sharing.members()),[]);
 });
 
-test('an already-open membership listener observes revocation and the same connection loses server access',async()=>{
- const {owner,member}=await joined();
- const material=member.ref('materials','live');
- await sdk.setDoc(material,{name:'Тест'});
- const statuses=[];
- let observe;
- const ready=new Promise((resolve,reject)=>{
-  observe=sdk.onSnapshot(member.ref('members','editor'),snapshot=>{
-   if(snapshot.metadata.fromCache)return;
-   statuses.push(snapshot.data()?.status);
-   if(statuses.at(-1)==='active')resolve();
-  },reject);
- });
+test('open listener observes downgrade and removal, and rules enforce both immediately',async()=>{
+ const owner=client('owner'),member=client('guest');
+ await owner.sharing.add(member.email,'editor');
+ const ref=member.directory(member.email,owner.uid);
+ const material=member.ref('owner','materials','live');
+ await sdk.setDoc(material,{name:'original'});
+ let unsubscribe;
+ const listeners=new Map();
+ const observed=role=>new Promise(resolve=>listeners.set(role,resolve));
  try{
-  await ready;
-  await assertSucceeds(sdk.getDocFromServer(material));
-  const revoked=new Promise((resolve,reject)=>{
-   const stop=sdk.onSnapshot(member.ref('members','editor'),{includeMetadataChanges:true},snapshot=>{
-    if(!snapshot.metadata.fromCache&&snapshot.data()?.status==='revoked'){stop();resolve()}
-   },reject);
+  const editor=observed('editor');
+  unsubscribe=sdk.onSnapshot(ref,{includeMetadataChanges:true},snapshot=>{
+   if(!snapshot.metadata.fromCache)listeners.get(snapshot.data()?.role)?.();
   });
-  await owner.share.revoke('owner','editor');
-  await revoked;
+  await editor;
+  const viewer=observed('viewer');
+  await owner.sharing.changeRole(member.email,'viewer');
+  await assertFails(sdk.setDoc(material,{name:'denied'}));
+  await viewer;
+  await assertSucceeds(sdk.getDocFromServer(material));
+  const removed=observed(undefined);
+  await owner.sharing.revoke(member.email);
   await assertFails(sdk.getDocFromServer(material));
-  await assertFails(sdk.setDoc(material,{name:'Отказано'}));
-  assert.deepEqual(await member.share.bases(),[]);
- }finally{observe?.()}
+  await removed;
+  assert.deepEqual(await member.sharing.bases(),[]);
+  assert.deepEqual(await owner.sharing.members(),[]);
+  await owner.sharing.add(member.email,'editor');
+  await assertSucceeds(sdk.getDocFromServer(material));
+ }finally{unsubscribe?.()}
 });

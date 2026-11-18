@@ -3,7 +3,7 @@ const {db,sdk}=memoryFirestore();
 let readGate=null,releaseRead=null,listGate=null,releaseList=null;
 const snapshots=new Map();
 let uid='alice';const listeners=[];
-const notify=()=>listeners.forEach(fn=>fn(uid?{uid,email:uid+'@example.test'}:null));
+const notify=()=>listeners.forEach(fn=>fn(uid?{uid,email:uid+'@example.test',emailVerified:true,displayName:uid}:null));
 export const initializeApp=()=>({});
 export const getAuth=()=>({});
 export class GoogleAuthProvider{}
@@ -19,6 +19,7 @@ export const setDoc=async(ref,value,options={})=>{if(db.beforeCommit)await db.be
 export const deleteDoc=async ref=>db.rows.delete(ref.path);
 window.__firebaseDouble={
  seed(path,value){db.rows.set(path,structuredClone(value));db.version++;for(const notify of snapshots.get(path)||[])notify()},
+ remove(path){db.rows.delete(path);db.version++;for(const notify of snapshots.get(path)||[])notify()},
  setUser(next){uid=next;notify()},rows:()=>[...db.rows].map(([path,value])=>({path,value:structuredClone(value)})),
  failWrites(value){db.rejectWrites=value},failReads(value){db.rejectReads=value},
  holdWrites(){db.beforeCommit=()=>new Promise(resolve=>window.__releaseProjectWrite=resolve)},release(){db.beforeCommit=null;window.__releaseProjectWrite?.()},
