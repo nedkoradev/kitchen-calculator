@@ -1,5 +1,5 @@
 import {decorateAction} from './icons.mjs';
-export function installShellMenus({getContext,actions={}}){
+export function installShellMenus({getContext,helpItems,actions={}}){
  const $=id=>document.getElementById(id),bar=$('shellMenus');
  function menu(id,label,items){const d=document.createElement('details');d.id=id;d.className='shellMenu';const s=document.createElement('summary');s.textContent=label;const list=document.createElement('div');list.className='documentMenuItems';list.setAttribute('role','menu');for(const [text,action,available=()=>true] of items){const b=document.createElement('button');b.type='button';b.textContent=text;b.setAttribute('role','menuitem');b.onclick=()=>{d.open=false;action()};list.append(b);b.available=available}d.append(s,list);d.addEventListener('toggle',()=>{for(const b of list.children)b.disabled=b.available?!b.available():false;if(d.open)for(const other of bar.querySelectorAll('details[open]'))if(other!==d)other.open=false});d.addEventListener('keydown',e=>{const buttons=[...list.children].filter(b=>!b.disabled);if(e.key==='Escape'){d.open=false;s.focus();e.stopPropagation()}if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)&&buttons.length){e.preventDefault();d.open=true;let i=buttons.indexOf(document.activeElement);i=e.key==='Home'?0:e.key==='End'?buttons.length-1:(i+(e.key==='ArrowUp'?-1:1)+buttons.length)%buttons.length;buttons[i].focus()}});$('documentMenus').after(d);return d}
  const click=id=>()=>$(id).click(),enabled=id=>()=>!$(id).disabled,hasParts=()=>getContext().hasParts;
@@ -15,6 +15,7 @@ export function installShellMenus({getContext,actions={}}){
  const reports=menu('reportsMenu','Справки',[]);library.after(reports);const reportItems=reports.querySelector('.documentMenuItems');for(const id of ['navCut','navCosts']){const b=$(id);b.setAttribute('role','menuitem');b.available=()=>true;b.addEventListener('click',()=>reports.open=false);reportItems.append(b)}
  reports.addEventListener('toggle',()=>{for(const [id,label] of [['navCut','Разкрой'],['navCosts','Разходи']])$(id).textContent=label+' — '+getContext().name});
  const settings=menu('shellSettings','Настройки',[['Папки в библиотеката',click('foldersOpen')],['Параметри',click('parametersOpen')],['Общи настройки',click('settingsButton')],['Размери на стаята…',click('projectRoomSettings'),project],['Материали',click('navMaterials')],['Информация за хранилището',()=>{ $('settingsButton').click();$('nedSpaceOpen').click()}],['Снимки за фладер',()=>{ $('settingsButton').click();$('nedPhotosOpen').click()}],['UI каталог',()=>{ $('settingsButton').click();$('uiCatalogOpen').click()}]]);reports.after(settings);
+ settings.after(menu('helpMenu','Помощ',helpItems));
  const access=document.createElement('button');
  access.type='button';access.id='sharingOpen';access.textContent='Потребители и достъп';
  access.setAttribute('role','menuitem');
