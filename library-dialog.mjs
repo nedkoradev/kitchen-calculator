@@ -5,7 +5,7 @@ export function installLibraryDialog({getItems,getContext,renderPreview,choose,i
  const $=id=>document.getElementById(id);let owner=null,folders=defaultFolders(),revision=0,loaded=false,epoch=0,dialog=null,busy=false,render=null;
  const notify=()=>window.dispatchEvent(new CustomEvent('ned-folders-change',{detail:{folders:folders.filter(f=>!f.deleted)}}));
  async function load(){const e=epoch;try{const data=await configurationRequest('load');if(e!==epoch)return;folders=mergeLegacyFolders(data.folders||defaultFolders(),getItems());revision=data.folderRevision||0;loaded=true;notify()}catch{loaded=false}}
- window.addEventListener('kitchen-project-auth',e=>{const uid=e.detail?.uid||null;if(uid===owner)return;owner=uid;epoch++;loaded=false;dialog?.close();$('foldersDialog')?.close();folders=defaultFolders();notify();if(owner)load()});
+ window.addEventListener('kitchen-project-auth',e=>{const uid=e.detail?.uid||null,scope=uid?JSON.stringify([uid,e.detail?.actorUid||uid]):null;if(scope===owner)return;owner=scope;epoch++;loaded=false;dialog?.close();$('foldersDialog')?.close();folders=defaultFolders();notify();if(owner)load()});
  window.addEventListener('kitchen-v2-cloud-list',()=>{folders=mergeLegacyFolders(folders,getItems());notify();render?.()});
  window.addEventListener('kitchen-v2-cloud-deleted',()=>{if(dialog?.open)window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'))});
  window.addEventListener('ned-library-applied',()=>{busy=false;dialog?.close()});window.addEventListener('kitchen-v2-cloud-error',e=>{if(!dialog?.open)return;busy=false;render?.();dialog.querySelector('[role=status]').textContent=e.detail.message});
@@ -20,5 +20,5 @@ export function installLibraryDialog({getItems,getContext,renderPreview,choose,i
  body.append(copy,del);card.append(thumb,body);list.append(card)}if(!list.children.length)status.textContent='Няма модели в избраната папка.'};search.oninput=render;dialog.addEventListener('keydown',e=>e.stopPropagation());dialog.onclose=()=>{if(busy)invalidate();busy=false;render=null;dialog.remove();dialog=null};document.body.append(dialog);dialog.showModal();render();window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'));
  }
  window.dispatchEvent(new Event('kitchen-project-auth-request'));
- return {open,isOpen:()=>!!dialog?.open,getFolders:()=>folders.filter(f=>!f.deleted)};
+ return {open,isOpen:()=>!!dialog?.open,getFolders:()=>folders.filter(f=>!f.deleted),folderFor:item=>resolveFolder(item,folders)};
 }

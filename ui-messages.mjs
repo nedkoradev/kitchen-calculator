@@ -1,3 +1,35 @@
+import {decorateAction} from './icons.mjs';
+
+export function installDialogCloseButtons(){
+ function decorate(dialog){
+  if(!dialog.open||dialog.querySelector('.nedDialogClose'))return;
+  const existing=dialog.querySelector('.dialogHead > button,header > button');
+  const close=existing||document.createElement('button');
+  close.type='button';
+  close.classList.add('nedDialogClose');
+  decorateAction(close,'close','Затвори',{iconOnly:true});
+  if(!existing){
+   close.onclick=()=>{
+    if(typeof dialog.requestClose==='function')dialog.requestClose();
+    else if(dialog.dispatchEvent(new Event('cancel',{cancelable:true})))dialog.close();
+   };
+   (dialog.querySelector('.nedConfirmPanel')||dialog).prepend(close);
+  }
+ }
+ const selector='dialog[open]';
+ document.querySelectorAll(selector).forEach(decorate);
+ new MutationObserver(records=>{
+  for(const record of records){
+   if(record.type==='attributes'&&record.target.matches(selector))decorate(record.target);
+   for(const node of record.addedNodes){
+    if(!(node instanceof Element))continue;
+    if(node.matches(selector))decorate(node);
+    node.querySelectorAll(selector).forEach(decorate);
+   }
+  }
+ }).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['open']});
+}
+
 export function nedPromptName(message,initial='',{heading='Наименование',okLabel='Запази'}={}){
  return new Promise(resolve=>{
  const overlay=document.createElement('dialog');overlay.className='nedConfirmOverlay';

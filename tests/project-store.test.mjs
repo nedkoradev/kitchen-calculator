@@ -26,9 +26,13 @@ test('store collision preserves the original opened project',async()=>{
  const {client}=clients(),s=client('a'),a=await save(s,'A'),b=await save(s,'B');
  assert.equal((await confirm(s,{...a,name:'B',data:data()})).id,b.id);assert.equal((await s.open(a.id)).revision,1);
 });
-test('store Save As uses a new ID and never overwrites',async()=>{
+test('store Save As uses a new ID and requires approval to overwrite',async()=>{
  const {client}=clients(),s=client('a'),a=await save(s),b=await s.save({...a,name:'Друго',data:data(),saveAs:true});
- assert.notEqual(a.id,b.id);await assert.rejects(s.save({...a,name:'ДРУГО',data:data(),saveAs:true}),{code:'duplicate-name'});
+ assert.notEqual(a.id,b.id);
+ const args={...a,name:'ДРУГО',data:data(),saveAs:true};
+ await assert.rejects(s.save(args),{code:'confirmation-required'});
+ assert.equal((await confirm(s,args)).id,b.id);
+ assert.equal((await s.open(a.id)).revision,1);
 });
 test('store delete removes the name claim and permits reuse',async()=>{
  const {client}=clients(),s=client('a'),a=await save(s);await s.remove(a);
@@ -68,4 +72,16 @@ test('confirmation cannot overwrite a target changed after the prompt',async()=>
  await s.save({...b,data:data()});
  await assert.rejects(s.save({...args,confirmation:approval}),{code:'confirmation-required'});
  assert.equal((await s.open(b.id)).revision,2);assert.equal((await s.open(a.id)).revision,1);
+});
+
+test('Save As approval cannot replace a changed target or recreate a deleted target',async()=>{
+ const {client}=clients(),store=client('a'),target=await save(store);
+ const args={name:target.name,data:data(),saveAs:true};
+ let confirmation;
+ await assert.rejects(store.save(args),error=>{confirmation=error.details;return error.code==='confirmation-required'});
+ const changed=await store.save({...target,data:data()});
+ await assert.rejects(store.save({...args,confirmation}),{code:'conflict'});
+ await store.remove(changed);
+ await assert.rejects(store.save({...args,confirmation}),{code:'conflict'});
+ assert.equal((await store.list()).items.length,0);
 });

@@ -35,12 +35,13 @@ export function createProjectStore({db,sdk,getUser,getSessionVersion=()=>0,isOnl
     if(source&&source.data().revision!==revision)throw new ProjectError('conflict','Проектът е променен в друг прозорец. Отвори го отново преди запис.');
     const claim=await tx.get(nameRef(uid,nameKey));
     const collision=claim.exists()&&claim.data().projectId!==source?.id;
-    if(collision&&saveAs)throw new ProjectError('duplicate-name','Вече има проект с това име. Избери друго име за „Запази като“.');
     const target=collision?await tx.get(ref(uid,claim.data().projectId)):source;
     if(collision&&!target.exists())throw new ProjectError('invalid-registry','Името е резервирано от липсващ проект. Не е извършена промяна.');
     const old=target?.data(),targetId=target?.id||fresh.id;
     const kind=collision?'collision':old&&old.name!==name?'rename':null;
     const approval={kind,id:targetId,revision:old?.revision||0,name,sourceId:source?.id||null};
+    if(saveAs&&confirmation&&(!collision||confirmation.id!==targetId||confirmation.revision!==old.revision))
+     throw new ProjectError('conflict','Проектът е променен след потвърждението. Провери името и опитай отново.');
     if(kind&&JSON.stringify(confirmation)!==JSON.stringify(approval))
      throw new ProjectError('confirmation-required',collision?'Има друг проект с това име. Да презапиша ли него? Първоначално отвореният проект ще остане непроменен.':'Да променя ли името на отворения проект и да го презапиша?',approval);
     // All reads precede writes. Renaming releases the old name atomically.

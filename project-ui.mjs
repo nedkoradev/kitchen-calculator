@@ -57,7 +57,7 @@ export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,
   ui.element.querySelectorAll('button,input,select').forEach(el=>el.disabled=true);
   ui.status.textContent='Изчакване на потвърждение от облака…';
   try{await run(token)}catch(error){if(token===epoch)ui.status.textContent=projectErrorMessage(error)}
-  finally{if(token===epoch){busy=false;ui.element.querySelectorAll('button,input,select').forEach(el=>el.disabled=false);const select=ui.element.querySelector('#projectCloudList');if(select&&!select.options.length)ui.element.querySelectorAll('#projectCloudOpen,#projectCloudDelete').forEach(el=>el.disabled=true)}}
+  finally{if(token===epoch){busy=false;ui.element.querySelectorAll('button,input,select').forEach(el=>el.disabled=false);const select=ui.element.querySelector('#projectCloudList');if(select){ui.element.querySelector('#projectCloudOpen').disabled=!select.options.length;ui.element.querySelector('#projectCloudDelete').disabled=readOnly||!select.options.length}}}
  }
  async function save(saveAs=false){
   if(readOnly){feedback('Тази база е само за преглед.');return}
@@ -66,19 +66,20 @@ export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,
   const label=document.createElement('label');label.textContent='Име на проекта';
   const input=document.createElement('input');input.id='projectCloudName';input.type='text';input.maxLength=100;
   input.value=saveAs?'':(opened?.name||(!['Нов проект','Нова кухня'].includes(getName?.())?getName?.():'')||'');label.htmlFor=input.id;ui.insert(label);ui.insert(input);
+  const original=!saveAs&&opened?.uid===uid?opened:null;
+  input.readOnly=!!original;
   const prompt=document.createElement('p');prompt.id='projectOverwritePrompt';prompt.hidden=true;ui.insert(prompt);
   let approval=null,approvedName=null;
   const reset=()=>{approval=null;approvedName=null;prompt.hidden=true;saveButton.textContent='Запази'};
-  const change=button('projectOverwriteCancel','Не, промени името',()=>{reset();change.hidden=true;input.focus()});change.hidden=true;ui.actions.append(change);
+  const change=button('projectOverwriteCancel',original?'Отказ от презапис':'Не, промени името',()=>{reset();change.hidden=true;input.focus()});change.hidden=true;ui.actions.append(change);
   input.addEventListener('input',()=>{reset();change.hidden=true});
   const ask=(message,details)=>{approval=details;approvedName=input.value;prompt.textContent=message;prompt.hidden=false;change.hidden=false;saveButton.textContent='Презапиши'};
   const saveButton=button('projectCloudSave','Запази',()=>{
    if(!uid){ui.status.textContent='Първо влез с Google от горния десен ъгъл.';return}
    if(!input.value.trim()){ui.status.textContent='Въведи име.';input.focus();return}
-   const same=opened?.uid===uid&&input.value.trim().toLocaleLowerCase('bg')===opened.name.toLocaleLowerCase('bg');
-   if(!saveAs&&same&&approvedName!==input.value){ask('Искаш ли да презапишеш проекта „'+opened.name+'“?',null);return}
+   if(original&&approvedName!==input.value){ask('Искаш ли да презапишеш проекта „'+original.name+'“?',null);return}
    return operation(ui,async token=>{
-    const args={name:input.value,data:snapshot(),saveAs,...(!saveAs&&same?{id:opened.id,revision:opened.revision}:{}),...(approvedName===input.value&&approval?{confirmation:approval}:{})};
+    const args={name:input.value,data:snapshot(),saveAs,...(original?{id:original.id,revision:original.revision}:{}),...(approvedName===input.value&&approval?{confirmation:approval}:{})};
     let result;
     try{result=await call('save',args)}catch(error){
      if(error.code==='confirmation-required'){ask(error.message,error.details);ui.status.textContent='';return}

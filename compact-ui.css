@@ -56,7 +56,7 @@ body.ned-shell:has(main.catalogMode) #shellBottomTools{display:none}
 @media(max-width:900px){body.ned-shell #shellMenus{flex-wrap:wrap!important;overflow:visible!important}body.ned-shell #shellBottomTools{gap:5px;padding:3px 4px}body.ned-shell #shellBottomTools #viewControlsDock{padding-left:4px!important}}
 body.ned-shell #shellBottomTools{flex-direction:row!important;flex-wrap:nowrap!important}
 body.ned-shell #shellBottomTools .historyTools{flex-direction:row!important;flex-wrap:nowrap!important;width:auto!important;max-width:none!important}
-@media(max-width:900px){body.ned-shell #shellBottomTools #shellViewTools{display:block!important;flex:none!important}}
+@media(max-width:900px){body.ned-shell #shellBottomTools #shellViewTools{display:block!important;flex:1 1 0!important;min-width:0;overflow-x:auto}}
 body.ned-shell #headerRight #cloudLogout{display:none!important}
 body.ned-shell #generalViewSettings{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
 body.ned-shell #generalViewSettings h3{flex-basis:100%;margin:0 0 4px}
@@ -71,3 +71,23 @@ body.ned-shell #shellTools #projectQuickAdd{display:none!important}
 @media(max-width:420px){.libraryDialog .libraryCard{flex-direction:column}.libraryDialog .libraryCardBody{min-width:0}.folderRow button{min-height:44px}}
 
 .folderRow>label{flex:1 1 180px;min-width:0;margin:0;font-size:11px}
+
+body.ned-shell dialog .nedDialogClose {
+ position:absolute;
+ top:4px;
+ right:4px;
+ z-index:2;
+ box-sizing:border-box;
+ width:44px;
+ min-width:44px;
+ height:44px;
+ min-height:44px;
+ padding:10px;
+}
+body.ned-shell dialog:has(> .nedDialogClose) :is(h2,h3):first-of-type,
+body.ned-shell .nedConfirmPanel:has(> .nedDialogClose) h3 {
+ padding-right:44px;
+}
+body.ned-shell .nedConfirmPanel {position:relative}
+body.ned-shell #fileDialogFolderLabel:not([hidden]) {display:block}
+body.ned-shell #fileDialogFolder {display:block;width:100%}

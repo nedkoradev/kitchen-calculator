@@ -1,6 +1,6 @@
 import {createSharingStore} from './sharing-store.mjs';
 import {installSharingUI} from './sharing-ui.mjs';
-import {defaultFolders,validateFolders,resolveFolder} from './library-folders.mjs';
+import {defaultFolders,validateFolders,resolveFolder,mergeLegacyFolders} from './library-folders.mjs';
 import {validateParameters,documentUtilization} from './parameters.mjs';
 import {MATERIAL_PREFERENCES_ID} from './material-base-preferences.mjs';
 import {createProjectStore} from './project-store.mjs';
@@ -79,15 +79,28 @@ window.addEventListener('kitchen-v2-cloud-save-request',async e=>{
   const target=doc(cabinetCollection(),id);
   const calculationSettings={sheetUtilization:documentUtilization(e.detail.calculationSettings)};
   const data={name,parts,calculationSettings,v2:true,updatedAt:Date.now()};
-  if(requestedId){
+  const {folderId}=e.detail;
+  if(requestedId||folderId!==undefined){
+   const preferences=doc(materialCollection(),MATERIAL_PREFERENCES_ID);
+   const legacyItems=typeof folderId==='string'&&folderId.startsWith('legacy-')
+    ?(await readList(cabinetCollection())).docs.map(item=>item.data()):[];
    name=await runTransaction(db,async tx=>{
-    const old=await tx.get(target);
+    const old=requestedId?await tx.get(target):null;
+    const config=typeof folderId==='string'?(await tx.get(preferences)).data():null;
     if(authGeneration!==generation)throw Error('Базата е сменена.');
     requireWrite();
-    if(!old.exists())throw Error('Оригиналният шкаф вече не съществува.');
-    const current=old.data();
-    tx.set(target,{...current,parts,calculationSettings,v2:true,updatedAt:data.updatedAt});
-    return current.name||name;
+    if(old&&!old.exists())throw Error('Оригиналният шкаф вече не съществува.');
+    const current=old?.data()||{};
+    const folders=mergeLegacyFolders(config?.folders||defaultFolders(),legacyItems);
+    const folder=folders.find(item=>item.id===folderId&&!item.deleted);
+    if(folderId!==undefined&&folderId!==null&&!folder)throw Error('Папката вече не съществува. Избери друга папка.');
+    // Inferred legacy folders follow their category alias until saved in preferences.
+    const inferred=folder&&!((config?.folders||defaultFolders()).some(item=>item.id===folderId));
+    const placement=folderId===undefined?{}:{folderId,category:folder?.label||''};
+    const record={...current,...data,...placement,name:folderId===undefined?(current.name||name):name};
+    if(inferred)delete record.folderId;
+    tx.set(target,record);
+    return record.name;
    });
   }else await setDoc(target,data,{merge:true});
   if(authGeneration!==generation)return;
