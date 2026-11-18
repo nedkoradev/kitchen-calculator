@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   checks:
-    name: Node 22 / unit, release, Chromium and diff
+    name: Node 24 / unit, release, Chromium and diff
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -27,7 +27,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: Check PR diff and pin release base
         run: |
