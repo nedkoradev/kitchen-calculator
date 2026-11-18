@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict');const path=require('node:path');const {openKitchen}=require('./browser-harness.cjs');
 (async()=>{
- const {browser,page,errors,setup,parts}=await openKitchen({firebaseDouble:true,extraHooks:`window.__saveCase={requests:[],name(value){$('cabinetName').value=value}};window.addEventListener('kitchen-v2-cloud-save-request',e=>window.__saveCase.requests.push(structuredClone(e.detail)),true);`});
+ const {browser,page,errors,setup,parts,field}=await openKitchen({firebaseDouble:true,extraHooks:`window.__saveCase={requests:[],name(value){$('cabinetName').value=value}};window.addEventListener('kitchen-v2-cloud-save-request',e=>window.__saveCase.requests.push(structuredClone(e.detail)),true);`});
  const records=()=>page.evaluate(()=>window.__firebaseDouble.rows().filter(r=>r.path.includes('/v2_cabinets/')));
  const waitSaved=()=>page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
  const open=()=>(async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSave').click()})();const submit=()=>page.locator('#fileDialogConfirm').click();
@@ -25,6 +25,8 @@ const assert=require('node:assert/strict');const path=require('node:path');const
   // Re-publishing auth clears the current link. A same-name refusal must neither
   // send a write nor discard the edited working model.
   const beforeRefusal=await records();
+  await field('partW',640);
+  assert.equal((await parts())[0].w,640);
   await page.evaluate(()=>window.dispatchEvent(new Event('kitchen-project-auth-request')));
   await open();
   await page.locator('#fileDialogName').fill('К4');
@@ -36,6 +38,7 @@ const assert=require('node:assert/strict');const path=require('node:path');const
   assert.deepEqual(await records(),beforeRefusal);
   assert.deepEqual(await parts(),beforeParts);
   await page.locator('#fileDialogCancel').click();
+  await page.locator('#undoStep').click();
   await page.evaluate(()=>window.__saveCase.name(''));await open();assert.equal(await page.locator('#fileDialogName').inputValue(),'');await page.locator('#fileDialogCancel').click();assert.deepEqual(await parts(),initial);assert.deepEqual(errors,[]);
   console.log('PASS empty name, new save, same-name inline confirmation, unchanged ID/count on overwrite, cancel/Escape, edit name, list/write errors, duplicate clicks and no model changes; Firebase SDK double only');
  }finally{await browser.close()}
