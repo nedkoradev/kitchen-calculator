@@ -56,6 +56,7 @@ jobs:
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           curl --fail --silent --show-error --retry 5 --retry-connrefused "$KITCHEN_TEST_URL" -o /dev/null
           node tests/help-browser.cjs
+          node tests/dialog-drag-browser.cjs
           node tests/release-browser.cjs
           node tests/v288-workspace-browser.cjs
           node tests/responsive-workspace-browser.cjs
