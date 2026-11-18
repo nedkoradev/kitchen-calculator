@@ -7,7 +7,7 @@ export function installDialogCloseButtons(){
   const close=existing||document.createElement('button');
   close.type='button';
   close.classList.add('nedDialogClose');
-  decorateAction(close,'close','Затвори',{iconOnly:true});
+  decorateAction(close,'close','Затваряне на прозореца',{iconOnly:true});
   if(!existing){
    close.onclick=()=>{
     if(typeof dialog.requestClose==='function')dialog.requestClose();
