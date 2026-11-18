@@ -144,3 +144,23 @@ test('previous candidate denies the direct paths that the current candidate open
   await assertFails(sdk.getDocsFromServer(sdk.collection(db,'nediq_access','owner@example.test','bases')));
  }finally{await legacy.cleanup()}
 });
+
+test('reciprocal grants are independent and revocation only removes the outgoing grant',async()=>{
+ const a=client('alpha'),b=client('beta');
+ const forA=a.ref('beta','materials','sample');
+ const forB=b.ref('alpha','materials','sample');
+ await sdk.setDoc(a.ref('alpha','materials','sample'),{name:'A'});
+ await sdk.setDoc(b.ref('beta','materials','sample'),{name:'B'});
+ await a.sharing.add(b.email,'editor');
+ await b.sharing.add(a.email,'viewer');
+ assert.deepEqual((await a.sharing.bases()).map(row=>[row.ownerUid,row.role]),[['beta','viewer']]);
+ assert.deepEqual((await b.sharing.bases()).map(row=>[row.ownerUid,row.role]),[['alpha','editor']]);
+ await assertSucceeds(sdk.getDocFromServer(forA));
+ await assertFails(sdk.setDoc(forA,{name:'attempt'}));
+ await assertSucceeds(sdk.setDoc(forB,{name:'changed by B'}));
+ await a.sharing.revoke(b.email);
+ await assertFails(sdk.getDocFromServer(forB));
+ assert.equal((await sdk.getDocFromServer(forA)).data().name,'B');
+ assert.equal((await sdk.getDocFromServer(a.ref('alpha','materials','sample'))).data().name,'changed by B');
+ assert.deepEqual(await b.sharing.bases(),[]);
+});

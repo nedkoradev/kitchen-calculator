@@ -22,6 +22,20 @@ const assert=require('node:assert/strict');const path=require('node:path');const
   await open();await submit();await page.evaluate(()=>window.__firebaseDouble.failWrites(true));await submit();await page.waitForFunction(()=>document.querySelector('#fileDialogStatus').textContent.includes('offline fixture'));assert.equal(await page.locator('#fileDialog').evaluate(d=>d.open),true);assert.equal(await page.locator('#fileDialogName').inputValue(),'К3');assert.equal((await records()).length,2);await page.evaluate(()=>window.__firebaseDouble.failWrites(false));await submit();assert.equal(await page.locator('#fileOverwritePrompt').isVisible(),true);await submit();await waitSaved();assert.equal((await records()).length,2);
   // Two clicks produce one request while a write is pending.
   await open();await page.locator('#fileDialogName').fill('К4');await page.evaluate(()=>window.__firebaseDouble.holdWrites());const count=await page.evaluate(()=>window.__saveCase.requests.length);await page.evaluate(()=>{document.querySelector('#fileDialogConfirm').click();document.querySelector('#fileDialogConfirm').click()});assert.equal(await page.locator('#fileDialogConfirm').isDisabled(),true);assert.equal(await page.locator('#fileDialogName').isDisabled(),true);await page.evaluate(()=>window.__firebaseDouble.release());await waitSaved();assert.equal(await page.evaluate(()=>window.__saveCase.requests.length),count+1);assert.equal((await records()).length,3);
+  // Re-publishing auth clears the current link. A same-name refusal must neither
+  // send a write nor discard the edited working model.
+  const beforeRefusal=await records();
+  await page.evaluate(()=>window.dispatchEvent(new Event('kitchen-project-auth-request')));
+  await open();
+  await page.locator('#fileDialogName').fill('К4');
+  const beforeRequests=await page.evaluate(()=>window.__saveCase.requests.length);
+  const beforeParts=await parts();
+  await submit();
+  assert.match(await page.locator('#fileDialogStatus').innerText(),/Съществуващият библиотечен модел е запазен/);
+  assert.equal(await page.evaluate(()=>window.__saveCase.requests.length),beforeRequests);
+  assert.deepEqual(await records(),beforeRefusal);
+  assert.deepEqual(await parts(),beforeParts);
+  await page.locator('#fileDialogCancel').click();
   await page.evaluate(()=>window.__saveCase.name(''));await open();assert.equal(await page.locator('#fileDialogName').inputValue(),'');await page.locator('#fileDialogCancel').click();assert.deepEqual(await parts(),initial);assert.deepEqual(errors,[]);
   console.log('PASS empty name, new save, same-name inline confirmation, unchanged ID/count on overwrite, cancel/Escape, edit name, list/write errors, duplicate clicks and no model changes; Firebase SDK double only');
  }finally{await browser.close()}
