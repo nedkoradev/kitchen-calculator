@@ -1,0 +1,60 @@
+name: PR checks
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Node 22 / unit, release, Chromium and diff
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      KITCHEN_TEST_URL: http://127.0.0.1:8000/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check PR diff and pin release base
+        run: |
+          git diff --check "$BASE_SHA" HEAD
+          git update-ref refs/remotes/origin/main "$BASE_SHA"
+      - name: Install dependencies
+        run: npm ci
+      - name: Run unit tests
+        run: npm test
+      - name: Verify committed release metadata
+        run: |
+          npm run release:check
+          git diff --exit-code
+      - name: Install Chromium for browser tests
+        run: |
+          browser_dir="$RUNNER_TEMP/nediq-browser"
+          npm install --prefix "$browser_dir" --no-save --package-lock=false playwright@1.58.2
+          "$browser_dir/node_modules/.bin/playwright" install --with-deps chromium
+          echo "NODE_PATH=$browser_dir/node_modules" >> "$GITHUB_ENV"
+          chromium_path=$(node -p 'require(process.argv[1]).chromium.executablePath()' "$browser_dir/node_modules/playwright")
+          echo "CHROMIUM_PATH=$chromium_path" >> "$GITHUB_ENV"
+      - name: Run Chromium regressions
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 > "$RUNNER_TEMP/nediq-http.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          curl --fail --silent --show-error --retry 5 --retry-connrefused "$KITCHEN_TEST_URL" -o /dev/null
+          node tests/release-browser.cjs
+          node tests/v288-workspace-browser.cjs
+          node tests/responsive-workspace-browser.cjs
