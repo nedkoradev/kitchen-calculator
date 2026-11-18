@@ -4,6 +4,7 @@ service cloud.firestore {
   function owner(uid){return request.auth != null && request.auth.uid == uid;}
   function memberPath(uid,actor){return /databases/$(database)/documents/users/$(uid)/members/$(actor);}
   function invitePath(uid,id){return /databases/$(database)/documents/users/$(uid)/access_invites/$(id);}
+  function directoryPath(uid,actor){return /databases/$(database)/documents/users/$(actor)/shared_bases/$(uid);}
   function google(){return request.auth != null && request.auth.token.email_verified == true && request.auth.token.firebase.sign_in_provider == 'google.com';}
   function canRead(uid){return owner(uid) || (google() && get(memberPath(uid,request.auth.uid)).data.status == 'active' && get(memberPath(uid,request.auth.uid)).data.role in ['editor','viewer']);}
   function canEdit(uid){return owner(uid) || (google() && get(memberPath(uid,request.auth.uid)).data.status == 'active' && get(memberPath(uid,request.auth.uid)).data.role == 'editor');}
@@ -16,16 +17,20 @@ service cloud.firestore {
     && d.role in ['editor','viewer'] && d.role == invitation.role && d.email == invitation.email
     && invitation.ownerUid == uid && invitation.state == 'pending' && invitation.expiresAt > request.time
     && invitation.email == request.auth.token.email.lower()
-    && accepted.state == 'accepted' && accepted.acceptedBy == actor && accepted.acceptedAt == request.time;
+    && accepted.state == 'accepted' && accepted.acceptedBy == actor && accepted.acceptedAt == request.time
+    && getAfter(directoryPath(uid,actor)).data.ownerUid == uid
+    && getAfter(directoryPath(uid,actor)).data.joinedAt == request.time;
   }
   match /users/{uid}/members/{actor} {
    allow get: if owner(uid) || (request.auth != null && request.auth.uid == actor);
    allow list: if owner(uid);
    allow create: if accepts(uid,actor,request.resource.data);
-   allow update: if (owner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role','status'])
-    && request.resource.data.role in ['editor','viewer'] && request.resource.data.status in ['active','revoked'])
+   allow update: if (owner(uid) && resource.data.status == 'active'
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role','status'])
+    && ((request.resource.data.status == 'active' && request.resource.data.role in ['editor','viewer'])
+     || (request.resource.data.status == 'revoked' && request.resource.data.role == resource.data.role
+      && !existsAfter(directoryPath(uid,actor)))))
     || (resource.data.status == 'revoked' && accepts(uid,actor,request.resource.data));
-   allow delete: if owner(uid);
   }
   match /users/{uid}/access_invites/{id} {
    allow get: if owner(uid) || (google() && resource.data.email == request.auth.token.email.lower());
@@ -47,11 +52,16 @@ service cloud.firestore {
   }
   match /users/{actor}/shared_bases/{uid} {
    allow read: if request.auth != null && request.auth.uid == actor;
-   allow create,update: if request.auth != null && request.auth.uid == actor
+   function linkedAcceptance(){
+    let member=getAfter(memberPath(uid,actor)).data;
+    let accepted=getAfter(invitePath(uid,member.inviteId)).data;
+    return member.status == 'active' && member.ownerUid == uid && member.uid == actor
+     && accepted.state == 'accepted' && accepted.acceptedBy == actor && accepted.acceptedAt == request.time;
+   }
+   allow create,update: if google() && request.auth.uid == actor
     && request.resource.data.keys().hasOnly(['ownerUid','joinedAt']) && request.resource.data.ownerUid == uid
-    && request.resource.data.joinedAt == request.time && getAfter(memberPath(uid,actor)).data.status == 'active';
-   allow delete: if (request.auth != null && request.auth.uid == actor)
-    || (owner(uid) && getAfter(memberPath(uid,actor)).data.status == 'revoked');
+    && request.resource.data.joinedAt == request.time && linkedAcceptance();
+   allow delete: if owner(uid) && getAfter(memberPath(uid,actor)).data.status == 'revoked';
   }
   // Original owner paths remain unchanged; membership gates shared working data.
   match /users/{uid}/v2_cabinets/{id} {

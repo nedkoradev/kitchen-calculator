@@ -40,3 +40,70 @@ test('live role changes govern the next server operation and never grant user ma
  assert.equal(await member.share.membership('owner'),null);
  await assertFails(sdk.getDoc(material));
 });
+
+test('membership and directory are created and removed together; owners cannot bypass fresh acceptance',async()=>{
+ const {owner,member,id}=await joined();
+ const membership=owner.ref('members','editor');
+ const ownerPath=sdk.doc(owner.db,'users','editor','shared_bases','owner');
+ const memberPath=sdk.doc(member.db,'users','editor','shared_bases','owner');
+
+ await assertFails(sdk.deleteDoc(memberPath));
+ await assertFails(sdk.deleteDoc(ownerPath));
+ await assertFails(sdk.updateDoc(membership,{status:'revoked'}));
+ await assertFails(sdk.deleteDoc(membership));
+ await assertFails(sdk.setDoc(memberPath,{ownerUid:'owner',joinedAt:sdk.serverTimestamp()}));
+ assert.equal((await member.share.bases()).length,1);
+
+ await owner.share.revoke('owner','editor');
+ await owner.share.revoke('owner','editor');
+ assert.deepEqual(await member.share.bases(),[]);
+ await assertFails(sdk.updateDoc(membership,{status:'active'}));
+ await assertFails(sdk.updateDoc(membership,{status:'active',role:'viewer'}));
+ await assertFails(sdk.deleteDoc(membership));
+ await assertFails(member.share.accept('owner',id));
+ assert.equal(await member.share.membership('owner'),null);
+
+ const fresh=await owner.share.invite('owner','editor@example.test','viewer');
+ const invitation=member.ref('access_invites',fresh);
+ const old=(await sdk.getDoc(invitation)).data();
+ const batch=sdk.writeBatch(member.db);
+ batch.set(invitation,{...old,state:'accepted',acceptedBy:'editor',acceptedAt:sdk.serverTimestamp()});
+ batch.set(member.ref('members','editor'),{uid:'editor',ownerUid:'owner',email:old.email,role:'viewer',status:'active',inviteId:fresh});
+ await assertFails(batch.commit());
+ assert.equal((await sdk.getDoc(invitation)).data().state,'pending');
+ assert.deepEqual(await member.share.bases(),[]);
+
+ await member.share.accept('owner',fresh);
+ assert.equal((await member.share.membership('owner')).role,'viewer');
+ assert.deepEqual((await member.share.bases()).map(base=>base.ownerUid),['owner']);
+ await assertFails(member.share.accept('owner',fresh));
+});
+
+test('an already-open membership listener observes revocation and the same connection loses server access',async()=>{
+ const {owner,member}=await joined();
+ const material=member.ref('materials','live');
+ await sdk.setDoc(material,{name:'Тест'});
+ const statuses=[];
+ let observe;
+ const ready=new Promise((resolve,reject)=>{
+  observe=sdk.onSnapshot(member.ref('members','editor'),snapshot=>{
+   if(snapshot.metadata.fromCache)return;
+   statuses.push(snapshot.data()?.status);
+   if(statuses.at(-1)==='active')resolve();
+  },reject);
+ });
+ try{
+  await ready;
+  await assertSucceeds(sdk.getDocFromServer(material));
+  const revoked=new Promise((resolve,reject)=>{
+   const stop=sdk.onSnapshot(member.ref('members','editor'),{includeMetadataChanges:true},snapshot=>{
+    if(!snapshot.metadata.fromCache&&snapshot.data()?.status==='revoked'){stop();resolve()}
+   },reject);
+  });
+  await owner.share.revoke('owner','editor');
+  await revoked;
+  await assertFails(sdk.getDocFromServer(material));
+  await assertFails(sdk.setDoc(material,{name:'Отказано'}));
+  assert.deepEqual(await member.share.bases(),[]);
+ }finally{observe?.()}
+});

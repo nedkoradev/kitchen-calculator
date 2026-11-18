@@ -27,9 +27,9 @@ function setBase(uid,nextRole){
  window.dispatchEvent(new Event('kitchen-v2-material-list-request'));
  window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'));
  if(role==='owner')return;
- const actor=user.uid;
+ const actor=user.uid,generation=authGeneration;
  stopMembership=onSnapshot(doc(db,'users',uid,'members',actor),{includeMetadataChanges:true},snap=>{
-  if(user?.uid!==actor||ownerUid!==uid||snap.metadata.fromCache)return;
+  if(generation!==authGeneration||user?.uid!==actor||ownerUid!==uid||snap.metadata.fromCache)return;
   const data=snap.data();
   if(data?.status!=='active'||!['viewer','editor'].includes(data.role)){
    setBase(actor,'owner');status('Достъпът до споделената база е отнет.');
@@ -37,7 +37,7 @@ function setBase(uid,nextRole){
    role=data.role;publishAccount();
   }
  },error=>{
-  if(user?.uid===actor&&ownerUid===uid&&error.code==='permission-denied'){
+  if(generation===authGeneration&&user?.uid===actor&&ownerUid===uid&&error.code==='permission-denied'){
    setBase(actor,'owner');status('Достъпът до споделената база е отнет.');
   }
  });
