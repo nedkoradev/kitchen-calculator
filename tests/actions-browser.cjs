@@ -49,7 +49,7 @@ const panel=(key,x=.5)=>({key,x,y:150,z:0,w:101,h:18,d:300,locks:{w:false,h:true
   }
   await page.locator('#modeConstructor').click();
   if(await page.locator('#libraryDialog').count())await page.locator('#libraryCancel').click();await page.locator('#libraryMenu>summary').click();await page.locator('#navLibrary').click();
-  await page.getByRole('button',{name:'Добави в конструктора',exact:true}).first().click();
+  await page.getByRole('button',{name:'Отвори в конструктора',exact:true}).first().click();
   await page.waitForFunction(()=>document.querySelector('#modeConstructor').classList.contains('mainNavActive'));
   if(await page.locator('#libraryDialog').count())await page.locator('#libraryCancel').click();await page.locator('#libraryMenu>summary').click();await page.locator('#navLibrary').click();
   await page.locator('#libraryDialog').getByRole('button',{name:'Дублирай',exact:true}).first().click();await page.locator('.nedPromptInput').fill('Icon cabinet copy');await page.locator('.nedConfirmPanel').getByRole('button',{name:'Дублирай',exact:true}).click();

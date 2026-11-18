@@ -1,6 +1,6 @@
 export function createDocumentCommands({getContext,actions,confirmReplace=()=>true,feedback=()=>{}}){
  const keys=['new','open','save','saveAs'];
- return {getContext,keys,async execute(key,args){const context=getContext();if(!keys.includes(key)||context.busy)return false;if(['save','saveAs'].includes(key)&&context.kind==='constructor'&&!context.hasParts)return false;if(['new','open'].includes(key)&&context.dirty&&!await confirmReplace(context))return false;const now=getContext();if(now.id!==context.id||now.kind!==context.kind||now.epoch!==context.epoch||now.busy)return false;try{await actions[key](now,args);return true}catch(error){feedback(error.message||'Командата не е изпълнена.');return false}}};
+ return {getContext,keys,async execute(key,args){const context=getContext();if(!keys.includes(key)||context.busy)return false;if(['save','saveAs'].includes(key)&&context.kind==='constructor'&&!context.hasParts)return false;if(['new','open'].includes(key)&&context.dirty&&!await confirmReplace(context,key))return false;const now=getContext();if(now.id!==context.id||now.kind!==context.kind||now.epoch!==context.epoch||now.busy)return false;try{await actions[key](now,args);return true}catch(error){feedback(error.message||'Командата не е изпълнена.');return false}}};
 }
 export function installDocumentCommands(options){
  const api=createDocumentCommands(options),bar=document.createElement('nav');bar.id='documentMenus';bar.setAttribute('aria-label','Меню на документа');

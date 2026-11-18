@@ -18,7 +18,7 @@ const {openKitchen}=require('./browser-harness.cjs');
   };`
  });
  const fixture=(name,w)=>({name,parts:[{
-  part:{key:'legacy-panel',w,h:18,d:400,x:0,y:200,z:0,assembly:'inner',assemblyStack:['frame'],locks:{}},
+  part:{key:'legacy-panel',w,h:18,d:400,x:0,y:9,z:0,assembly:'inner',assemblyStack:['frame'],locks:{}},
   name:'Панел '+name,finish:{material:'0',edges:[0,null,null,null]},allEdges:false
  }]});
  const initial=[fixture('Алфа',600),fixture('Бета',500),fixture('Гама',700),fixture('Твърде широк',3400)];
@@ -34,7 +34,7 @@ const {openKitchen}=require('./browser-harness.cjs');
   await page.locator('#navLibrary').click();
   const library=page.locator('#libraryDialog');
   const card=library.locator('.libraryCard').filter({has:page.getByText(name,{exact:true})});
-  await card.getByRole('button',{name:'Добави в конструктора'}).click();
+  await card.getByRole('button',{name:'Отвори в конструктора'}).click();
   if(success)await library.waitFor({state:'detached'});
   else{
    await library.getByRole('status').filter({hasText:'Няма свободно място'}).waitFor();
@@ -55,7 +55,7 @@ const {openKitchen}=require('./browser-harness.cjs');
    assert.deepEqual(after.slice(0,-1),before);
    const copy=after.at(-1);
    assert.equal(await selected(),copy.key);
-   assert.equal(copy.assemblyStack.length,2);
+   assert.equal(copy.assemblyStack.length,1);
    copies.push(copy);
    assert.equal(await page.evaluate(()=>window.__constructorTest.view()),'front');
   }
@@ -100,17 +100,15 @@ const {openKitchen}=require('./browser-harness.cjs');
   await page.locator('#modeConstructor').click();
 
   await file('commandFileSave');
-  assert.equal(await page.locator('#fileDialogName').inputValue(),'Бета');
-  await page.locator('#fileDialogConfirm').click();
-  await page.locator('#fileDialogStatus').getByText('Избери ново име.',{exact:false}).waitFor();
+  await page.locator('#fileOverwritePrompt').waitFor();
+  assert.equal(await page.locator('#fileDialogName').inputValue(),'Алфа');
+  await page.getByRole('button',{name:'Запази с ново име'}).click();
   assert.deepEqual(await rows(),originals);
   await page.locator('#fileDialogName').fill('Копие на Бета');
   await page.locator('#fileDialogConfirm').click();
   await page.locator('#fileDialog').waitFor({state:'hidden'});
   const saved=(await rows()).find(r=>r.value.name==='Копие на Бета');
-  assert.equal(saved.value.parts.length,1);
-  assert.equal(saved.value.parts[0].part.w,465);
-  assert.equal(saved.value.parts[0].part.x,0);
+  assert.deepEqual(saved.value.parts.map(item=>item.part),edited);
   assert.equal(saved.value.parts[0].part.constructorCabinet,undefined);
   assert.deepEqual((await rows()).filter(r=>r.path.includes('cab_test_')),originals);
   assert.deepEqual(await parts(),edited);
@@ -123,12 +121,11 @@ const {openKitchen}=require('./browser-harness.cjs');
   assert.equal(await selected(),copies[1].key);
   await page.evaluate(saved=>window.__firebaseDouble.seed(saved.path,saved.value),saved);
   await file('commandFileOpen');
-  await page.locator('.nedConfirmActions button').last().click();
   await page.locator('#fileDialogChoice').selectOption(saved.path.split('/').at(-1));
   await page.locator('#fileDialogConfirm').click();
   await page.locator('#fileDialog').waitFor({state:'hidden'});
-  assert.equal((await parts()).length,1);
-  assert.equal((await parts())[0].w,465);
+  assert.equal((await parts()).length,edited.length*2);
+  assert.deepEqual((await parts()).slice(0,edited.length),edited);
   if(process.env.KITCHEN_SCREENSHOTS){
    const {generateCabinet,cabinetPresets}=await import('../cabinet-generator.mjs');
    const catalog=require('../materials/default.json');
@@ -143,6 +140,6 @@ const {openKitchen}=require('./browser-harness.cjs');
    await page.screenshot({path:path.join(process.env.KITCHEN_SCREENSHOTS,'pr81-constructor.png')});
   }
   assert.deepEqual(errors,[]);
-  console.log('PASS four independent library cabinets, placement/refusal, camera, mouse selection, edit, edges, cut list, undo/redo/delete, safe single save/open and draft restore');
+  console.log('PASS four independent library cabinets, placement/refusal, camera, mouse selection, edit, edges, cut list, undo/redo/delete, whole-model save and append and draft restore');
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});
