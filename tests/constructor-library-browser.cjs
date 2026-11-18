@@ -7,7 +7,11 @@ const {openKitchen}=require('./browser-harness.cjs');
   firebaseDouble:true,
   extraHooks:`window.__constructorTest={
    selected:()=>selected,snapshot:captureProjectSnapshot,flush:()=>draftRecovery.flush(),ready:()=>draftRecovery.settled,
-   view:()=>viewMode,fits:()=>customParts.every(p=>[-1,1].every(x=>[-1,1].every(y=>[-1,1].every(z=>{
+   view:()=>viewMode,center:key=>{
+    const part=customParts.find(p=>p.key===key);
+    camera.updateMatrixWorld();
+    return screenPos(new THREE.Vector3(part.x,part.y+part.h/2,part.z));
+   },fits:()=>customParts.every(p=>[-1,1].every(x=>[-1,1].every(y=>[-1,1].every(z=>{
     const v=new THREE.Vector3(p.x+x*p.w/2,p.y+y*p.h/2,p.z+z*p.d/2).project(camera);
     return Math.abs(v.x)<1&&Math.abs(v.y)<1&&Math.abs(v.z)<1;
    }))))
@@ -35,6 +39,7 @@ const {openKitchen}=require('./browser-harness.cjs');
   else{
    await library.getByRole('status').filter({hasText:'Няма свободно място'}).waitFor();
    await page.locator('#libraryCancel').click();
+   await library.waitFor({state:'detached'});
   }
  };
  try{
@@ -70,7 +75,7 @@ const {openKitchen}=require('./browser-harness.cjs');
   // Choose the first and second cabinet through the canvas and edit only the second.
   await page.evaluate(()=>window.__test.view('top'));
   for(const part of copies.slice(0,2)){
-   const point=await page.evaluate(key=>window.__test.face(key),part.key);
+   const point=await page.evaluate(key=>window.__constructorTest.center(key),part.key);
    await page.mouse.click(point.x,point.y);
    assert.equal(await selected(),part.key);
   }
