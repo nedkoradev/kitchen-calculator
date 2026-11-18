@@ -57,7 +57,7 @@ export function installActionIcons(){
  projectGroupParts:['group','Групирай'],projectUngroupParts:['ungroup','Разгрупирай'],projectRoomSettings:['room','Размери на стаята'],
  projectRotateLeft:['rotateLeft','Завърти наляво'],projectRotateRight:['rotateRight','Завърти надясно'],
  undoStep:['undo','Върни последната промяна (Ctrl+Z)'],redoStep:['redo','Повтори промяната (Ctrl+Y)'],
- fileDialogDelete:['trash','Изтрий избрания шкаф от облака'],fileDialogClose:['close','Затвори'],helpClose:['close','Затвори'],dialogClose:['close','Затвори'],helpButton:['info','Помощ'],settingsButton:['gear','Настройки'],settingsClose:['close','Затвори настройките']
+ fileDialogDelete:['trash','Изтрий избрания шкаф от облака'],fileDialogClose:['close','Затвори'],dialogClose:['close','Затвори'],settingsButton:['gear','Настройки'],settingsClose:['close','Затвори настройките']
  };
  for(const [id,[icon,label]] of Object.entries(actions)){const button=document.getElementById(id);if(button)decorateAction(button,icon,label,{iconOnly:true})}
 }

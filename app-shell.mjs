@@ -9,7 +9,6 @@ export function installAppShell({getContext}){
  const viewDock=$('viewControlsDock');if(viewDock)bottom.append(viewDock);
  const aside=main.querySelector('aside');for(const dialog of aside.querySelectorAll('dialog'))document.body.append(dialog);aside.id='outlinePanel';const outlineHead=document.createElement('h2');outlineHead.id='outlineHeading';aside.prepend(outlineHead);aside.append($('groupList'));$('groupList').hidden=false;
  const inspector=document.createElement('section');inspector.id='inspectorPanel';inspector.setAttribute('aria-label','Свойства');inspector.innerHTML='<h2>Свойства</h2><p class="projectHint">Изберете детайл или група. Свойствата са достъпни и от контекстното меню.</p>';main.append(inspector);
- const help=$('helpButton');menus.append(help);help.textContent='Помощ';
  const settings=$('settingsButton');settings.title='Настройки';
  function render(){const ctx=getContext();body.dataset.documentKind=ctx.kind;title.textContent=(ctx.kind==='project'?'Проект: ':'Конструктор: ')+ctx.name+(ctx.dirty?' •':'');title.title=ctx.name+' — '+(ctx.dirty?'Има незаписани промени':'Работен документ');outlineHead.textContent=ctx.kind==='project'?'Структура на проекта':'Модел: '+ctx.name;for(const [id,kind] of [['modeProject','project'],['modeConstructor','constructor']])$(id).setAttribute('aria-pressed',String(ctx.kind===kind));}
  for(const name of ['ned-document-change','ned-document-state','ned-selection-change'])window.addEventListener(name,render);render();return {render};

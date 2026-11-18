@@ -34,7 +34,7 @@ const panel=(key,x=.5)=>({key,x,y:150,z:0,w:101,h:18,d:300,locks:{w:false,h:true
    await setup([panel('custom703')]);
    await page.locator(mode==='constructor'?'#rotateRight':'#projectRotateRight').click();assert.equal((await parts())[0].w,300);assert.equal((await parts())[0].d,101);
    await page.locator(mode==='constructor'?'#rotateLeft':'#projectRotateLeft').click();assert.deepEqual(await parts(),[panel('custom703')]);
-   await page.locator('#helpButton').click();await page.locator('#helpClose').click();assert.equal(await page.locator('#helpDialog').evaluate(el=>el.open),false);
+   await page.locator('#helpMenu summary').click();await page.locator('#helpMenu').getByRole('menuitem',{name:'Кратко ръководство'}).click();await page.locator('#helpClose').click();assert.equal(await page.locator('#helpDialog').evaluate(el=>el.open),false);
    if(mode==='constructor'){
     await (async()=>{if(await page.locator('#libraryDialog').count())await page.locator('#libraryCancel').click();await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSave').click()})();await page.locator('#fileDialogName').fill('Icon cabinet');await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
     await setup([]);await (async()=>{if(await page.locator('#libraryDialog').count())await page.locator('#libraryCancel').click();await page.locator('#fileMenu>summary').click();await page.locator('#commandFileOpen').click()})();await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);assert.equal((await parts()).length,1);
