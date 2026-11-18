@@ -114,3 +114,33 @@ test('open listener observes downgrade and removal, and rules enforce both immed
   await assertSucceeds(sdk.getDocFromServer(material));
  }finally{unsubscribe?.()}
 });
+
+test('verified owner can list an empty grants collection; an owner without Google token claims cannot',async()=>{
+ const owner=client('owner');
+ const collection=db=>sdk.collection(db,'users','owner','access_grants');
+ assert.equal((await assertSucceeds(sdk.getDocsFromServer(collection(owner.db)))).empty,true);
+ for(const db of [
+  env.authenticatedContext('owner').firestore(),
+  client('owner',{verified:false}).db,
+  client('owner',{provider:'password'}).db
+ ]){
+  await assertFails(sdk.getDocsFromServer(collection(db)));
+  // Retain the existing personal-data permission for signed-in owners.
+  await assertSucceeds(sdk.setDoc(sdk.doc(db,'users','owner','materials','personal'),{name:'Личен материал'}));
+ }
+ await owner.sharing.add('guest@example.test','viewer');
+ const guest=client('guest');
+ assert.equal((await guest.sharing.bases()).length,1);
+ await assertFails(sdk.getDocsFromServer(collection(guest.db)));
+});
+
+test('previous candidate denies the direct paths that the current candidate opens',async()=>{
+ const legacyRules=readFileSync(new URL('./fixtures/sharing-legacy.rules',import.meta.url),'utf8');
+ const legacy=await initializeTestEnvironment({projectId:'demo-kitchen-legacy-sharing',firestore:{rules:legacyRules}});
+ try{
+  const session={email:'owner@example.test',email_verified:true,firebase:{sign_in_provider:'google.com'}};
+  const db=legacy.authenticatedContext('owner',session).firestore();
+  await assertFails(sdk.getDocsFromServer(sdk.collection(db,'users','owner','access_grants')));
+  await assertFails(sdk.getDocsFromServer(sdk.collection(db,'nediq_access','owner@example.test','bases')));
+ }finally{await legacy.cleanup()}
+});

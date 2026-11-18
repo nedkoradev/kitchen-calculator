@@ -1,4 +1,14 @@
 const labels={owner:'Собственик',editor:'Редактор',viewer:'Наблюдател'};
+const authStatus={
+ checking:'Проверка на Google сесията…',
+ unverified:'Споделеният достъп изисква Google вход с потвърден имейл. Излез и влез отново с Google.',
+ unavailable:'Google сесията не може да се провери. Опитай да влезеш отново.'
+};
+function sharingError(error,collection){
+ if(error?.code==='permission-denied')return 'Firestore отказа достъп до '+collection+
+  '. Провери Firebase проекта и дали в (default) са публикувани правилата за директно споделяне от този комит.';
+ return error?.message||'Заявката към Firestore не бе изпълнена.';
+}
 const baseLabel=base=>base.role==='owner'?'Моята база':'Базата на '+base.ownerName;
 
 function element(tag,text=''){
@@ -47,7 +57,7 @@ export function installSharingUI({sharing,account,selectBase}){
     await operation();
     if(close&&active.open){active.close();return}
     if(current(version))await render(message);
-   }catch(error){if(current(version))status.textContent=error.message}
+   }catch(error){if(current(version))status.textContent=sharingError(error,kind==='choose'?'nediq_access':'access_grants / nediq_access')}
    finally{controls.forEach(node=>node.disabled=false)}
   }
   async function render(message=''){
@@ -55,6 +65,11 @@ export function installSharingUI({sharing,account,selectBase}){
    body.replaceChildren();status.textContent=message;
    if(!session.actorUid){
     body.append(element('p','Влез с Google, за да управляваш достъпа.'));
+    return;
+   }
+   if(session.sharingAuth!=='ready'){
+    body.append(element('p',authStatus[session.sharingAuth]||'Влез с Google, за да управляваш достъпа.'));
+    if(kind==='choose')body.append(button('Моята база — Собственик',()=>action(()=>selectBase(session.actorUid),'',true)));
     return;
    }
    if(kind==='choose'){
@@ -68,10 +83,10 @@ export function installSharingUI({sharing,account,selectBase}){
      for(const base of bases)select.add(new Option(baseLabel(base)+' — '+labels[base.role],base.ownerUid));
      select.value=session.uid;
      body.append(select,button('Отвори база',()=>action(()=>selectBase(select.value),'',true)));
-    }catch{
+    }catch(error){
      if(!current(version))return;
      body.replaceChildren(button('Моята база — Собственик',()=>action(()=>selectBase(session.actorUid),'',true)));
-     status.textContent='Споделените бази са недостъпни.';
+     status.textContent=sharingError(error,'nediq_access');
     }
     return;
    }
@@ -80,12 +95,13 @@ export function installSharingUI({sharing,account,selectBase}){
    const form=element('form'),email=element('input'),role=roleSelect('viewer','Роля');
    email.type='email';email.required=true;email.maxLength=254;email.placeholder='Google имейл';
    email.setAttribute('aria-label','Google имейл');
-   const add=element('button','Добави');add.type='submit';
+   const add=element('button','Добави');add.type='submit';add.disabled=true;
    form.append(email,role,add);body.append(form);
-   form.onsubmit=event=>{event.preventDefault();action(()=>sharing.add(email.value,role.value),'Достъпът е предоставен.')};
+   form.onsubmit=event=>{event.preventDefault();if(add.disabled)return;action(()=>sharing.add(email.value,role.value),'Достъпът е предоставен.')};
    try{
     const rows=await sharing.members();
     if(!current(version))return;
+    add.disabled=false;
     body.append(element('h4','Потребители с достъп'));
     if(!rows.length)body.append(element('p','Няма добавени потребители.'));
     for(const member of rows){
@@ -95,7 +111,7 @@ export function installSharingUI({sharing,account,selectBase}){
       button('Отнеми достъп',()=>action(()=>sharing.revoke(member.email),'Достъпът е отнет.')));
      body.append(row);
     }
-   }catch(error){if(current(version))status.textContent=error.message}
+   }catch(error){if(current(version))status.textContent=sharingError(error,'access_grants')}
   }
   refresh=render;render();
  }
@@ -109,14 +125,13 @@ export function installSharingUI({sharing,account,selectBase}){
   indicator.setAttribute('aria-label',indicator.textContent+(state.uid?' · Смени база':''));
   refresh?.();
  });
- return {
-  async discover(){
-   const version=++discovery,actor=account().actorUid;
-   if(!actor)return;
-   try{
-    const rows=await sharing.bases();
-    if(version===discovery&&actor===account().actorUid&&rows.length&&!dialog?.open)open('choose');
-   }catch{/* The personal base remains available when discovery fails. */}
-  }
- };
+ window.addEventListener('ned-sharing-session',async()=>{
+  const version=++discovery,session=account();
+  refresh?.();
+  if(session.sharingAuth!=='ready')return;
+  try{
+   const rows=await sharing.bases();
+   if(version===discovery&&session.actorUid===account().actorUid&&rows.length&&!dialog?.open)open('choose');
+  }catch{/* The personal base remains available; the chooser reports discovery errors. */}
+ });
 }

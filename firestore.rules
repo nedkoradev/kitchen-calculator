@@ -9,8 +9,9 @@ service cloud.firestore {
    return /databases/$(database)/documents/nediq_access/$(email)/bases/$(uid);
   }
   function google(){
-   return request.auth != null && request.auth.token.email_verified == true
-    && request.auth.token.email is string && request.auth.token.firebase.sign_in_provider == 'google.com';
+   return request.auth != null && request.auth.token.get('email_verified', false) == true
+    && request.auth.token.get('email', '') is string && request.auth.token.get('email', '') != ''
+    && request.auth.token.get('firebase', {}).get('sign_in_provider', '') == 'google.com';
   }
   function recipient(email){return google() && request.auth.token.email.lower() == email;}
   function manages(uid){return owner(uid) && google();}
