@@ -1,9 +1,10 @@
+import {draftScope} from './draft-store.mjs';
 import {nedConfirmDelete} from './ui-messages.mjs';
 import {decorateAction} from './icons.mjs';
 import {ProjectError,projectErrorMessage} from './project-model.mjs';
 
 export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,getName,captureDraft,restoreDraft,clearDraft,beforeAccountChange,confirmDelete=nedConfirmDelete}){
- let uid=null,epoch=0,opened=null,busy=false,dialog=null,anonymousDraft=false;
+ let uid=null,scope='',shared=false,readOnly=false,epoch=0,opened=null,busy=false,dialog=null,anonymousDraft=false;
  const pending=new Map(),drafts=new Map();
  function call(action,args){
   return new Promise((resolve,reject)=>{
@@ -23,13 +24,17 @@ export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,
   else job.resolve(response.result);
  });
  window.addEventListener('kitchen-project-auth',event=>{
-  const next=event.detail?.uid||null;if(next===uid)return;beforeAccountChange?.(next);
+  const next=event.detail?.uid||null,nextScope=draftScope(event.detail);
+  readOnly=event.detail?.role==='viewer';
+  if(nextScope===scope)return;
+  beforeAccountChange?.(nextScope);
+  const fromShared=shared;
   const keepAnonymous=!uid&&(anonymousDraft||captureDraft()?.data?.parts?.length);
-  if(uid){drafts.set(uid,{draft:captureDraft(),opened});clearDraft()}
-  uid=next;epoch++;opened=null;
+  if(uid){if(!shared)drafts.set(scope,{draft:captureDraft(),opened});clearDraft()}
+  uid=next;scope=nextScope;shared=!!uid&&scope!==uid;epoch++;opened=null;
   for(const job of pending.values()){clearTimeout(job.timer);job.reject(new ProjectError('auth-changed','Потребителят е сменен. Няма потвърдена операция за текущия потребител.'))}
   pending.clear();dialog?.close();busy=false;
-  if(uid&&drafts.has(uid)&&!keepAnonymous){const saved=drafts.get(uid);restoreDraft(saved.draft);opened=saved.opened}
+  if(uid&&!shared&&!fromShared&&drafts.has(scope)&&!keepAnonymous){const saved=drafts.get(scope);restoreDraft(saved.draft);opened=saved.opened}
   anonymousDraft=false;
  });
  window.dispatchEvent(new Event('kitchen-project-auth-request'));
@@ -55,6 +60,7 @@ export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,
   finally{if(token===epoch){busy=false;ui.element.querySelectorAll('button,input,select').forEach(el=>el.disabled=false);const select=ui.element.querySelector('#projectCloudList');if(select&&!select.options.length)ui.element.querySelectorAll('#projectCloudOpen,#projectCloudDelete').forEach(el=>el.disabled=true)}}
  }
  async function save(saveAs=false){
+  if(readOnly){feedback('Тази база е само за преглед.');return}
   if(!eligible())return;
   const ui=modal(saveAs?'Запази проект като':'Запази проект в облака');
   const label=document.createElement('label');label.textContent='Име на проекта';
@@ -94,7 +100,7 @@ export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,
    apply(result.data);opened=result;onSaved(result);feedback('☁ Отворен проект: '+result.name);ui.element.close();
   }));
   const remove=button('projectCloudDelete','Изтрий',()=>operation(ui,async token=>{
-   const option=select.selectedOptions[0];if(!option)return;
+   const option=select.selectedOptions[0];if(!option||readOnly)return;
    if(!await confirmDelete('Да изтрия ли облачния проект „'+option.textContent+'“?')){ui.status.textContent='Изтриването е отказано.';return}
    if(token!==epoch||!ui.element.isConnected)return;
    const id=option.value;
@@ -107,7 +113,7 @@ export function installProjectUI({snapshot,apply,feedback,isProjectMode,onSaved,
   try{
    const result=await call('list');if(token!==epoch||!ui.element.isConnected)return;
    result.items.forEach(p=>{const option=new Option(p.name,p.id);option.dataset.revision=p.revision;select.add(option)});
-   load.disabled=remove.disabled=!select.options.length;ui.status.textContent=result.items.length?'':'Няма запазени облачни проекти.';
+   load.disabled=!select.options.length;remove.disabled=readOnly||load.disabled;ui.status.textContent=result.items.length?'':'Няма запазени облачни проекти.';
   }catch(error){if(token===epoch)ui.status.textContent=projectErrorMessage(error)}
  }
  return {save,open,get busy(){return busy},detach(){opened=null;anonymousDraft=!uid},get opened(){return opened}};

@@ -15,6 +15,11 @@ export function installShellMenus({getContext,actions={}}){
  const reports=menu('reportsMenu','Справки',[]);library.after(reports);const reportItems=reports.querySelector('.documentMenuItems');for(const id of ['navCut','navCosts']){const b=$(id);b.setAttribute('role','menuitem');b.available=()=>true;b.addEventListener('click',()=>reports.open=false);reportItems.append(b)}
  reports.addEventListener('toggle',()=>{for(const [id,label] of [['navCut','Разкрой'],['navCosts','Разходи']])$(id).textContent=label+' — '+getContext().name});
  const settings=menu('shellSettings','Настройки',[['Папки в библиотеката',click('foldersOpen')],['Параметри',click('parametersOpen')],['Общи настройки',click('settingsButton')],['Размери на стаята…',click('projectRoomSettings'),project],['Материали',click('navMaterials')],['Информация за хранилището',()=>{ $('settingsButton').click();$('nedSpaceOpen').click()}],['Снимки за фладер',()=>{ $('settingsButton').click();$('nedPhotosOpen').click()}],['UI каталог',()=>{ $('settingsButton').click();$('uiCatalogOpen').click()}]]);reports.after(settings);
+ const access=document.createElement('button');
+ access.type='button';access.id='sharingOpen';access.textContent='Потребители и достъп';
+ access.setAttribute('role','menuitem');
+ access.onclick=()=>{settings.open=false;window.dispatchEvent(new Event('ned-sharing-open'))};
+ settings.querySelector('.documentMenuItems').append(access);
  const allModels=library.querySelectorAll('.documentMenuItems>button')[1];const libraryButton=$('navLibrary');libraryButton.textContent='Всички модели';libraryButton.setAttribute('role','menuitem');libraryButton.available=()=>true;libraryButton.addEventListener('click',()=>{libraryCategoryReset();library.open=false});allModels.replaceWith(libraryButton);
  function libraryCategoryReset(){actions.resetLibrary?.()}
  const materialProxy=settings.querySelectorAll('.documentMenuItems>button')[4],materials=$('navMaterials');materials.setAttribute('role','menuitem');materials.available=()=>true;materials.addEventListener('click',()=>settings.open=false);materialProxy.replaceWith(materials);

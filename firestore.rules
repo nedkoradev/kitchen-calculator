@@ -2,12 +2,52 @@ rules_version = '2';
 service cloud.firestore {
  match /databases/{database}/documents {
   function owner(uid){return request.auth != null && request.auth.uid == uid;}
-  // Existing cabinet and material documents remain private to their owner.
+  function ownerGrant(uid,email){
+   return /databases/$(database)/documents/users/$(uid)/access_grants/$(email);
+  }
+  function recipientGrant(uid,email){
+   return /databases/$(database)/documents/nediq_access/$(email)/bases/$(uid);
+  }
+  function google(){
+   return request.auth != null && request.auth.token.get('email_verified', false) == true
+    && request.auth.token.get('email', '') is string && request.auth.token.get('email', '') != ''
+    && request.auth.token.get('firebase', {}).get('sign_in_provider', '') == 'google.com';
+  }
+  function recipient(email){return google() && request.auth.token.email.lower() == email;}
+  function manages(uid){return owner(uid) && google();}
+  function sharedRole(uid,roles){
+   return google() && get(ownerGrant(uid,request.auth.token.email.lower())).data.role in roles;
+  }
+  function canRead(uid){return owner(uid) || sharedRole(uid,['editor','viewer']);}
+  function canEdit(uid){return owner(uid) || sharedRole(uid,['editor']);}
+  function validGrant(uid,email,data){
+   return email.size() <= 254 && email.matches('[^ /@]+@[^ /@]+[.][^ /@]+') && email == email.lower()
+    && email != '.' && email != '..' && !recipient(email)
+    && data.keys().hasOnly(['ownerUid','role','ownerName']) && data.ownerUid == uid
+    && data.role in ['editor','viewer'] && data.ownerName is string
+    && data.ownerName.size() > 0 && data.ownerName.size() <= 120;
+  }
+  match /users/{uid}/access_grants/{email} {
+   allow read: if manages(uid);
+   allow create,update: if manages(uid) && validGrant(uid,email,request.resource.data)
+    && getAfter(recipientGrant(uid,email)).data == request.resource.data;
+   allow delete: if manages(uid) && !existsAfter(recipientGrant(uid,email));
+  }
+  match /nediq_access/{email}/bases/{uid} {
+   allow get: if recipient(email) || manages(uid);
+   allow list: if recipient(email);
+   allow create,update: if manages(uid) && validGrant(uid,email,request.resource.data)
+    && getAfter(ownerGrant(uid,email)).data == request.resource.data;
+   allow delete: if manages(uid) && !existsAfter(ownerGrant(uid,email));
+  }
+  // Original owner paths remain unchanged; membership gates shared working data.
   match /users/{uid}/v2_cabinets/{id} {
-   allow read, write: if owner(uid);
+   allow read: if canRead(uid);
+   allow write: if canEdit(uid);
   }
   match /users/{uid}/materials/{id} {
-   allow read, write: if owner(uid);
+   allow read: if canRead(uid);
+   allow write: if canEdit(uid);
   }
   function projectPath(uid,id){return /databases/$(database)/documents/users/$(uid)/v2_projects/$(id);}
   function claimPath(uid,key){return /databases/$(database)/documents/users/$(uid)/v2_project_names/$(key);}
@@ -28,28 +68,28 @@ service cloud.firestore {
     && getAfter(claimPath(uid,d.nameKey)).data.nameKey == d.nameKey;
   }
   match /users/{uid}/v2_projects/{id} {
-   allow read: if owner(uid);
-   allow create: if owner(uid) && projectShape(request.resource.data)
+   allow read: if canRead(uid);
+   allow create: if canEdit(uid) && projectShape(request.resource.data)
     && request.resource.data.revision == 1 && request.resource.data.createdAt == request.time
     && claimed(uid,id,request.resource.data);
-   allow update: if owner(uid) && projectShape(request.resource.data)
+   allow update: if canEdit(uid) && projectShape(request.resource.data)
     && request.resource.data.revision == resource.data.revision + 1
     && request.resource.data.createdAt == resource.data.createdAt
     && claimed(uid,id,request.resource.data)
     && (resource.data.nameKey == request.resource.data.nameKey || !existsAfter(claimPath(uid,resource.data.nameKey)));
-   allow delete: if owner(uid) && !existsAfter(claimPath(uid,resource.data.nameKey));
+   allow delete: if canEdit(uid) && !existsAfter(claimPath(uid,resource.data.nameKey));
   }
   match /users/{uid}/v2_project_names/{key} {
-   allow read: if owner(uid);
+   allow read: if canRead(uid);
    function validClaim(){
     return request.resource.data.keys().hasOnly(['nameKey','projectId'])
      && request.resource.data.nameKey == key && request.resource.data.projectId is string
      && request.resource.data.projectId.matches('[A-Za-z0-9_-]{1,128}')
      && getAfter(projectPath(uid,request.resource.data.projectId)).data.nameKey == key;
    }
-   allow create: if owner(uid) && validClaim();
-   allow update: if owner(uid) && validClaim() && request.resource.data.projectId == resource.data.projectId;
-   allow delete: if owner(uid) && (!existsAfter(projectPath(uid,resource.data.projectId))
+   allow create: if canEdit(uid) && validClaim();
+   allow update: if canEdit(uid) && validClaim() && request.resource.data.projectId == resource.data.projectId;
+   allow delete: if canEdit(uid) && (!existsAfter(projectPath(uid,resource.data.projectId))
     || getAfter(projectPath(uid,resource.data.projectId)).data.nameKey != key);
   }
   // This does not override other allows; keep the matches above narrowly scoped.

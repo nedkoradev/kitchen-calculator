@@ -1,5 +1,9 @@
 import {projectData} from './project-model.mjs';
 import {appStorage} from './safe-storage.mjs';
+export function draftScope({uid,actorUid=uid}={}){
+ if(!uid||!actorUid)return '';
+ return uid===actorUid?uid:JSON.stringify([actorUid,uid]);
+}
 export function validDraftBundle(value){return value?.schemaVersion===1&&Number.isFinite(value.updatedAt)&&Array.isArray(value.records)&&value.records.length===2&&['project','constructor'].every(kind=>value.records.filter(r=>r&&r.kind===kind&&r.id==='working-'+kind&&r.snapshot&&Array.isArray(r.snapshot.parts)&&r.snapshot.room).length===1)}
 export function createDraftStore({getDB=()=>globalThis.indexedDB,storage=appStorage}={}){
  let database;

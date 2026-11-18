@@ -2,7 +2,7 @@ import {ProjectError,projectName,projectData} from './project-model.mjs';
 
 // SDK injection allows the very same transactions to run against the isolated
 // Firestore emulator. Production supplies the existing Firebase app/auth/SDK.
-export function createProjectStore({db,sdk,getUser,isOnline=()=>true}){
+export function createProjectStore({db,sdk,getUser,getSessionVersion=()=>0,isOnline=()=>true}){
  const {collection,doc,getDocsFromServer,getDocFromServer,runTransaction,serverTimestamp}=sdk;
  function session(){
   const user=getUser();
@@ -10,7 +10,7 @@ export function createProjectStore({db,sdk,getUser,isOnline=()=>true}){
   if(!isOnline())throw new ProjectError('offline','Няма интернет. Операцията не е изпълнена; проектът остава в редактора.');
   return user.uid;
  }
- function check(uid){if(getUser()?.uid!==uid)throw new ProjectError('auth-changed','Потребителят е сменен. Отвори проекта отново.')}
+ function check(uid,version){if(getUser()?.uid!==uid||getSessionVersion()!==version)throw new ProjectError('auth-changed','Потребителят е сменен. Отвори проекта отново.')}
  const projects=uid=>collection(db,'users',uid,'v2_projects');
  const ref=(uid,id)=>{
   if(typeof id!=='string'||!id||id.includes('/'))throw new ProjectError('invalid-id','Невалиден проект.');
@@ -19,17 +19,17 @@ export function createProjectStore({db,sdk,getUser,isOnline=()=>true}){
  const nameRef=(uid,key)=>doc(db,'users',uid,'v2_project_names',key);
  const metadata=snap=>({id:snap.id,name:snap.data().name,revision:snap.data().revision,updatedAt:snap.data().updatedAt});
  return {
-  async list(){const uid=session(),snap=await getDocsFromServer(projects(uid));check(uid);return {uid,items:snap.docs.map(metadata).sort((a,b)=>a.name.localeCompare(b.name,'bg'))}},
+  async list(){const uid=session(),version=getSessionVersion(),snap=await getDocsFromServer(projects(uid));check(uid,version);return {uid,items:snap.docs.map(metadata).sort((a,b)=>a.name.localeCompare(b.name,'bg'))}},
   async open(id){
-   const uid=session(),snap=await getDocFromServer(ref(uid,id));check(uid);
+   const uid=session(),version=getSessionVersion(),snap=await getDocFromServer(ref(uid,id));check(uid,version);
    if(!snap.exists())throw new ProjectError('not-found','Проектът вече не съществува.');
    const data=snap.data();if(data.schemaVersion!==1)throw new ProjectError('unsupported-project','Неподдържана версия на проекта. Няма промени в редактора.');return {uid,...metadata(snap),data:projectData(data.data)};
   },
   async save({name:input,data:inputData,id,revision,saveAs=false,confirmation}){
-   const uid=session(),{name,nameKey}=projectName(input),data=projectData(inputData,{maxBytes:850000});
+   const uid=session(),version=getSessionVersion(),{name,nameKey}=projectName(input),data=projectData(inputData,{maxBytes:850000});
    const fresh=doc(projects(uid));
    return runTransaction(db,async tx=>{
-    check(uid);
+    check(uid,version);
     const source=id&&!saveAs?await tx.get(ref(uid,id)):null;
     if(source&&!source.exists())throw new ProjectError('not-found','Оригиналният проект вече не съществува.');
     if(source&&source.data().revision!==revision)throw new ProjectError('conflict','Проектът е променен в друг прозорец. Отвори го отново преди запис.');
@@ -45,25 +45,25 @@ export function createProjectStore({db,sdk,getUser,isOnline=()=>true}){
      throw new ProjectError('confirmation-required',collision?'Има друг проект с това име. Да презапиша ли него? Първоначално отвореният проект ще остане непроменен.':'Да променя ли името на отворения проект и да го презапиша?',approval);
     // All reads precede writes. Renaming releases the old name atomically.
     if(old&&old.nameKey!==nameKey)await tx.get(nameRef(uid,old.nameKey));
-    check(uid);
+    check(uid,version);
     const nextRevision=(old?.revision||0)+1;
     tx.set(ref(uid,targetId),{schemaVersion:1,name,nameKey,data,revision:nextRevision,createdAt:old?.createdAt||serverTimestamp(),updatedAt:serverTimestamp()});
     tx.set(nameRef(uid,nameKey),{nameKey,projectId:targetId});
     if(old&&old.nameKey!==nameKey)tx.delete(nameRef(uid,old.nameKey));
     return {uid,id:targetId,name,revision:nextRevision};
-   }).then(result=>{check(uid);return result});
+   }).then(result=>{check(uid,version);return result});
   },
   async remove({id,revision}){
-   const uid=session();
+   const uid=session(),version=getSessionVersion();
    await runTransaction(db,async tx=>{
-    const snap=await tx.get(ref(uid,id));check(uid);
+    const snap=await tx.get(ref(uid,id));check(uid,version);
     if(!snap.exists())throw new ProjectError('not-found','Проектът вече не съществува.');
     if(snap.data().revision!==revision)throw new ProjectError('conflict','Проектът е променен в друг прозорец. Обнови списъка преди изтриване.');
-    const claim=await tx.get(nameRef(uid,snap.data().nameKey));check(uid);
+    const claim=await tx.get(nameRef(uid,snap.data().nameKey));check(uid,version);
     if(!claim.exists()||claim.data().projectId!==id)throw new ProjectError('invalid-registry','Невалиден регистър на имената. Няма изтрит проект.');
     tx.delete(ref(uid,id));tx.delete(nameRef(uid,snap.data().nameKey));
    });
-   check(uid);return {uid,id};
+   check(uid,version);return {uid,id};
   }
  };
 }
