@@ -1,11 +1,12 @@
 /* Approved desktop shell. Model geometry and command handlers are unchanged. */
 html:has(body.ned-shell){height:100%;color-scheme:light}
 body.ned-shell{--nd-bg:#e9eef4;--nd-panel:#f6f8fb;--nd-raised:#fff;--nd-border:#bbc8d8;--nd-text:#172b42;--nd-muted:#50637a;--nd-accent:#3b82f6;background:var(--nd-bg)!important;color:var(--nd-text)!important;height:100dvh;display:flex!important;flex-direction:column!important;overflow:hidden;font:13px "Segoe UI",Arial,sans-serif!important}
-body.ned-shell>header{background:#23384e!important;color:#fff!important;min-height:44px!important;padding:5px 14px!important;gap:16px!important;flex:none!important}
-body.ned-shell>header>strong{color:#fff;font-size:22px!important;letter-spacing:.4px}
+body.ned-shell>header{align-items:center!important;background:#23384e!important;color:#fff!important;min-height:44px!important;padding:5px 14px!important;gap:16px!important;flex:none!important}
+body.ned-shell>header>strong{display:flex;align-items:center;flex:0 0 auto;gap:6px;line-height:1.2;color:#fff;font-size:22px!important;letter-spacing:.4px}
+body.ned-shell>header>strong .brandIcon{display:block;flex:none;margin-right:0}
 body.ned-shell #appVersion{font-size:11px;letter-spacing:0;color:#c8d9eb}
-body.ned-shell #documentHeading{align-self:center;position:relative;top:2px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:16px}
-body.ned-shell #headerRight{margin-left:auto;flex:none}
+body.ned-shell #documentHeading{line-height:1.2;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:16px}
+body.ned-shell #headerRight{align-items:center;margin-left:auto;flex:none}
 body.ned-shell #shellMenus{display:flex;align-items:center;flex-wrap:wrap;background:#edf1f6;border-bottom:1px solid var(--nd-border);padding:0 10px;z-index:30;flex:none}
 body.ned-shell #documentMenus{padding:0;gap:0}
 body.ned-shell #mainNavigation{display:flex!important;padding:0!important;background:transparent!important;border:0!important;gap:2px!important;overflow:visible!important}
