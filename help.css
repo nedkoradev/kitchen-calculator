@@ -68,9 +68,7 @@ body.ned-shell .nedHelpDialog {
 .nedHelpDialog .dialogFoot label:not([hidden]) {display:flex;align-items:center;gap:5px;margin:0}
 body.ned-shell #welcomeDialog {
  position:fixed;
- inset:auto 12px 12px auto;
  width:min(420px,calc(100% - 24px));
- margin:0;
  z-index:25;
 }
 #welcomeDialog .nedHelpBody {font-size:13px}

@@ -91,3 +91,33 @@ body.ned-shell .nedConfirmPanel:has(> .nedDialogClose) h3 {
 body.ned-shell .nedConfirmPanel {position:relative}
 body.ned-shell #fileDialogFolderLabel:not([hidden]) {display:block}
 body.ned-shell #fileDialogFolder {display:block;width:100%}
+
+body.ned-shell dialog.nedMovableDialog {
+ position:fixed!important;
+ inset:0!important;
+ margin:auto!important;
+ max-inline-size:calc(100vw - 12px);
+ max-block-size:calc(100dvh - 12px);
+ transform:translate(var(--dialog-x, 0px),var(--dialog-y, 0px))!important;
+}
+body.ned-shell dialog .nedDialogHandle {
+ position:sticky;
+ top:0;
+ z-index:3;
+ box-sizing:border-box;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:8px;
+ min-height:48px;
+ padding:4px 10px;
+ cursor:move;
+ touch-action:none;
+ user-select:none;
+}
+body.ned-shell dialog .nedDialogHandle :is(h1,h2,h3) {margin:0;padding:0}
+body.ned-shell dialog .nedDialogHandle > .nedDialogClose {
+ position:static;
+ flex:none;
+ cursor:pointer;
+}
