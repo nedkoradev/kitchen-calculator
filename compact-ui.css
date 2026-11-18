@@ -62,7 +62,7 @@ body.ned-shell #generalViewSettings{display:flex;flex-wrap:wrap;gap:8px;margin-b
 body.ned-shell #generalViewSettings h3{flex-basis:100%;margin:0 0 4px}
 body.ned-shell #generalViewSettings button[aria-pressed=true]{background:#cee3ff!important;color:#125ba9!important}
 
-body.ned-shell #shellTools :is(#newCabinet,#addAppliance,#projectQuickAdd){display:none!important}
+body.ned-shell #shellTools #projectQuickAdd{display:none!important}
 .folderRow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--nd-border)}
 .folderRow input{flex:1 1 180px;min-width:0}.folderRow select{flex:1 1 180px;min-width:0}
 .libraryDialog{width:min(900px,96vw)!important;max-width:96vw!important;max-height:90dvh;overflow:auto}

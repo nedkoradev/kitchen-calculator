@@ -72,3 +72,11 @@ body.ned-shell #inspectorPanel #edgeEditorSummary{padding:0 8px;color:#50637a}
  #headerRight #sharedBaseStatus:not([hidden]){max-width:56vw}
  #headerRight #cloudStatus:has(+ #sharedBaseStatus:not([hidden])){display:none!important}
 }
+
+/* Native sliders retain keyboard, touch and drag behavior on both axes. */
+#viewPanControls input[type=range]{appearance:none;-webkit-appearance:none;background:transparent}
+#viewPanControls input::-webkit-slider-runnable-track{background:#20252b;border-radius:999px;block-size:8px;inline-size:100%}
+#viewPanControls input::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;background:#669eea;border:0;border-radius:50%;width:16px;height:16px;margin-block-start:-4px}
+#viewPanControls input::-moz-range-track{background:#20252b;border-radius:999px;block-size:8px;inline-size:100%}
+#viewPanControls input::-moz-range-progress{background:transparent}
+#viewPanControls input::-moz-range-thumb{background:#669eea;border:0;border-radius:50%;width:16px;height:16px}
