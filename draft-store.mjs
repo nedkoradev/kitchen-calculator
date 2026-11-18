@@ -22,7 +22,8 @@ export function validateDraftForRestore(bundle){
  const dangerous=key=>['__proto__','prototype','constructor'].includes(key);
  for(const record of bundle.records){
   if(!record.snapshot.materials)throw Error('Missing materials');projectData(record.snapshot);for(const key of ['pdcMaterials','edgeMaterials','backMaterials','worktops'])for(const item of record.snapshot.materials[key])if(!item||typeof item!=='object'||Array.isArray(item)||['name','color','textureUrl'].some(k=>item[k]!==undefined&&typeof item[k]!=='string'))throw Error('Invalid material');for(const item of record.snapshot.parts){if(item.name!==undefined&&typeof item.name!=='string')throw Error('Invalid label');if(item.finish&&(typeof item.finish!=='object'||Array.isArray(item.finish)||item.finish.edges!==undefined&&!Array.isArray(item.finish.edges)))throw Error('Invalid finish')}
-  if(record.snapshot.parts.some(e=>dangerous(e.part.key)))throw Error('Unsafe part key');
+  if(record.snapshot.parts.some(e=>dangerous(e.part.key)||e.part.constructorCabinet!==undefined&&
+     (record.kind!=='constructor'||typeof e.part.constructorCabinet!=='string'||!/^assembly\d+$/.test(e.part.constructorCabinet))))throw Error('Unsafe part key');
   const session=record.session||{};
   if(session.selected!==undefined&&session.selected!==null&&typeof session.selected!=='string')throw Error('Invalid selection');
   if(session.groupSelections!==undefined&&(!Array.isArray(session.groupSelections)||session.groupSelections.some(k=>typeof k!=='string')))throw Error('Invalid selection');
