@@ -568,7 +568,7 @@ window.addEventListener('keydown',function(e){
 },true);
 </script>
 <script type="module" src="./cloud.js"></script><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script><script type="module">
-import {translate,resize,snapPositionToMillimetres} from './geometry.mjs';
+import {bounds,translate,resize,snapPositionToMillimetres} from './geometry.mjs';
 import {projectData} from './project-model.mjs';
 import {panelAxes,edgeEditorSlots,grainFaceOptions,requiresGrain,physicalGrainAxis,rotatedGrainAxis,cutLayout,validTextureUrl} from './grain.mjs';
 import {createMaterialTextures} from './material-textures.mjs';
@@ -1214,7 +1214,8 @@ $('newCabinet').onclick=()=>{
   if(currentDesignMode!=='constructor'||JSON.stringify(readCatalog())!==catalogSnapshot)throw Error('Материалната база е променена. Отвори „Нов шкаф“ отново.');
   const placed=placeCabinet(items,customParts,ROOM);
   rememberHistory();const keys=restoreParts(placed);groupSelections.clear();for(const key of keys)groupSelections.add(key);selected=keys[0];singleMemberSelection=false;
-  const id=customParts.find(p=>p.key===selected)?.assembly;if(id)projectInstances.set(id,name);
+  const id=customParts.find(p=>p.key===selected)?.assembly;
+  if(id){for(const part of customParts)if(keys.includes(part.key))part.constructorCabinet=id;projectInstances.set(id,name);}
   build(false);updateSelection();refreshGroupList();setView('perspective');projectRefresh();
  }});
 };
@@ -1234,12 +1235,19 @@ function editAppliance(part=null){
  openApplianceEditor({part,name:part?labels[part.key]:'',onSave:value=>{
   if(part){rememberHistory();for(const dim of ['w','h','d'])applyGeometry([part],resize([part],obstaclesFor([part]),ROOM,dim,value[dim]));part.appliance=value.appliance;labels[part.key]=value.name}
   else{const key='custom'+(partCounter+1),p={key,w:value.w,h:value.h,d:value.d,x:0,y:value.h/2,z:0,locks:{w:false,h:false,d:false},appliance:value.appliance};
-   const placed=findAppliancePosition(p);if(!placed)throw Error('Няма свободно място за уреда.');rememberHistory();partCounter++;Object.assign(p,placed[0]);customParts.push(p);labels[key]=value.name;finishes[key]={includeInCut:false,edges:[null,null,null,null]};selected=key;groupSelections.clear();groupSelections.add(key);singleMemberSelection=false;
+   const placed=findAppliancePosition(p);if(!placed)throw Error('Няма свободно място за уреда.');rememberHistory();partCounter++;Object.assign(p,placed[0]);attachToStandaloneCabinet(p);customParts.push(p);labels[key]=value.name;finishes[key]={includeInCut:false,edges:[null,null,null,null]};selected=key;groupSelections.clear();groupSelections.add(key);singleMemberSelection=false;
   }
   build(false);updateSelection();refreshGroupList();
  }});
 }
-function addCustom(orientation='horizontal'){const key='custom'+(++partCounter);const vertical=orientation==='vertical';customParts.push({key,w:vertical?18:500,h:vertical?500:18,d:400,x:0,y:vertical?300:120,z:0,locks:{w:vertical,h:!vertical,d:false}});const added=customParts.at(-1);for(const [axis,dim] of [['x','w'],['y','h'],['z','d']]){const origin=axis==='y'?0:ROOM[dim]/2,offset=added[axis]-added[dim]/2+origin;added[axis]+=Math.round(offset)-offset;}labels[key]=(vertical?'Вертикален детайл ':'Хоризонтален детайл ')+partCounter;groupSelections.clear();groupSelections.add(key);selected=key;build(false);updateSelection()}
+function attachToStandaloneCabinet(part){
+ if(currentDesignMode!=='constructor')return;
+ const id=customParts[0]?.constructorCabinet;
+ if(!id||!customParts.every(p=>p.constructorCabinet===id))return;
+ part.constructorCabinet=id;
+ if(customParts.every(p=>p.assembly===id))wrapAssembly(part,id);
+}
+function addCustom(orientation='horizontal'){const key='custom'+(++partCounter);const vertical=orientation==='vertical';const part={key,w:vertical?18:500,h:vertical?500:18,d:400,x:0,y:vertical?300:120,z:0,locks:{w:vertical,h:!vertical,d:false}};attachToStandaloneCabinet(part);customParts.push(part);const added=part;for(const [axis,dim] of [['x','w'],['y','h'],['z','d']]){const origin=axis==='y'?0:ROOM[dim]/2,offset=added[axis]-added[dim]/2+origin;added[axis]+=Math.round(offset)-offset;}labels[key]=(vertical?'Вертикален детайл ':'Хоризонтален детайл ')+partCounter;groupSelections.clear();groupSelections.add(key);selected=key;build(false);updateSelection()}
 function rotateSelectedPart(sign){
  const selectedPart=customParts.find(p=>p.key===selected);if(!selectedPart)return;
  if(typeof rememberHistory==='function')rememberHistory();
@@ -1300,6 +1308,7 @@ function duplicateCustom(){
  for(const p of source){
   const key='custom'+(++partCounter);
   const clone=structuredClone(p);
+  delete clone.constructorCabinet;
   clone.assemblyStack=newAssembly?clone.assemblyStack?.map(id=>remapAssemblyId(id,copiedAssemblies)):undefined;
   customParts.push({...clone,key,assembly:newAssembly,x:p.x+shift});
   labels[key]=labels[p.key]||'Плоскост '+partCounter;
@@ -1384,6 +1393,24 @@ function frameOpenedModel(){
  const radius=Math.hypot(...sizes)/2,vertical=THREE.MathUtils.degToRad(camera.fov/2),horizontal=Math.atan(Math.tan(vertical)*host.clientWidth/Math.max(1,host.clientHeight));
  const distance=Math.max(100,radius/Math.sin(Math.min(vertical,horizontal)))*1.12;
  camera.position.copy(controls.target).addScaledVector(new THREE.Vector3(1.15,.65,1.75).normalize(),distance);camera.far=Math.max(15000,distance+radius*2);camera.updateProjectionMatrix();controls.maxDistance=Math.max(controls.maxDistance,distance*2);controls.update();
+}
+function frameConstructorScene(){
+ const box=cabinetEnvelope(customParts),radius=Math.hypot(box.w,box.h,box.d)/2;
+ const direction=camera.position.clone().sub(controls.target).normalize();
+ controls.target.set(box.x,box.y,box.z);
+ if(camera.isOrthographicCamera){
+  camera.zoom=Math.min(camera.right-camera.left,camera.top-camera.bottom)/Math.max(1,2.24*radius);
+  camera.position.copy(controls.target).addScaledVector(direction,Math.max(450,radius*2));
+ }else{
+  camera.zoom=1;
+  const vertical=THREE.MathUtils.degToRad(camera.fov/2);
+  const horizontal=Math.atan(Math.tan(vertical)*camera.aspect);
+  const distance=Math.max(100,radius/Math.sin(Math.min(vertical,horizontal)))*1.12;
+  camera.position.copy(controls.target).addScaledVector(direction,distance);
+  camera.far=Math.max(camera.far,distance+radius*2);
+  controls.maxDistance=Math.max(controls.maxDistance,distance*2);
+ }
+ camera.updateProjectionMatrix();controls.update();viewPan?.resetOrigin(controls.target);
 }
 document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>setView(b.dataset.v));$('fit').onclick=()=>setView(viewMode);
 
@@ -1671,6 +1698,7 @@ function restoreParts(items,offset={x:0,y:0,z:0},preserve=false,preserveIdentity
  const assemblyNames=new Map(),newKeys=[];
  for(const item of items){
   const p=structuredClone(item.part),oldKey=p.key;
+  if(!preserveIdentity)delete p.constructorCabinet;
   if(!preserveIdentity)p.key='custom'+(++partCounter);
   if(!preserveIdentity&&p.assembly)p.assembly=remapAssemblyId(p.assembly,assemblyNames);
   else if(preserve)p.assembly=undefined;
@@ -1725,10 +1753,11 @@ const fileDialog=$('fileDialog');
 let fileAction='save';
 let cloudCabinets=[],libraryOwner=null;
 window.addEventListener('kitchen-project-auth',e=>{const uid=e.detail?.uid||null;if(libraryOwner!==uid){libraryOwner=uid;cloudCabinets=[]}});
-let editingCloudCabinetId=null;
-for(const event of ['kitchen-v2-cloud-open-request','kitchen-v2-cloud-save-request'])window.addEventListener(event,e=>{documentCommandPending=true;if(e.detail){if(event==='kitchen-v2-cloud-open-request'&&currentDesignMode==='constructor'&&!pendingLibraryDuplicate&&!libraryDuplicateSavePending)documents.active.epoch=(documents.active.epoch||0)+1;e.detail.documentId=documents.active.id;e.detail.documentEpoch=documents.active.epoch||0;e.detail.operation=pendingLibraryDuplicate||libraryDuplicateSavePending?'library-duplicate':'document'}},true);
+const cabinetCloudIds=new Map();
+let cabinetSaveSelection=null;
+for(const event of ['kitchen-v2-cloud-open-request','kitchen-v2-cloud-save-request'])window.addEventListener(event,e=>{documentCommandPending=true;if(e.detail){if(event==='kitchen-v2-cloud-open-request'&&currentDesignMode==='constructor'&&!pendingLibraryDuplicate&&!libraryDuplicateSavePending)documents.active.epoch=(documents.active.epoch||0)+1;e.detail.documentId=documents.active.id;e.detail.documentEpoch=documents.active.epoch||0;e.detail.operation=pendingLibraryDuplicate||libraryDuplicateSavePending?'library-duplicate':e.detail.operation||'document'}},true);
 for(const event of ['kitchen-v2-cloud-opened','kitchen-v2-cloud-saved','kitchen-v2-cloud-error'])window.addEventListener(event,()=>documentCommandPending=false);
-window.addEventListener('kitchen-project-auth',()=>{documentCommandPending=false;editingCloudCabinetId=null});
+window.addEventListener('kitchen-project-auth',()=>{documentCommandPending=false;cabinetCloudIds.clear()});
 let cabinetOverwriteId=null,cabinetSaveListReady=false,cabinetSavePending=false;
 function resetCabinetOverwrite(){cabinetOverwriteId=null;$('fileOverwritePrompt').hidden=true;$('fileDialogConfirm').textContent=fileAction==='save'?'Запази':'Отвори'}
 function cabinetPending(value){cabinetSavePending=value;for(const id of ['fileDialogName','fileDialogClose','fileDialogCancel','fileOverwriteCancel'])$(id).disabled=value;$('fileDialogConfirm').disabled=value}
@@ -1757,8 +1786,14 @@ window.addEventListener('kitchen-v2-cloud-saved',e=>{
  if(e.detail.operation==='library-duplicate')return;
  if(e.detail.documentId&&e.detail.documentId!==documents.active.id||e.detail.documentEpoch!==undefined&&e.detail.documentEpoch!==(documents.active.epoch||0))return;
  cabinetPending(false);resetCabinetOverwrite();
- $('cabinetName').value=typeof e.detail.name==='string'?e.detail.name:'';
- editingCloudCabinetId=e.detail.id||null;documents.get('constructor').cloudId=editingCloudCabinetId;
+ const saved=cabinetSaveSelection;
+ if(saved&&e.detail.id){
+  cabinetCloudIds.set(saved.linkKey,e.detail.id);
+  if(saved.assembly)projectInstances.set(saved.assembly,e.detail.name);
+  if(saved.whole){$('cabinetName').value=e.detail.name;markDocumentSaved()}
+  window.dispatchEvent(new Event('ned-selection-change'));
+ }
+ cabinetSaveSelection=null;
  fileDialog.close();
 });
 window.addEventListener('kitchen-v2-cloud-opened',e=>{
@@ -1766,6 +1801,11 @@ window.addEventListener('kitchen-v2-cloud-opened',e=>{
  if(e.detail.documentId&&e.detail.documentId!==documents.active.id||e.detail.documentEpoch!==undefined&&e.detail.documentEpoch!==(documents.active.epoch||0))return;
  if(pendingLibraryDuplicate)return;
  if(currentDesignMode==='project')return;
+ if(e.detail.operation==='constructor-add'){
+  try{insertConstructorCabinet(e.detail)}
+  catch(error){window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-error',{detail:{message:error.message}}))}
+  return;
+ }
  $('fileDialogConfirm').disabled=false;
  const incoming=e.detail.parts;
  if(!Array.isArray(incoming)||!incoming.length)return;
@@ -1774,12 +1814,86 @@ window.addEventListener('kitchen-v2-cloud-opened',e=>{
  const keys=restoreParts(incoming,offset);
  // A saved cabinet is a single unit even if its original panels were ungrouped.
  const id='assembly'+(++assemblyId);
- keys.forEach(key=>{const p=customParts.find(q=>q.key===key);wrapAssembly(p,id)});
+ keys.forEach(key=>{const p=customParts.find(q=>q.key===key);wrapAssembly(p,id);p.constructorCabinet=id});
  groupSelections.clear();keys.forEach(key=>groupSelections.add(key));
  selected=keys[0];singleMemberSelection=false;
  build(false);updateSelection();refreshGroupList();
- $('cabinetName').value=typeof e.detail.name==='string'?e.detail.name:'';editingCloudCabinetId=e.detail.id||null;documents.get('constructor').cloudId=editingCloudCabinetId;projectInstances.set(id,e.detail.name||'Модел');fileDialog.close();activateMainNavigation('constructor');const openedEpoch=documents.active.epoch;requestAnimationFrame(()=>{if(currentDesignMode==='constructor'&&documents.active.epoch===openedEpoch)frameOpenedModel()});window.dispatchEvent(new Event('ned-library-applied'));
+ $('cabinetName').value=typeof e.detail.name==='string'?e.detail.name:'';cabinetCloudIds.clear();if(e.detail.id)cabinetCloudIds.set(id,e.detail.id);projectInstances.set(id,e.detail.name||'Модел');fileDialog.close();activateMainNavigation('constructor');markDocumentSaved();const openedEpoch=documents.active.epoch;requestAnimationFrame(()=>{if(currentDesignMode==='constructor'&&documents.active.epoch===openedEpoch)frameOpenedModel()});window.dispatchEvent(new Event('ned-library-applied'));
 });
+function cabinetEnvelope(parts){
+ const x=bounds(parts,'x'),y=bounds(parts,'y'),z=bounds(parts,'z');
+ return {x:(x.min+x.max)/2,y:(y.min+y.max)/2,z:(z.min+z.max)/2,
+  w:x.max-x.min,h:y.max-y.min,d:z.max-z.min};
+}
+function insertConstructorCabinet({parts,name}){
+ const incoming=projectData({parts,room:{...ROOM}}).parts;
+ if(!incoming.length)throw Error('Шкафът няма детайли.');
+ const box=cabinetEnvelope(incoming.map(item=>item.part));
+ // Test the enclosing cabinet, keeping existing joinery and offsets intact.
+ const footprint={...box,w:Math.ceil(box.w),h:Math.ceil(box.h),d:Math.ceil(box.d)};
+ footprint.y=footprint.h/2;
+ const groups=new Map();
+ for(const part of customParts){
+  const key=part.assembly||part.key;
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(part);
+ }
+ const [{part:position}]=placeCabinet([{part:footprint}],[...groups.values()].map(cabinetEnvelope),ROOM,{preferSideBySide:true});
+ const offset={x:position.x-box.x,y:position.y-box.y,z:position.z-box.z};
+ rememberHistory();
+ // Loose panels in a previously standalone model remain one editable unit.
+ if(customParts.length&&customParts.every(part=>!part.assembly&&!part.constructorCabinet)){
+  const id='assembly'+(++assemblyId);
+  customParts.forEach(part=>{wrapAssembly(part,id);part.constructorCabinet=id});
+  projectInstances.set(id,$('cabinetName').value||'Модел');
+  if(cabinetCloudIds.has(null)){
+   cabinetCloudIds.set(id,cabinetCloudIds.get(null));
+   cabinetCloudIds.delete(null);
+  }
+ }
+ const keys=restoreParts(incoming,offset),id='assembly'+(++assemblyId);
+ const inserted=new Set(keys);
+ for(const part of customParts)if(inserted.has(part.key)){wrapAssembly(part,id);part.constructorCabinet=id}
+ projectInstances.set(id,name||'Шкаф');
+ selected=keys[0];singleMemberSelection=false;groupSelections.clear();
+ build(false);activateMainNavigation('constructor');frameConstructorScene();
+ updateSelection();refreshGroupList();projectRefresh();
+ window.dispatchEvent(new Event('ned-library-applied'));
+}
+function selectedCabinet(){
+ const part=customParts.find(p=>p.key===selected);
+ if(customParts.every(p=>!p.assembly&&!p.constructorCabinet)){
+  return customParts.length?{assembly:null,linkKey:null,parts:customParts,whole:true}:null;
+ }
+ if(!part)return null;
+ const assembly=part.constructorCabinet||part.assembly||null;
+ const members=part.constructorCabinet?customParts.filter(p=>p.constructorCabinet===assembly):assembly?customParts.filter(p=>p.assembly===assembly):[part];
+ const memberKeys=new Set(members.map(p=>p.key));
+ if([...groupSelections].some(key=>!memberKeys.has(key)&&customParts.some(p=>p.key===key)))return null;
+ if(!part.constructorCabinet&&members.some(p=>p.constructorCabinet||
+  p.assemblyStack?.some(id=>projectInstances.has(id))))return null;
+ return {assembly,linkKey:assembly||part.key,parts:members,whole:members.length===customParts.length};
+}
+function cabinetSaveParts(cabinet){
+ const members=new Set(cabinet.parts.map(p=>p.key));
+ const entries=snapshotParts().filter(item=>members.has(item.part.key));
+ const box=cabinetEnvelope(cabinet.parts);
+ for(const {part} of entries){
+  if(!cabinet.whole){part.x-=box.x;part.y-=box.y-box.h/2;part.z-=box.z}
+  delete part.constructorCabinet;
+  if(cabinet.assembly&&projectInstances.has(cabinet.assembly)){
+   const ancestry=[...(part.assemblyStack||[]),part.assembly];
+   const root=ancestry.indexOf(cabinet.assembly);
+   if(root<0)continue;
+   const inner=ancestry.slice(0,root);
+   part.assembly=inner.pop()||null;
+   part.assemblyStack=inner;
+   if(!part.assembly)delete part.assembly;
+   if(!part.assemblyStack?.length)delete part.assemblyStack;
+  }
+ }
+ return entries;
+}
 let cabinetSaveAs=false;
 function showFileDialog(action,{saveAs=false}={}){
  cabinetSaveAs=saveAs;fileAction=action;
@@ -1790,7 +1904,12 @@ function showFileDialog(action,{saveAs=false}={}){
  resetCabinetOverwrite();cabinetPending(false);$('fileListRetry').hidden=true;
  $('fileDialogStatus').textContent='';
  $('fileDialogConfirm').disabled=false;$('fileDialogDelete').disabled=false;
- if(action==='save'){$('fileDialogName').value=saveAs?'':$('cabinetName').value.trim();requestCabinetList()}
+ if(action==='save'){
+  const cabinet=selectedCabinet();
+  if(!cabinet){materialSaveNotice('Избери един шкаф за запис.',true);return}
+  $('fileDialogName').value=saveAs?'':(projectInstances.get(cabinet.assembly)||(cabinet.whole?$('cabinetName').value.trim():''));
+  requestCabinetList();
+ }
  else{
   $('fileDialogChoice').replaceChildren();
   $('fileDialogStatus').textContent='Зареждане от облака…';
@@ -1816,14 +1935,19 @@ $('fileDialogConfirm').onclick=async()=>{
  if(fileAction==='save'){
   const name=$('fileDialogName').value.trim();
   if(!name){$('fileDialogStatus').textContent='Въведи име.';$('fileDialogName').focus();return}
-  if(!customParts.length){$('fileDialogStatus').textContent='Няма детайли за запис.';return}
+  const cabinet=selectedCabinet();
+  if(!cabinet){$('fileDialogStatus').textContent='Избери един шкаф за запис.';return}
   const matches=cloudCabinets.filter(c=>c.name.trim().toLocaleLowerCase('bg')===name.toLocaleLowerCase('bg'));
-  if(cabinetSaveAs&&matches.length){$('fileDialogStatus').textContent='Запази като изисква ново име; съществуващият модел не се презаписва.';return}
-  const target=cabinetSaveAs?null:matches.find(c=>c.id===editingCloudCabinetId)||matches[0];
+  const linkedId=cabinetCloudIds.get(cabinet.linkKey);
+  const target=cabinetSaveAs?null:matches.find(c=>c.id===linkedId);
+  if(matches.some(c=>c.id!==target?.id)){
+   $('fileDialogStatus').textContent='Избери ново име. Съществуващият библиотечен модел е запазен.';return;
+  }
   if(target&&cabinetOverwriteId!==target.id){cabinetOverwriteId=target.id;$('fileOverwriteMessage').textContent='Вече има шкаф с име „'+target.name+'“. Искаш ли да го презапишеш с текущите детайли?';$('fileOverwritePrompt').hidden=false;$('fileDialogConfirm').textContent='Презапиши';return}
+  cabinetSaveSelection=cabinet;
   cabinetPending(true);
   $('fileDialogStatus').textContent=target?'Презаписване в облака…':'Записване в облака…';
-  window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-save-request',{detail:{name,parts:snapshotParts(),calculationSettings:{sheetUtilization},id:target?.id}}));
+  window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-save-request',{detail:{name,parts:cabinetSaveParts(cabinet),calculationSettings:{sheetUtilization},id:target?.id}}));
  }else{
   const id=$('fileDialogChoice').value;
   if(!id){$('fileDialogStatus').textContent='Избери шкаф.';return}
@@ -1837,7 +1961,7 @@ const undoHistory=[],redoHistory=[],MAX_HISTORY=80;
 let historyRestoring=false;
 function historySnapshot(){
  return JSON.stringify({sheetUtilization,parts:customParts,finishes,allEdgeFlags,labels,selected,
-  groupSelections:[...groupSelections],singleMemberSelection,partCounter,assemblyId});
+  groupSelections:[...groupSelections],singleMemberSelection,partCounter,assemblyId,assemblyNames:Object.fromEntries(projectInstances)});
 }
 function updateHistoryButtons(){
  $('undoStep').disabled=!undoHistory.length;
@@ -1856,7 +1980,8 @@ function restoreHistory(state){
  for(const obj of [finishes,allEdgeFlags,labels])for(const k of Object.keys(obj))delete obj[k];
  Object.assign(finishes,data.finishes);Object.assign(allEdgeFlags,data.allEdgeFlags);Object.assign(labels,data.labels);
  selected=data.selected;groupSelections.clear();data.groupSelections.forEach(k=>groupSelections.add(k));
- singleMemberSelection=data.singleMemberSelection;partCounter=data.partCounter;assemblyId=data.assemblyId;syncDocumentCounters();
+ singleMemberSelection=data.singleMemberSelection;partCounter=Math.max(partCounter,data.partCounter);assemblyId=Math.max(assemblyId,data.assemblyId);syncDocumentCounters();
+ if(data.assemblyNames){projectInstances.clear();for(const [id,name] of Object.entries(data.assemblyNames))projectInstances.set(id,name)}
  drag=null;assemblyPointer=null;controls.enabled=true;
  build(false);updateSelection();refreshGroupList();historyRestoring=false;updateHistoryButtons();
 }
@@ -1959,7 +2084,7 @@ $('propertiesDialog').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isCo
 let currentDesignMode='constructor',constructorBackup=null,projectBackup=null,projectBackupState=null,constructorBackupState=null,projectMaterialBase=null,projectViewRestoreEpoch=0;
 const documents=createDocumentContexts(),documentSessions=new Map();
 let draftRecovery=null,documentCommandPending=false,documentCommands=null;
-function syncDocumentCounters(){const all=[...customParts,...['project','constructor'].flatMap(kind=>(documents.get(kind).snapshot?.parts||[]).map(e=>e.part))];for(const p of all){const key=/^custom(\d+)$/.exec(p.key||'');if(key)partCounter=Math.max(partCounter,Number(key[1]));for(const id of [p.assembly,...(p.assemblyStack||[])]){const found=/^assembly(\d+)$/.exec(id||'');if(found)assemblyId=Math.max(assemblyId,Number(found[1]))}}}
+function syncDocumentCounters(){const all=[...customParts,...['project','constructor'].flatMap(kind=>(documents.get(kind).snapshot?.parts||[]).map(e=>e.part))];for(const p of all){const key=/^custom(\d+)$/.exec(p.key||'');if(key)partCounter=Math.max(partCounter,Number(key[1]));for(const id of [p.constructorCabinet,p.assembly,...(p.assemblyStack||[])]){const found=/^assembly(\d+)$/.exec(id||'');if(found)assemblyId=Math.max(assemblyId,Number(found[1]))}}}
 function documentFingerprint(snapshot){const {settings,...content}=snapshot;return JSON.stringify(content)}
 function markDocumentSaved(){const doc=documents.active;doc.savedFingerprint=documentFingerprint(captureProjectSnapshot());doc.savedName=currentDesignMode==='project'?$('projectTitle').value:$('cabinetName').value;doc.dirty=false;doc.name=doc.savedName;window.dispatchEvent(new CustomEvent('ned-document-change',{detail:{id:doc.id,kind:doc.kind,name:doc.name}}))}
 
@@ -2266,7 +2391,7 @@ function changeDesignMode(next){
  build(false);setView('perspective');projectRefresh();
  const state=next==='project'?projectBackupState:constructorBackupState;if(state)applyProjectSnapshot(state,{resetHistory:false,preserveIdentity:true});
  const session=documentSessions.get(next);undoHistory.splice(0,undoHistory.length,...(session?.undo||[]));redoHistory.splice(0,redoHistory.length,...(session?.redo||[]));selected=session?.selected||null;groupSelections.clear();for(const key of session?.groupSelections||[])if(customParts.some(p=>p.key===key))groupSelections.add(key);singleMemberSelection=!!session?.singleMemberSelection;updateSelection();updateHistoryButtons();
- const doc=documents.active;if(next==='constructor')editingCloudCabinetId=doc.cloudId||null;if(next==='constructor')$('cabinetName').value=doc.name==='Нов модел'?'':doc.name;else {$('projectTitle').value=doc.name;$('projectName').value=doc.name}
+ const doc=documents.active;if(next==='constructor')$('cabinetName').value=doc.name==='Нов модел'?'':doc.name;else {$('projectTitle').value=doc.name;$('projectName').value=doc.name}
  window.dispatchEvent(new CustomEvent('ned-document-change',{detail:{id:doc.id,kind:doc.kind,name:doc.name}}));
 }
 function cabinetPreviewSvg(items){
@@ -2465,7 +2590,7 @@ window.addEventListener('kitchen-v2-cloud-material-loaded',e=>{
  const status=$('v2MaterialCloudStatus');if(status)status.textContent='Заредена база: '+e.detail.name;
 });
 function captureProjectSnapshot(){
- return projectData({parts:snapshotParts(),room:{...ROOM},assemblyNames:Object.fromEntries([...projectInstances].filter(([id])=>customParts.some(p=>p.assembly===id||p.assemblyStack?.includes(id)))),
+ return projectData({parts:snapshotParts(),room:{...ROOM},assemblyNames:Object.fromEntries([...projectInstances].filter(([id])=>customParts.some(p=>p.constructorCabinet===id||p.assembly===id||p.assemblyStack?.includes(id)))),
   materials:{...catalogExtra,pdcMaterials:libraryBoards.map(withPhotoOrientation),edgeMaterials:libraryEdges.map(withPhotoOrientation),backMaterials:catalogExtra.backMaterials.map(withPhotoOrientation),worktops:catalogExtra.worktops.map(withPhotoOrientation),servicePrices:window.projectServicePrices||{},activeBase:projectMaterialBase??appStorage.getItem('kitchenActiveMaterialBase')??''},
   settings:{sheetUtilization,viewMode,projectTab:activeProjectTab,camera:{position:camera.position.toArray(),target:controls.target.toArray(),zoom:camera.zoom}}});
 }
@@ -2485,6 +2610,7 @@ function applyProjectSnapshot(input,{resetHistory=true,preserveIdentity=false}={
   // Remap display names through the existing loader, without changing grouping.
   value.parts.forEach((item,i)=>{
    const loaded=customParts.find(p=>p.key===keys[i]);
+   if(loaded.constructorCabinet)ids.set(loaded.constructorCabinet,loaded.constructorCabinet);
    if(item.part.assembly)ids.set(item.part.assembly,loaded.assembly);
    (item.part.assemblyStack||[]).forEach((id,j)=>{if(id)ids.set(id,loaded.assemblyStack[j])});
   });
@@ -2763,17 +2889,16 @@ function frame(){
  updatePartNames();
  updateDimensionOverlay();
 }build();frame();
-for(const event of ['kitchen-v2-cloud-saved','kitchen-v2-cloud-opened'])window.addEventListener(event,e=>{if(e.detail.operation==='library-duplicate'||e.detail.documentId&&e.detail.documentId!==documents.active.id||e.detail.documentEpoch!==undefined&&e.detail.documentEpoch!==(documents.active.epoch||0))return;if(currentDesignMode==='constructor')markDocumentSaved()});
 draftRecovery=installDraftRecovery({
- resetForOwner:()=>{activeReport=null;const empty=emptyProjectSnapshot();empty.settings.sheetUtilization=80;for(const kind of ['project','constructor']){documents.checkpoint(kind,{snapshot:empty,name:kind==='project'?'Нов проект':'Нов модел'});Object.assign(documents.get(kind),{savedFingerprint:null,savedName:'',dirty:false,cloudId:null,epoch:(documents.get(kind).epoch||0)+1})}documentSessions.clear();projectBackupState=structuredClone(empty);constructorBackupState=structuredClone(empty);projectBackup=[];constructorBackup=[];applyProjectSnapshot(empty);$('cabinetName').value='';$('projectTitle').value='Нов проект';$('projectName').value='Нов проект';editingCloudCabinetId=null;},
+ resetForOwner:()=>{activeReport=null;const empty=emptyProjectSnapshot();empty.settings.sheetUtilization=80;for(const kind of ['project','constructor']){documents.checkpoint(kind,{snapshot:empty,name:kind==='project'?'Нов проект':'Нов модел'});Object.assign(documents.get(kind),{savedFingerprint:null,savedName:'',dirty:false,cloudId:null,epoch:(documents.get(kind).epoch||0)+1})}documentSessions.clear();projectBackupState=structuredClone(empty);constructorBackupState=structuredClone(empty);projectBackup=[];constructorBackup=[];applyProjectSnapshot(empty);$('cabinetName').value='';$('projectTitle').value='Нов проект';$('projectName').value='Нов проект';cabinetCloudIds.clear();},
  getOwner:()=>materialAccountUid||'',
  capture:()=>{const snap=captureProjectSnapshot(),name=currentDesignMode==='project'?$('projectTitle').value:$('cabinetName').value,record=documents.checkpoint(currentDesignMode,{snapshot:snap,name});record.dirty=record.savedFingerprint?record.savedFingerprint!==documentFingerprint(snap)||record.savedName!==name:!!snap.parts.length||['w','h','d'].some((k,i)=>snap.room[k]!==[3000,2600,3000][i])||!['','Нов проект','Нов модел'].includes(name);window.dispatchEvent(new CustomEvent('ned-document-state',{detail:{id:record.id,dirty:record.dirty}}));documentSessions.set(currentDesignMode,{undo:[...undoHistory],redo:[...redoHistory],selected,groupSelections:[...groupSelections],singleMemberSelection});return {activeKind:currentDesignMode,records:documents.export().map(r=>({...r,snapshot:r.snapshot||emptyProjectSnapshot(),session:{...(documentSessions.get(r.kind)||{}),undo:(documentSessions.get(r.kind)?.undo||[]).slice(-10),redo:(documentSessions.get(r.kind)?.redo||[]).slice(-10)}}))}},
- restore:bundle=>{validateDraftForRestore(bundle);const previous={report:activeReport,records:documents.export(),sessions:structuredClone([...documentSessions]),kind:currentDesignMode,snapshot:captureProjectSnapshot(),undo:[...undoHistory],redo:[...redoHistory],selected,groups:[...groupSelections],single:singleMemberSelection,cabinet:$('cabinetName').value,title:$('projectTitle').value};try{for(const r of bundle.records){documents.checkpoint(r.kind,r);documents.get(r.kind).epoch=(documents.get(r.kind).epoch||0)+1;Object.assign(documents.get(r.kind),{savedFingerprint:r.savedFingerprint??null,savedName:r.savedName??'',dirty:!!r.dirty});documentSessions.set(r.kind,r.session||{});if(r.kind==='project'){projectBackupState=r.snapshot;projectBackup=r.snapshot.parts}else{constructorBackupState=r.snapshot;constructorBackup=r.snapshot.parts}}const target=bundle.activeKind==='constructor'?'constructor':'project';activeReport=null;currentDesignMode=target;documents.activate(target);syncDocumentCounters();applyProjectSnapshot(documents.active.snapshot,{resetHistory:false,preserveIdentity:true});const session=documentSessions.get(target)||{};undoHistory.splice(0,undoHistory.length,...(session.undo||[]));redoHistory.splice(0,redoHistory.length,...(session.redo||[]));selected=session.selected||null;groupSelections.clear();for(const key of session.groupSelections||[])if(customParts.some(p=>p.key===key))groupSelections.add(key);singleMemberSelection=!!session.singleMemberSelection;document.querySelector('main').classList.toggle('projectMode',target==='project');$('newCabinet').hidden=target==='project';if(target==='project'){$('projectTitle').value=documents.active.name;$('projectName').value=documents.active.name}else $('cabinetName').value=documents.active.name;const restoredPage=['cut','costs'].includes(documents.active.snapshot.settings?.projectTab)?documents.active.snapshot.settings.projectTab:target;placeResultsForNavigation(restoredPage);document.querySelector('main').classList.toggle('catalogMode',['cut','costs'].includes(restoredPage));$('projectDashboard').hidden=target!=='project';for(const [id,page] of [['modeProject','project'],['modeConstructor','constructor'],['navLibrary','library'],['navMaterials','materials'],['navCut','cut'],['navCosts','costs']])$(id).classList.toggle('mainNavActive',page===restoredPage);updateSelection();updateHistoryButtons();editingCloudCabinetId=null;documents.get('constructor').cloudId=null;projectCloudUI.detach();}catch(error){activeReport=previous.report;for(const r of previous.records)Object.assign(documents.get(r.kind),r);documentSessions.clear();for(const [kind,session] of previous.sessions)documentSessions.set(kind,session);currentDesignMode=previous.kind;documents.activate(previous.kind);projectBackupState=documents.get('project').snapshot;constructorBackupState=documents.get('constructor').snapshot;applyProjectSnapshot(previous.snapshot,{resetHistory:false,preserveIdentity:true});undoHistory.splice(0,undoHistory.length,...previous.undo);redoHistory.splice(0,redoHistory.length,...previous.redo);selected=previous.selected;groupSelections.clear();previous.groups.forEach(k=>groupSelections.add(k));singleMemberSelection=previous.single;$('cabinetName').value=previous.cabinet;$('projectTitle').value=previous.title;$('projectName').value=previous.title;document.querySelector('main').classList.toggle('projectMode',previous.kind==='project');updateSelection();updateHistoryButtons();throw error}}
+ restore:bundle=>{validateDraftForRestore(bundle);const previous={report:activeReport,records:documents.export(),sessions:structuredClone([...documentSessions]),kind:currentDesignMode,snapshot:captureProjectSnapshot(),undo:[...undoHistory],redo:[...redoHistory],selected,groups:[...groupSelections],single:singleMemberSelection,cabinet:$('cabinetName').value,title:$('projectTitle').value};try{for(const r of bundle.records){documents.checkpoint(r.kind,r);documents.get(r.kind).epoch=(documents.get(r.kind).epoch||0)+1;Object.assign(documents.get(r.kind),{savedFingerprint:r.savedFingerprint??null,savedName:r.savedName??'',dirty:!!r.dirty});documentSessions.set(r.kind,r.session||{});if(r.kind==='project'){projectBackupState=r.snapshot;projectBackup=r.snapshot.parts}else{constructorBackupState=r.snapshot;constructorBackup=r.snapshot.parts}}const target=bundle.activeKind==='constructor'?'constructor':'project';activeReport=null;currentDesignMode=target;documents.activate(target);syncDocumentCounters();applyProjectSnapshot(documents.active.snapshot,{resetHistory:false,preserveIdentity:true});const session=documentSessions.get(target)||{};undoHistory.splice(0,undoHistory.length,...(session.undo||[]));redoHistory.splice(0,redoHistory.length,...(session.redo||[]));selected=session.selected||null;groupSelections.clear();for(const key of session.groupSelections||[])if(customParts.some(p=>p.key===key))groupSelections.add(key);singleMemberSelection=!!session.singleMemberSelection;document.querySelector('main').classList.toggle('projectMode',target==='project');$('newCabinet').hidden=target==='project';if(target==='project'){$('projectTitle').value=documents.active.name;$('projectName').value=documents.active.name}else $('cabinetName').value=documents.active.name;const restoredPage=['cut','costs'].includes(documents.active.snapshot.settings?.projectTab)?documents.active.snapshot.settings.projectTab:target;placeResultsForNavigation(restoredPage);document.querySelector('main').classList.toggle('catalogMode',['cut','costs'].includes(restoredPage));$('projectDashboard').hidden=target!=='project';for(const [id,page] of [['modeProject','project'],['modeConstructor','constructor'],['navLibrary','library'],['navMaterials','materials'],['navCut','cut'],['navCosts','costs']])$(id).classList.toggle('mainNavActive',page===restoredPage);updateSelection();updateHistoryButtons();cabinetCloudIds.clear();documents.get('constructor').cloudId=null;projectCloudUI.detach();}catch(error){activeReport=previous.report;for(const r of previous.records)Object.assign(documents.get(r.kind),r);documentSessions.clear();for(const [kind,session] of previous.sessions)documentSessions.set(kind,session);currentDesignMode=previous.kind;documents.activate(previous.kind);projectBackupState=documents.get('project').snapshot;constructorBackupState=documents.get('constructor').snapshot;applyProjectSnapshot(previous.snapshot,{resetHistory:false,preserveIdentity:true});undoHistory.splice(0,undoHistory.length,...previous.undo);redoHistory.splice(0,redoHistory.length,...previous.redo);selected=previous.selected;groupSelections.clear();previous.groups.forEach(k=>groupSelections.add(k));singleMemberSelection=previous.single;$('cabinetName').value=previous.cabinet;$('projectTitle').value=previous.title;$('projectName').value=previous.title;document.querySelector('main').classList.toggle('projectMode',previous.kind==='project');updateSelection();updateHistoryButtons();throw error}}
 });
 
 function currentDocumentInfo(){const doc=documents.active,snap=captureProjectSnapshot(),name=currentDesignMode==='project'?$('projectTitle').value:$('cabinetName').value;return {id:doc.id,kind:doc.kind,epoch:doc.epoch||0,name:name||'Нов модел',hasParts:!!customParts.length,busy:documentCommandPending||projectCloudUI.busy||cabinetSavePending,dirty:doc.savedFingerprint?doc.savedFingerprint!==documentFingerprint(snap)||doc.savedName!==name:!!snap.parts.length||['w','h','d'].some((k,i)=>snap.room[k]!==[3000,2600,3000][i])||!['','Нов проект','Нов модел'].includes(name),cloudId:doc.kind==='project'?projectCloudUI.opened?.id:doc.cloudId}}
 documentCommands=installDocumentCommands({getContext:currentDocumentInfo,confirmReplace:()=>nedConfirmAction('Има незаписани промени. Да заменя ли работния документ? Локалната чернова ще бъде обновена.'),feedback:storageMessage,actions:{
- new:ctx=>{documents.active.epoch=(documents.active.epoch||0)+1;const snapshot=captureProjectSnapshot();snapshot.parts=[];snapshot.assemblyNames={};snapshot.settings={sheetUtilization:currentParameters().utilization,viewMode:'perspective',projectTab:'3d'};if(ctx.kind==='project')snapshot.room={w:3000,h:2600,d:3000};activeReport=null;applyProjectSnapshot(snapshot);documentSessions.delete(ctx.kind);documents.get(ctx.kind).cloudId=null;editingCloudCabinetId=null;if(ctx.kind==='project'){projectCloudUI.detach();$('projectTitle').value='Нов проект';$('projectName').value='Нов проект'}else $('cabinetName').value='';markDocumentSaved();activateMainNavigation(ctx.kind)},
+ new:ctx=>{documents.active.epoch=(documents.active.epoch||0)+1;const snapshot=captureProjectSnapshot();snapshot.parts=[];snapshot.assemblyNames={};snapshot.settings={sheetUtilization:currentParameters().utilization,viewMode:'perspective',projectTab:'3d'};if(ctx.kind==='project')snapshot.room={w:3000,h:2600,d:3000};activeReport=null;applyProjectSnapshot(snapshot);documentSessions.delete(ctx.kind);documents.get(ctx.kind).cloudId=null;if(ctx.kind==='constructor')cabinetCloudIds.clear();if(ctx.kind==='project'){projectCloudUI.detach();$('projectTitle').value='Нов проект';$('projectName').value='Нов проект'}else $('cabinetName').value='';markDocumentSaved();activateMainNavigation(ctx.kind)},
  open:(ctx,args)=>{if(ctx.kind==='project')return projectCloudUI.open();if(args?.id){window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-open-request',{detail:{id:args.id}}));return}showFileDialog('open')},
  save:ctx=>ctx.kind==='project'?projectCloudUI.save():showFileDialog('save'),
  saveAs:ctx=>ctx.kind==='project'?projectCloudUI.save(true):showFileDialog('save',{saveAs:true})
@@ -2784,7 +2909,7 @@ $('projectQuickSaveAs').onclick=()=>documentCommands.execute('saveAs');
 $('newProject').onclick=()=>{activateMainNavigation('project');documentCommands.execute('new')};
 draftRecovery.attachMenu();
 installParameters({getUtilization:()=>sheetUtilization,applyUtilization:value=>{rememberHistory();sheetUtilization=value;activeReport=null;window.dispatchEvent(new Event('ned-document-state'));projectRefresh()}});
-libraryDialog=installLibraryDialog({getItems:()=>cloudCabinets,getContext:currentDocumentInfo,renderPreview:cabinetPreviewSvg,duplicate:duplicateLibraryModel,remove:deleteLibraryModel,choose:async item=>{if(currentDocumentInfo().busy)return false;if(currentDesignMode==='constructor')return documentCommands.execute('open',{id:item.id});rememberHistory();window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-open-request',{detail:{id:item.id}}));return true},invalidate:()=>{documents.active.epoch=(documents.active.epoch||0)+1;documentCommandPending=false}});
+libraryDialog=installLibraryDialog({getItems:()=>cloudCabinets,getContext:currentDocumentInfo,renderPreview:cabinetPreviewSvg,duplicate:duplicateLibraryModel,remove:deleteLibraryModel,choose:async item=>{if(currentDocumentInfo().busy)return false;const constructor=currentDesignMode==='constructor';if(!constructor)rememberHistory();window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-open-request',{detail:{id:item.id,operation:constructor?'constructor-add':'document'}}));return true},invalidate:()=>{documents.active.epoch=(documents.active.epoch||0)+1;documentCommandPending=false}});
 installAppShell({getContext:currentDocumentInfo});
 let copiedParts=[],copiedDocument=null,copiedOwner=null,menuAccount='';
 window.addEventListener('kitchen-project-auth',e=>{menuAccount=e.detail?.email||''});

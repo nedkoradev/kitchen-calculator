@@ -64,10 +64,13 @@ export function cabinetEdgeTargets(settings,catalog){
  const targets=new Map(),labels={bodySide:'Страници',bodyBottom:'Дъно',bodyTop:'Таван',bodyRailRear:'Задна горна царга',bodyRailFront:'Предна горна царга',doors:'Врати',shelves:'Рафтове',worktop:'Плот'};
  buildCabinet(settings,catalog,value=>{if(labels[value.id]&&!targets.has(value.id))targets.set(value.id,{...value,label:labels[value.id],requiredSlots:value.id==='shelves'?[2]:[],slotLabels:panelAxes(value.part).thickness==='x'?['Заден ръб','Преден ръб','Горен ръб','Долен ръб']:panelAxes(value.part).thickness==='y'?['Ляв ръб','Десен ръб','Преден ръб','Заден ръб']:['Ляв ръб','Десен ръб','Горен ръб','Долен ръб']})},false);return [...targets.values()];
 }
-export function placeCabinet(items,obstacles,room){
+export function placeCabinet(items,obstacles,room,{preferSideBySide=false}={}){
  const parts=items.map(i=>i.part),extent=Object.fromEntries(axes.map(a=>[a,bounds(parts,a)])),size=Object.fromEntries(axes.map(a=>[a,extent[a].max-extent[a].min]));
  const xs=[-size.x/2,-room.w/2,...obstacles.flatMap(p=>[p.x+p.w/2,p.x-p.w/2-size.x])],zs=[-size.z/2,-room.d/2,...obstacles.flatMap(p=>[p.z+p.d/2,p.z-p.d/2-size.z])];
- for(const x of new Set(xs))for(const z of new Set(zs)){
+ const columns=[...new Set(xs)],rows=[...new Set(zs)];
+ const [primary,secondary]=preferSideBySide?[rows,columns]:[columns,rows];
+ for(const first of primary)for(const second of secondary){
+  const [x,z]=preferSideBySide?[second,first]:[first,second];
   if(x<-room.w/2||x+size.x>room.w/2||z<-room.d/2||z+size.z>room.d/2)continue;const shifted=parts.map(p=>({...p,x:p.x+x-extent.x.min,z:p.z+z-extent.z.min})),placed=snapPositionToMillimetres(shifted,obstacles,room);
   if(placed&&canPlace(placed,obstacles,room))return items.map((item,i)=>({...item,part:placed[i]}));
  }throw Error('Няма свободно място за шкафа в стаята. Освободи място или промени габаритите.');
