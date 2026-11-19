@@ -28,51 +28,66 @@ const colors={
    assert.equal(header.background,colors.header);
    assert.equal(header.border,colors.line);
    assert.equal(header.text,colors.text);
-   const cells=await table.locator('tbody td,tfoot td').evaluateAll(elements=>elements.map(el=>{
-    const css=getComputedStyle(el);
-    return [css.backgroundColor,css.borderBottomColor];
-   }));
-   for(const [background,border] of cells){
-    assert.equal(background,colors.body);
-    assert.equal(border,colors.line);
+   const rows=await table.locator('tbody tr,tfoot tr').evaluateAll(elements=>elements.map(row=>({
+    hovered:row.matches(':hover'),selected:row.getAttribute('aria-selected')==='true',
+    cells:[...row.cells].map(el=>{
+     const css=getComputedStyle(el);
+     return [css.backgroundColor,css.borderBottomColor];
+    })
+   })));
+   for(const [index,row] of rows.entries()){
+    assert.equal(row.hovered,false);
+    assert.equal(row.selected,false);
+    for(const [background,border] of row.cells){
+     assert.equal(background,colors.body,'row '+(index+1)+' must be white in its normal state');
+     assert.equal(border,colors.line);
+    }
    }
   }
  };
  try{
-  await page.locator('#modeProject').click();
-  await setup([
-   {key:'customTABLE1',w:600,h:18,d:400,x:-350,y:9,z:0,assembly:'cab1',locks:{}},
-   {key:'customTABLE2',w:800,h:18,d:400,x:450,y:9,z:0,assembly:'cab2',locks:{}}
-  ]);
-  for(const width of [1400,900,390,320]){
-   await page.setViewportSize({width,height:900});
-   await open('reportsMenu','navCut');
-   const cut=page.locator('#projectCutList table');
-   await check(cut);
-   assert.equal((await style(cut.locator('tbody tr').first().locator('td').nth(2))).align,'right');
-   if(screenshots)await page.screenshot({path:path.join(screenshots,'cut-'+width+'.png')});
-   if(width===1400){
-    const row=cut.locator('tbody tr').first(),first=row.locator('td').first();
-    await first.hover();
-    assert.equal((await style(first)).background,colors.hover);
-    await row.evaluate(el=>el.setAttribute('aria-selected','true'));
-    assert.equal((await style(first)).background,colors.selected);
-    assert.notEqual(await first.evaluate(el=>getComputedStyle(el).boxShadow),'none');
-    await row.evaluate(el=>el.removeAttribute('aria-selected'));
+  for(const mode of ['Project','Constructor']){
+   await page.locator('#mode'+mode).click();
+   await setup(Array.from({length:12},(_,i)=>({
+    key:'customTABLE'+i,w:500+i*10,h:18,d:300,x:(i%4-1.5)*650,y:9,z:(Math.floor(i/4)-1)*450,
+    assembly:'cab'+i,locks:{}
+   })));
+   // Reproduce the v2.93 stylesheet winning against v2.94 HTML/CSS,
+   // regardless of whether it arrives from an HTTP or service-worker cache.
+   const legacy=await page.addStyleTag({content:`
+    body.ned-shell main.catalogMode #projectResults table td{background:#fff!important}
+    body.ned-shell main.catalogMode #projectResults table tr:nth-child(even) td{background:#f0f5fb!important}
+   `});
+   for(const width of [1400,900,390,320]){
+    await page.setViewportSize({width,height:900});
+    await open('reportsMenu','navCut');
+    const cut=page.locator('#projectCutList table');
+    assert.ok(await cut.locator('tbody tr').count()>=10);
+    await check(cut);
+    assert.equal((await style(cut.locator('tbody tr').first().locator('td').nth(2))).align,'right');
+    if(screenshots)await page.screenshot({path:path.join(screenshots,mode+'-cut-'+width+'.png')});
+    if(width===1400){
+     const row=cut.locator('tbody tr').nth(1),first=row.locator('td').first();
+     await first.hover();
+     assert.equal((await style(first)).background,colors.hover);
+     await row.evaluate(el=>el.setAttribute('aria-selected','true'));
+     assert.equal((await style(first)).background,colors.selected);
+     assert.notEqual(await first.evaluate(el=>getComputedStyle(el).boxShadow),'none');
+     await row.evaluate(el=>el.removeAttribute('aria-selected'));
+     await page.mouse.move(0,0);
+     await check(cut);
+    }
+    await open('reportsMenu','navCosts');
+    await check(page.locator('#projectCosts table'));
+    if(screenshots)await page.screenshot({path:path.join(screenshots,mode+'-costs-'+width+'.png')});
+    await open('shellSettings','navMaterials');
+    await check(page.locator('#projectExtraPane table'));
+    if(screenshots)await page.screenshot({path:path.join(screenshots,mode+'-materials-'+width+'.png')});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    await page.locator('#mode'+mode).click();
    }
-   await open('reportsMenu','navCosts');
-   await check(page.locator('#projectCosts table'));
-   if(screenshots)await page.screenshot({path:path.join(screenshots,'costs-'+width+'.png')});
-   await open('shellSettings','navMaterials');
-   await check(page.locator('#projectExtraPane table'));
-   if(screenshots)await page.screenshot({path:path.join(screenshots,'materials-'+width+'.png')});
-   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-   await page.locator('#modeProject').click();
+   await legacy.evaluate(el=>el.remove());
   }
-  await page.locator('#modeConstructor').click();
-  await setup([{key:'customTABLE3',w:500,h:18,d:300,x:0,y:9,z:0,locks:{}}]);
-  await open('reportsMenu','navCut');
-  await check(page.locator('#projectCutList table'));
   assert.deepEqual(errors,[]);
   console.log('PASS shared table colors, hover and selection; report and material screens at 1400/900/390/320 px');
  }finally{await browser.close()}

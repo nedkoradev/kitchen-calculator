@@ -59,6 +59,12 @@ const server=http.createServer((req,res)=>{
   assert.equal(await next.evaluate(()=>localStorage.getItem('unsaved-draft')),'keep');
   assert.equal(await next.evaluate(async()=>(await(await fetch('./repository-space.json')).json()).revision),'b'.repeat(40));
   assert.equal(await next.evaluate(async()=>(await fetch('./materials/textures/test.png')).ok),true);
+  const offlinePalette=await next.evaluate(async()=>{
+   const response=await fetch('./table-palette.css');
+   return response.ok?response.text():null;
+  });
+  assert.equal(offlinePalette,fs.readFileSync(path.join(root,'table-palette.css'),'utf8'),
+   'the current table palette is served from the worker cache offline');
   assert.equal(await next.evaluate(async()=>{try{await fetch('./materials/textures/test.png?__kd_photo_check=offline',{cache:'no-store'});return false}catch{return true}}),true);
   console.log('PASS activation removes only old app cache; public shell/version work offline');
   assert.deepEqual(errors,[]);

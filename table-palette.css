@@ -1,0 +1,23 @@
+/* Keep the shared palette ahead of the v2.93 catalogue rules, even if
+   the old stylesheet loads later. The catalogue branch adds its specificity. */
+body.ned-shell table {background-color:#fff!important}
+:is(body.ned-shell main.catalogMode #projectResults, body.ned-shell) table :is(thead,tbody,tfoot) :is(th,td) {
+ border-color:#d3dae3!important;
+}
+:is(body.ned-shell main.catalogMode #projectResults, body.ned-shell) table thead tr > :is(th,td) {
+ background-color:#dce7f4!important;
+}
+:is(body.ned-shell main.catalogMode #projectResults, body.ned-shell) table :is(tbody,tfoot) tr:not([aria-selected="true"]) > :is(th,td) {
+ background-color:#fff!important;
+}
+@media (hover:hover) {
+ :is(body.ned-shell main.catalogMode #projectResults, body.ned-shell) table tbody tr:not([aria-selected="true"]):hover > :is(th,td) {
+  background-color:#f5f9ff!important;
+ }
+}
+:is(body.ned-shell main.catalogMode #projectResults, body.ned-shell) table :is(tbody,tfoot) tr[aria-selected="true"] > :is(th,td) {
+ background-color:#cee3ff!important;
+}
+body.ned-shell table :is(tbody,tfoot) tr[aria-selected="true"] > :first-child {
+ box-shadow:inset 3px 0 #2878d0;
+}
