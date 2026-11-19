@@ -2,14 +2,14 @@ import {identifier, validateDocument} from '../document-format/model.mjs';
 import {createWorkspaceContext, prepareNewDocument} from './context.mjs';
 
 // The ports are deliberately injected. The controller has no cloud, DOM or browser storage dependency.
-export function createWorkspaceController({scope, persistence, drafts, confirmDiscard, newId,
+export function createWorkspaceController({scope, persistence, drafts, confirmDiscard, newId, beforeSceneChange,
   operationId = () => crypto.randomUUID()}) {
   const profile = Object.freeze({ownerUid: identifier(scope?.ownerUid), actorUid: identifier(scope?.actorUid)});
   const draftStore = drafts && {
     read: () => drafts.read(profile),
     write: text => drafts.write(profile, text),
   };
-  const workspace = createWorkspaceContext({newId, draftStore});
+  const workspace = createWorkspaceContext({newId, draftStore, beforeSceneChange});
   let phase = 'idle';
   let error = null;
   let writeOperationId;
