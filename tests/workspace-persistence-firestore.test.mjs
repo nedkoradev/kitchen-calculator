@@ -4,6 +4,7 @@ import {initializeTestEnvironment} from '@firebase/rules-unit-testing';
 import * as sdk from 'firebase/firestore';
 import {createTestFirestorePersistence} from '../workspace-persistence/firestore-test-adapter.mjs';
 import {createWorkspaceBridge} from '../workspace-ui/bridge.mjs';
+import {documentToSnapshot, snapshotToDocument, toEditorSnapshot} from '../workspace-ui/scene-adapter.mjs';
 import {createWorkspaceController} from '../workspace-context/editor-controller.mjs';
 import {prepareNewDocument} from '../workspace-context/context.mjs';
 import {createWorkspaceDraftAdapter} from '../workspace-persistence/drafts.mjs';
@@ -242,4 +243,36 @@ test('UI startup checks the emulator journal after reload and before switching p
   assert.equal(first.revision, 1);
   assert.notEqual(first.id, 'existing');
   assert.deepEqual(journalEvents, ['alice', 'alice', 'alice', 'bob', 'alice', 'bob']);
+}));
+
+test('schema-to-scene mapping preserves a real legacy snapshot through transactional save and revision conflict', () => inEmulator(async db => {
+  const profile = scope();
+  const store = adapter(db);
+  const {identity, snapshot} = documentToSnapshot(document('mapped', {name: 'Мапната кухня'}));
+  snapshot.parts = [{part: {key: 'custom105', x: -1.5, y: 9, z: 300, w: 601, h: 18, d: 400,
+    assembly: 'outer', assemblyStack: [null, 'inner']}, name: 'Рафт',
+  finish: {material: 0, edges: [0, null, null, 0], grainAxis: 'x'}, allEdges: false}];
+  snapshot.assemblyNames = {outer: 'Корпус', inner: 'Вътрешна'};
+  snapshot.materials.pdcMaterials.push({name: 'Дъб', textureUrl: 'oak.png', fullPrice: 35});
+  snapshot.materials.edgeMaterials.push({name: 'Кант', price: 2});
+  const first = snapshotToDocument(snapshot, identity);
+  await store.write({scope: profile, document: first, expectedRevision: null, operationId: 'scene-create'});
+  await store.acknowledge({scope: profile, operationId: 'scene-create'});
+  const makeBridge = () => createWorkspaceBridge({createController: options =>
+    createWorkspaceController({...options, persistence: store})});
+  const editorA = makeBridge();
+  const editorB = makeBridge();
+  await editorA.initialize(profile);
+  await editorB.initialize(profile);
+  await editorA.execute('openProject', 'mapped');
+  await editorB.execute('openProject', 'mapped');
+  assert.deepEqual(toEditorSnapshot(editorA.state.workspace.document), snapshot);
+  await editorA.execute('editScene', {room: {...snapshot.room, w: 3400}});
+  assert.equal((await editorA.execute('saveDocument')).revision, 2);
+  await editorB.execute('editScene', {room: {...snapshot.room, w: 3600}});
+  assert.equal(await editorB.execute('saveDocument'), false);
+  assert.equal(editorB.state.error.code, 'revision-conflict');
+  assert.equal(editorB.state.workspace.document.room.w, 3600);
+  assert.equal(editorB.state.workspace.canUndo, true);
+  assert.equal((await store.readProject({scope: profile, id: 'mapped'})).room.w, 3400);
 }));
