@@ -6,12 +6,14 @@ const draftVersion = 1;
 const draftHistoryLimit = 10;
 const historyLimit = 80;
 
-function emptyDocument({type = 'project', name = type === 'project' ? 'Нов проект' : 'Нов модел',
+export function prepareNewDocument({type = 'project', name = type === 'project' ? 'Нов проект' : 'Нов модел',
   folderId = type === 'project' ? PROJECTS_FOLDER.id : null,
   room = type === 'project' ? {w: 3000, h: 2600, d: 3000} : null,
   materials = {pdcMaterials: [], backMaterials: [], worktops: [], edgeMaterials: []}, settings = {}} = {}) {
-  return {schemaVersion: SCHEMA_VERSION, id: null, revision: 0, type, ...projectName(name), folderId,
+  const document = {schemaVersion: SCHEMA_VERSION, id: null, revision: 0, type, ...projectName(name), folderId,
     parts: [], groups: {}, materials, room, settings};
+  validateWorking(document);
+  return document;
 }
 
 function sceneOf({parts, groups, materials, room, settings}) {
@@ -38,7 +40,7 @@ function readDraft(raw) {
 }
 
 export function createWorkspaceContext({newId = () => crypto.randomUUID(), draftStore} = {}) {
-  let document = emptyDocument();
+  let document = prepareNewDocument();
   let savedScene = sceneOf(document);
   let past = [];
   let future = [];
@@ -89,6 +91,18 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
     persistDraft();
   }
 
+  function commitScene(scene) {
+    const candidate = {...document, ...scene};
+    validateWorking(candidate);
+    if (comparableJson(scene) === comparableJson(sceneOf(document))) return false;
+    past.push(sceneOf(document));
+    if (past.length > historyLimit) past.shift();
+    document = candidate;
+    future = [];
+    persistDraft();
+    return true;
+  }
+
   function navigate(from, to) {
     ensureIdle();
     if (!from.length) return false;
@@ -98,6 +112,20 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
     return true;
   }
 
+  function acceptSave(snapshot, result) {
+    if (result?.id !== snapshot.id || result.revision !== snapshot.revision) {
+      throw new Error('Invalid save acknowledgement');
+    }
+    if (document.type !== snapshot.type) {
+      past = [];
+      future = [];
+    }
+    document = snapshot;
+    savedScene = sceneOf(snapshot);
+    persistDraft();
+    return structuredClone(snapshot);
+  }
+
   async function save(candidate, expectedRevision, write) {
     const snapshot = structuredClone(candidate);
     validateDocument(snapshot);
@@ -105,13 +133,7 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
     saving = true;
     try {
       const result = await write({document: structuredClone(snapshot), expectedRevision});
-      if (result?.id !== snapshot.id || result.revision !== snapshot.revision) {
-        throw new Error('Invalid save acknowledgement');
-      }
-      document = snapshot;
-      savedScene = sceneOf(snapshot);
-      persistDraft();
-      return structuredClone(snapshot);
+      return acceptSave(snapshot, result);
     } finally {
       saving = false;
     }
@@ -131,7 +153,7 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
         canRedo: future.length > 0, saving, draftStatus};
     },
     newDocument({discardChanges, ...options} = {}) {
-      replace(emptyDocument(options), discardChanges);
+      replace(prepareNewDocument(options), discardChanges);
     },
     openProject(project, {discardChanges = false} = {}) {
       if (project?.type !== 'project') throw new TypeError('Expected a saved project');
@@ -143,13 +165,16 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
       if (model?.type !== 'model') throw new TypeError('Expected a library model');
       validateDocument(model);
       const next = insertIntoScene(structuredClone(sceneOf(document)), structuredClone(model), newId);
-      const candidate = {...document, ...next};
-      validateWorking(candidate);
-      past.push(sceneOf(document));
-      if (past.length > historyLimit) past.shift();
-      document = candidate;
-      future = [];
-      persistDraft();
+      commitScene(next);
+    },
+    editScene(patch) {
+      ensureIdle();
+      if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new TypeError('Expected a scene patch');
+      const scene = sceneOf(document);
+      for (const key of Object.keys(patch)) {
+        if (!Object.hasOwn(scene, key)) throw new TypeError('Unknown scene field: ' + key);
+      }
+      return commitScene({...scene, ...structuredClone(patch)});
     },
     async saveDocument({name, folderId, write} = {}) {
       ensureIdle();
@@ -160,6 +185,12 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
     async saveAsDocument(options = {}) {
       ensureIdle();
       return saveCopy(options);
+    },
+    confirmReconciledSave(snapshot, result) {
+      ensureIdle();
+      const candidate = structuredClone(snapshot);
+      validateDocument(candidate);
+      return acceptSave(candidate, result);
     },
     undo() { return navigate(past, future); },
     redo() { return navigate(future, past); },
