@@ -26,7 +26,7 @@ function validateWorking(document) {
     : document);
 }
 
-function readDraft(raw) {
+export function parseWorkspaceDraft(raw) {
   const draft = JSON.parse(raw);
   if (draft?.schemaVersion !== draftVersion) throw new TypeError('Unsupported workspace draft');
   validateWorking(draft.document);
@@ -51,7 +51,7 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
     try {
       const raw = draftStore.read();
       if (raw != null) {
-        const draft = readDraft(raw);
+        const draft = parseWorkspaceDraft(raw);
         ({document, savedScene, past, future} = draft);
         draftStatus = 'restored';
       }

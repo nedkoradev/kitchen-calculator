@@ -14,6 +14,7 @@ export function createWorkspaceController({scope, persistence, drafts, confirmDi
   let error = null;
   let writeOperationId;
   let pending;
+  let reconciledDocument = null;
 
   async function run(initialPhase, action) {
     if (phase !== 'idle' && phase !== 'awaiting-reconciliation') throw new Error('A workspace command is in progress');
@@ -34,10 +35,10 @@ export function createWorkspaceController({scope, persistence, drafts, confirmDi
     }
   }
 
-  function save(command, options = {}) {
+  async function save(command, options = {}) {
     phase = 'saving';
     const requestId = identifier(operationId());
-    return workspace[command]({...options, write: async request => {
+    const saved = await workspace[command]({...options, write: async request => {
       writeOperationId = requestId;
       const attempt = {...structuredClone(request), operationId: requestId};
       try {
@@ -51,6 +52,17 @@ export function createWorkspaceController({scope, persistence, drafts, confirmDi
         throw failure;
       }
     }});
+    // Keep the durable journal until the confirmed state has been applied locally.
+    if (persistence.acknowledge) {
+      try {
+        await persistence.acknowledge({scope: profile, operationId: requestId});
+      } catch {
+        pending = {operationId: requestId};
+        error = {phase, code: 'journal-acknowledgement-failed', operationId: requestId,
+          message: 'Check the confirmed operation before continuing'};
+      }
+    }
+    return saved;
   }
 
   async function replace(command, apply) {
@@ -58,14 +70,18 @@ export function createWorkspaceController({scope, persistence, drafts, confirmDi
     phase = 'confirming';
     const decision = await confirmDiscard?.({command, document: workspace.state.document});
     if (decision == null || decision.action === 'cancel') return false;
-    if (decision.action === 'save') return apply(false, await save('saveDocument', decision.options));
+    if (decision.action === 'save') {
+      const saved = await save('saveDocument', decision.options);
+      return pending ? false : apply(false, saved);
+    }
     if (decision.action !== 'discard') throw new TypeError('Unknown discard decision');
     return apply(true);
   }
 
   return {
     get state() {
-      return {...workspace.state, phase, error: error && {...error}, pendingOperationId: pending?.operationId ?? null};
+      return {...workspace.state, phase, error: error && {...error}, pendingOperationId: pending?.operationId ?? null,
+        reconciledDocument: reconciledDocument && {...reconciledDocument}};
     },
     newDocument(options = {}) {
       return run('editing', async () => {
@@ -101,13 +117,26 @@ export function createWorkspaceController({scope, persistence, drafts, confirmDi
     },
     saveDocument(options) { return run('saving', () => save('saveDocument', options)); },
     saveAsDocument(options) { return run('saving', () => save('saveAsDocument', options)); },
+    recoverPendingSave() {
+      return run('reconciling', async () => {
+        if (!pending) {
+          const entry = await persistence.pending({scope: profile});
+          if (!entry) return null;
+          pending = {operationId: identifier(entry.operationId)};
+        }
+        return pending.operationId;
+      });
+    },
     reconcileSave() {
       return run('reconciling', async () => {
         if (!pending) return false;
         writeOperationId = pending.operationId;
         const outcome = await persistence.reconcile({scope: profile, ...structuredClone(pending)});
-        if (outcome?.status === 'committed') workspace.confirmReconciledSave(pending.document, outcome);
-        else if (outcome?.status !== 'not-committed') {
+        if (outcome?.status === 'committed') {
+          if (pending.document) workspace.confirmReconciledSave(pending.document, outcome);
+          await persistence.acknowledge?.({scope: profile, operationId: pending.operationId});
+          reconciledDocument = {id: outcome.id, revision: outcome.revision};
+        } else if (outcome?.status !== 'not-committed') {
           throw Object.assign(new Error('Save outcome is still unknown'), {code: 'unknown-outcome'});
         }
         pending = undefined;
