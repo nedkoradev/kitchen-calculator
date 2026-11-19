@@ -16,6 +16,7 @@ const {chromium} = require('playwright');
     await page.goto(testPage);
     const result = await page.evaluate(async () => {
       const {createWorkspaceController} = await import('./workspace-context/editor-controller.mjs');
+      const {createWorkspaceDraftAdapter} = await import('./workspace-persistence/drafts.mjs');
       const catalog = {pdcMaterials: [{name: 'Oak', textureUrl: 'oak.png'}],
         backMaterials: [], worktops: [], edgeMaterials: [{name: 'Oak edge'}]};
       const room = {w: 3000, h: 2500, d: 3000};
@@ -26,12 +27,11 @@ const {chromium} = require('playwright');
         name: 'Project', nameKey: 'project', room, folderId: 'system:projects', settings: {},
         materials: catalog, groups: {group: 'Group'}, parts: Array.from({length: 750}, (_, i) => panel(i))};
       const model = {...project, id: 'model', type: 'model', folderId: null, room: null, parts: [panel(0)]};
-      let draft;
       let action = 'cancel';
       let fail = true;
       const options = {
         scope: {ownerUid: 'test-owner', actorUid: 'test-editor'},
-        drafts: {read: () => draft, write: (_, value) => { draft = value; }},
+        drafts: createWorkspaceDraftAdapter(localStorage),
         confirmDiscard: () => ({action}),
         persistence: {
           readModel: async () => model,
@@ -55,6 +55,8 @@ const {chromium} = require('playwright');
       await measure('undoMs', () => editor.undo());
       await measure('redoMs', () => editor.redo());
       const restored = await measure('restoreMs', () => createWorkspaceController(options));
+      const isolated = createWorkspaceController({...options, scope: {...options.scope, actorUid: 'other-editor'}});
+      const otherProfileEmpty = isolated.state.draftStatus === 'empty';
       const draftRestored = restored.state.dirty && restored.state.document.parts.length === 750 && restored.state.canUndo;
       const cancelled = await editor.newDocument();
       action = 'save';
@@ -70,12 +72,13 @@ const {chromium} = require('playwright');
       const copied = editor.state.document;
       action = 'discard';
       await editor.openProject('project');
-      return {timings, draftRestored, cancelled, retainedAfterFailure,
+      return {timings, draftRestored, otherProfileEmpty, cancelled, retainedAfterFailure,
         copy: {id: copied.id, room: copied.room, parts: copied.parts.length, group: Object.values(copied.groups)[0],
           texture: copied.materials.pdcMaterials[0].textureUrl, edges: copied.parts[0].finish.edges},
         opened: {id: editor.state.document.id, count: editor.state.document.parts.length, dirty: editor.state.dirty}};
     });
     assert.equal(result.draftRestored, true);
+    assert.equal(result.otherProfileEmpty, true);
     assert.equal(result.cancelled, false);
     assert.equal(result.retainedAfterFailure, true);
     assert.deepEqual(result.copy, {id: null, room: {w: 3000, h: 2600, d: 3000}, parts: 1,
