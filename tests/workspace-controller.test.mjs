@@ -72,7 +72,7 @@ test('save-and-continue waits for a scoped acknowledgement and handles conflicts
   let failure = 'revision-conflict';
   let sent;
   const controller = fixture({confirmDiscard: async () => ({action: 'save'}),
-    persistence: {write: async request => {
+    persistence: {reconcile: async () => ({status: 'not-committed'}), write: async request => {
       sent = request;
       if (failure) throw Object.assign(new Error(failure), {code: failure});
       return acknowledge(request);
@@ -90,6 +90,8 @@ test('save-and-continue waits for a scoped acknowledgement and handles conflicts
   assert.equal(controller.state.error.code, failure);
   assert.equal(controller.state.error.operationId, sent.operationId);
   assert.deepEqual(controller.state.document, edited);
+  assert.equal(controller.state.phase, 'awaiting-reconciliation');
+  assert.equal(await controller.reconcileSave(), 'not-committed');
   failure = null;
   await controller.openProject('project');
   assert.equal(controller.state.document.revision, 6);
@@ -116,7 +118,9 @@ test('patches are atomic, schema-validated and reversible alongside library copi
   const patch = {parts: [structuredClone(copied)], groups: {[copied.part.assembly]: 'Редактиран'},
     materials: {...materials, pdcMaterials: [{name: 'Клен'}]}, settings: {sheetUtilization: 70},
     room: {...room, w: 650}};
-  assert.equal(await controller.editScene(patch), true);
+  await assert.rejects(controller.editScene(patch), /explicitly allow removal/);
+  assert.deepEqual(controller.state.document, inserted);
+  assert.equal(await controller.editScene(patch, {allowPartRemoval: true}), true);
   const edited = controller.state.document;
   for (const key of Object.keys(patch)) assert.deepEqual(edited[key], patch[key]);
   patch.parts[0].part.x = 800;
@@ -163,4 +167,63 @@ test('draft ports always receive the captured owner and actor and restore only t
   assert.equal(fixture({scope: currentScope, drafts}).state.draftStatus, 'empty');
   assert.equal(fixture({scope: {...scope, ownerUid: 'other'}, drafts}).state.draftStatus, 'empty');
   assert.equal(rows.size, 1);
+});
+
+for (const command of ['saveDocument', 'saveAsDocument']) {
+  test(command + ' reconciles the original write without issuing a duplicate', async () => {
+    let writes = 0;
+    let attempt;
+    let result = 'network-error';
+    const controller = fixture({persistence: {
+      async write(request) {
+        writes++;
+        attempt = structuredClone(request);
+        throw Object.assign(new Error('Lost acknowledgement'), {code: 'unknown-outcome'});
+      },
+      async reconcile(request) {
+        assert.deepEqual(request, attempt);
+        if (result === 'network-error') throw new Error('offline');
+        return {status: 'committed', id: result === 'incorrect' ? 'wrong-id' : attempt.document.id, revision: 1};
+      },
+    }});
+    if (command === 'saveAsDocument') await controller.openProject('project');
+    await controller.insertModel('model');
+    const before = controller.state.document;
+    await assert.rejects(controller[command]({name: 'Копие'}), /Lost acknowledgement/);
+    await assert.rejects(controller.saveDocument(), {code: 'reconciliation-required'});
+    await assert.rejects(controller.saveAsDocument({name: 'Друг запис'}), {code: 'reconciliation-required'});
+    await assert.rejects(controller.newDocument(), {code: 'reconciliation-required'});
+    await assert.rejects(controller.reconcileSave(), /offline/);
+    result = 'incorrect';
+    await assert.rejects(controller.reconcileSave(), /Invalid save acknowledgement/);
+    assert.equal(controller.state.phase, 'awaiting-reconciliation');
+    assert.equal(controller.state.pendingOperationId, attempt.operationId);
+    assert.deepEqual(controller.state.document, before);
+    assert.equal(controller.state.dirty, true);
+    result = 'valid';
+    assert.equal(await controller.reconcileSave(), 'committed');
+    assert.equal(writes, 1);
+    assert.equal(attempt.expectedRevision, null);
+    assert.equal(controller.state.pendingOperationId, null);
+    assert.equal(controller.state.dirty, false);
+    assert.deepEqual(controller.state.document, attempt.document);
+  });
+}
+
+test('opening another project uses the read snapshot even if the remote target changes during save', async () => {
+  let remote = {...project, id: 'target', revision: 8};
+  const controller = fixture({confirmDiscard: () => ({action: 'save'}),
+    persistence: {
+      readProject: async ({id}) => id === 'target' ? remote : project,
+      write: request => {
+        remote.revision = 9;
+        return acknowledge(request);
+      },
+    }});
+  await controller.openProject('project');
+  await controller.insertModel('model');
+  await controller.openProject('target');
+  assert.equal(controller.state.document.id, 'target');
+  assert.equal(controller.state.document.revision, 8);
+  assert.equal(remote.revision, 9);
 });

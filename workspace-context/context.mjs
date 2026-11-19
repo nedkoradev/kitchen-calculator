@@ -112,6 +112,20 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
     return true;
   }
 
+  function acceptSave(snapshot, result) {
+    if (result?.id !== snapshot.id || result.revision !== snapshot.revision) {
+      throw new Error('Invalid save acknowledgement');
+    }
+    if (document.type !== snapshot.type) {
+      past = [];
+      future = [];
+    }
+    document = snapshot;
+    savedScene = sceneOf(snapshot);
+    persistDraft();
+    return structuredClone(snapshot);
+  }
+
   async function save(candidate, expectedRevision, write) {
     const snapshot = structuredClone(candidate);
     validateDocument(snapshot);
@@ -119,17 +133,7 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
     saving = true;
     try {
       const result = await write({document: structuredClone(snapshot), expectedRevision});
-      if (result?.id !== snapshot.id || result.revision !== snapshot.revision) {
-        throw new Error('Invalid save acknowledgement');
-      }
-      if (document.type !== snapshot.type) {
-        past = [];
-        future = [];
-      }
-      document = snapshot;
-      savedScene = sceneOf(snapshot);
-      persistDraft();
-      return structuredClone(snapshot);
+      return acceptSave(snapshot, result);
     } finally {
       saving = false;
     }
@@ -181,6 +185,12 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
     async saveAsDocument(options = {}) {
       ensureIdle();
       return saveCopy(options);
+    },
+    confirmReconciledSave(snapshot, result) {
+      ensureIdle();
+      const candidate = structuredClone(snapshot);
+      validateDocument(candidate);
+      return acceptSave(candidate, result);
     },
     undo() { return navigate(past, future); },
     redo() { return navigate(future, past); },
