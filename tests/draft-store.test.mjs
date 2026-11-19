@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {createSafeStorage} from '../safe-storage.mjs';import {createDraftStore,validDraftBundle,validateDraftForRestore,hasDraftWork} from '../draft-store.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {createSafeStorage} from '../safe-storage.mjs';import {createDraftStore,draftScope,validDraftBundle,validateDraftForRestore,hasDraftWork} from '../draft-store.mjs';
 const bundle=()=>({schemaVersion:1,updatedAt:1,owner:'alice',records:['project','constructor'].map(kind=>({id:'working-'+kind,kind,snapshot:{materials:{pdcMaterials:[],edgeMaterials:[],backMaterials:[],worktops:[]},parts:[],room:{w:3000,h:2600,d:3000}}}))});
 test('unavailable storage stays editable in memory and reports failed durability',async()=>{const memory=createSafeStorage(()=>{throw Error('blocked')});assert.equal(memory.getItem('existing'),null);assert.equal(memory.setItem('pref','keep'),false);assert.equal(memory.getItem('pref'),'keep');assert.equal(memory.setItem('pref','bad',{strict:true}),false);assert.equal(memory.getItem('pref'),'keep');const store=createDraftStore({getDB:()=>{throw Error('blocked')},storage:memory});assert.equal(await store.write('alice',bundle()),false)});
 test('draft fallback isolates profiles and preserves corrupt data for manual rescue',async()=>{const rows=new Map([['other.setting','keep']]);const storage=createSafeStorage(()=>({getItem:k=>rows.get(k)??null,setItem:(k,v)=>rows.set(k,v),removeItem:k=>rows.delete(k)}));const store=createDraftStore({getDB:()=>{throw Error('no IndexedDB')},storage});assert.equal(await store.write('alice',bundle()),true);assert.ok(validDraftBundle(await store.read('alice')));assert.equal(await store.read('bob'),null);rows.set('nedIQ.draft.emergency.v1.alice','broken-json');assert.equal((await store.read('alice')).rawData,'broken-json');assert.equal(rows.get('other.setting'),'keep')});
@@ -8,3 +8,26 @@ test('malformed imported history is rejected before installation',()=>{const val
 test('edited empty rooms are recoverable without requiring any cabinet',()=>{const value=bundle();assert.equal(hasDraftWork(value),false);value.records[0].snapshot.room.w=4000;assert.equal(hasDraftWork(value),true)});
 
 test('malformed nullable draft records are rejected without breaking startup',()=>{assert.equal(validDraftBundle({schemaVersion:1,updatedAt:1,records:[null,null]}),false);assert.equal(validDraftBundle({schemaVersion:1,updatedAt:1,records:[{},null]}),false)});
+
+
+test('v2.93 draft fallback restores both modes and isolates editors on the same shared base',async()=>{
+ const rows=new Map();
+ const storage=createSafeStorage(()=>({getItem:key=>rows.get(key)??null,setItem:(key,value)=>rows.set(key,value)}));
+ const store=createDraftStore({getDB:()=>{throw Error('no IndexedDB')},storage});
+ const owner=draftScope({uid:'shared',actorUid:'alice'});
+ const other=draftScope({uid:'shared',actorUid:'bob'});
+ const value={...bundle(),owner};
+ value.records[0].snapshot.room.w=4000;
+ value.records[1].snapshot.parts.push({
+  part:{key:'cabinet-panel',x:0,y:9,z:0,w:600,h:18,d:400,assembly:'cabinet',locks:{h:true}},
+  name:'Рафт',finish:{material:0,edges:[0,null,null,null]},allEdges:false
+ });
+ value.records[1].snapshot.materials.pdcMaterials.push({name:'Декор',textureUrl:'materials/textures/decor.png'});
+ value.records[1].snapshot.materials.edgeMaterials.push({name:'Кант'});
+ assert.equal(await store.write(owner,value),true);
+ const restored=await store.read(owner);
+ validateDraftForRestore(restored);
+ assert.deepEqual(restored,value);
+ assert.equal(await store.read(other),null);
+ assert.equal(await store.read('shared'),null);
+});
