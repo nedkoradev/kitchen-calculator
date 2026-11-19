@@ -1,30 +1,32 @@
 import {projectName} from '../project-model.mjs';
 import {SCHEMA_VERSION, PROJECTS_FOLDER, identifier, record, validateDocument} from './model.mjs';
 
-function convert(type, scope, sourceId, sourceName, revision, folderId, data, catalog) {
+async function convert(type, scope, sourceId, sourceName, revision, folderId, data, catalog, originalSettings) {
   if (typeof sourceName !== 'string') throw new TypeError('Invalid legacy name');
-  const encodedId = [type, scope, sourceId].map(segment => encodeURIComponent(identifier(segment))).join(':');
+  const sourceKey = JSON.stringify([type, identifier(scope), identifier(sourceId)]);
   const {name, nameKey} = projectName(sourceName);
   const {parts, room, assemblyNames, settings, ...legacyFields} = data;
   delete legacyFields.materials;
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(sourceKey));
+  const digest = Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('');
   const document = {
     schemaVersion: SCHEMA_VERSION,
-    type, id: 'legacy:' + encodedId, name, nameKey, revision, folderId,
+    type, id: 'legacy:v1:' + digest, name, nameKey, revision, folderId,
     materials: catalog, parts, groups: assemblyNames ?? {}, room: room ?? null, settings: settings ?? {},
-    source: {type, scope, id: sourceId, name: sourceName, fields: legacyFields},
+    source: {type, scope, id: sourceId, name: sourceName, fields: legacyFields, originalSettings},
   };
   validateDocument(document);
   return JSON.parse(JSON.stringify(document));
 }
 
-export function readLegacyProject(input, {scope, id, catalog} = {}) {
+export async function readLegacyProject(input, {scope, id, catalog} = {}) {
   record(input, 'legacy project');
   if (input.schemaVersion !== 1) throw new TypeError('Unsupported legacy project schema version');
   const data = record(input.data, 'legacy project snapshot');
   return convert('project', scope, id, input.name, input.revision, PROJECTS_FOLDER.id, data, data.materials ?? catalog);
 }
 
-export function readLegacyCabinet(input, {scope, id = input?.id, catalog, folderId} = {}) {
+export async function readLegacyCabinet(input, {scope, id = input?.id, catalog, folderId} = {}) {
   const {id: embeddedId, name, parts, room, materials, assemblyNames, settings, calculationSettings, ...fields} =
     record(input, 'legacy cabinet');
   if (embeddedId !== undefined && embeddedId !== id) throw new TypeError('Conflicting legacy cabinet IDs');
@@ -37,6 +39,8 @@ export function readLegacyCabinet(input, {scope, id = input?.id, catalog, folder
   if (settings !== undefined) record(settings, 'legacy cabinet settings');
   if (calculationSettings !== undefined) record(calculationSettings, 'legacy cabinet calculation settings');
   return convert('model', scope, id, name, 1, folderId ?? null, {
-    ...fields, parts, room, assemblyNames, settings: {...settings, ...calculationSettings},
-  }, materials ?? catalog);
+    ...fields, parts, room, assemblyNames,
+    // The saved calculation settings drive the legacy reports. Keep both original maps in provenance.
+    settings: {...settings, ...calculationSettings},
+  }, materials ?? catalog, {settings, calculationSettings});
 }

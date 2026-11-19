@@ -5,7 +5,7 @@ export const PROJECTS_FOLDER = Object.freeze({id: 'system:projects', name: 'Пр
 const catalogByType = new Map([['pdc', 'pdcMaterials'], ['back', 'backMaterials'], ['worktop', 'worktops']]);
 
 export function identifier(value) {
-  if (typeof value !== 'string' || !value || /[/\x00-\x1f\x7f]/u.test(value) ||
+  if (typeof value !== 'string' || !value || !value.isWellFormed() || /[/\x00-\x1f\x7f]/u.test(value) ||
       value === '.' || value === '..' || /^__.*__$/.test(value) ||
       new TextEncoder().encode(value).length > 1500) {
     throw new TypeError('Invalid identifier');
@@ -81,17 +81,37 @@ export function validateDocument(document) {
   return document;
 }
 
+const reservedFolderNames = new Set(['проекти', 'без категория', 'всички модели']);
+const invalidFolderCharacters = /[/\\\p{Cc}]/u;
+
+function folderNameKey(value) {
+  if (typeof value !== 'string' || !value.isWellFormed() || invalidFolderCharacters.test(value)) {
+    throw new TypeError('Invalid folder name');
+  }
+  const name = value.normalize('NFKC').trim().replace(/\s+/gu, ' ');
+  if (!name || name.length > 80 || name === '.' || name === '..' || invalidFolderCharacters.test(name)) {
+    throw new TypeError('Invalid folder name');
+  }
+  const key = name.toLowerCase();
+  if (reservedFolderNames.has(key)) throw new TypeError('Reserved folder name');
+  return key;
+}
+
 // Validate a candidate library snapshot independently of the storage mechanism.
 export function validateLibrary(documents, folders) {
   const byId = new Map();
+  const namesByParent = new Map();
   for (const folder of folders) {
     record(folder, 'folder');
     identifier(folder.id);
-    if (byId.has(folder.id) || typeof folder.name !== 'string' || !folder.name.trim() ||
-        (folder.id !== PROJECTS_FOLDER.id && folder.name.normalize('NFKC').trim().toLowerCase() === 'проекти')) {
-      throw new TypeError('Invalid folder');
-    }
+    if (byId.has(folder.id)) throw new TypeError('Duplicate folder ID');
     byId.set(folder.id, folder);
+    if (folder.id === PROJECTS_FOLDER.id) continue;
+    const key = folderNameKey(folder.name);
+    if (!namesByParent.has(folder.parentId)) namesByParent.set(folder.parentId, new Set());
+    const siblings = namesByParent.get(folder.parentId);
+    if (siblings.has(key)) throw new TypeError('Duplicate sibling folder name');
+    siblings.add(key);
   }
   const projects = byId.get(PROJECTS_FOLDER.id);
   if (projects?.name !== PROJECTS_FOLDER.name || projects.parentId !== null || Object.keys(projects).length !== 3) throw new TypeError('Invalid system folder');

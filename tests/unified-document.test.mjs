@@ -29,9 +29,9 @@ const cabinet = {v2: true, name: 'Шкаф', parts, category: 'Долни', calc
 const cloud = {scope: 'firestore:owner', id: 'same'};
 const cabinetOptions = {...cloud, catalog, folderId: 'bottom'};
 
-test('legacy project keeps its room, revision, nested groups, camera and catalog contents', () => {
+test('legacy project keeps its room, revision, nested groups, camera and catalog contents', async () => {
   const original = structuredClone(project);
-  const doc = readLegacyProject(original, {...cloud, catalog: {}});
+  const doc = await readLegacyProject(original, {...cloud, catalog: {}});
   assert.equal(doc.name, 'Кухня Дъб');
   assert.equal(doc.folderId, PROJECTS_FOLDER.id);
   assert.equal(doc.revision, 7);
@@ -44,10 +44,10 @@ test('legacy project keeps its room, revision, nested groups, camera and catalog
   assert.deepEqual(original, project);
 });
 
-test('legacy cabinet indices retain board family, edge slots, grain, texture and prices', () => {
+test('legacy cabinet indices retain board family, edge slots, grain, texture and prices', async () => {
   const original = structuredClone(cabinet);
   const external = structuredClone(catalog);
-  const doc = readLegacyCabinet(original, {...cabinetOptions, catalog: external});
+  const doc = await readLegacyCabinet(original, {...cabinetOptions, catalog: external});
   assert.equal(doc.room, null);
   assert.equal(doc.revision, 1);
   assert.deepEqual(doc.settings, cabinet.calculationSettings);
@@ -66,25 +66,25 @@ test('legacy cabinet indices retain board family, edge slots, grain, texture and
   assert.equal(doc.source.fields.category, 'Долни');
 });
 
-test('IDs are stable and isolated by source, including a local cabinet and the same Firestore IDs', () => {
+test('IDs are stable and isolated by source, including a local cabinet and the same Firestore IDs', async () => {
   const local = {id: cloud.id, name: 'Локален', parts, room};
-  const doc = readLegacyCabinet(local, {scope: 'local:profile', catalog});
+  const doc = await readLegacyCabinet(local, {scope: 'local:profile', catalog});
   assert.deepEqual(doc.room, room);
   assert.equal(doc.folderId, null);
-  const model = readLegacyCabinet(cabinet, cabinetOptions);
-  assert.equal(model.id, readLegacyCabinet(cabinet, cabinetOptions).id);
-  assert.equal(new Set([doc.id, model.id, readLegacyProject(project, cloud).id]).size, 3);
-  assert.notEqual(readLegacyCabinet({...local, id: 'c'}, {scope: 'a:b', catalog}).id,
-    readLegacyCabinet({...local, id: 'b:c'}, {scope: 'a', catalog}).id);
+  const model = await readLegacyCabinet(cabinet, cabinetOptions);
+  assert.equal(model.id, (await readLegacyCabinet(cabinet, cabinetOptions)).id);
+  assert.equal(new Set([doc.id, model.id, (await readLegacyProject(project, cloud)).id]).size, 3);
+  assert.notEqual((await readLegacyCabinet({...local, id: 'c'}, {scope: 'a:b', catalog})).id,
+    (await readLegacyCabinet({...local, id: 'b:c'}, {scope: 'a', catalog})).id);
 });
 
-test('unknown versions, malformed snapshots and unresolved material references fail explicitly', () => {
-  assert.throws(() => readLegacyProject({...project, schemaVersion: 2}, cloud), /schema version/);
-  assert.throws(() => readLegacyCabinet(cabinet, cloud), /folder/);
-  assert.throws(() => readLegacyCabinet(cabinet, {...cabinetOptions, catalog: undefined}), /catalog/);
+test('unknown versions, malformed snapshots and unresolved material references fail explicitly', async () => {
+  await assert.rejects(() => readLegacyProject({...project, schemaVersion: 2}, cloud), /schema version/);
+  await assert.rejects(() => readLegacyCabinet(cabinet, cloud), /folder/);
+  await assert.rejects(() => readLegacyCabinet(cabinet, {...cabinetOptions, catalog: undefined}), /catalog/);
   const oldProject = {...project, data: {...project.data, materials: undefined}};
-  assert.deepEqual(readLegacyProject(oldProject, {...cloud, catalog}).materials, catalog);
-  const doc = readLegacyProject(project, cloud);
+  assert.deepEqual((await readLegacyProject(oldProject, {...cloud, catalog})).materials, catalog);
+  const doc = await readLegacyProject(project, cloud);
   assert.throws(() => validateDocument({...doc, schemaVersion: 2}), /schema version/);
   assert.throws(() => validateDocument({...doc, room: null}), /формат/);
   assert.throws(() => validateDocument({...doc, revision: 0}), /revision/);
@@ -95,11 +95,11 @@ test('unknown versions, malformed snapshots and unresolved material references f
   assert.throws(() => validateDocument(doc), /catalog index/);
 });
 
-test('one library enforces names across folders and protects the Projects folder', () => {
+test('one library enforces names across folders and protects the Projects folder', async () => {
   const folder = {id: 'bottom', name: 'Долни', parentId: null};
-  const documents = [readLegacyCabinet(cabinet, cabinetOptions), readLegacyProject(project, cloud)];
+  const documents = [await readLegacyCabinet(cabinet, cabinetOptions), await readLegacyProject(project, cloud)];
   validateLibrary(documents, [folder, PROJECTS_FOLDER]);
-  const duplicate = readLegacyCabinet({...cabinet, name: '  КУХНЯ  ДЪБ '}, cabinetOptions);
+  const duplicate = await readLegacyCabinet({...cabinet, name: '  КУХНЯ  ДЪБ '}, cabinetOptions);
   assert.throws(() => validateLibrary([duplicate, documents[1]], [folder, PROJECTS_FOLDER]), /Duplicate document name/);
   assert.throws(() => validateLibrary([documents[0], documents[0]], [folder, PROJECTS_FOLDER]), /Duplicate document ID/);
   for (const folders of [[folder], [folder, {...PROJECTS_FOLDER, name: 'Друга'}],
@@ -108,4 +108,53 @@ test('one library enforces names across folders and protects the Projects folder
   }
   assert.throws(() => validateLibrary(documents, [PROJECTS_FOLDER]), /Unknown folder/);
   assert.throws(() => validateDocument({...documents[0], folderId: PROJECTS_FOLDER.id}), /type does not match/);
+});
+
+test('folder names are unique among siblings and may repeat across separate branches', () => {
+  const first = {id: 'first', name: 'Кухня', parentId: null};
+  const second = {id: 'second', name: 'Дневна', parentId: null};
+  const child = {id: 'child', name: 'Долен шкаф Ａ', parentId: first.id};
+  const duplicate = {id: 'other', name: '  ДОЛЕН   ШКАФ a  ', parentId: first.id};
+  assert.throws(() => validateLibrary([], [PROJECTS_FOLDER, first, child, duplicate]), /Duplicate sibling/);
+  validateLibrary([], [PROJECTS_FOLDER, first, second, child, {...duplicate, parentId: second.id}]);
+  assert.throws(() => validateLibrary([], [PROJECTS_FOLDER, first, {...second, name: 'КУХНЯ'}]), /Duplicate sibling/);
+  assert.throws(() => validateLibrary([], [PROJECTS_FOLDER, first, {...child, name: 'ПРОЕКТИ'}]), /Reserved folder name/);
+  for (const name of [null, '', '   ', '.', '..', 'A/B', 'A\\B', 'A／B', 'A\u0085B', 'а'.repeat(81), '\ud800']) {
+    assert.throws(() => validateLibrary([], [PROJECTS_FOLDER, {...first, name}]), /Invalid folder name/);
+  }
+  validateLibrary([], [PROJECTS_FOLDER, {...first, name: 'а'.repeat(80)}]);
+});
+
+test('cabinet conversion retains both original settings maps when top-level keys overlap', async () => {
+  const source = {...cabinet,
+    settings: {sheetUtilization: 70, display: '2d', report: {grain: true, rounding: 2}},
+    calculationSettings: {sheetUtilization: 85, report: {rounding: 1}},
+  };
+  const before = structuredClone(source);
+  const document = await readLegacyCabinet(source, cabinetOptions);
+  assert.deepEqual(document.settings, {sheetUtilization: 85, display: '2d', report: {rounding: 1}});
+  assert.deepEqual(document.source.originalSettings, {
+    settings: before.settings, calculationSettings: before.calculationSettings,
+  });
+  document.source.originalSettings.settings.report.grain = false;
+  document.settings.report.rounding = 0;
+  assert.equal(document.source.originalSettings.calculationSettings.report.rounding, 1);
+  assert.deepEqual(source, before);
+});
+
+test('migration IDs are bounded and stable across long Unicode inputs without normalizing source keys', async () => {
+  const scope = 'ю'.repeat(750);
+  const id = '🪵'.repeat(375);
+  const doc = await readLegacyProject(project, {scope, id});
+  assert.match(doc.id, /^legacy:v1:[0-9a-f]{64}$/);
+  assert.equal(new TextEncoder().encode(doc.id).length, 74);
+  assert.equal(doc.source.scope, scope);
+  assert.equal(doc.source.id, id);
+  assert.equal(doc.id, (await readLegacyProject({...project, revision: 8}, {scope, id})).id);
+  assert.notEqual(doc.id, (await readLegacyProject(project, {scope, id: id.slice(0, -2) + '🪚'})).id);
+  assert.notEqual((await readLegacyProject(project, {scope, id: 'é'})).id,
+    (await readLegacyProject(project, {scope, id: 'e\u0301'})).id);
+  for (const invalid of [id + 'a', 'a/b', '.', '..', '__reserved__', '\ud800']) {
+    await assert.rejects(() => readLegacyProject(project, {scope, id: invalid}), /Invalid identifier/);
+  }
 });
