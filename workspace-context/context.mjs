@@ -39,7 +39,7 @@ export function parseWorkspaceDraft(raw) {
   return draft;
 }
 
-export function createWorkspaceContext({newId = () => crypto.randomUUID(), draftStore} = {}) {
+export function createWorkspaceContext({newId = () => crypto.randomUUID(), draftStore, beforeSceneChange = () => {}} = {}) {
   let document = prepareNewDocument();
   let savedScene = sceneOf(document);
   let past = [];
@@ -84,6 +84,7 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
     if (dirty() && discardChanges !== true) throw new Error('Confirm discarding unsaved changes');
     const snapshot = structuredClone(candidate);
     validateWorking(snapshot);
+    beforeSceneChange(structuredClone(snapshot));
     document = snapshot;
     savedScene = sceneOf(snapshot);
     past = [];
@@ -95,6 +96,7 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
     const candidate = {...document, ...scene};
     validateWorking(candidate);
     if (comparableJson(scene) === comparableJson(sceneOf(document))) return false;
+    beforeSceneChange(structuredClone(candidate));
     past.push(sceneOf(document));
     if (past.length > historyLimit) past.shift();
     document = candidate;
@@ -106,8 +108,11 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
   function navigate(from, to) {
     ensureIdle();
     if (!from.length) return false;
+    const candidate = {...document, ...from.at(-1)};
+    beforeSceneChange(structuredClone(candidate));
     to.push(sceneOf(document));
-    document = {...document, ...from.pop()};
+    from.pop();
+    document = candidate;
     persistDraft();
     return true;
   }

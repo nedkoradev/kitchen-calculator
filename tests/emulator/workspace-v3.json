@@ -1,0 +1,9 @@
+{
+  "firestore": {"rules": "workspace-v3.rules"},
+  "emulators": {
+    "firestore": {"host": "127.0.0.1", "port": 8090},
+    "auth": {"host": "127.0.0.1", "port": 9100},
+    "ui": {"enabled": false},
+    "singleProjectMode": true
+  }
+}

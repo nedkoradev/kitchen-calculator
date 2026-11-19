@@ -2,11 +2,17 @@ const assert = require('node:assert/strict');
 const {openKitchen} = require('./browser-harness.cjs');
 
 (async () => {
+  const e2e = process.env.NEDIQ_EMULATOR_E2E === '1';
   const {browser, page, errors, field} = await openKitchen({extraHooks: `
     window.__realEditorPorts = {
       capture: captureProjectSnapshot,
       title(name) { $('projectTitle').value = name; $('projectName').value = name; },
       apply(snapshot) {
+        if (window.__failRendererOnce) {
+          window.__failRendererOnce = false;
+          clearWorkspace();
+          throw Error('Injected renderer failure');
+        }
         applyProjectSnapshot(snapshot, {preserveIdentity: true});
         syncDocumentCounters();
         build(false);
@@ -21,12 +27,66 @@ const {openKitchen} = require('./browser-harness.cjs');
       group() { createAssembly(); }
     };
   `});
+  let backend;
   try {
     await page.locator('#modeProject').click();
-    await page.evaluate(async () => {
-      const {mountRealEditor} = await import('/tests/fixtures/workspace-real-editor.mjs');
-      window.__integration = mountRealEditor(window.__realEditorPorts);
-    });
+    let tokens;
+    if (e2e) {
+      const {createEmulatorBackend} = await import('./emulator/workspace-rc-backend.mjs');
+      const {fixtureDocuments} = await import('./fixtures/workspace-real-editor.mjs');
+      const {folders} = await import('./fixtures/workspace-real-store.mjs');
+      backend = await createEmulatorBackend();
+      const {createWorkspaceHttpHandler} = await import('../release-candidate/http.mjs');
+      const origin = new URL(process.env.KITCHEN_TEST_URL).origin;
+      const handler = createWorkspaceHttpHandler({dispatch: backend.service, allowedOrigins: [origin]});
+      tokens = {};
+      for (const owner of ['alpha', 'beta']) {
+        tokens[owner] = await backend.identity(owner);
+        const batch = backend.db.batch();
+        batch.set(backend.db.doc('workspace_v3/' + owner + '/settings/folders'), {folders, revision: 1});
+        for (const fixture of fixtureDocuments()) {
+          batch.set(backend.db.doc('workspace_v3/' + owner + '/documents/' + fixture.id), fixture);
+          batch.set(backend.db.doc('workspace_v3/' + owner + '/names/' + fixture.nameKey), {id: fixture.id});
+        }
+        await batch.commit();
+      }
+      await page.route('**/workspace-rc-rpc', async route => {
+        const request = route.request();
+        const headers = {...request.headers(), origin};
+        const result = await handler(new Request(request.url(), {
+          method: request.method(), body: request.postData(), headers,
+        }));
+        await route.fulfill({status: result.status, headers: Object.fromEntries(result.headers),
+          body: await result.text()});
+      });
+    }
+    await page.evaluate(async tokens => {
+      const {fixtureDocuments, mountRealEditor} = await import('/tests/fixtures/workspace-real-editor.mjs');
+      if (!tokens) {
+        window.__integration = mountRealEditor(window.__realEditorPorts);
+        return;
+      }
+      const {mountWorkspaceEditor} = await import('/release-candidate/editor.mjs');
+      const {createWorkspaceClient, createWorkspaceHttpClient} = await import('/release-candidate/client.mjs');
+      const {createWorkspaceDraftAdapter} = await import('/workspace-persistence/drafts.mjs');
+      const connection = {};
+      const http = createWorkspaceHttpClient({endpoint: '/workspace-rc-rpc', getIdToken: scope => tokens[scope.actorUid]});
+      const store = createWorkspaceClient(async (operation, request) => {
+        if (operation === 'pending' && connection.offline === request.scope.ownerUid) throw Error('Journal offline');
+        const result = await http[operation](request);
+        if (operation === 'write' && connection.dropAcknowledgement) {
+          connection.dropAcknowledgement = false;
+          throw Object.assign(new Error('Lost acknowledgement'), {code: 'unknown-outcome'});
+        }
+        if (operation === 'readProject' && connection.invalidProject === request.id) result.settings.unsupported = true;
+        return result;
+      });
+      const profiles = [['alpha', 'Алфа'], ['beta', 'Бета']].map(([uid, label]) =>
+        ({scope: {ownerUid: uid, actorUid: uid}, label}));
+      window.__integration = {...mountWorkspaceEditor(window.__realEditorPorts, {store, profiles,
+        initialScope: profiles[0].scope, startingDocument: fixtureDocuments()[0],
+        drafts: createWorkspaceDraftAdapter(localStorage)}), store, connection};
+    }, tokens);
     const status = page.locator('#integration-status');
     const settled = () => page.waitForFunction(() => window.__integration.bridge.state.canAct);
     const snapshot = () => page.evaluate(() => window.__realEditorPorts.capture());
@@ -94,6 +154,7 @@ const {openKitchen} = require('./browser-harness.cjs');
     await page.getByRole('dialog').getByRole('button', {name: 'Запази', exact: true}).click();
     await page.getByRole('dialog', {name: 'Папка за новия запис'}).getByRole('button', {name: 'Проекти'}).click();
     await page.waitForFunction(() => window.__integration.bridge.state.workspace.document.name === 'Тестово копие');
+    await settled();
     const saved = await state();
     assert.notEqual(saved.workspace.document.id, 'test-project');
     assert.equal(saved.workspace.document.revision, 1);
@@ -125,6 +186,25 @@ const {openKitchen} = require('./browser-harness.cjs');
     await settled();
     await partCount(0);
     assert.equal((await state()).scope.ownerUid, 'beta');
+    if (e2e) {
+      const beforeRendererFailure = await state();
+      await page.evaluate(() => { window.__failRendererOnce = true; });
+      await open('Отвори проект · Контролна кухня');
+      await page.waitForFunction(() => window.__integration.bridge.state.error?.message.includes('Injected renderer failure'));
+      const afterFailure = (await state()).workspace;
+      for (const key of ['document', 'dirty', 'canUndo', 'canRedo']) {
+        assert.deepEqual(afterFailure[key], beforeRendererFailure.workspace[key]);
+      }
+      await partCount(0);
+      await libraryButton.click();
+      await page.getByRole('button', {name: 'Нова папка', exact: true}).click();
+      await page.getByRole('textbox', {name: 'Име на папката'}).fill('Емулаторна папка');
+      await page.getByRole('dialog', {name: 'Наименование'}).getByRole('button', {name: 'Запази'}).click();
+      const openDialog = page.getByRole('dialog', {name: 'Обща библиотека'});
+      await openDialog.locator('option', {hasText: 'Емулаторна папка'}).waitFor({state: 'attached'});
+      await page.keyboard.press('Escape');
+      await openDialog.waitFor({state: 'detached'});
+    }
     await open('Отвори проект · Кухня с 750 детайла');
     await partCount(750);
     await settled();
@@ -148,8 +228,10 @@ const {openKitchen} = require('./browser-harness.cjs');
     await page.waitForFunction(() => window.__integration.bridge.state.workspace.document.name === 'Първи запис');
     assert.equal((await state()).workspace.document.revision, 1);
     assert.deepEqual(errors, []);
-    console.log('PASS real v2.95 renderer with isolated schema 1 commands, reports, large scene, journal and profile');
+    console.log('PASS real renderer with schema 1, reports, 750 parts and profile journal' +
+      (e2e ? ' using Auth and Firestore Emulators' : ' using a fixture port'));
   } finally {
     await browser.close();
+    await backend?.close();
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });

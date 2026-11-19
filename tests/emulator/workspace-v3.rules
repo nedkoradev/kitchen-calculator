@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function canRead(owner) {
+      return signedIn() && (uid() == owner ||
+        get(/databases/$(database)/documents/workspace_v3/$(owner)/grants/$(uid())).data.role in ['editor', 'viewer']);
+    }
+    match /workspace_v3/{owner} {
+      match /documents/{id} { allow read: if canRead(owner); }
+      match /settings/folders { allow get: if canRead(owner); }
+      match /grants/{actor} { allow get: if signedIn() && (uid() == owner || uid() == actor); }
+      match /pending/{actor} { allow get: if signedIn() && uid() == actor; }
+      match /actors/{actor}/operations/{id} { allow get: if signedIn() && uid() == actor; }
+      // All writes go through the authenticated server transaction service.
+    }
+  }
+}

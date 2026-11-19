@@ -3,7 +3,7 @@ const actions = new Set(['newDocument', 'openProject', 'insertModel', 'saveDocum
 const journalErrors = new Set(['unknown-outcome', 'reconciliation-required', 'journal-acknowledgement-failed']);
 
 // The view supplies choices and receives snapshots; controller factories own all persistence.
-export function createWorkspaceBridge({createController, confirmDiscard, render = () => {}}) {
+export function createWorkspaceBridge({createController, confirmDiscard, render = () => {}, activate = () => {}}) {
   let active = null;
   let requested = null;
   let busy = false;
@@ -72,6 +72,7 @@ export function createWorkspaceBridge({createController, confirmDiscard, render 
       const candidate = requested ?? active;
       if (!candidate) throw new Error('A profile is required');
       await verify(candidate);
+      if (candidate !== active) activate(candidate.scope, candidate.controller.state.document);
       active = candidate;
       requested = null;
       gate = 'ready';
