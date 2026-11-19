@@ -9,3 +9,4 @@ trap 'kill "$server_pid" 2>/dev/null || true' EXIT
 curl --fail --silent --show-error --retry 5 --retry-connrefused "$KITCHEN_TEST_URL" -o /dev/null
 node --test tests/workspace-release-firestore.test.mjs
 node tests/workspace-real-editor-browser.cjs
+node tests/workspace-staging-browser.cjs

@@ -96,3 +96,20 @@ test('authenticated clients cannot duplicate names or overwrite another committe
     await backend.close();
   }
 });
+
+test('composite rules retain v2 access while restricting v3 writes to the service', async () => {
+  const rules = await initializeTestEnvironment({projectId});
+  try {
+    const owner = rules.authenticatedContext('composite-owner').firestore();
+    const outsider = rules.authenticatedContext('composite-outsider').firestore();
+    const legacyPath = 'users/composite-owner/v2_cabinets/synthetic';
+    await assertSucceeds(sdk.setDoc(sdk.doc(owner, legacyPath), {name: 'Синтетичен шкаф'}));
+    await assertSucceeds(sdk.getDoc(sdk.doc(owner, legacyPath)));
+    await assertFails(sdk.getDoc(sdk.doc(outsider, legacyPath)));
+    const v3 = sdk.doc(owner, 'workspace_v3/composite-owner/documents/candidate');
+    await assertFails(sdk.setDoc(v3, {name: 'Direct write'}));
+    await assertFails(sdk.getDoc(sdk.doc(outsider, 'workspace_v3/composite-owner/pending/composite-owner')));
+  } finally {
+    await rules.cleanup();
+  }
+});
