@@ -7,7 +7,7 @@ const {openKitchen}=require('./browser-harness.cjs');
   const constructorPart={key:'custom900',x:0,y:150,z:0,w:18,h:300,d:400,locks:{w:true}};
   await setup([constructorPart]);const constructorCatalog=await page.evaluate(()=>window.__projectTest.capture().materials);
   await page.locator('#modeProject').click();
-  const payload={parts:[{part:{key:'custom101',w:101,h:18,d:400,x:.5,y:9,z:0,locks:{h:true},assembly:'outer',assemblyStack:[null,'inner']},name:'Рафт',finish:{material:1,edges:[0,null,2,3]},allEdges:false}],room:{w:6000,h:3000,d:5000},assemblyNames:{outer:'Моя група',inner:'Вътрешен шкаф'},materials:{pdcMaterials:[{name:'A',color:'#aabbcc'},{name:'B',color:'#112233'}],edgeMaterials:[{name:'a'},{name:'b'},{name:'c'},{name:'d'}],backMaterials:[],worktops:[],servicePrices:{cut:123},activeBase:'Тестова база'},settings:{viewMode:'top',projectTab:'3d'}};
+  const payload={parts:[{part:{key:'custom101',w:101,h:18,d:400,x:.5,y:9,z:0,locks:{h:true},assembly:'outer',assemblyStack:[null,'inner']},name:'Рафт',finish:{material:1,edges:[0,null,2,3]},allEdges:false}],room:{w:6000,h:3000,d:5000},assemblyNames:{outer:'Моя група',inner:'Вътрешен шкаф'},materials:{pdcMaterials:[{name:'A',color:'#aabbcc'},{name:'B',color:'#112233',textureUrl:'materials/textures/дъб небраска.png',textureWidthMm:1000,textureHeightMm:500}],edgeMaterials:[{name:'a'},{name:'b'},{name:'c'},{name:'d'}],backMaterials:[],worktops:[],servicePrices:{cut:123},activeBase:'Тестова база'},settings:{viewMode:'top',projectTab:'3d'}};
   await page.evaluate(data=>window.__projectTest.apply(data),payload);
   const normalized=()=>page.evaluate(()=>{
    const p=window.__projectTest.capture();
@@ -49,9 +49,15 @@ const {openKitchen}=require('./browser-harness.cjs');
   await close();
   console.log('PASS cloud project open exposes no local project entry');
 
+  const sceneBeforeFailedSave=await normalized();
+  const identityBeforeFailedSave=await page.evaluate(()=>window.__projectTest.opened());
+  const recordsBeforeFailedSave=await cloudRows();
   await page.evaluate(()=>window.__firebaseDouble.failWrites(true));await saveDialog();await page.locator('#projectCloudSave').click();
   await page.waitForFunction(()=>document.querySelector('#projectCloudStatus').textContent.includes('не е потвърден'));
   assert.equal(await page.locator('#projectCloudDialog').count(),1);await close();await page.evaluate(()=>window.__firebaseDouble.failWrites(false));
+  assert.deepEqual(await normalized(),sceneBeforeFailedSave);
+  assert.deepEqual(await page.evaluate(()=>window.__projectTest.opened()),identityBeforeFailedSave);
+  assert.deepEqual(await cloudRows(),recordsBeforeFailedSave);
   await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileOpen').click()})();await page.waitForFunction(()=>document.querySelector('#projectCloudList').options.length===2);
   await page.locator('#projectCloudDelete').click();await page.locator('.nedConfirmActions button').first().click();assert.equal((await cloudRows()).length,2);
   await page.evaluate(()=>window.__firebaseDouble.failWrites(true));await page.locator('#projectCloudDelete').click();await page.locator('.nedConfirmActions button').last().click();

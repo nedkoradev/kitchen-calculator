@@ -164,3 +164,18 @@ test('reciprocal grants are independent and revocation only removes the outgoing
  assert.equal((await sdk.getDocFromServer(a.ref('alpha','materials','sample'))).data().name,'changed by B');
  assert.deepEqual(await b.sharing.bases(),[]);
 });
+
+test('v2.93 shared editors cannot replace a newer project revision',async()=>{
+ const owner=client('owner'),editor=client('editor'),viewer=client('viewer');
+ await owner.sharing.add(editor.email,'editor');
+ await owner.sharing.add(viewer.email,'viewer');
+ const store=actor=>createProjectStore({db:actor.db,sdk,getUser:()=>({uid:owner.uid})});
+ const initial=await store(owner).save({name:'Споделен проект',data});
+ const stale=await store(editor).open(initial.id);
+ const update=structuredClone(data);
+ update.parts[0].part.w=650;
+ const current=await store(owner).save({...initial,data:update});
+ await assert.rejects(store(editor).save({...stale,data:stale.data}),{code:'conflict'});
+ assert.equal((await store(viewer).open(initial.id)).revision,current.revision);
+ assert.deepEqual((await store(owner).open(initial.id)).data,update);
+});
