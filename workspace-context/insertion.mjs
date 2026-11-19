@@ -1,5 +1,4 @@
 import {axes, bounds, canPlace, dimensions} from '../geometry.mjs';
-import {placeCabinet} from '../cabinet-generator.mjs';
 import {identifier} from '../document-format/model.mjs';
 
 const boardCatalog = {pdc: 'pdcMaterials', back: 'backMaterials', worktop: 'worktops'};
@@ -15,19 +14,60 @@ function groupIds(scene) {
     [...groupFields.map(key => part[key]), ...(part.assemblyStack ?? [])].filter(id => id != null))]);
 }
 
-function placement(parts, scene) {
-  if (!scene.room) return {x: 0, y: 0, z: 0};
-  const obstacles = scene.parts.map(item => item.part);
-  if (parts.every(part => canPlace([part], obstacles, scene.room))) return {x: 0, y: 0, z: 0};
-  const envelope = {};
-  for (const axis of axes) {
-    const {min, max} = bounds(parts, axis);
-    envelope[axis] = (min + max) / 2;
-    envelope[dimensions[axis]] = Math.ceil(max - min);
+function shifted(parts, offset) {
+  return parts.map(part => ({...part, x: part.x + offset.x, y: part.y + offset.y, z: part.z + offset.z}));
+}
+
+function axisOffsets(axis, parts, obstacles, room, extent) {
+  const dimension = dimensions[axis];
+  const origin = axis === 'y' ? 0 : -room[dimension] / 2;
+  const leading = extent.min - origin;
+  const last = Math.floor(room[dimension] - (extent.max - extent.min));
+  const candidates = new Set([0, last, Math.floor(leading), Math.ceil(leading)]);
+  // A collision-free region starts or ends when a member meets an obstacle face.
+  // Round away from that obstacle to the editor's whole-mm leading-face grid.
+  for (const part of parts) {
+    for (const obstacle of obstacles) {
+      const halfPart = part[dimension] / 2;
+      const halfObstacle = obstacle[dimension] / 2;
+      const gap = obstacle[axis] - part[axis];
+      candidates.add(Math.floor(leading + gap - halfObstacle - halfPart));
+      candidates.add(Math.ceil(leading + gap + halfObstacle + halfPart));
+    }
   }
-  // Place the assembly as a single footprint. Internal relationships remain unchanged.
-  const [{part: placed}] = placeCabinet([{part: envelope}], obstacles, scene.room, {preferSideBySide: true});
-  return {x: placed.x - envelope.x, y: placed.y - envelope.y, z: placed.z - envelope.z};
+  return [...candidates].filter(value => value >= 0 && value <= last)
+    .map(value => value - leading)
+    .sort((a, b) => Math.abs(a) - Math.abs(b) || a - b);
+}
+
+function placement(parts, scene) {
+  const zero = {x: 0, y: 0, z: 0};
+  const extent = Object.fromEntries(axes.map(axis => [axis, bounds(parts, axis)]));
+  // Check internal pairs even for a model without a room. Normalize into a tight
+  // temporary room so the check is independent of the model's saved position.
+  const normalized = {x: -(extent.x.min + extent.x.max) / 2, y: -extent.y.min,
+    z: -(extent.z.min + extent.z.max) / 2};
+  const ownRoom = Object.fromEntries(axes.map(axis =>
+    [dimensions[axis], Math.ceil(extent[axis].max - extent[axis].min)]));
+  if (!canPlace(shifted(parts, normalized), [], ownRoom)) {
+    throw new Error('Моделът съдържа невалидни размери или застъпване между детайли.');
+  }
+  if (!scene.room) return zero;
+  const obstacles = scene.parts.map(item => item.part);
+  if (canPlace(parts, obstacles, scene.room)) return zero;
+
+  // The generator's placeCabinet() searches X/Z at one height. A library
+  // assembly can use room on any level, including between obstacle faces.
+  const [xs, ys, zs] = axes.map(axis => axisOffsets(axis, parts, obstacles, scene.room, extent[axis]));
+  for (const y of ys) {
+    for (const z of zs) {
+      for (const x of xs) {
+        const offset = {x, y, z};
+        if (canPlace(shifted(parts, offset), obstacles, scene.room)) return offset;
+      }
+    }
+  }
+  throw new Error('Няма свободно място за модела в стаята.');
 }
 
 export function insertIntoScene(scene, model, nextId) {

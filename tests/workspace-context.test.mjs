@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readLegacyCabinet, readLegacyProject} from '../document-format/legacy.mjs';
+import {axes, canPlace, dimensions} from '../geometry.mjs';
 import {validateDocument} from '../document-format/model.mjs';
 import {createWorkspaceContext} from '../workspace-context/context.mjs';
 
@@ -207,7 +208,120 @@ test('invalid placement or generated ID leaves the scene and history intact', as
   const before = context.state;
   assert.throws(() => context.insertModel(source), /Duplicate generated/);
   assert.deepEqual(context.state, before);
+  source.parts = [source.parts[0]];
   source.parts[0].part.w = room.w + 1;
   assert.throws(() => context.insertModel(source), /свободно място/);
   assert.deepEqual(context.state, before);
+});
+
+function panel(key, coordinates) {
+  return {part: {key, x: 0, y: 250, z: 0, w: 500, h: 500, d: 500, ...coordinates}};
+}
+
+test('a touching group at its saved height fits above the existing cabinet', async () => {
+  const context = workspace();
+  const target = await project();
+  target.room = {w: 500, h: 500, d: 500};
+  target.parts = [panel('base', {y: 50, h: 100})];
+  const source = await model();
+  source.parts = [panel('a', {y: 200, h: 200}), panel('b', {y: 350, h: 100})];
+  context.openProject(target);
+  context.insertModel(source);
+  const placed = context.state.document.parts.slice(1).map(({part}) => part);
+  assert.deepEqual(placed.map(({x, y, z}) => [x, y, z]), [[0, 200, 0], [0, 350, 0]]);
+  assert.ok(canPlace(placed, target.parts.map(({part}) => part), target.room));
+});
+
+for (const axis of axes) {
+  test('when the original position is blocked, the group translates together along ' + axis, async () => {
+    const context = workspace();
+    const dimension = dimensions[axis];
+    const origin = axis === 'y' ? 0 : -250;
+    const target = await project();
+    target.room = {w: 500, h: 500, d: 500};
+    target.parts = [panel('obstacle', {[axis]: origin + 200, [dimension]: 200})];
+    const source = await model();
+    source.parts = [
+      panel('a', {[axis]: origin + 150.5, [dimension]: 101}),
+      panel('b', {[axis]: origin + 250.5, [dimension]: 99}),
+    ];
+    context.openProject(target);
+    context.insertModel(source);
+    const placed = context.state.document.parts.slice(1).map(({part}) => part);
+    assert.ok(canPlace(placed, target.parts.map(({part}) => part), target.room));
+    for (const [i, part] of placed.entries()) {
+      const original = source.parts[i].part;
+      for (const direction of axes) {
+        assert.equal(part[direction] - original[direction], direction === axis ? 200 : 0);
+        assert.equal(part[dimensions[direction]], original[dimensions[direction]]);
+      }
+    }
+  });
+}
+
+test('internal overlap is rejected even without a room, while opening a legacy project retains its geometry', async () => {
+  const context = workspace();
+  const source = await model();
+  source.parts = [panel('a', {y: 100, h: 200}), panel('b', {y: 240, h: 100})];
+  const original = await project();
+  original.parts = source.parts;
+  context.openProject(original);
+  assert.deepEqual(context.state.document.parts, source.parts);
+  context.newDocument({type: 'model'});
+  const before = context.state;
+  assert.throws(() => context.insertModel(source), /застъпване между детайли/);
+  assert.deepEqual(context.state, before);
+});
+
+test('no free space leaves the active document, catalogs, both history stacks and dirty state intact', async () => {
+  const context = workspace();
+  const target = await project();
+  target.room = {w: 500, h: 500, d: 500};
+  target.parts = [panel('base', {y: 125, h: 250})];
+  const source = await model();
+  source.parts = [panel('cabinet', {y: 50, h: 100})];
+  context.openProject(target);
+  context.insertModel(source);
+  const afterFirst = context.state.document;
+  context.insertModel(source);
+  const afterSecond = context.state.document;
+  context.undo();
+  const beforeFailure = context.state;
+  assert.equal(beforeFailure.dirty, true);
+  assert.equal(beforeFailure.canUndo, true);
+  assert.equal(beforeFailure.canRedo, true);
+  const blocked = await model();
+  blocked.parts = [panel('blocked', {y: 100, h: 200})];
+  blocked.parts[0].finish = {material: 0, edges: [0, null, null, null]};
+  blocked.materials.pdcMaterials[0] = {name: 'Уникален декор'};
+  assert.throws(() => context.insertModel(blocked), /свободно място/);
+  assert.deepEqual(context.state, beforeFailure);
+  context.redo();
+  assert.deepEqual(context.state.document, afterSecond);
+  context.undo();
+  assert.deepEqual(context.state.document, afterFirst);
+  context.undo();
+  assert.deepEqual(context.state.document, target);
+  assert.equal(context.state.dirty, false);
+});
+
+test('the search can combine X, Y and Z offsets in a single placement', async () => {
+  const context = workspace();
+  const target = await project();
+  target.room = {w: 500, h: 500, d: 500};
+  target.parts = [
+    panel('left', {x: -50, w: 400}),
+    panel('below', {x: 200, w: 100, y: 200, h: 400}),
+    panel('behind', {x: 200, w: 100, y: 450, h: 100, z: -50, d: 400}),
+  ];
+  const source = await model();
+  source.parts = [
+    panel('a', {x: 0, y: 25, z: 0, w: 100, h: 50, d: 100}),
+    panel('b', {x: 0, y: 75, z: 0, w: 100, h: 50, d: 100}),
+  ];
+  context.openProject(target);
+  context.insertModel(source);
+  const placed = context.state.document.parts.slice(3).map(({part}) => part);
+  assert.deepEqual(placed.map(({x, y, z}) => [x, y, z]), [[200, 425, 200], [200, 475, 200]]);
+  assert.ok(canPlace(placed, target.parts.map(({part}) => part), target.room));
 });
