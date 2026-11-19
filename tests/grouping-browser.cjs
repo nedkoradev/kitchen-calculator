@@ -66,10 +66,18 @@ const physical=rows=>rows.map(({assembly,assemblyStack,key,...p})=>p);
    assert.deepEqual(await parts(),four);
    console.log(`PASS ${mode}: group + existing group preserves both nested hierarchies`);
 
-   // Project inserts two copies. Constructor Open replaces; duplication explicitly creates the second copy.
+   // Both v2.95 modes append library models and allocate independent group IDs.
    await setup([]);
    const saved=cabinets().slice(0,2).map((part,i)=>({part,name:'Panel '+i,finish:{material:1,edges:[0,null,1,2]},allEdges:i===0}));
-   await page.evaluate(({items,mode})=>{for(let i=0;i<2;i++)window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-opened',{detail:{id:'fixture',name:'Cabinet',parts:items}}));if(mode==='constructor'){if(window.__test.parts().length!==items.length)throw Error('Constructor Open must replace');window.__test.duplicateCustom()}window.__test.view('front')},{items:saved,mode});
+   const append=()=>page.evaluate(items=>{
+    window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-opened',{detail:{id:'fixture',name:'Cabinet',parts:items}}));
+    window.__test.view('front');
+   },saved);
+   await append();
+   const firstCopy=await parts();
+   assert.equal(firstCopy.length,saved.length);
+   await append();
+   assert.deepEqual((await parts()).slice(0,saved.length),firstCopy);
    const loaded=await parts();assert.equal(loaded.length,4);assert.notEqual(loaded[0].assembly,loaded[2].assembly);
    const beforeFinish=await page.evaluate(()=>window.__test.finish());
    await group(loaded[0].key,loaded[2].key);await assertSamePhysical(loaded);
@@ -83,16 +91,15 @@ const physical=rows=>rows.map(({assembly,assemblyStack,key,...p})=>p);
     await setup([]);await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileOpen').click()})();await page.locator('#projectCloudList').selectOption(id);
     await page.locator('#projectCloudOpen').click();await page.waitForFunction(()=>!document.querySelector('#projectCloudDialog'));
    }else{
-    await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSave').click()})();await page.locator('#fileDialogName').fill('Grouping roundtrip');
+    await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileSaveAs').click()})();await page.locator('#fileDialogName').fill('Grouping roundtrip');
     await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
     const id=await page.evaluate(()=>window.__firebaseDouble.rows().find(r=>r.path.includes('/v2_cabinets/')).path.split('/').at(-1));
     await setup([]);await (async()=>{await page.locator('#fileMenu>summary').click();await page.locator('#commandFileOpen').click()})();await page.locator('#fileDialogChoice').selectOption(id);
     await page.locator('#fileDialogConfirm').click();await page.waitForFunction(()=>!document.querySelector('#fileDialog').open);
-    // Opening a saved cabinet wraps the full saved hierarchy as one cabinet.
-    await page.evaluate(()=>window.__test.ungroupAssembly(window.__test.parts()[0].assembly));
    }
    const cloudLoaded=await parts();assert.deepEqual(physical(cloudLoaded),physical(stored));
    assert.ok(cloudLoaded.every(p=>p.assembly===cloudLoaded[0].assembly));
+   assert.deepEqual(cloudLoaded.map(p=>p.assemblyStack.length),stored.map(p=>p.assemblyStack.length));
    assert.equal(new Set(cloudLoaded.map(p=>p.assemblyStack.at(-1))).size,2);
    assert.deepEqual(Object.values(await page.evaluate(()=>window.__test.finish())),Object.values(beforeFinish));
    console.log(`PASS ${mode}: cloud save/open retains nested cabinets and materials (isolated SDK double)`);
