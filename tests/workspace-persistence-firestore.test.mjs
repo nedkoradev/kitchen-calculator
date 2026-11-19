@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {initializeTestEnvironment} from '@firebase/rules-unit-testing';
 import * as sdk from 'firebase/firestore';
 import {createTestFirestorePersistence} from '../workspace-persistence/firestore-test-adapter.mjs';
+import {createWorkspaceBridge} from '../workspace-ui/bridge.mjs';
 import {createWorkspaceController} from '../workspace-context/editor-controller.mjs';
 import {prepareNewDocument} from '../workspace-context/context.mjs';
 import {createWorkspaceDraftAdapter} from '../workspace-persistence/drafts.mjs';
@@ -208,4 +209,37 @@ test('a Firestore permission error after reservation commit stays reconcilable',
   assert.deepEqual(await recovered.reconcile(request), {status: 'not-committed'});
   assert.equal(await recovered.pending({scope: scope()}), null);
   await assert.rejects(recovered.readProject({scope: scope(), id: request.document.id}), {code: 'not-found'});
+}));
+
+test('UI startup checks the emulator journal after reload and before switching profiles', () => inEmulator(async db => {
+  const alpha = scope();
+  const beta = scope('bob', 'bob');
+  const aliceStore = adapter(db);
+  await aliceStore.write(create('existing', 'lost-before-reload', {name: 'Потвърден'}));
+  const journalEvents = [];
+  let bobOffline = true;
+  const bridge = createWorkspaceBridge({createController: options => {
+    const store = adapter(db, options.scope.actorUid);
+    return createWorkspaceController({...options, persistence: {...store,
+      async pending(request) {
+        journalEvents.push(request.scope.ownerUid);
+        if (request.scope.ownerUid === 'bob' && bobOffline) throw new Error('journal offline');
+        return store.pending(request);
+      },
+    }});
+  }});
+  assert.equal(await bridge.execute('saveDocument', {name: 'Too early'}), false);
+  assert.equal(await bridge.initialize(alpha), true);
+  assert.deepEqual(bridge.state.workspace.reconciledDocument, {id: 'existing', revision: 1});
+  assert.equal(await aliceStore.pending({scope: alpha}), null);
+  assert.equal(await bridge.initialize(beta), false);
+  assert.deepEqual(bridge.state.scope, alpha);
+  assert.equal(await bridge.execute('saveDocument', {name: 'Blocked switch'}), false);
+  bobOffline = false;
+  assert.equal(await bridge.initialize(), true);
+  assert.deepEqual(bridge.state.scope, beta);
+  const first = await bridge.execute('saveDocument', {name: 'Потвърден'});
+  assert.equal(first.revision, 1);
+  assert.notEqual(first.id, 'existing');
+  assert.deepEqual(journalEvents, ['alice', 'alice', 'alice', 'bob', 'alice', 'bob']);
 }));
