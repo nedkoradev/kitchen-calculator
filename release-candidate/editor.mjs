@@ -73,15 +73,17 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
   const controls = documentElement('nav', 'toolIcons');
   controls.setAttribute('aria-label', 'Интеграция NED-IQ');
   const retry = button('Провери журнала', () => bridge.initialize());
-  const select = document.createElement('select');
-  select.setAttribute('aria-label', 'Тестов профил');
-  for (const {scope, label} of profiles) select.add(new Option(label, scope.ownerUid));
-  select.value = initialScope.ownerUid;
-  select.onchange = () => bridge.initialize(profiles.find(profile => profile.scope.ownerUid === select.value).scope);
+  const select = profiles ? document.createElement('select') : null;
+  if (select) select.setAttribute('aria-label', 'Тестов профил');
+  for (const {scope, label} of profiles ?? []) select.add(new Option(label, scope.ownerUid));
+  if (select) {
+    select.value = initialScope.ownerUid;
+    select.onchange = () => bridge.initialize(profiles.find(profile => profile.scope.ownerUid === select.value).scope);
+  }
   function report(failure) { status.textContent = failure.message; }
   const library = button('Обща библиотека', () => { void openLibrary().catch(report); });
   decorateAction(library, 'open', 'Обща библиотека');
-  controls.append(library, select, retry);
+  controls.append(library, ...(select ? [select] : []), retry);
   document.querySelector('main').before(controls, status);
   let installed = null;
   let displayed = null;
@@ -101,7 +103,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       workspace?.reconciledDocument ? 'Сверен запис' : ''].filter(Boolean).join(' · ');
     document.querySelector('main').inert = !state.canAct || !!visualError;
     retry.disabled = state.busy;
-    select.disabled = state.busy;
+    if (select) select.disabled = state.busy;
     library.disabled = !state.canAct || !!visualError;
     if (state.busy || state.gate !== 'ready' || !workspace || capturing) return;
     const signature = sceneSignature(state);
