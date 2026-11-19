@@ -1,7 +1,14 @@
 import {identifier, validateDocument} from '../document-format/model.mjs';
 import {comparableJson} from '../workspace-context/insertion.mjs';
 
-const fail = (code, message) => Object.assign(new Error(message), {code});
+class AdapterError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.code = code;
+  }
+}
+
+const fail = (code, message) => new AdapterError(code, message);
 
 async function fingerprint(document, expectedRevision) {
   const bytes = new TextEncoder().encode(comparableJson({document, expectedRevision}));
@@ -32,11 +39,11 @@ export function createTestFirestorePersistence({sdk, db, namespace, actorUid, re
     throw fail('permission-denied', 'The profile has insufficient access');
   }
 
-  async function transaction(scope, write, run) {
+  async function transaction(scope, access, run) {
     scope = Object.freeze({...scope});
     const ref = paths(scope);
     return sdk.runTransaction(db, async tx => {
-      await authorize(tx, scope, write);
+      if (access !== null) await authorize(tx, scope, access);
       return run(tx, ref);
     });
   }
@@ -70,6 +77,7 @@ export function createTestFirestorePersistence({sdk, db, namespace, actorUid, re
         }
         return value;
       };
+      let reserved = false;
       const execution = async () => {
         const receipt = await transaction(scope, true, async (tx, ref) => {
           const op = ref('operations', operationId);
@@ -84,6 +92,7 @@ export function createTestFirestorePersistence({sdk, db, namespace, actorUid, re
           return entry;
         });
         if (receipt.status !== 'pending') return receipt;
+        reserved = true;
         return transaction(scope, true, async (tx, ref) => {
           const op = ref('operations', operationId);
           const journal = ref('pending', actorUid);
@@ -115,17 +124,17 @@ export function createTestFirestorePersistence({sdk, db, namespace, actorUid, re
       try {
         result = await execution();
       } catch (error) {
-        if (['permission-denied', 'operation-conflict', 'reconciliation-required'].includes(error.code)) throw error;
+        if (!reserved && error instanceof AdapterError && ['permission-denied', 'operation-conflict', 'reconciliation-required'].includes(error.code)) throw error;
         throw fail('unknown-outcome', 'Check the operation before retrying');
       }
       if (result.status !== 'committed') throw fail(result.code ?? 'not-committed', 'Write was rejected');
       return {id: result.id, revision: result.revision};
     },
     pending({scope}) {
-      return transaction(scope, true, async (tx, ref) => (await tx.get(ref('pending', actorUid))).data() ?? null);
+      return transaction(scope, null, async (tx, ref) => (await tx.get(ref('pending', actorUid))).data() ?? null);
     },
     acknowledge({scope, operationId}) {
-      return transaction(scope, true, async (tx, ref) => {
+      return transaction(scope, null, async (tx, ref) => {
         const op = (await tx.get(ref('operations', operationId))).data();
         const journal = ref('pending', actorUid);
         const pending = (await tx.get(journal)).data();
@@ -138,11 +147,14 @@ export function createTestFirestorePersistence({sdk, db, namespace, actorUid, re
       paths(scope);
       const signature = document && await fingerprint(document, expectedRevision);
       try {
-        return await transaction(scope, true, async (tx, ref) => {
+        return await transaction(scope, null, async (tx, ref) => {
           const op = ref('operations', operationId);
           const journal = ref('pending', actorUid);
           const existing = (await tx.get(op)).data();
           const pending = (await tx.get(journal)).data();
+          // An existing receipt grants only control over that actor's operation in this owner namespace.
+          // Fencing an operation that has not been reserved still requires document write access.
+          if (!existing) await authorize(tx, scope, true);
           if (existing && (existing.actorUid !== actorUid ||
             (signature && existing.signature && signature !== existing.signature))) {
             throw fail('operation-conflict', 'Cannot reconcile another operation');

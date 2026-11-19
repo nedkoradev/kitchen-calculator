@@ -129,6 +129,9 @@ test('lost acknowledgement is recoverable after controller restart with history 
   const restarted = createWorkspaceController({...base, persistence: adapter(db)});
   assert.equal(restarted.state.draftStatus, 'restored');
   await assert.rejects(restarted.saveDocument({name: 'Друг запис'}), {code: 'reconciliation-required'});
+  assert.deepEqual(restarted.state.document, dirty);
+  assert.equal(restarted.state.canUndo, true);
+  assert.deepEqual(await store.pending({scope: scope()}), {operationId: 'lost'});
   assert.equal(await restarted.recoverPendingSave(), 'lost');
   assert.equal(await restarted.reconcileSave(), 'committed');
   assert.deepEqual(restarted.state.reconciledDocument, {id: 'large', revision: 1});
@@ -138,4 +141,71 @@ test('lost acknowledgement is recoverable after controller restart with history 
   await restarted.openProject('large'); // No confirmation handler, so dirty work is retained.
   assert.equal(restarted.state.document.id, null);
   assert.equal((await store.readProject({scope: scope(), id: 'large'})).parts.length, 750);
+}));
+
+test('revoked editor can reconcile only their own reservation and a delayed write stays rejected', () => inEmulator(async db => {
+  const grant = sdk.doc(db, namespace, 'alice', 'grants', 'editor');
+  await sdk.setDoc(grant, {role: 'editor'});
+  const profile = scope('editor');
+  const editor = adapter(db, 'editor');
+  const outsider = adapter(db, 'outsider');
+  let release, waiting;
+  const paused = new Promise(resolve => { waiting = resolve; });
+  const delay = new Promise(resolve => { release = resolve; });
+  let calls = 0;
+  const delayed = adapter(db, 'editor', {sdk: {...sdk, async runTransaction(...args) {
+    if (++calls === 2) {
+      waiting();
+      await delay;
+    }
+    return sdk.runTransaction(...args);
+  }}});
+  const controller = createWorkspaceController({scope: profile, persistence: delayed,
+    newId: () => 'revoked', operationId: () => 'reserved'});
+  await controller.editScene({settings: {sheetUtilization: 70}});
+  const before = controller.state.document;
+  const write = controller.saveDocument({name: 'Отнет достъп'});
+  await paused;
+  try {
+    assert.deepEqual(await editor.pending({scope: profile}), {operationId: 'reserved'});
+    await sdk.deleteDoc(grant);
+    await assert.rejects(outsider.reconcile({scope: profile, operationId: 'reserved'}), {code: 'permission-denied'});
+    await assert.rejects(outsider.reconcile({scope: scope('outsider'), operationId: 'reserved'}), {code: 'permission-denied'});
+    await assert.rejects(outsider.write({...create('revoked', 'reserved'), scope: profile}), {code: 'permission-denied'});
+  } finally {
+    release();
+  }
+  await assert.rejects(write, {code: 'unknown-outcome'});
+  assert.equal(controller.state.pendingOperationId, 'reserved');
+  assert.deepEqual(controller.state.document, before);
+  assert.equal(controller.state.canUndo, true);
+  const restarted = createWorkspaceController({scope: profile, persistence: editor});
+  assert.equal(await restarted.recoverPendingSave(), 'reserved');
+  assert.equal(await restarted.reconcileSave(), 'not-committed');
+  assert.equal(await editor.pending({scope: profile}), null);
+  await assert.rejects(editor.write({...create('revoked', 'reserved'), scope: profile}), {code: 'permission-denied'});
+  await assert.rejects(adapter(db).readProject({scope: scope(), id: 'revoked'}), {code: 'not-found'});
+
+  await sdk.setDoc(grant, {role: 'editor'});
+  const request = {...create('committed', 'committed-op'), scope: profile};
+  await editor.write(request);
+  await sdk.deleteDoc(grant);
+  await assert.rejects(outsider.acknowledge({scope: profile, operationId: request.operationId}), {code: 'permission-denied'});
+  assert.deepEqual(await editor.reconcile(request), {status: 'committed', id: 'committed', revision: 1});
+  await editor.acknowledge({scope: profile, operationId: request.operationId});
+  assert.equal(await editor.pending({scope: profile}), null);
+}));
+
+test('a Firestore permission error after reservation commit stays reconcilable', () => inEmulator(async db => {
+  const request = create('never-written', 'lost-reservation-ack');
+  const store = adapter(db, 'alice', {sdk: {...sdk, async runTransaction(...args) {
+    await sdk.runTransaction(...args);
+    throw Object.assign(new Error('Injected SDK error'), {code: 'permission-denied'});
+  }}});
+  await assert.rejects(store.write(request), {code: 'unknown-outcome'});
+  const recovered = adapter(db);
+  assert.deepEqual(await recovered.pending({scope: scope()}), {operationId: request.operationId});
+  assert.deepEqual(await recovered.reconcile(request), {status: 'not-committed'});
+  assert.equal(await recovered.pending({scope: scope()}), null);
+  await assert.rejects(recovered.readProject({scope: scope(), id: request.document.id}), {code: 'not-found'});
 }));
