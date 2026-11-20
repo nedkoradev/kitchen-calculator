@@ -59,7 +59,7 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
       outgoing.end(content);
     };
     try {
-      if (incoming.headers.host !== new URL(origin).host) return send(403, 'Loopback only');
+      if (!(pilot ? allowedPilotHost(incoming.headers.host, origin) : incoming.headers.host === new URL(origin).host)) return send(403, 'Unexpected host');
       const path = decodeURIComponent(new URL(incoming.url, origin).pathname);
       if (path === '/staging-api') {
         if (!endpoint) return send(404, 'Disabled');
