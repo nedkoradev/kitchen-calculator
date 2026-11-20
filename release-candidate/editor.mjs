@@ -152,6 +152,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     if (!sameScope()) return null;
     return dialog('Име и папка', (panel, done) => {
       const form = document.createElement('form');
+      form.className = 'pilotSaveFolderForm';
       const field = (label, input) => {
         const node = document.createElement('label');
         node.textContent = label;
@@ -377,6 +378,47 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       };
       menu.addEventListener('toggle', () => { if (menu.open) void refreshMenu(); });
       items.replaceChildren(byId('navLibrary'));
+    }
+  }
+
+  const standardFolderNames = ['Горни шкафове', 'Долни шкафове', 'Гардероби', 'Спални', 'Комоди', 'Електроуреди'];
+  async function restoreStandardFolders() {
+    const scope = bridge.state.scope;
+    if (!scope || !bridge.state.canAct) return;
+    let {folders, revision} = await store.list({scope});
+    const existing = new Set(folders.filter(folder => folder.parentId === null)
+      .map(folder => folder.name.toLocaleLowerCase('bg')));
+    for (const name of standardFolderNames) {
+      if (existing.has(name.toLocaleLowerCase('bg'))) continue;
+      const result = await store.changeFolder({scope, revision,
+        change: {action: 'create', name, parentId: null}});
+      ({folders, revision} = result);
+      existing.add(name.toLocaleLowerCase('bg'));
+    }
+    return folders;
+  }
+  if (panels) {
+    const settingsSections = byId('settingsDialog')?.querySelector('.settingsSections');
+    if (settingsSections) {
+      const section = document.createElement('section');
+      const heading = document.createElement('h3');
+      heading.textContent = 'Папки в библиотеката';
+      const description = document.createElement('p');
+      description.textContent = 'Управлявай папките или добави липсващите стандартни категории. Съществуващите папки и модели се запазват.';
+      const manage = button('Управление на папките', () => {
+        byId('settingsDialog').close();
+        void openLibrary().catch(report);
+      });
+      const restore = button('Добави стандартните папки', async () => {
+        restore.disabled = true;
+        try {
+          const folders = await restoreStandardFolders();
+          description.textContent = 'Готово: ' + folders.length + ' папки. Списъкът е обновен в библиотеката и при запазване.';
+        } catch (error) { report(error); }
+        finally { restore.disabled = false; }
+      });
+      section.append(heading, description, manage, restore);
+      settingsSections.append(section);
     }
   }
 
