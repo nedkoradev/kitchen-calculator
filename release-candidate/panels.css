@@ -73,3 +73,35 @@ dialog.pilotWindow::backdrop { background: rgba(21, 45, 71, .14); }
   .pilotWindowBody .materialSection { padding: 8px; overflow-x: auto; }
   body[data-stage-auth="active"] #staging-auth { max-inline-size: 80px; }
 }
+
+/* Pilot-only save dialog: labels and controls occupy separate rows. */
+.nedConfirmPanel .pilotSaveFolderForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+.nedConfirmPanel .pilotSaveFolderForm > label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  margin: 0;
+  width: 100%;
+  min-width: 0;
+}
+.nedConfirmPanel .pilotSaveFolderForm > label > :is(input, select) {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+}
+.nedConfirmPanel .pilotSaveFolderForm > p { margin: 0; }
+.nedConfirmPanel .pilotSaveFolderForm > .nedConfirmActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
