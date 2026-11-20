@@ -1,3 +1,14 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {defaultFolders,mergeLegacyFolders,resolveFolder,validateFolders,cabinetSize} from '../library-folders.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {defaultFolders,effectiveFolders,mergeLegacyFolders,resolveFolder,validateFolders,cabinetSize} from '../library-folders.mjs';
 test('legacy folders retain stable identity through rename, redirect and explicit movement',()=>{let f=defaultFolders();const old={category:'Горни шкафове',parts:[]},before=structuredClone(old);assert.equal(resolveFolder(old,f),'default-0');f[0].label='Преименувана';assert.equal(resolveFolder(old,f),'default-0');f[0].deleted=true;f[0].target='default-1';assert.equal(resolveFolder(old,f),'default-1');assert.equal(resolveFolder({...old,folderId:null},f),null);assert.deepEqual(old,before);f=mergeLegacyFolders(f,[{category:'Стара категория'}]);assert.equal(f.length,7);assert.equal(resolveFolder({category:'Стара категория'},f),f[6].id);f[1].deleted=true;f[1].target='default-0';assert.throws(()=>validateFolders(f),/пренасочване/)});
 test('folder validation and dimensions have no model side effects',()=>{const f=defaultFolders();f[1].label=f[0].label;assert.throws(()=>validateFolders(f),/уникално/);assert.deepEqual(cabinetSize([{part:{w:600,h:900,d:560,x:0,y:450,z:0}}]),[600,900,560]);});
+
+test('menu, save and folder settings share effective cloud folders',()=>{
+ const stored=[{id:'custom',label:'Моя папка',aliases:[],deleted:false,target:null}];
+ const items=[{category:'Стара категория'}];
+ const folders=effectiveFolders(stored,1,items);
+ assert.deepEqual(folders.map(f=>f.label),['Моя папка','Стара категория']);
+ assert.deepEqual(folders.filter(f=>!f.deleted).map(f=>f.id),['custom',resolveFolder(items[0],folders)]);
+ assert.deepEqual(effectiveFolders([],0,[]).map(f=>f.label),defaultFolders().map(f=>f.label));
+ assert.deepEqual(effectiveFolders([],1,[]),[]);
+ assert.deepEqual(effectiveFolders(undefined,0,[]).map(f=>f.label),defaultFolders().map(f=>f.label));
+});
