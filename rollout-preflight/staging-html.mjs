@@ -68,5 +68,6 @@ export function buildLocalPreview(source, {enabled = false, authOrigin} = {}) {
 
 export function buildPilotPreview(source, config) {
   const settings = {pilot: {origin: config.origin, authDomain: config.authDomain, apiKey: config.apiKey}};
-  return buildPreview(source, {enabled: true, settings});
+  const html = buildPreview(source, {enabled: true, settings});
+  return html.replace('</body>', '<span id="pilotVersion" aria-label="Версия на NED-IQ Pilot">Pilot v3.0.1</span></body>');
 }
