@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createPilotVerifier, pilotConfig, projectId, restrictPilot, restrictPilotDispatch} from '../pilot/config.mjs';
+import {createWorkspaceHttpHandler} from '../release-candidate/http.mjs';
+import {createWorkspaceService} from '../release-candidate/service.mjs';
+import {startLocalStaging} from '../rollout-preflight/stage-server.mjs';
 import {buildPilotPreview} from '../rollout-preflight/staging-html.mjs';
 import {exportPlan, planPilotMigration, applyPilotMigration} from '../pilot/migration.mjs';
 
@@ -29,9 +32,9 @@ test('verified Google pilot cannot impersonate another owner or use non-Google s
   await assert.rejects(restrictPilot(async () => ({...profile, firebase: {sign_in_provider: 'password'}}), profile.uid)('token'));
   await assert.rejects(restrictPilot(async () => ({...profile, uid: 'outsider'}), profile.uid)('token'));
   const dispatch = restrictPilotDispatch(args => args, profile.uid);
-  assert.throws(() => dispatch({request: {scope: {ownerUid: 'another-owner', actorUid: profile.uid}}}), {code: 'permission-denied'});
+  await assert.rejects(dispatch({request: {scope: {ownerUid: 'another-owner', actorUid: profile.uid}}}), {code: 'permission-denied'});
   const request = {request: {scope: {ownerUid: profile.uid, actorUid: profile.uid}}};
-  assert.equal(dispatch(request), request);
+  assert.equal(await dispatch(request), request);
 });
 
 test('pilot copy requires explicit draft review and blocks shared grants and altered approvals', async () => {
@@ -65,4 +68,80 @@ test('one revocation-aware verification per request and only the verified pilot 
   assert.deepEqual(await verify('next-minute'), profile);
   assert.deepEqual(calls, ['revoked', 'outsider', 'pilot', 'over-limit', 'next-minute']
     .map(token => [token, true]));
+});
+
+test('pending logs fixed reasons for denied Auth, claims and Firestore without changing responses', async () => {
+  const reasons = [];
+  const report = reason => reasons.push(reason);
+  let claims = profile;
+  let authCode;
+  let firestoreCode;
+  let reads = 0;
+  const verifyToken = createPilotVerifier({async verifyIdToken(_token, checkRevoked) {
+    assert.equal(checkRevoked, true);
+    if (authCode) throw Object.assign(new Error('private Auth detail'), {code: authCode});
+    return claims;
+  }}, profile.uid, {report});
+  function ref(path) {
+    return {path, collection: name => ref(path + '/' + name), doc: id => ref(path + '/' + id)};
+  }
+  const db = {
+    collection: ref, doc: ref,
+    async runTransaction(run) {
+      return run({async get(reference) {
+        reads++;
+        assert.equal(reference.path, 'workspace_v3/' + profile.uid + '/pending/' + profile.uid);
+        if (firestoreCode) throw Object.assign(new Error('private database detail'), {code: firestoreCode});
+        return {data: () => undefined};
+      }});
+    },
+  };
+  const dispatch = restrictPilotDispatch(createWorkspaceService({db, verifyToken}), profile.uid, report);
+  const handle = createWorkspaceHttpHandler({dispatch, allowedOrigins: [env.NEDIQ_PILOT_ORIGIN]});
+  const pending = async (scope = {ownerUid: profile.uid, actorUid: profile.uid}) => {
+    const response = await handle(new Request(env.NEDIQ_PILOT_ORIGIN + '/staging-api', {
+      method: 'POST', headers: {origin: env.NEDIQ_PILOT_ORIGIN, authorization: 'Bearer private-test-token'},
+      body: JSON.stringify({operation: 'pending', request: {scope}}),
+    }));
+    return response.json();
+  };
+
+  async function expectDenied(reason, code = 'permission-denied', scope) {
+    assert.deepEqual(await pending(scope), {error: {code, message: code}});
+    assert.deepEqual(reasons.splice(0), [reason]);
+  }
+  authCode = 'auth/insufficient-permission';
+  await expectDenied('auth-insufficient-permission');
+  authCode = 'auth/private-detail';
+  await expectDenied('auth-verification-failed');
+  authCode = undefined;
+  claims = {...profile, firebase: {sign_in_provider: 'password'}};
+  await expectDenied('pilot-provider-mismatch');
+  claims = {...profile, email_verified: false};
+  await expectDenied('pilot-email-unverified');
+  claims = {...profile, uid: 'outsider'};
+  await expectDenied('pilot-uid-mismatch');
+  claims = profile;
+  await expectDenied('pilot-scope-mismatch', 'permission-denied', {ownerUid: 'other', actorUid: profile.uid});
+  assert.equal(reads, 0);
+
+  firestoreCode = 7;
+  await expectDenied('firestore-pending-permission-denied', 'workspace-error');
+  firestoreCode = undefined;
+  assert.deepEqual(await pending(), {result: null});
+  assert.deepEqual(reasons, []);
+  assert.equal(reads, 2);
+});
+
+test('workspace host serves the bundled material catalog and blocks other JSON', async t => {
+  const host = await startLocalStaging();
+  t.after(() => host.close());
+  const catalog = await fetch(host.origin + '/materials/default.json');
+  assert.equal(catalog.status, 200);
+  assert.equal(catalog.headers.get('content-type'), 'application/json');
+  assert.deepEqual(await catalog.json(),
+    JSON.parse(await readFile(new URL('../materials/default.json', import.meta.url), 'utf8')));
+  for (const path of ['/package.json', '/firebase.json', '/materials/internal.json']) {
+    assert.equal((await fetch(host.origin + path)).status, 404);
+  }
 });
