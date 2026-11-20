@@ -1,16 +1,19 @@
+import {fallbackUrl} from '../pilot/config.mjs';
 import {mountWorkspaceEditor} from '../release-candidate/editor.mjs';
 import {createWorkspaceHttpClient} from '../release-candidate/client.mjs';
 import {createWorkspaceDraftAdapter} from '../workspace-persistence/drafts.mjs';
 import {prepareNewDocument} from '../workspace-context/context.mjs';
 
-export async function startStagingAuth({authOrigin, activate, editor}) {
-  if (location.hostname !== '127.0.0.1' || !/^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(authOrigin)) {
+export async function startStagingAuth({authOrigin, pilot, activate, editor}) {
+  if (pilot ? (location.protocol !== 'https:' || location.origin !== pilot.origin) : location.hostname !== '127.0.0.1' || !/^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(authOrigin)) {
     throw new Error('Staging Auth requires loopback');
   }
-  const app = window.firebase.initializeApp({apiKey: 'demo-emulator-key',
-    authDomain: 'demo-nediq-v3-release.firebaseapp.com', projectId: 'demo-nediq-v3-release'}, 'local-staging');
+  const app = window.firebase.initializeApp(pilot
+    ? {apiKey: pilot.apiKey, authDomain: pilot.authDomain, projectId: 'kitchen-designer-9d437'}
+    : {apiKey: 'demo-emulator-key', authDomain: 'demo-nediq-v3-release.firebaseapp.com', projectId: 'demo-nediq-v3-release'},
+  'workspace-pilot');
   const auth = window.firebase.auth(app);
-  auth.useEmulator(authOrigin);
+  if (!pilot) auth.useEmulator(authOrigin);
   await auth.setPersistence(window.firebase.auth.Auth.Persistence.SESSION);
   const panel = document.createElement('section');
   panel.id = 'staging-auth';
@@ -25,7 +28,14 @@ export async function startStagingAuth({authOrigin, activate, editor}) {
   const logout = panel.querySelector('[data-logout]');
   for (const id of ['cloudLogin', 'cloudLogout']) document.getElementById(id).hidden = true;
   const status = panel.querySelector('[role=status]');
-  status.textContent = 'Локален тестов вход';
+  status.textContent = pilot ? 'Пилотен вход' : 'Локален тестов вход';
+  form.hidden = !!pilot;
+  if (pilot) {
+    const back = document.createElement('a');
+    back.href = fallbackUrl;
+    back.textContent = 'Отвори NED-IQ v2.95';
+    panel.append(back);
+  }
   let session;
   let signingOut = false;
 
@@ -71,7 +81,7 @@ export async function startStagingAuth({authOrigin, activate, editor}) {
     catch { signingOut = false; status.textContent = 'Изходът не е потвърден.'; }
   };
 
-  auth.onAuthStateChanged(user => {
+  auth.onAuthStateChanged(async user => {
     if (!user) {
       lock();
       if (session || signingOut) location.reload();
@@ -86,6 +96,15 @@ export async function startStagingAuth({authOrigin, activate, editor}) {
       if (auth.currentUser?.uid !== actorUid) throw new Error('Authentication scope changed');
       return auth.currentUser.getIdToken();
     }});
+    if (pilot) {
+      try { await store.pending({scope}); }
+      catch {
+        status.textContent = 'Пилотният достъп или журналът е недостъпен.';
+        logout.hidden = false;
+        return;
+      }
+      if (auth.currentUser?.uid !== user.uid) return;
+    }
     activate();
     const startingDocument = prepareNewDocument({materials: editor.capture().materials});
     const integration = mountWorkspaceEditor(editor, {store, drafts: createWorkspaceDraftAdapter(localStorage),
@@ -99,5 +118,6 @@ export async function startStagingAuth({authOrigin, activate, editor}) {
     form.hidden = google.hidden = true;
     logout.hidden = false;
     status.textContent = 'Профилът е удостоверен';
+    if (pilot) document.getElementById('appVersion').textContent = 'v3.0';
   });
 }
