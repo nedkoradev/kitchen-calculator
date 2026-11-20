@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readLegacyCabinet, readLegacyProject} from '../document-format/legacy.mjs';
 import {axes, canPlace, dimensions} from '../geometry.mjs';
-import {validateDocument} from '../document-format/model.mjs';
+import {PROJECTS_FOLDER, validateDocument, validateLibrary} from '../document-format/model.mjs';
 import {createWorkspaceContext} from '../workspace-context/context.mjs';
 
 const room = {w: 4000, h: 2500, d: 3000};
@@ -52,6 +52,39 @@ test('new context uses clean scene defaults while restored drafts retain their o
   restored.undo();
   assert.deepEqual(restored.state.document.parts, []);
   assert.deepEqual(restored.state.document.materials, catalog);
+});
+
+test('first save can select a model folder and later saves keep its identity and destination', async () => {
+  const context = workspace({initialScene: {materials: catalog}});
+  const saved = await context.saveDocument({name: 'Модел', folderId: 'user-folder', type: 'model', write: acknowledge});
+  assert.equal(saved.type, 'model');
+  assert.equal(saved.folderId, 'user-folder');
+  await assert.rejects(context.saveDocument({folderId: 'different-folder', write: acknowledge}), /Save As/);
+  const updated = await context.saveDocument({write: acknowledge});
+  assert.deepEqual(updated, {...saved, revision: 2});
+});
+
+test('Projects is an immutable system folder and user folders can contain multi-cabinet models', async () => {
+  const folders = [PROJECTS_FOLDER, {id: 'user-folder', name: 'Шкафове', parentId: null}];
+  const kitchen = await project();
+  const cabinet = {...await model(), folderId: 'user-folder'};
+  assert.doesNotThrow(() => validateLibrary([kitchen, cabinet], folders));
+  for (const altered of [
+    {...PROJECTS_FOLDER, name: 'Преименувана'},
+    {...PROJECTS_FOLDER, parentId: 'user-folder'},
+    {...PROJECTS_FOLDER, extra: true},
+  ]) {
+    assert.throws(() => validateLibrary([kitchen, cabinet], [altered, folders[1]]), /system folder/);
+  }
+  assert.throws(() => validateLibrary([kitchen, cabinet], [PROJECTS_FOLDER,
+    {...folders[1], parentId: PROJECTS_FOLDER.id}]), /hierarchy/);
+  const context = workspace({initialScene: {materials: catalog}});
+  context.editScene({parts: structuredClone(parts), groups: structuredClone(groups)});
+  const saved = await context.saveDocument({name: 'Няколко шкафа', folderId: 'user-folder',
+    type: 'model', write: acknowledge});
+  assert.equal(saved.parts.length, 3);
+  assert.equal(saved.folderId, 'user-folder');
+  assert.doesNotThrow(() => validateLibrary([kitchen, saved], folders));
 });
 
 test('open replaces the entire scene, keeps identity and requires explicit discard', async () => {

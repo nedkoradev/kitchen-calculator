@@ -46,20 +46,6 @@ function button(label, click) {
   return node;
 }
 
-async function saveOptions(document, saveAs, folders) {
-  const name = await nedPromptName('Име на документа', saveAs ? '' : document.id ? document.name : '');
-  if (!name) return null;
-  if (!saveAs) return {name};
-  const selected = await dialog('Папка за новия запис', (panel, done) => {
-    const row = documentElement('div', 'nedConfirmActions');
-    for (const folder of folders) row.append(button(folderLabel(folder, folders), () => done(folder.id)));
-    row.append(button('Отказ', () => done(null)));
-    panel.append(row);
-  });
-  if (!selected) return null;
-  return {name, folderId: selected, type: selected === PROJECTS_FOLDER.id ? 'project' : 'model'};
-}
-
 function documentElement(tag, className) {
   const node = document.createElement(tag);
   node.className = className;
@@ -158,6 +144,76 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     }
   }
 
+  async function saveOptions() {
+    const scope = bridge.state.scope;
+    const sameScope = () => bridge.state.scope?.ownerUid === scope.ownerUid &&
+      bridge.state.scope?.actorUid === scope.actorUid;
+    let {folders, revision} = await store.list({scope});
+    if (!sameScope()) return null;
+    return dialog('Име и папка', (panel, done) => {
+      const form = document.createElement('form');
+      const field = (label, input) => {
+        const node = document.createElement('label');
+        node.textContent = label;
+        input.setAttribute('aria-label', label);
+        node.append(input);
+        form.append(node);
+      };
+      const name = document.createElement('input');
+      name.required = true;
+      name.maxLength = 100;
+      name.autofocus = true;
+      const destination = document.createElement('select');
+      destination.required = true;
+      const hint = document.createElement('p');
+      const refresh = (selected = '') => {
+        destination.replaceChildren(new Option('Избери папка…', ''), ...folders.map(folder =>
+          new Option(folderLabel(folder, folders), folder.id)));
+        destination.value = selected;
+        hint.textContent = folders.length === 1 ? '„Проекти“ е единствената налична папка.' : '';
+      };
+      field('Име на документа', name);
+      field('Папка', destination);
+      refresh();
+      const feedback = document.createElement('p');
+      feedback.setAttribute('role', 'status');
+      const actions = documentElement('div', 'nedConfirmActions');
+      const cancel = button('Отказ', () => done(null));
+      const confirm = button('Запази');
+      confirm.type = 'submit';
+      if (store.changeFolder) {
+        const create = button('Нова папка', async () => {
+          const folderName = await nedPromptName('Име на папката');
+          if (!folderName || !form.isConnected || !sameScope()) return;
+          create.disabled = confirm.disabled = true;
+          try {
+            const existing = new Set(folders.map(folder => folder.id));
+            const parentId = destination.value && destination.value !== PROJECTS_FOLDER.id ? destination.value : null;
+            ({folders, revision} = await store.changeFolder({scope, revision,
+              change: {action: 'create', name: folderName, parentId}}));
+            refresh(folders.find(folder => !existing.has(folder.id))?.id);
+            feedback.textContent = 'Папката е създадена.';
+            destination.focus();
+          } catch (error) {
+            feedback.textContent = error.message;
+          } finally {
+            create.disabled = confirm.disabled = false;
+          }
+        });
+        actions.append(create);
+      }
+      actions.append(cancel, confirm);
+      form.append(hint, feedback, actions);
+      form.onsubmit = event => {
+        event.preventDefault();
+        if (confirm.disabled || !name.value.trim() || !sameScope()) return;
+        const folderId = destination.value;
+        done({name: name.value.trim(), folderId, type: folderId === PROJECTS_FOLDER.id ? 'project' : 'model'});
+      };
+      panel.append(form);
+    });
+  }
+
   const initialScene = {materials: startingDocument.materials, settings: startingDocument.settings};
   const bridge = createWorkspaceBridge({
     activate: (scope, candidate) => installCandidate(candidate, scope),
@@ -185,7 +241,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       });
       if (!action) return {action: 'cancel'};
       if (action !== 'save' || document.id) return {action};
-      const options = await saveOptions(document, false);
+      const options = await saveOptions();
       return options ? {action, options} : {action: 'cancel'};
     },
     render,
@@ -296,7 +352,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
   async function save(saveAs) {
     if (!await flush()) return;
     const current = bridge.state.workspace.document;
-    const options = saveAs || !current.id ? await saveOptions(current, saveAs, saveAs ? (await store.list({scope: bridge.state.scope})).folders : []) : {};
+    const options = saveAs || !current.id ? await saveOptions() : {};
     if (options) await run(saveAs ? 'saveAsDocument' : 'saveDocument', options);
   }
 
