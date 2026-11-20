@@ -1,3 +1,4 @@
+import {fallbackUrl} from '../pilot/config.mjs';
 import {createServer} from 'node:http';
 import {readFile, realpath} from 'node:fs/promises';
 import {extname, resolve, sep} from 'node:path';
@@ -25,7 +26,7 @@ const blocked = new Set(['/cloud.js', '/local-reset.js', '/sw.js', '/app-release
 
 function assetPath(path) {
   if (Object.hasOwn(sdkPaths, path)) return sdkPaths[path];
-  if (path === '/rollout-preflight/staging-auth.mjs') return path.slice(1);
+  if (path === '/rollout-preflight/staging-auth.mjs' || path === '/pilot/config.mjs') return path.slice(1);
   if (!assets.has(extname(path)) || blocked.has(path) || path.includes('\\')) return null;
   const parts = path.slice(1).split('/');
   if (parts.some(part => !part || part.startsWith('.'))) return null;
@@ -68,7 +69,7 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
       }
       if (incoming.method !== 'GET') return send(405, 'Read-only preview');
       if (pilot && path === '/fallback') {
-        outgoing.writeHead(302, {location: 'https://nediq.eu/', 'cache-control': 'no-store'});
+        outgoing.writeHead(302, {location: fallbackUrl, 'cache-control': 'no-store'});
         return outgoing.end();
       }
       if (path === '/' || path === '/fallback') return send(200, path === '/' ? preview : fallback, 'text/html; charset=utf-8');

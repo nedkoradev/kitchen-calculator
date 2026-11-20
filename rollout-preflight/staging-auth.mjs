@@ -1,3 +1,4 @@
+import {fallbackUrl} from '../pilot/config.mjs';
 import {mountWorkspaceEditor} from '../release-candidate/editor.mjs';
 import {createWorkspaceHttpClient} from '../release-candidate/client.mjs';
 import {createWorkspaceDraftAdapter} from '../workspace-persistence/drafts.mjs';
@@ -31,7 +32,7 @@ export async function startStagingAuth({authOrigin, pilot, activate, editor}) {
   form.hidden = !!pilot;
   if (pilot) {
     const back = document.createElement('a');
-    back.href = 'https://nediq.eu/';
+    back.href = fallbackUrl;
     back.textContent = 'Отвори NED-IQ v2.95';
     panel.append(back);
   }

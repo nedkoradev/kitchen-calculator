@@ -1,6 +1,6 @@
 # NED-IQ 3.0 · Финален пилот
 
-Целевият Firebase проект е `kitchen-designer-9d437`, база `(default)` в `eur3`. Cloud Run е в `europe-west1`. Публичният `index.html`, v2.95, Pages workflow, worker и действащият rules файл остават неизменени. Пилотът се обслужва на отделен Cloud Run HTTPS origin. Служебният endpoint е изключен по подразбиране, а `/` насочва към v2.95. При включване пилотът генерира отделна сцена, без legacy cloud, нулиране или service worker. HTML и HTTP отговори са `no-store`.
+Целевият Firebase проект е `kitchen-designer-9d437`, база `(default)` в `eur3`. Cloud Run е в `europe-west1`. Публичният `index.html`, v2.95, Pages workflow, worker и действащият rules файл остават неизменени. Пилотът се обслужва на отделен Cloud Run HTTPS origin. Служебният endpoint е изключен по подразбиране, а `/` насочва към [публикуваната v2.95 в GitHub Pages](https://nedkoradev.github.io/kitchen-calculator/). При включване пилотът генерира отделна сцена, без legacy cloud, нулиране или service worker. HTML и HTTP отговори са `no-store`.
 
 ## Одобрение 1 · Точен UID и експорт
 
@@ -40,7 +40,7 @@ gcloud run deploy "$SERVICE" --source . --project "$PROJECT" --region "$REGION" 
 
 Одобри инфраструктурата и runtime ролята отделно. Firestore IAM в тази база не ограничава Admin SDK на ниво колекция. Пилотният код ограничава scope и транзакциите. Изпитай ролята и отнемането ѝ преди включване. Provisioning/deploy идентичността е отделна и не се дава на runtime. Предостави само `roles/secretmanager.secretAccessor` за конкретната UID secret версия на runtime, без JSON ключове. Firebase web API key и потвърденият `kitchen-designer-9d437.firebaseapp.com` auth domain са browser конфигурация, подавана отвън. Проверявай ограниченията на този API key и Google OAuth Authorized Domains в конзолата. Добави точния `.run.app` hostname за Google popup след одобрение.
 
-HTTP лимитът е 900 KB, транзакционният 800 KB. След проверка на подписа backend допуска до 120 заявки на минута за пилотния UID на инстанция. Провери общия лимит с две инстанции и одобрени бюджети. Защитата не е глобална квота. Наблюдавай 401/403, конфликт, 5xx, p95, разходи и висящ журнал. Приложението не логва тела, токени, имейли, UID или съдържание на документи. Управляваните Cloud Run access logs могат да съдържат IP адреси и URL. Одобри ограничен достъп, задържане и при нужда изключване на тези записи преди реален вход.
+HTTP лимитът е 900 KB, транзакционният 800 KB. След една проверка на токена, отнемането и пилотната самоличност backend допуска до 120 заявки на минута за пилотния UID на инстанция. Провери общия лимит с две инстанции и одобрени бюджети. Защитата не е глобална квота. Наблюдавай 401/403, конфликт, 5xx, p95, разходи и висящ журнал. Приложението не логва тела, токени, имейли, UID или съдържание на документи. Управляваните Cloud Run access logs могат да съдържат IP адреси и URL. Одобри ограничен достъп, задържане и при нужда изключване на тези записи преди реален вход.
 
 ## Одобрение 3 · Rules
 
@@ -56,7 +56,7 @@ HTTP лимитът е 900 KB, транзакционният 800 KB. След �
 
 Изпълни `node pilot/preflight.mjs /private/evidence.json` с `approvedRulesFile`, `commit`, `testedCommit`, `fallbackCommit`, `backupSha256`, `migrationSha256`, `unresolvedBlockers: 0` и потвърдените булеви полета `rollbackRehearsed`, `backupVerified`, `googleUidVerifiedPrivately`, `iamAndBudgetReviewed` и `originReviewed`. Резултатът е проверка на локалните доказателства. Той не дава разрешение за активация.
 
-След изрично одобрение за пилот обнови Cloud Run revision с `NEDIQ_PILOT_ENABLED=1`, `NEDIQ_PILOT_ORIGIN=<точния HTTPS origin>`, `NEDIQ_FIREBASE_AUTH_DOMAIN=kitchen-designer-9d437.firebaseapp.com` и одобрения web API key през частна env конфигурация. Подай `NEDIQ_PILOT_UID` като `--update-secrets NEDIQ_PILOT_UID=<secret>:<version>`. Свери отказа за друг акаунт и знак v3.0 след проверения Google вход. Публичният Pages сайт остава v2.95. Изпълни проверка на реалния Google OAuth popup, журнал, отваряне, запис и възстановяване само върху одобрения пилот. Публично Pages превключване остава отделно решение.
+След изрично одобрение за пилот обнови Cloud Run revision с `NEDIQ_PILOT_ENABLED=1`, `NEDIQ_PILOT_ORIGIN=<точния HTTPS origin>`, `NEDIQ_FIREBASE_AUTH_DOMAIN=kitchen-designer-9d437.firebaseapp.com` и одобрения web API key през частна env конфигурация. Подай `NEDIQ_PILOT_UID` като `--update-secrets NEDIQ_PILOT_UID=<secret>:<version>`. Свери отказа за друг акаунт и знак v3.0 след проверения Google вход. Публичният Pages сайт остава v2.95. Задължителен ръчен go/no-go след одобрение е успешен Google OAuth popup на действителния Cloud Run origin с пилотния акаунт, отказ за друг акаунт и проверка на журнал, отваряне, запис и възстановяване върху одобрения пилот. При неуспех спри включването. Зеленият CI покрива изключения контейнер и локалния Auth Emulator. Той не потвърждава продукционния Google OAuth. Публично Pages превключване остава отделно решение.
 
 След отделно одобрение използвай частен env YAML с вече описаните настройки, без UID, и конкретна тайна версия. Командата е:
 

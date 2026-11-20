@@ -14,7 +14,10 @@ docker exec "$container" node --input-type=module -e '
     } catch { await delay(250); }
   }
   assert.equal(response?.status, 302);
-  assert.equal(response.headers.get("location"), "https://nediq.eu/");
+  assert.equal(response.headers.get("location"), "https://nedkoradev.github.io/kitchen-calculator/");
+  const fallback = await fetch("http://127.0.0.1:8080/fallback", {redirect: "manual"});
+  assert.equal(fallback.status, 302);
+  assert.equal(fallback.headers.get("location"), response.headers.get("location"));
   const api = await fetch("http://127.0.0.1:8080/staging-api",
     {method: "POST", signal: AbortSignal.timeout(1000)});
   assert.equal(api.status, 503);

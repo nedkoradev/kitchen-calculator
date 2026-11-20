@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {pilotConfig, projectId, restrictPilot, restrictPilotDispatch} from '../pilot/config.mjs';
+import {createPilotVerifier, pilotConfig, projectId, restrictPilot, restrictPilotDispatch} from '../pilot/config.mjs';
 import {buildPilotPreview} from '../rollout-preflight/staging-html.mjs';
 import {exportPlan, planPilotMigration, applyPilotMigration} from '../pilot/migration.mjs';
 
@@ -45,4 +45,24 @@ test('pilot copy requires explicit draft review and blocks shared grants and alt
   await assert.rejects(applyPilotMigration(null, plan, 'wrong'), /exact reviewed approval/);
   plan.candidates.folders.push({id: 'wrong'});
   await assert.rejects(applyPilotMigration(null, plan, plan.approvalSha256), /exact reviewed approval/);
+});
+
+test('one revocation-aware verification per request and only the verified pilot consumes quota', async () => {
+  const calls = [];
+  const revoked = Object.assign(new Error('revoked'), {code: 'auth/id-token-revoked'});
+  let now = 0;
+  const verify = createPilotVerifier({async verifyIdToken(token, checkRevoked) {
+    calls.push([token, checkRevoked]);
+    if (token === 'revoked') throw revoked;
+    return token === 'outsider' ? {...profile, uid: 'outsider'} : profile;
+  }}, profile.uid, {limit: 1, now: () => now});
+
+  await assert.rejects(verify('revoked'), error => error === revoked);
+  await assert.rejects(verify('outsider'), /not authorized/);
+  assert.deepEqual(await verify('pilot'), profile);
+  await assert.rejects(verify('over-limit'), /request limit/);
+  now = 60_000;
+  assert.deepEqual(await verify('next-minute'), profile);
+  assert.deepEqual(calls, ['revoked', 'outsider', 'pilot', 'over-limit', 'next-minute']
+    .map(token => [token, true]));
 });

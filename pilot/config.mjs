@@ -3,6 +3,7 @@ import {identifier} from '../document-format/model.mjs';
 export const projectId = 'kitchen-designer-9d437';
 export const databaseId = '(default)';
 export const region = 'europe-west1';
+export const fallbackUrl = 'https://nedkoradev.github.io/kitchen-calculator/';
 
 export function pilotConfig(env) {
   if (env.NEDIQ_PILOT_ENABLED !== '1') return null;
@@ -25,6 +26,22 @@ export function restrictPilot(verify, uid) {
     const principal = await verify(token);
     if (principal?.uid !== uid || principal.firebase?.sign_in_provider !== 'google.com' ||
       principal.email_verified !== true) throw new Error('Pilot identity is not authorized');
+    return principal;
+  };
+}
+
+export function createPilotVerifier(auth, uid, {now = Date.now, limit = 120} = {}) {
+  const verify = restrictPilot(token => auth.verifyIdToken(token, true), uid);
+  let minute = -1;
+  let accepted = 0;
+  return async token => {
+    const principal = await verify(token);
+    const current = Math.floor(now() / 60_000);
+    if (current !== minute) {
+      minute = current;
+      accepted = 0;
+    }
+    if (++accepted > limit) throw new Error('Pilot request limit exceeded');
     return principal;
   };
 }
