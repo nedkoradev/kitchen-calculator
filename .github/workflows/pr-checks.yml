@@ -82,6 +82,8 @@ jobs:
         run: npm run test:firestore
       - name: Run authenticated v3 release checks and Chromium with Emulators
         run: npm run test:release-emulator
+      - name: Test pilot bootstrap read-only and fail-closed behavior
+        run: bash tests/bootstrap-pilot-mock.sh
       - name: Test the pilot deployment guardrails with a local mock
         run: bash tests/pilot-deploy-smoke.sh
       - name: Build and exercise the disabled Cloud Run image
