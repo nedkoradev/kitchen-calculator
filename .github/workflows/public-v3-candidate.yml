@@ -47,14 +47,23 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Validate public WIF configuration
+        run: |
+          set -euo pipefail
+          if [[ ! "$WIF_PROVIDER" =~ ^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$ ]]; then
+            echo "::error::Set PUBLIC_V3_WIF_PROVIDER in the public-v3 GitHub Environment to the full Google WIF provider resource name."
+            exit 1
+          fi
+          if [[ "$DEPLOY_ACCOUNT" != "nediq-public-deployer@$PROJECT.iam.gserviceaccount.com" ]]; then
+            echo "::error::Set PUBLIC_V3_DEPLOY_SERVICE_ACCOUNT in the public-v3 GitHub Environment to nediq-public-deployer@$PROJECT.iam.gserviceaccount.com."
+            exit 1
+          fi
       - name: Build the exact tested source
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           docker build --platform linux/amd64 --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$IMAGE:$GITHUB_SHA" .
           bash tests/pilot-container-smoke.sh "$IMAGE:$GITHUB_SHA"
-          [[ "$WIF_PROVIDER" =~ ^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$ ]]
-          [[ "$DEPLOY_ACCOUNT" == "nediq-public-deployer@$PROJECT.iam.gserviceaccount.com" ]]
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
         with:
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
