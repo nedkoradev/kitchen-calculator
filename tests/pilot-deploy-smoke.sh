@@ -18,7 +18,7 @@ case "$1 $2 $3" in
   'run services describe')
     if [[ "$*" == *'value(status.url)'* ]]; then
       echo https://nediq-pilot-test.run.app
-    elif [[ "$*" == *'--format=json'* ]]; then
+    elif [[ " $* " == *' --format=json '* ]]; then
       jq -n --arg revision "$CANDIDATE" '{status:{traffic:[{revisionName:$revision,tag:"candidate",url:"https://candidate---nediq-pilot-test.run.app",percent:0}]}}'
     else
       jq -n --arg revision "$(cat "$MOCK_TRAFFIC")" '{status:{traffic:[{revisionName:$revision, percent:100}]}}'
