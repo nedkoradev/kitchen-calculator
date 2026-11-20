@@ -178,3 +178,16 @@ test('real pilot HTTP routes distinguish the candidate, service URL and configur
   assert.equal((await http(configured, '/staging-api', 'POST', 'https://' + canonical)).status, 403);
   assert.equal((await http(configured, '/staging-api', 'POST')).status, 401);
 });
+
+test('public rendering is independently enabled and keeps the dedicated Pilot unchanged', async () => {
+  const {publicConfig} = await import('../release-candidate/public-access.mjs');
+  const candidateEnv = {...env, NEDIQ_PILOT_ENABLED: '0', NEDIQ_PUBLIC_ENABLED: '1', NEDIQ_PUBLIC_ORIGIN: 'https://nediq.eu'};
+  delete candidateEnv.NEDIQ_PILOT_UID;
+  const config = publicConfig(candidateEnv);
+  assert.equal(publicConfig(env), null);
+  assert.throws(() => publicConfig({...candidateEnv, NEDIQ_PILOT_ENABLED: '1'}));
+  assert.throws(() => publicConfig({...candidateEnv, NEDIQ_PUBLIC_ORIGIN: 'https://example.run.app'}));
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(buildPilotPreview(html, config), /id="appVersion">v3\.0\.0/);
+  assert.match(buildPilotPreview(html, pilotConfig(env)), /Pilot v3\.0\.1/);
+});

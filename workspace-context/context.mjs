@@ -165,6 +165,11 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
       validateDocument(project);
       replace(project, discardChanges);
     },
+    openLegacyProject(project, {discardChanges = false} = {}) {
+      if (project?.type !== 'project') throw new TypeError('Expected a v2 project');
+      validateDocument(project);
+      replace({...project, id: null, revision: 0}, discardChanges);
+    },
     insertModel(model) {
       ensureIdle();
       if (model?.type !== 'model') throw new TypeError('Expected a library model');

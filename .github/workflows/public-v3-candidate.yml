@@ -1,0 +1,71 @@
+name: Prepare approved NED-IQ v3 public candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nediq-public-v3
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    if: github.repository == 'nedkoradev/kitchen-calculator' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/pr-checks.yml
+    with:
+      release_sha: ${{ github.sha }}
+
+  candidate:
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    environment: public-v3
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      PROJECT: kitchen-designer-9d437
+      REGION: europe-west1
+      SERVICE: nediq-v3-public
+      IMAGE: europe-west1-docker.pkg.dev/kitchen-designer-9d437/nediq/nediq-v3-public
+      WIF_PROVIDER: ${{ vars.PUBLIC_V3_WIF_PROVIDER }}
+      DEPLOY_ACCOUNT: ${{ vars.PUBLIC_V3_DEPLOY_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Build the exact tested source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          docker build --platform linux/amd64 --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$IMAGE:$GITHUB_SHA" .
+          bash tests/pilot-container-smoke.sh "$IMAGE:$GITHUB_SHA"
+          [[ "$WIF_PROVIDER" =~ ^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$ ]]
+          [[ "$DEPLOY_ACCOUNT" == "nediq-public-deployer@$PROJECT.iam.gserviceaccount.com" ]]
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+      - name: Create a ready revision with zero traffic
+        run: |
+          set -euo pipefail
+          cloud=(--project "$PROJECT" --region "$REGION" --quiet)
+          gcloud run services describe "$SERVICE" "${cloud[@]}" --format='value(metadata.name)' | grep -Fx "$SERVICE"
+          immutable=$(gcloud artifacts repositories describe nediq --project "$PROJECT" --location "$REGION" --format='value(dockerConfig.immutableTags)')
+          [[ "${immutable,,}" == true ]]
+          gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
+          docker push "$IMAGE:$GITHUB_SHA"
+          digest=$(gcloud artifacts docker images describe "$IMAGE:$GITHUB_SHA" --project "$PROJECT" --format='value(image_summary.digest)')
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          suffix="gh-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          revision="$SERVICE-$suffix"
+          gcloud run deploy "$SERVICE" "${cloud[@]}" --image "$IMAGE@$digest" --no-traffic --revision-suffix "$suffix"
+          gcloud run revisions describe "$revision" "${cloud[@]}" --format='json(spec.containers,status.conditions)' |
+            jq -e --arg image "$IMAGE@$digest" '.spec.containers[0].image == $image and any(.status.conditions[]; .type == "Ready" and .status == "True")' >/dev/null
+          gcloud run services describe "$SERVICE" "${cloud[@]}" --format='json(status.traffic)' |
+            jq -e --arg revision "$revision" 'all(.status.traffic[]; .revisionName != $revision or (.percent // 0) == 0)' >/dev/null
+          printf 'Candidate %s has zero traffic.\n\nImage: %s@%s\n\nCommit: %s\n' "$revision" "$IMAGE" "$digest" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
