@@ -54,7 +54,7 @@ run_case fail forbidden
 run_case fail mismatched
 # A verified existing provider must not be mutated on --apply.
 set +e
-output="$(printf 'APPLY-PILOT\\n' | PATH="$tmp/bin:$PATH" MOCK_PROVIDER=valid bash scripts/bootstrap-pilot.sh --apply 2>&1)"
+output="$(printf 'APPLY-PILOT\n' | PATH="$tmp/bin:$PATH" MOCK_PROVIDER=valid bash scripts/bootstrap-pilot.sh --apply 2>&1)"
 status=$?
 set -e
 [[ "$status" != 0 && "$output" == *"provider exists and was verified"* ]] || {
