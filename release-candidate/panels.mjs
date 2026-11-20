@@ -178,7 +178,7 @@ function protectMaterialEditors(onApply) {
   }).observe(document.body, {subtree: true, attributes: true, attributeFilter: ['open']});
 }
 
-export function installPilotPanels({renderMaterials, renderReport, logout, fallback, onMaterialApply}) {
+export function installPilotPanels({renderMaterials, renderReport, logout, fallback, onMaterialApply, canEdit}) {
   const create = (id, title, existing = byId(id)) => {
     const dialog = existing ?? document.createElement('dialog');
     dialog.id = id;
@@ -199,6 +199,7 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
   reports.content.append(results);
   const summaries = ['projectSummary', 'projectCutPane', 'projectCostPane'];
   function showReport(kind, scope) {
+    if (!canEdit()) return;
     renderReport(scope);
     if (results.parentElement !== reports.content) reports.content.append(results);
     results.hidden = false;
@@ -214,6 +215,7 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
   reportChoices.append(...reportButtons.map(([, button]) => button));
   reports.content.prepend(reportChoices);
   function showMaterials() {
+    if (!canEdit()) return;
     if (extra.parentElement !== materials.content) materials.content.append(extra);
     renderMaterials();
     extra.hidden = false;

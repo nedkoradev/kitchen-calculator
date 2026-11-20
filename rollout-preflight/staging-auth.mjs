@@ -110,7 +110,9 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
     activate();
     const startingDocument = prepareNewDocument({materials: editor.capture().materials});
     let integration;
-    const panels = installPilotPanels({...views, logout, fallback: back, onMaterialApply: () => integration.flush()});
+    const panels = installPilotPanels({...views, logout, fallback: back,
+      canEdit: () => integration?.bridge.state.canAct === true,
+      onMaterialApply: () => integration.flush()});
     integration = mountWorkspaceEditor(editor, {store, drafts: createWorkspaceDraftAdapter(localStorage),
       initialScope: scope, startingDocument, panels});
     document.getElementById('headerRight').prepend(panel);
