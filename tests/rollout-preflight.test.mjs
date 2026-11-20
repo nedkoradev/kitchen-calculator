@@ -57,7 +57,7 @@ test('staging preview contains no legacy cloud entrypoint, reset or worker even 
   assert.match(activated, /staging-auth\.mjs/);
   for (const html of [preview, activated]) {
     assert.doesNotMatch(html, /src="\.\/(cloud\.js|local-reset\.js|app-release\.js)"/);
-    assert.match(html, /v2\.95/);
+    assert.match(html, new RegExp(`v${JSON.parse(await repositoryFile('_data/version.json')).major}\\.${JSON.parse(await repositoryFile('_data/version.json')).minor}`));
   }
   assert.throws(() => buildLocalPreview(source, {enabled: true, authOrigin: 'https://example.invalid'}));
   assert.throws(() => buildLocalPreview(source.replace('}build();frame();', ''), {enabled: true, authOrigin: 'http://127.0.0.1:9100'}));
