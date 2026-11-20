@@ -33,6 +33,27 @@ function workspace(options = {}) {
   return createWorkspaceContext({newId: () => 'generated-' + ++next, ...options});
 }
 
+test('new context uses clean scene defaults while restored drafts retain their own catalog and history', () => {
+  let saved;
+  const draftStore = {read: () => saved, write: value => { saved = value; }};
+  const initialScene = {materials: structuredClone(catalog), settings: {sheetUtilization: 85}};
+  const fresh = workspace({draftStore, initialScene});
+  initialScene.materials.pdcMaterials[0].name = 'Променен вход';
+  assert.deepEqual(fresh.state.document.materials, catalog);
+  assert.equal(fresh.state.dirty, false);
+  assert.equal(fresh.state.canUndo, false);
+  assert.equal(saved, undefined);
+  fresh.editScene({parts: [parts[0]], groups});
+  const restored = workspace({draftStore, initialScene});
+  assert.deepEqual(restored.state.document, fresh.state.document);
+  assert.equal(restored.state.draftStatus, 'restored');
+  assert.equal(restored.state.dirty, true);
+  assert.equal(restored.state.canUndo, true);
+  restored.undo();
+  assert.deepEqual(restored.state.document.parts, []);
+  assert.deepEqual(restored.state.document.materials, catalog);
+});
+
 test('open replaces the entire scene, keeps identity and requires explicit discard', async () => {
   const context = workspace();
   context.insertModel(await model());

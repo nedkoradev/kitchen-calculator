@@ -39,8 +39,8 @@ export function parseWorkspaceDraft(raw) {
   return draft;
 }
 
-export function createWorkspaceContext({newId = () => crypto.randomUUID(), draftStore, beforeSceneChange = () => {}} = {}) {
-  let document = prepareNewDocument();
+export function createWorkspaceContext({newId = () => crypto.randomUUID(), draftStore, initialScene, beforeSceneChange = () => {}} = {}) {
+  let document = prepareNewDocument(structuredClone(initialScene));
   let savedScene = sceneOf(document);
   let past = [];
   let future = [];

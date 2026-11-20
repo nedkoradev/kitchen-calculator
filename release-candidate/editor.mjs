@@ -153,9 +153,10 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     }
   }
 
+  const initialScene = {materials: startingDocument.materials, settings: startingDocument.settings};
   const bridge = createWorkspaceBridge({
     activate: (scope, candidate) => installCandidate(candidate, scope),
-    createController: options => createWorkspaceController({...options, drafts, beforeSceneChange: installCandidate,
+    createController: options => createWorkspaceController({...options, drafts, initialScene, beforeSceneChange: installCandidate,
       newId: () => 'custom-' + crypto.randomUUID(),
       persistence: {...store,
         async readProject(request) {
@@ -294,7 +295,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
   }
 
   const file = {
-    new: () => run('newDocument', {materials: startingDocument.materials, settings: startingDocument.settings}),
+    new: () => run('newDocument', initialScene),
     open: openLibrary, save: () => save(false), saveAs: () => save(true),
   };
   for (const [id, handler] of Object.entries({
