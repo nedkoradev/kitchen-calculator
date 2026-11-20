@@ -6,7 +6,7 @@ import {Readable} from 'node:stream';
 import {initializeApp, deleteApp} from 'firebase-admin/app';
 import {getAuth} from 'firebase-admin/auth';
 import {getFirestore} from 'firebase-admin/firestore';
-import {buildLocalPreview} from './staging-html.mjs';
+import {buildLocalPreview, buildPilotPreview} from './staging-html.mjs';
 import {createWorkspaceService} from '../release-candidate/service.mjs';
 import {createWorkspaceHttpHandler} from '../release-candidate/http.mjs';
 
@@ -33,18 +33,22 @@ function assetPath(path) {
   return parts.join('/');
 }
 
-export async function startLocalStaging({enabled = false, port = 0} = {}) {
+export function startLocalStaging({enabled = false, port = 0} = {}) {
+  return startWorkspaceHost({enabled, port});
+}
+
+export async function startWorkspaceHost({enabled = false, port = 0, pilot = null, createPilotDispatch} = {}) {
   const authHost = process.env.FIREBASE_AUTH_EMULATOR_HOST;
   if (enabled && (!isLoopback(authHost) || !isLoopback(process.env.FIRESTORE_EMULATOR_HOST))) {
     throw new Error('Enable staged Auth only inside the two local emulators');
   }
-  process.env.METADATA_SERVER_DETECTION = 'none';
+  if (!pilot) process.env.METADATA_SERVER_DETECTION = 'none';
   const source = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   const fallback = buildLocalPreview(source);
-  const preview = enabled ? buildLocalPreview(source, {enabled, authOrigin: 'http://' + authHost}) : fallback;
+  const preview = pilot ? buildPilotPreview(source, pilot) : enabled ? buildLocalPreview(source, {enabled, authOrigin: 'http://' + authHost}) : fallback;
   const app = enabled ? initializeApp({projectId}, 'local-staging-' + crypto.randomUUID()) : null;
   let endpoint;
-  let origin;
+  let origin = pilot?.origin;
 
   const listener = createServer(async (incoming, outgoing) => {
     const send = (status, content, mime = 'text/plain') => {
@@ -63,6 +67,10 @@ export async function startLocalStaging({enabled = false, port = 0} = {}) {
         return outgoing.end(Buffer.from(await response.arrayBuffer()));
       }
       if (incoming.method !== 'GET') return send(405, 'Read-only preview');
+      if (pilot && path === '/fallback') {
+        outgoing.writeHead(302, {location: 'https://nediq.eu/', 'cache-control': 'no-store'});
+        return outgoing.end();
+      }
       if (path === '/' || path === '/fallback') return send(200, path === '/' ? preview : fallback, 'text/html; charset=utf-8');
       const file = assetPath(path);
       if (!file) return send(404, 'Not found');
@@ -76,13 +84,14 @@ export async function startLocalStaging({enabled = false, port = 0} = {}) {
   });
   await new Promise((done, reject) => {
     listener.once('error', reject);
-    listener.listen(port, '127.0.0.1', done);
+    listener.listen(port, pilot ? '0.0.0.0' : '127.0.0.1', done);
   });
-  origin = 'http://127.0.0.1:' + listener.address().port;
+  origin ??= 'http://127.0.0.1:' + listener.address().port;
   if (app) {
     const dispatch = createWorkspaceService({db: getFirestore(app), verifyToken: token => getAuth(app).verifyIdToken(token, true)});
     endpoint = createWorkspaceHttpHandler({dispatch, allowedOrigins: [origin]});
   }
+  if (pilot) endpoint = createWorkspaceHttpHandler({dispatch: createPilotDispatch(), allowedOrigins: [origin]});
   return {origin, async close() {
     await new Promise((done, reject) => listener.close(error => error ? reject(error) : done()));
     if (app) await deleteApp(app);

@@ -69,3 +69,7 @@ jobs:
         run: npm run test:firestore
       - name: Run authenticated v3 release checks and Chromium with Emulators
         run: npm run test:release-emulator
+      - name: Build and exercise the disabled Cloud Run image
+        run: |
+          docker build -t nediq-pilot-check .
+          bash tests/pilot-container-smoke.sh nediq-pilot-check

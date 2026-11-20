@@ -113,3 +113,27 @@ test('composite rules retain v2 access while restricting v3 writes to the servic
     await rules.cleanup();
   }
 });
+
+test('pilot exporter reads one legacy subtree and applies a reviewed migration exactly once', async () => {
+  const {exportPlan, exportPilotCopy, planPilotMigration, applyPilotMigration} = await import('../pilot/migration.mjs');
+  const backend = await createEmulatorBackend();
+  try {
+    const uid = 'synthetic-pilot-export';
+    await backend.db.doc('users/' + uid + '/v2_projects/source').set({
+      name: 'Пилот', schemaVersion: 1, revision: 2, data: {
+        parts: [], room: {w: 3000, h: 2600, d: 3000},
+        materials: {pdcMaterials: [], edgeMaterials: [], backMaterials: [], worktops: []}, settings: {},
+      },
+    });
+    await backend.db.doc('users/other-synthetic-owner/v2_cabinets/other').set({name: 'Other'});
+    const copy = await exportPilotCopy(backend.db, exportPlan(uid));
+    assert.equal(copy.projects.length, 1);
+    assert.equal(copy.cabinets.length, 0);
+    assert.equal(copy.evidence.sharedGrants, 0);
+    const plan = await planPilotMigration(copy, {drafts: [], confirmNoDrafts: true});
+    assert.equal(plan.status, 'compatible', JSON.stringify(plan.report?.blockers));
+    assert.deepEqual(await applyPilotMigration(backend.db, plan, plan.approvalSha256), {status: 'applied', count: 1});
+    assert.deepEqual(await applyPilotMigration(backend.db, plan, plan.approvalSha256), {status: 'already-applied', count: 1});
+    assert.equal((await backend.db.doc('users/' + uid + '/v2_projects/source').get()).data().revision, 2);
+  } finally { await backend.close(); }
+});
