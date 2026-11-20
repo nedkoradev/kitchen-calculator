@@ -23,8 +23,12 @@ if (!config) {
   const app = initializeApp({projectId});
   // Emit only fixed reason codes. Do not serialize SDK errors or request data.
   const report = reason => console.warn(JSON.stringify({event: 'nediq-pilot-access', reason}));
-  const verify = createPilotVerifier(getAuth(app), config.uid, {report});
+  const auth = getAuth(app);
   const db = getFirestore(app, databaseId);
-  const dispatch = restrictPilotDispatch(createWorkspaceService({db, verifyToken: verify}), config.uid, report);
+  const dispatch = config.public
+    ? createPublicDispatch({db, auth, bundledCatalog: JSON.parse(await readFile(
+      new URL('../materials/default.json', import.meta.url), 'utf8'))})
+    : restrictPilotDispatch(createWorkspaceService({db, verifyToken: createPilotVerifier(auth, config.uid, {report})}),
+      config.uid, report);
   await startWorkspaceHost({pilot: config, port, createPilotDispatch: () => dispatch});
 }
