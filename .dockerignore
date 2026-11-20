@@ -19,6 +19,7 @@
 !workspace-ui/*.mjs
 !release-candidate/
 !release-candidate/*.mjs
+!release-candidate/*.css
 !rollout-preflight/
 !rollout-preflight/staging-*.mjs
 !rollout-preflight/stage-server.mjs

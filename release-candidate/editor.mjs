@@ -66,12 +66,10 @@ function documentElement(tag, className) {
   return node;
 }
 
-export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialScope, startingDocument}) {
+export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialScope, startingDocument, panels}) {
   const status = documentElement('p', 'nedWorkspaceStatus');
   status.id = 'integration-status';
   status.setAttribute('role', 'status');
-  const controls = documentElement('nav', 'toolIcons');
-  controls.setAttribute('aria-label', 'Интеграция NED-IQ');
   const retry = button('Провери журнала', () => bridge.initialize());
   const select = profiles ? document.createElement('select') : null;
   if (select) select.setAttribute('aria-label', 'Тестов профил');
@@ -81,10 +79,17 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     select.onchange = () => bridge.initialize(profiles.find(profile => profile.scope.ownerUid === select.value).scope);
   }
   function report(failure) { status.textContent = failure.message; }
-  const library = button('Обща библиотека', () => { void openLibrary().catch(report); });
-  decorateAction(library, 'open', 'Обща библиотека');
-  controls.append(library, ...(select ? [select] : []), retry);
-  document.querySelector('main').before(controls, status);
+  const library = panels ? byId('navLibrary') : button('Обща библиотека', () => { void openLibrary().catch(report); });
+  if (panels) {
+    panels.diagnostics.append(retry);
+    byId('shellBottomTools').after(status);
+  } else {
+    const controls = documentElement('nav', 'toolIcons');
+    controls.setAttribute('aria-label', 'Интеграция NED-IQ');
+    decorateAction(library, 'open', 'Обща библиотека');
+    controls.append(library, ...(select ? [select] : []), retry);
+    document.querySelector('main').before(controls, status);
+  }
   let installed = null;
   let displayed = null;
   let applying = false;
@@ -237,7 +242,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     const scope = bridge.state.scope;
     const {folders, documents, revision} = await store.list({scope});
     if (bridge.state.scope.ownerUid !== scope.ownerUid || !bridge.state.canAct) return;
-    const chosen = await dialog('Обща библиотека', (panel, done) => {
+    const build = (panel, done) => {
       const select = document.createElement('select');
       select.setAttribute('aria-label', 'Папка');
       for (const folder of folders) select.add(new Option(folderLabel(folder, folders), folder.id));
@@ -260,7 +265,8 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       select.onchange = refresh;
       refresh();
       panel.append(select, listing, folderActions, button('Отказ', () => done(null)));
-    });
+    };
+    const chosen = await (panels ? panels.library(build) : dialog('Обща библиотека', build));
     if (!chosen) return;
     if (chosen.item) {
       const {item} = chosen;
@@ -307,6 +313,11 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
   })) {
     byId(id).onclick = () => {
       byId('fileMenu').open = false;
+      if (panels && id === 'navLibrary') {
+        const menu = byId('libraryMenu');
+        menu.open = false;
+        menu.querySelector('summary').focus();
+      }
       void handler().catch(report);
     };
   }

@@ -21,8 +21,7 @@ function buildPreview(source, {enabled, settings}) {
       html.split(welcome).length !== 2 || html.split('<body>').length !== 2 || html.split('</head>').length !== 2) {
     throw new Error('Expected a local emulator and one renderer bootstrap seam');
   }
-  const css = '<style>#staging-auth{padding:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}' +
-    '#staging-auth label{padding:4px}body[data-stage-auth="locked"] main{visibility:hidden}</style>';
+  const css = '<link rel="stylesheet" href="./release-candidate/panels.css">';
   html = html.replace(loadMaterials, '\nconst stagingMaterialsReady = loadDefaultMaterials();');
   html = html.replace(welcome, '').replace('</head>', css + '</head>');
   html = html.replace('<body>', '<body data-stage-auth="locked">');
@@ -30,6 +29,13 @@ function buildPreview(source, {enabled, settings}) {
     document.querySelector('main').inert = true;
     void import('./rollout-preflight/staging-auth.mjs').then(({startStagingAuth}) => startStagingAuth({
       ... ${JSON.stringify(settings).replaceAll('<', '\\u003c')}, materialsReady: stagingMaterialsReady, activate: () => activateMainNavigation('project'),
+      views: {
+        renderMaterials: renderMaterialsPage,
+        renderReport(scope) {
+          activeReport = null;
+          projectRefresh(scope ? buildReportContext(scope) : undefined);
+        },
+      },
       editor: {
         capture: captureProjectSnapshot,
         title(name) { $('projectTitle').value = name; $('projectName').value = name; },
