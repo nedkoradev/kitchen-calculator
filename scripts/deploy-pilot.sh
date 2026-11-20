@@ -32,7 +32,8 @@ check_http() {
     rm -f "$headers"
     return 1
   }
-  if [[ "$code" != 302 ]] || ! tr -d '\r' < "$headers" | grep -Fixq 'location: https://nedkoradev.github.io/kitchen-calculator/'; then
+  if [[ "$code" != 302 ]] || ! tr -d '\r' < "$headers" | grep -Fixqi 'location: https://nedkoradev.github.io/kitchen-calculator/'; then
+    echo "Unexpected fallback response from $target (HTTP $code)" >&2
     rm -f "$headers"
     return 1
   fi
@@ -43,7 +44,12 @@ promoted=false
 rollback() {
   if [[ "$promoted" == true ]]; then
     echo 'Post-promotion verification failed; restoring previous revision' >&2
-    gcloud run services update-traffic "$SERVICE" "${cloud[@]}" --to-revisions "$previous=100" || true
+    if gcloud run services update-traffic "$SERVICE" "${cloud[@]}" --to-revisions "$previous=100" &&
+       [[ "$(traffic)" == "$previous" ]]; then
+      echo "Rollback verified: $previous serves 100% of traffic" >&2
+    else
+      echo "Rollback could not be verified for $previous" >&2
+    fi
   fi
 }
 trap rollback ERR
@@ -53,5 +59,17 @@ gcloud run services update-traffic "$SERVICE" "${cloud[@]}" --to-revisions "$rev
 url=$(gcloud run services describe "$SERVICE" "${cloud[@]}" --format='value(status.url)')
 [[ "$url" =~ ^https://[a-z0-9.-]+\.run\.app$ ]]
 check_http "$url"
+# Authenticate only at the configured application origin; the service URL may
+# first redirect there. Verify the published HTML and resources independently of fallback.
+body=$(mktemp)
+trap 'rm -f "$body"' EXIT
+work_url=$(curl --fail --silent --show-error --max-time 20 --location --max-redirs 1 \
+  --proto-redir '=https' --output "$body" --write-out '%{url_effective}' "$url/")
+[[ "$work_url" =~ ^https://[a-z0-9.-]+\.run\.app/$ ]]
+grep -Fq 'Pilot v3.0.1' "$body"
+curl --fail --silent --show-error --max-time 20 "${work_url}materials/default.json" |
+  jq -e '.pdcMaterials | length > 0' >/dev/null
+curl --fail --silent --show-error --max-time 20 --output /dev/null "${work_url}rollout-preflight/staging-auth.mjs"
 trap - ERR
+printf -- '- Verified workspace URL: %s\n' "$work_url" >> "$GITHUB_STEP_SUMMARY"
 printf -- '- Serving URL: %s\n- Traffic: 100%% on %s\n' "$url" "$revision" >> "$GITHUB_STEP_SUMMARY"

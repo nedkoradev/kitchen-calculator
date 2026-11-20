@@ -14,8 +14,8 @@ import {createWorkspaceHttpHandler} from '../release-candidate/http.mjs';
 const projectId = 'demo-nediq-v3-release';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const isLoopback = host => /^127\.0\.0\.1:\d{1,5}$/.test(host ?? '');
-const allowedPilotHost = (host, origin) => host === new URL(origin).host ||
-  /^candidate---nediq-v3-pilot-[a-z0-9-]+\.a\.run\.app$/.test(host ?? '');
+const pilotServiceHost = 'nediq-v3-pilot-inu5wh5ola-ew.a.run.app';
+const pilotCandidateHost = 'candidate---' + pilotServiceHost;
 const assets = new Set(['.js', '.mjs', '.css', '.svg', '.png', '.jpg', '.jpeg', '.webp', '.woff2']);
 const types = {'.mjs': 'text/javascript', '.js': 'text/javascript', '.css': 'text/css',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
@@ -61,8 +61,19 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
       outgoing.end(content);
     };
     try {
-      if (!(pilot ? allowedPilotHost(incoming.headers.host, origin) : incoming.headers.host === new URL(origin).host)) return send(403, 'Unexpected host');
+      const host = incoming.headers.host;
       const path = decodeURIComponent(new URL(incoming.url, origin).pathname);
+      if (host !== new URL(origin).host) {
+        // Cloud Run probes its tagged and canonical URLs. Only the configured
+        // origin serves the workspace and its authenticated API.
+        if (!pilot || incoming.method !== 'GET') return send(403, 'Unexpected host');
+        let location;
+        if (path === '/fallback' && (host === pilotServiceHost || host === pilotCandidateHost)) location = fallbackUrl;
+        else if (path === '/' && host === pilotServiceHost) location = origin + '/';
+        else return send(403, 'Unexpected host');
+        outgoing.writeHead(302, {location, 'cache-control': 'no-store'});
+        return outgoing.end();
+      }
       if (path === '/staging-api') {
         if (!endpoint) return send(404, 'Disabled');
         const request = new Request(origin + path, {method: incoming.method, headers: incoming.headers,
@@ -97,7 +108,7 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
     endpoint = createWorkspaceHttpHandler({dispatch, allowedOrigins: [origin]});
   }
   if (pilot) endpoint = createWorkspaceHttpHandler({dispatch: createPilotDispatch(), allowedOrigins: [origin]});
-  return {origin, async close() {
+  return {origin, port: listener.address().port, async close() {
     await new Promise((done, reject) => listener.close(error => error ? reject(error) : done()));
     if (app) await deleteApp(app);
   }};

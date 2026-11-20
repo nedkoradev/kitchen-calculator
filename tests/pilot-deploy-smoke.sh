@@ -17,9 +17,9 @@ set -euo pipefail
 case "$1 $2 $3" in
   'run services describe')
     if [[ "$*" == *'value(status.url)'* ]]; then
-      echo https://nediq-pilot-test.run.app
+      echo https://nediq-v3-pilot-inu5wh5ola-ew.a.run.app
     elif [[ " $* " == *' --format=json '* ]]; then
-      jq -n --arg revision "$CANDIDATE" '{status:{traffic:[{revisionName:$revision,tag:"candidate",url:"https://candidate---nediq-pilot-test.run.app",percent:0}]}}'
+      jq -n --arg revision "$CANDIDATE" '{status:{traffic:[{revisionName:$revision,tag:"candidate",url:"https://candidate---nediq-v3-pilot-inu5wh5ola-ew.a.run.app",percent:0}]}}'
     else
       jq -n --arg revision "$(cat "$MOCK_TRAFFIC")" '{status:{traffic:[{revisionName:$revision, percent:100}]}}'
     fi ;;
@@ -38,12 +38,34 @@ chmod +x "$scratch/gcloud"
 cat > "$scratch/curl" <<'MOCK_CURL'
 #!/usr/bin/env bash
 set -euo pipefail
-headers=''
+headers='' output='' target="${!#}"
 while (($#)); do
-  if [[ "$1" == --dump-header ]]; then headers="$2"; shift 2; else shift; fi
+  case "$1" in
+    --dump-header) headers="$2"; shift 2 ;;
+    --output) output="$2"; shift 2 ;;
+    *) shift ;;
+  esac
 done
-if [[ "${MOCK_FAIL_AFTER_PROMOTE:-}" == 1 && "$(cat "$MOCK_TRAFFIC")" == "$CANDIDATE" ]]; then MOCK_HTTP_STATUS=503; fi
-printf 'HTTP/2 %s\r\nlocation: https://nedkoradev.github.io/kitchen-calculator/\r\n' "$MOCK_HTTP_STATUS" > "$headers"
+canonical=https://nediq-v3-pilot-inu5wh5ola-ew.a.run.app
+candidate=https://candidate---nediq-v3-pilot-inu5wh5ola-ew.a.run.app
+configured=https://nediq-v3-pilot-579302190437.europe-west1.run.app
+case "$target" in
+  "$candidate/fallback")
+    [[ "$(cat "$MOCK_TRAFFIC")" != "$CANDIDATE" ]] ;;
+  "$canonical/fallback")
+    [[ "$(cat "$MOCK_TRAFFIC")" == "$CANDIDATE" ]]
+    if [[ "${MOCK_FAIL_AFTER_PROMOTE:-}" == 1 ]]; then MOCK_HTTP_STATUS=403; fi ;;
+  "$canonical/")
+    if [[ "${MOCK_BAD_VERSION:-}" == 1 ]]; then echo 'Pilot v3.0' > "$output"
+    else echo 'Pilot v3.0.1' > "$output"
+    fi
+    printf '%s/' "$configured"
+    exit ;;
+  "$configured/materials/default.json") echo '{"pdcMaterials":[{}]}'; exit ;;
+  "$configured/rollout-preflight/staging-auth.mjs") exit ;;
+  *) exit 98 ;;
+esac
+printf 'HTTP/2 %s\r\nLocation: https://nedkoradev.github.io/kitchen-calculator/\r\n' "$MOCK_HTTP_STATUS" > "$headers"
 printf '%s' "$MOCK_HTTP_STATUS"
 MOCK_CURL
 chmod +x "$scratch/curl"
@@ -72,7 +94,12 @@ if MOCK_FAIL_AFTER_PROMOTE=1 bash scripts/deploy-pilot.sh; then
   exit 1
 fi
 [[ "$(cat "$MOCK_TRAFFIC")" == "$previous" ]]
+if MOCK_BAD_VERSION=1 bash scripts/deploy-pilot.sh; then
+  echo 'Incorrect workspace version was accepted' >&2
+  exit 1
+fi
+[[ "$(cat "$MOCK_TRAFFIC")" == "$previous" ]]
 bash scripts/deploy-pilot.sh
 [[ "$(cat "$MOCK_TRAFFIC")" == "$CANDIDATE" ]]
-grep -Fq 'Serving URL: https://nediq-pilot-test.run.app' "$GITHUB_STEP_SUMMARY"
+grep -Fq 'Serving URL: https://nediq-v3-pilot-inu5wh5ola-ew.a.run.app' "$GITHUB_STEP_SUMMARY"
 echo 'PASS pilot deployment verifies target, digest, readiness and preserves old traffic until promotion'
