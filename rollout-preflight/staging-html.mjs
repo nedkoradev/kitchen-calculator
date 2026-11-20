@@ -1,4 +1,5 @@
 const seam = '}build();frame();';
+const loadMaterials = '\nloadDefaultMaterials();';
 const welcome = 'requestAnimationFrame(help.showStartup);';
 const unsafe = [
   '<script src="./local-reset.js"></script>',
@@ -16,18 +17,19 @@ function buildPreview(source, {enabled, settings}) {
     html = html.replace(tag, '');
   }
   if (!enabled) return html;
-  if (html.split(seam).length !== 2 ||
+  if (html.split(seam).length !== 2 || html.split(loadMaterials).length !== 2 ||
       html.split(welcome).length !== 2 || html.split('<body>').length !== 2 || html.split('</head>').length !== 2) {
     throw new Error('Expected a local emulator and one renderer bootstrap seam');
   }
   const css = '<style>#staging-auth{padding:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}' +
     '#staging-auth label{padding:4px}body[data-stage-auth="locked"] main{visibility:hidden}</style>';
+  html = html.replace(loadMaterials, '\nconst stagingMaterialsReady = loadDefaultMaterials();');
   html = html.replace(welcome, '').replace('</head>', css + '</head>');
   html = html.replace('<body>', '<body data-stage-auth="locked">');
   html = html.replace(seam, seam + `
     document.querySelector('main').inert = true;
     void import('./rollout-preflight/staging-auth.mjs').then(({startStagingAuth}) => startStagingAuth({
-      ... ${JSON.stringify(settings).replaceAll('<', '\\u003c')}, activate: () => activateMainNavigation('project'),
+      ... ${JSON.stringify(settings).replaceAll('<', '\\u003c')}, materialsReady: stagingMaterialsReady, activate: () => activateMainNavigation('project'),
       editor: {
         capture: captureProjectSnapshot,
         title(name) { $('projectTitle').value = name; $('projectName').value = name; },

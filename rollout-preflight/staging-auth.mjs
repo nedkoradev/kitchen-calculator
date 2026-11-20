@@ -4,7 +4,7 @@ import {createWorkspaceHttpClient} from '../release-candidate/client.mjs';
 import {createWorkspaceDraftAdapter} from '../workspace-persistence/drafts.mjs';
 import {prepareNewDocument} from '../workspace-context/context.mjs';
 
-export async function startStagingAuth({authOrigin, pilot, activate, editor}) {
+export async function startStagingAuth({authOrigin, pilot, materialsReady, activate, editor}) {
   if (pilot ? (location.protocol !== 'https:' || location.origin !== pilot.origin) : location.hostname !== '127.0.0.1' || !/^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(authOrigin)) {
     throw new Error('Staging Auth requires loopback');
   }
@@ -103,8 +103,9 @@ export async function startStagingAuth({authOrigin, pilot, activate, editor}) {
         logout.hidden = false;
         return;
       }
-      if (auth.currentUser?.uid !== user.uid) return;
     }
+    await materialsReady;
+    if (session || auth.currentUser?.uid !== user.uid) return;
     activate();
     const startingDocument = prepareNewDocument({materials: editor.capture().materials});
     const integration = mountWorkspaceEditor(editor, {store, drafts: createWorkspaceDraftAdapter(localStorage),
