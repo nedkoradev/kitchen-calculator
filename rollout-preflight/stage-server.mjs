@@ -14,6 +14,8 @@ import {createWorkspaceHttpHandler} from '../release-candidate/http.mjs';
 const projectId = 'demo-nediq-v3-release';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const isLoopback = host => /^127\.0\.0\.1:\d{1,5}$/.test(host ?? '');
+const allowedPilotHost = (host, origin) => host === new URL(origin).host ||
+  /^candidate---nediq-v3-pilot-[a-z0-9-]+\.a\.run\.app$/.test(host ?? '');
 const assets = new Set(['.js', '.mjs', '.css', '.svg', '.png', '.jpg', '.jpeg', '.webp', '.woff2']);
 const types = {'.mjs': 'text/javascript', '.js': 'text/javascript', '.css': 'text/css',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
