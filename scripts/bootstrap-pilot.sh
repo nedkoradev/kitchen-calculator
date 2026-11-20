@@ -43,7 +43,6 @@ describe_optional() {
   return "$rc"
 }
 CONDITION="assertion.repository_id == '$REPO_ID' && assertion.ref == 'refs/heads/main' && assertion.environment == 'pilot' && assertion.event_name == 'workflow_dispatch' && assertion.workflow_ref == '$REPO/.github/workflows/pilot-deploy.yml@refs/heads/main'"
-EXPECTED_MAPPING='google.subject=assertion.sub,attribute.repository_id=assertion.repository_id'
 PROVIDER_JSON=''
 PROVIDER_PRESENT=false
 if PROVIDER_JSON="$(describe_optional gcloud iam workload-identity-pools providers describe "$PROVIDER" --project "$PROJECT" --location global --workload-identity-pool "$POOL" --format=json)"; then
@@ -69,13 +68,17 @@ if [[ "$PROVIDER_PRESENT" == true ]]; then
   echo 'STOP: provider exists and was verified. No automatic IAM or variable reconciliation; inspect remaining bindings manually.'
   exit 1
 fi
-if gcloud iam service-accounts describe "$DEPLOYER" --project "$PROJECT" >/dev/null 2>&1; then
+if describe_optional gcloud iam service-accounts describe "$DEPLOYER" --project "$PROJECT" >/dev/null; then
   echo 'STOP: deploy service account exists. Review its permissions before proceeding.'
   exit 1
+else
+  rc=$?; [[ "$rc" == 3 ]] || exit "$rc"
 fi
-if gcloud iam workload-identity-pools describe "$POOL" --project "$PROJECT" --location global >/dev/null 2>&1; then
+if describe_optional gcloud iam workload-identity-pools describe "$POOL" --project "$PROJECT" --location global >/dev/null; then
   echo 'STOP: workload identity pool exists. Review its configuration before proceeding.'
   exit 1
+else
+  rc=$?; [[ "$rc" == 3 ]] || exit "$rc"
 fi
 gcloud iam service-accounts create nediq-pilot-deployer --project "$PROJECT"
 gcloud iam workload-identity-pools create "$POOL" --project "$PROJECT" --location global
