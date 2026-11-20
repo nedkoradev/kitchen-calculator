@@ -181,10 +181,10 @@ export function createWorkspaceContext({newId = () => crypto.randomUUID(), draft
       }
       return commitScene({...scene, ...structuredClone(patch)});
     },
-    async saveDocument({name, folderId, write} = {}) {
+    async saveDocument({name, folderId, type, write} = {}) {
       ensureIdle();
-      if (document.id === null) return saveCopy({name, folderId, write});
-      if (name !== undefined || folderId !== undefined) throw new TypeError('Use Save As to change name or folder');
+      if (document.id === null) return saveCopy({name, folderId, type, write});
+      if (name !== undefined || folderId !== undefined || type !== undefined) throw new TypeError('Use Save As to change name or folder');
       return save({...document, revision: document.revision + 1}, document.revision, write);
     },
     async saveAsDocument(options = {}) {

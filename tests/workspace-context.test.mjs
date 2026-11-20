@@ -54,6 +54,16 @@ test('new context uses clean scene defaults while restored drafts retain their o
   assert.deepEqual(restored.state.document.materials, catalog);
 });
 
+test('first save can select a model folder and later saves keep its identity and destination', async () => {
+  const context = workspace({initialScene: {materials: catalog}});
+  const saved = await context.saveDocument({name: 'Модел', folderId: 'user-folder', type: 'model', write: acknowledge});
+  assert.equal(saved.type, 'model');
+  assert.equal(saved.folderId, 'user-folder');
+  await assert.rejects(context.saveDocument({folderId: 'different-folder', write: acknowledge}), /Save As/);
+  const updated = await context.saveDocument({write: acknowledge});
+  assert.deepEqual(updated, {...saved, revision: 2});
+});
+
 test('open replaces the entire scene, keeps identity and requires explicit discard', async () => {
   const context = workspace();
   context.insertModel(await model());
