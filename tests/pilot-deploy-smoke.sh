@@ -29,8 +29,8 @@ case "$1 $2 $3" in
     [[ "$4" == "$CANDIDATE" ]]
     jq -n --arg image "$IMAGE_REF" --arg ready "$MOCK_READY" '{spec:{containers:[{image:$image}]},status:{conditions:[{type:"Ready",status:$ready}]}}' ;;
   'run services update-traffic')
-    [[ "$*" == *"--to-revisions $CANDIDATE=100" ]]
-    echo "$CANDIDATE" > "$MOCK_TRAFFIC" ;;
+    [[ "$*" == *"--to-revisions $CANDIDATE=100" || "$*" == *"--to-revisions $SERVICE-00008-8jh=100" ]]
+    if [[ "$*" == *"--to-revisions $CANDIDATE=100" ]]; then echo "$CANDIDATE" > "$MOCK_TRAFFIC"; else echo "$SERVICE-00008-8jh" > "$MOCK_TRAFFIC"; fi ;;
   *) exit 99 ;;
 esac
 MOCK
@@ -42,6 +42,7 @@ headers=''
 while (($#)); do
   if [[ "$1" == --dump-header ]]; then headers="$2"; shift 2; else shift; fi
 done
+if [[ "${MOCK_FAIL_AFTER_PROMOTE:-}" == 1 && "$(cat "$MOCK_TRAFFIC")" == "$CANDIDATE" ]]; then MOCK_HTTP_STATUS=503; fi
 printf 'HTTP/2 %s\r\nlocation: https://nedkoradev.github.io/kitchen-calculator/\r\n' "$MOCK_HTTP_STATUS" > "$headers"
 printf '%s' "$MOCK_HTTP_STATUS"
 MOCK_CURL
@@ -63,6 +64,11 @@ if IMAGE_REF="$IMAGE:latest" bash scripts/deploy-pilot.sh; then
 fi
 if MOCK_HTTP_STATUS=503 bash scripts/deploy-pilot.sh; then
   echo 'Failed candidate HTTP probe was accepted' >&2
+  exit 1
+fi
+[[ "$(cat "$MOCK_TRAFFIC")" == "$previous" ]]
+if MOCK_FAIL_AFTER_PROMOTE=1 bash scripts/deploy-pilot.sh; then
+  echo 'Post-promotion HTTP failure was accepted' >&2
   exit 1
 fi
 [[ "$(cat "$MOCK_TRAFFIC")" == "$previous" ]]
