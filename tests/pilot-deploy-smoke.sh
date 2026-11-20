@@ -9,7 +9,7 @@ printf -v RELEASE_SHA '%040d' 1
 printf -v digest '%064d' 2
 export RELEASE_SHA IMAGE_REF="$IMAGE@sha256:$digest" GITHUB_RUN_ID=123 GITHUB_RUN_ATTEMPT=1
 export GITHUB_STEP_SUMMARY="$scratch/summary" MOCK_TRAFFIC="$scratch/traffic" MOCK_READY=True
-export CANDIDATE="$SERVICE-gh-123-1"
+export CANDIDATE="$SERVICE-gh-123-1" MOCK_HTTP_STATUS=302
 previous="$SERVICE-00008-8jh"
 cat > "$scratch/gcloud" <<'MOCK'
 #!/usr/bin/env bash
@@ -18,11 +18,13 @@ case "$1 $2 $3" in
   'run services describe')
     if [[ "$*" == *'value(status.url)'* ]]; then
       echo https://nediq-pilot-test.run.app
+    elif [[ "$*" == *'--format=json'* ]]; then
+      jq -n --arg revision "$CANDIDATE" '{status:{traffic:[{revisionName:$revision,tag:"candidate",url:"https://candidate---nediq-pilot-test.run.app",percent:0}]}}'
     else
       jq -n --arg revision "$(cat "$MOCK_TRAFFIC")" '{status:{traffic:[{revisionName:$revision, percent:100}]}}'
     fi ;;
   "run deploy $SERVICE")
-    [[ "$*" == *"--image $IMAGE_REF --no-traffic --revision-suffix gh-123-1" ]] ;;
+    [[ "$*" == *"--image $IMAGE_REF --no-traffic --tag candidate --revision-suffix gh-123-1" ]] ;;
   'run revisions describe')
     [[ "$4" == "$CANDIDATE" ]]
     jq -n --arg image "$IMAGE_REF" --arg ready "$MOCK_READY" '{spec:{containers:[{image:$image}]},status:{conditions:[{type:"Ready",status:$ready}]}}' ;;
@@ -33,6 +35,17 @@ case "$1 $2 $3" in
 esac
 MOCK
 chmod +x "$scratch/gcloud"
+cat > "$scratch/curl" <<'MOCK_CURL'
+#!/usr/bin/env bash
+set -euo pipefail
+headers=''
+while (($#)); do
+  if [[ "$1" == --dump-header ]]; then headers="$2"; shift 2; else shift; fi
+done
+printf 'HTTP/2 %s\r\nlocation: https://nedkoradev.github.io/kitchen-calculator/\r\n' "$MOCK_HTTP_STATUS" > "$headers"
+printf '%s' "$MOCK_HTTP_STATUS"
+MOCK_CURL
+chmod +x "$scratch/curl"
 
 echo "$previous" > "$MOCK_TRAFFIC"
 if MOCK_READY=False bash scripts/deploy-pilot.sh; then
@@ -48,6 +61,11 @@ if IMAGE_REF="$IMAGE:latest" bash scripts/deploy-pilot.sh; then
   echo 'Mutable image tag was accepted' >&2
   exit 1
 fi
+if MOCK_HTTP_STATUS=503 bash scripts/deploy-pilot.sh; then
+  echo 'Failed candidate HTTP probe was accepted' >&2
+  exit 1
+fi
+[[ "$(cat "$MOCK_TRAFFIC")" == "$previous" ]]
 bash scripts/deploy-pilot.sh
 [[ "$(cat "$MOCK_TRAFFIC")" == "$CANDIDATE" ]]
 grep -Fq 'Serving URL: https://nediq-pilot-test.run.app' "$GITHUB_STEP_SUMMARY"
