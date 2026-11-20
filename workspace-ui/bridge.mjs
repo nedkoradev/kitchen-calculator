@@ -1,4 +1,4 @@
-const actions = new Set(['newDocument', 'openProject', 'insertModel', 'saveDocument',
+const actions = new Set(['newDocument', 'openProject', 'openLegacyDocument', 'insertModel', 'saveDocument',
   'saveAsDocument', 'editScene', 'undo', 'redo']);
 const journalErrors = new Set(['unknown-outcome', 'reconciliation-required', 'journal-acknowledgement-failed']);
 

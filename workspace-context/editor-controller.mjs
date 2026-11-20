@@ -105,6 +105,19 @@ export function createWorkspaceController({scope, persistence, drafts, confirmDi
         });
       });
     },
+    openLegacyDocument(selection) {
+      return run('loading', async () => {
+        const doc = await persistence.legacyRead({...selection, scope: profile});
+        if (doc.type === 'model') {
+          workspace.insertModel(doc);
+          return true;
+        }
+        return replace('openLegacyDocument', discardChanges => {
+          workspace.openLegacyProject(doc, {discardChanges});
+          return true;
+        });
+      });
+    },
     insertModel(id) {
       return run('loading', async () => {
         identifier(id);

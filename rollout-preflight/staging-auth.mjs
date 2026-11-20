@@ -29,9 +29,9 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
   const logout = panel.querySelector('[data-logout]');
   for (const id of ['cloudLogin', 'cloudLogout']) document.getElementById(id).hidden = true;
   const status = panel.querySelector('[role=status]');
-  status.textContent = pilot ? 'Пилотен вход' : 'Локален тестов вход';
+  status.textContent = pilot?.public ? 'Вход в NED-IQ' : pilot ? 'Пилотен вход' : 'Локален тестов вход';
   form.hidden = !!pilot;
-  const back = pilot ? document.createElement('a') : null;
+  const back = pilot && !pilot.public ? document.createElement('a') : null;
   if (back) {
     back.href = fallbackUrl;
     back.textContent = 'Отвори NED-IQ v2.95';
@@ -114,7 +114,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
       canEdit: () => integration?.bridge.state.canAct === true,
       onMaterialApply: () => integration.flush()});
     integration = mountWorkspaceEditor(editor, {store, drafts: createWorkspaceDraftAdapter(localStorage),
-      initialScope: scope, startingDocument, panels});
+      initialScope: scope, startingDocument, panels, legacy: pilot?.public === true});
     document.getElementById('headerRight').prepend(panel);
     session = {uid: user.uid, ...integration};
     for (const selector of ['#documentMenus', '#mainNavigation', '#shellMenus']) {
@@ -125,6 +125,6 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
     form.hidden = google.hidden = true;
     logout.hidden = false;
     status.textContent = 'Профилът е удостоверен';
-    if (pilot) document.getElementById('appVersion').textContent = 'v3.0';
+    if (pilot) document.getElementById('appVersion').textContent = pilot.public ? 'v3.0.0' : 'v3.0';
   });
 }

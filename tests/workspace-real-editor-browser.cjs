@@ -73,6 +73,9 @@ const {openKitchen} = require('./browser-harness.cjs');
       const http = createWorkspaceHttpClient({endpoint: '/workspace-rc-rpc', getIdToken: scope => tokens[scope.actorUid]});
       const store = createWorkspaceClient(async (operation, request) => {
         if (operation === 'pending' && connection.offline === request.scope.ownerUid) throw Error('Journal offline');
+        if (operation === 'legacyBases') return [{id: 'legacy-owner', name: 'Споделена стара база', role: 'viewer'}];
+        if (operation === 'legacyList') return {documents: [{id: 'v2-project', type: 'project', name: 'Стара кухня'}]};
+        if (operation === 'legacyRead') return {...fixtureDocuments()[0], id: request.id, name: 'Стара кухня', nameKey: 'стара кухня'};
         const result = await http[operation](request);
         if (operation === 'write' && connection.dropAcknowledgement) {
           connection.dropAcknowledgement = false;
@@ -85,7 +88,7 @@ const {openKitchen} = require('./browser-harness.cjs');
         ({scope: {ownerUid: uid, actorUid: uid}, label}));
       window.__integration = {...mountWorkspaceEditor(window.__realEditorPorts, {store, profiles,
         initialScope: profiles[0].scope, startingDocument: fixtureDocuments()[0],
-        drafts: createWorkspaceDraftAdapter(localStorage)}), store, connection};
+        drafts: createWorkspaceDraftAdapter(localStorage), legacy: true}), store, connection};
     }, tokens);
     const status = page.locator('#integration-status');
     const settled = () => page.waitForFunction(() => window.__integration.bridge.state.canAct);
@@ -228,6 +231,23 @@ const {openKitchen} = require('./browser-harness.cjs');
     await page.getByRole('dialog').getByRole('button', {name: 'Запази', exact: true}).click();
     await page.waitForFunction(() => window.__integration.bridge.state.workspace.document.name === 'Първи запис');
     assert.equal((await state()).workspace.document.revision, 1);
+    if (e2e) {
+      await libraryButton.click();
+      await page.getByRole('button', {name: 'Документи v2.95…', exact: true}).click();
+      await page.getByRole('button', {name: 'Споделена стара база', exact: true}).click();
+      await page.getByRole('button', {name: 'Отвори проект · Стара кухня', exact: true}).click();
+      await partCount(2);
+      await settled();
+      assert.equal((await state()).workspace.document.id, null);
+      await page.keyboard.press('Control+s');
+      await page.getByRole('textbox', {name: 'Име на документа'}).fill('Лично v3 копие');
+      await page.getByRole('dialog', {name: 'Име и папка'}).getByLabel('Папка', {exact: true}).selectOption({label: 'Проекти'});
+      await page.getByRole('dialog', {name: 'Име и папка'}).getByRole('button', {name: 'Запази', exact: true}).click();
+      await page.waitForFunction(() => window.__integration.bridge.state.workspace.document.name === 'Лично v3 копие');
+      const copied = (await state()).workspace.document;
+      assert.ok(copied.id && copied.id !== 'v2-project');
+      assert.equal(copied.revision, 1);
+    }
     assert.deepEqual(errors, []);
     console.log('PASS real renderer with schema 1, reports, 750 parts and profile journal' +
       (e2e ? ' using Auth and Firestore Emulators' : ' using a fixture port'));

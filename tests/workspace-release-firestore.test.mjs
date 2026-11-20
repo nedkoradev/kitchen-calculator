@@ -137,3 +137,64 @@ test('pilot exporter reads one legacy subtree and applies a reviewed migration e
     assert.equal((await backend.db.doc('users/' + uid + '/v2_projects/source').get()).data().revision, 2);
   } finally { await backend.close(); }
 });
+
+test('public v3 reads personal and granted v2 sources while keeping writes in the signed-in user’s base', async () => {
+  const {createPublicDispatch} = await import('../release-candidate/public-access.mjs');
+  const {toEditorSnapshot} = await import('../workspace-ui/scene-adapter.mjs');
+  const backend = await createEmulatorBackend();
+  try {
+    const materials = {pdcMaterials: [{name: 'Оригинално ПДЧ'}], edgeMaterials: [], worktops: [], backMaterials: []};
+    const parts = [{part: {key: 'source-part', x: 0, y: 10, z: 0, w: 20, h: 20, d: 20}, finish: {material: 0}}];
+    const owner = 'legacy-owner';
+    const project = {schemaVersion: 1, revision: 3, name: 'Стара кухня',
+      data: {materials, parts, room: {w: 3000, h: 2600, d: 3000}}};
+    const model = {name: 'Стар шкаф', parts, v2: true};
+    const projectRef = backend.db.doc('users/' + owner + '/v2_projects/legacy-project');
+    const modelRef = backend.db.doc('users/' + owner + '/v2_cabinets/legacy-model');
+    const grant = (uid, role) => ({ownerUid: owner, role, ownerName: 'Споделена база'});
+    await Promise.all([projectRef.set(project), modelRef.set(model),
+      backend.db.doc('users/' + owner + '/materials/source').set({name: 'Оригинална', ...materials}),
+      ...['viewer', 'editor'].flatMap(role => [
+        backend.db.doc('users/' + owner + '/access_grants/' + role + '@example.test').set(grant(role, role)),
+        backend.db.doc('nediq_access/' + role + '@example.test/bases/' + owner).set(grant(role, role)),
+      ])]);
+    const dispatch = createPublicDispatch({db: backend.db, bundledCatalog: {name: 'Standard', ...materials}, auth: {
+      async verifyIdToken(uid, checkRevoked) {
+        assert.equal(checkRevoked, true);
+        if (uid === 'revoked') throw new Error('Revoked');
+        return {uid, email: uid.toUpperCase() + '@example.test', email_verified: uid !== 'unverified',
+          firebase: {sign_in_provider: uid === 'password' ? 'password' : 'google.com'}};
+      },
+    }});
+    const call = (token, operation, request = {}) => dispatch({token, operation,
+      request: {scope: {ownerUid: token, actorUid: token}, legacyOwnerId: owner, ...request}});
+    assert.deepEqual((await call('viewer', 'legacyBases')).map(base => [base.id, base.role]),
+      [['viewer', 'owner'], [owner, 'viewer']]);
+    assert.deepEqual((await call(owner, 'legacyList')).documents.map(doc => [doc.type, doc.requiresCatalog]),
+      [['project', false], ['model', true]]);
+    for (const role of ['viewer', 'editor']) {
+      const result = await call(role, 'legacyRead', {id: 'legacy-project', type: 'project'});
+      assert.deepEqual(toEditorSnapshot(result).parts, parts);
+    }
+    await assert.rejects(call('viewer', 'legacyRead', {id: 'legacy-model', type: 'model'}), {code: 'legacy-catalog-required'});
+    for (const catalogId of ['source', '']) {
+      const converted = await call('editor', 'legacyRead', {id: 'legacy-model', type: 'model', catalogId});
+      assert.deepEqual(converted.materials.pdcMaterials, materials.pdcMaterials);
+    }
+    for (const uid of ['password', 'unverified', 'revoked', 'outsider']) {
+      await assert.rejects(call(uid, 'legacyList'), {code: 'permission-denied'});
+    }
+    await assert.rejects(call('editor', 'pending', {scope: {ownerUid: owner, actorUid: 'editor'}}), {code: 'permission-denied'});
+    assert.equal(await call('editor', 'pending'), null);
+    const context = createWorkspaceContext();
+    context.openLegacyProject(await call('editor', 'legacyRead', {id: 'legacy-project', type: 'project'}));
+    assert.equal(context.state.document.id, null);
+    const copy = await context.saveDocument({name: 'Лично копие', write: data => call('editor', 'write', {...data, operationId: 'legacy-copy'})});
+    assert.equal((await backend.db.doc('workspace_v3/editor/documents/' + copy.id).get()).data().revision, 1);
+    await backend.db.doc('users/' + owner + '/access_grants/viewer@example.test').delete();
+    assert.deepEqual((await call('viewer', 'legacyBases')).map(base => base.id), ['viewer']);
+    await assert.rejects(call('viewer', 'legacyRead', {id: 'legacy-project', type: 'project'}), {code: 'permission-denied'});
+    assert.deepEqual((await projectRef.get()).data(), project);
+    assert.deepEqual((await modelRef.get()).data(), model);
+  } finally { await backend.close(); }
+});

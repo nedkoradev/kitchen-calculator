@@ -52,7 +52,7 @@ function documentElement(tag, className) {
   return node;
 }
 
-export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialScope, startingDocument, panels}) {
+export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialScope, startingDocument, panels, legacy = false}) {
   const status = documentElement('p', 'nedWorkspaceStatus');
   status.id = 'integration-status';
   status.setAttribute('role', 'status');
@@ -294,6 +294,40 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     return bridge.execute(command, ...args);
   }
 
+  async function openLegacyLibrary() {
+    const scope = bridge.state.scope;
+    const bases = await store.legacyBases({scope});
+    const owner = await dialog('Библиотеки v2.95', (panel, done) => {
+      for (const base of bases) panel.append(button(base.name, () => done(base.id)));
+      panel.append(button('Отказ', () => done(null)));
+    });
+    if (!owner || bridge.state.scope?.actorUid !== scope.actorUid || !bridge.state.canAct) return;
+    const {documents, catalogs} = await store.legacyList({scope, legacyOwnerId: owner});
+    const item = await dialog('Документи v2.95', (panel, done) => {
+      const hint = document.createElement('p');
+      hint.textContent = 'Оригиналът остава във v2.95. Записването тук създава личен v3 документ.';
+      panel.append(hint);
+      const listing = documentElement('div', 'libraryDialogItems');
+      for (const item of documents) listing.append(button(
+        (item.type === 'project' ? 'Отвори проект · ' : 'Добави модел · ') + item.name, () => done(item)));
+      panel.append(listing, button('Отказ', () => done(null)));
+    });
+    if (!item || bridge.state.scope?.actorUid !== scope.actorUid || !bridge.state.canAct) return;
+    let catalogId;
+    if (item.requiresCatalog) {
+      catalogId = await dialog('Оригинална материална база', (panel, done) => {
+        const hint = document.createElement('p');
+        hint.textContent = 'Избери базата, с която е записан документът. Старият запис не съдържа тази информация.';
+        panel.append(hint);
+        for (const catalog of catalogs) panel.append(button(catalog.name, () => done(catalog.id)));
+        panel.append(button('Отказ', () => done(null)));
+      });
+      if (catalogId === null) return;
+    }
+    if (bridge.state.scope?.actorUid !== scope.actorUid) return;
+    return run('openLegacyDocument', {legacyOwnerId: owner, id: item.id, type: item.type, catalogId});
+  }
+
   async function openLibrary(selectedFolderId = null) {
     if (!await flush()) return;
     const scope = bridge.state.scope;
@@ -322,10 +356,13 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       };
       select.onchange = refresh;
       refresh();
-      panel.append(select, listing, folderActions, button('Отказ', () => done(null)));
+      panel.append(select, listing, folderActions);
+      if (legacy) panel.append(button('Документи v2.95…', () => done({legacy: true})));
+      panel.append(button('Отказ', () => done(null)));
     };
     const chosen = await (panels ? panels.library(build) : dialog('Обща библиотека', build));
     if (!chosen) return;
+    if (chosen.legacy) return openLegacyLibrary();
     if (chosen.item) {
       const {item} = chosen;
       return run(item.type === 'project' ? 'openProject' : 'insertModel', item.id);

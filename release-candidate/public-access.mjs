@@ -1,0 +1,37 @@
+import {identifier} from '../document-format/model.mjs';
+import {createLegacyLibrary, legacyOperations} from './legacy-library.mjs';
+import {createWorkspaceService} from './service.mjs';
+import {projectId} from '../pilot/config.mjs';
+
+export const publicOrigin = 'https://nediq.eu';
+
+export function publicConfig(env) {
+  if (env.NEDIQ_PUBLIC_ENABLED !== '1') return null;
+  if (env.NEDIQ_PILOT_ENABLED === '1' || env.GOOGLE_CLOUD_PROJECT !== projectId ||
+      env.FIRESTORE_EMULATOR_HOST || env.FIREBASE_AUTH_EMULATOR_HOST ||
+      env.NEDIQ_PUBLIC_ORIGIN !== publicOrigin ||
+      env.NEDIQ_FIREBASE_AUTH_DOMAIN !== projectId + '.firebaseapp.com' ||
+      !/^[\w-]{25,100}$/.test(env.NEDIQ_FIREBASE_WEB_API_KEY ?? '')) throw new Error('Invalid public configuration');
+  return Object.freeze({public: true, origin: publicOrigin,
+    authDomain: env.NEDIQ_FIREBASE_AUTH_DOMAIN, apiKey: env.NEDIQ_FIREBASE_WEB_API_KEY});
+}
+
+export function createPublicDispatch({db, auth, bundledCatalog}) {
+  const legacy = createLegacyLibrary(db, bundledCatalog);
+  const denied = () => Object.assign(new Error('Access denied'), {code: 'permission-denied'});
+  return async input => {
+    let principal;
+    try {
+      principal = await auth.verifyIdToken(input.token, true);
+      identifier(principal.uid);
+      if (principal.firebase?.sign_in_provider !== 'google.com' || principal.email_verified !== true ||
+          (typeof principal.email !== 'string' || !principal.email.includes('@'))) throw denied();
+    } catch { throw denied(); }
+    const scope = input.request?.scope;
+    if (scope?.actorUid !== principal.uid || scope.ownerUid !== principal.uid) throw denied();
+    if (legacyOperations.has(input.operation)) return legacy({...input, principal});
+    // The sharing grant for a v2 source only authorizes a legacy read. All v3
+    // operations, including the journal, remain in the verified user's base.
+    return createWorkspaceService({db, verifyToken: async () => principal})(input);
+  };
+}

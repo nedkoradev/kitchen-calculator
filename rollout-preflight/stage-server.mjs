@@ -66,7 +66,7 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
       if (host !== new URL(origin).host) {
         // Cloud Run probes its tagged and canonical URLs. Only the configured
         // origin serves the workspace and its authenticated API.
-        if (!pilot || incoming.method !== 'GET') return send(403, 'Unexpected host');
+        if (!pilot || pilot.public || incoming.method !== 'GET') return send(403, 'Unexpected host');
         let location;
         if (path === '/fallback' && (host === pilotServiceHost || host === pilotCandidateHost)) location = fallbackUrl;
         else if (path === '/' && host === pilotServiceHost) location = origin + '/';

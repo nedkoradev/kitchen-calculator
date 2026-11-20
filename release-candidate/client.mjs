@@ -1,4 +1,4 @@
-const methods = ['readProject', 'readModel', 'write', 'pending', 'reconcile', 'acknowledge', 'list', 'changeFolder'];
+const methods = ['readProject', 'readModel', 'write', 'pending', 'reconcile', 'acknowledge', 'list', 'changeFolder', 'legacyBases', 'legacyList', 'legacyRead'];
 
 export function createWorkspaceClient(invoke) {
   return Object.fromEntries(methods.map(operation => [operation, request => invoke(operation, request)]));
