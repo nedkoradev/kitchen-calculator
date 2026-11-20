@@ -1,0 +1,92 @@
+name: Deploy approved NED-IQ v3.0 pilot
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Full 40-character SHA of the approved current main HEAD
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nediq-v3-pilot-deploy
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require the exact approved main revision
+        env:
+          REQUESTED_SHA: ${{ inputs.release_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REPOSITORY" == nedkoradev/kitchen-calculator ]]
+          [[ "$GITHUB_REF" == refs/heads/main ]]
+          [[ "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]]
+
+  checks:
+    needs: validate
+    uses: ./.github/workflows/pr-checks.yml
+    with:
+      release_sha: ${{ inputs.release_sha }}
+
+  deploy:
+    name: Deploy to Cloud Run pilot
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    environment: pilot
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      PROJECT: kitchen-designer-9d437
+      REGION: europe-west1
+      SERVICE: nediq-v3-pilot
+      REGISTRY: europe-west1-docker.pkg.dev
+      REPOSITORY: nediq
+      IMAGE: europe-west1-docker.pkg.dev/kitchen-designer-9d437/nediq/nediq-v3-pilot
+      RELEASE_SHA: ${{ inputs.release_sha }}
+      WIF_PROVIDER: ${{ vars.PILOT_WIF_PROVIDER }}
+      DEPLOY_ACCOUNT: ${{ vars.PILOT_DEPLOY_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.release_sha }}
+          persist-credentials: false
+      - name: Build and smoke-test the exact Linux image
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          docker build --platform linux/amd64 --label "org.opencontainers.image.revision=$RELEASE_SHA" -t "$IMAGE:$RELEASE_SHA" .
+          bash tests/pilot-container-smoke.sh "$IMAGE:$RELEASE_SHA"
+      - name: Require the pilot identity configuration
+        run: |
+          set -euo pipefail
+          [[ "$WIF_PROVIDER" =~ ^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$ ]]
+          [[ "$DEPLOY_ACCOUNT" == "nediq-pilot-deployer@${PROJECT}.iam.gserviceaccount.com" ]]
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Publish the immutable SHA tag
+        id: image
+        run: |
+          set -euo pipefail
+          immutable=$(gcloud artifacts repositories describe "$REPOSITORY" --project "$PROJECT" --location "$REGION" --format='value(dockerConfig.immutableTags)')
+          [[ "${immutable,,}" == true ]]
+          gcloud auth configure-docker "$REGISTRY" --quiet
+          docker push "$IMAGE:$RELEASE_SHA"
+          digest=$(gcloud artifacts docker images describe "$IMAGE:$RELEASE_SHA" --project "$PROJECT" --format='value(image_summary.digest)')
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          echo "ref=$IMAGE@$digest" >> "$GITHUB_OUTPUT"
+      - name: Check candidate readiness and promote traffic
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.ref }}
+        run: bash scripts/deploy-pilot.sh
