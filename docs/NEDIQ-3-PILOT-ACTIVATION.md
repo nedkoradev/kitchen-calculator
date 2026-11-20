@@ -68,3 +68,16 @@ gcloud run services update nediq-v3-pilot --project kitchen-designer-9d437 --reg
 Включи `GOOGLE_CLOUD_PROJECT: kitchen-designer-9d437` в този файл. При устойчива грешка върни трафика към проверената изключена revision. Утвърденият Docker образ също може да се подаде с `--image` вместо `--source`, за да се публикува точно провереният digest.
 
 Rollback е `gcloud run services update nediq-v3-pilot --project kitchen-designer-9d437 --region europe-west1 --update-env-vars NEDIQ_PILOT_ENABLED=0` след разрешение. Провери, че API връща 503 и `/` насочва към v2.95. Не изтривай v3 данни; архивирай новите документи, разписки и чернови за сверяване. Връщане на правила изисква отделно одобрение и одобрения оригинален файл. Реалният UID, OAuth Authorized Domains, IAM и частните архиви са непроверени до тези разрешения.
+
+### Диагностика при отказ на `pending`
+
+При съвпадащ обхват, отговор `permission-denied` от `pending` насочва към проверката на идентичността. `verifyIdToken(token, true)` проверява токена и изисква Firebase Auth lookup за проверка за отнемане на токена и деактивиран профил. След успешен lookup пилотът сверява UID, доставчика `google.com` и `email_verified === true`. Успешният Google вход в браузъра сам по себе си не проверява достъпа на сървърната идентичност до Firebase Auth.
+
+За образите с тази диагностика филтрирай Cloud Logging по `resource.type="cloud_run_revision"`, точната ревизия и `jsonPayload.event="nediq-pilot-access"`. Полето `reason` съдържа фиксирана стойност:
+
+- `auth-insufficient-permission` означава, че Firebase Admin е отхвърлил удостоверяването поради недостатъчни права. Провери реалния service account на ревизията и ефективното право `firebaseauth.users.get` в целевия проект.
+- `auth-token-revoked`, `auth-token-expired`, `auth-user-disabled` или `auth-verification-failed` означават отказ по време на проверката на токена.
+- `pilot-uid-mismatch`, `pilot-provider-mismatch` и `pilot-email-unverified` означават, че провереният токен е отхвърлен от изискванията на пилота. `pilot-scope-mismatch` означава отказ още преди проверката на токена, а `pilot-quota-exceeded` е лимитът за заявки.
+- `firestore-pending-permission-denied` означава, че удостоверяването е преминало и Admin Firestore е върнал gRPC статус 7 за заявката към журнала. Клиентът получава `workspace-error`. Провери ефективните Firestore IAM права на сървърната идентичност.
+
+Диагностиката не изписва токени, UID, имейли, пътища към документи или съобщения на SDK. Липсващ документ за журнала е нормален резултат `null`.

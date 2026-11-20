@@ -17,7 +17,7 @@ const isLoopback = host => /^127\.0\.0\.1:\d{1,5}$/.test(host ?? '');
 const assets = new Set(['.js', '.mjs', '.css', '.svg', '.png', '.jpg', '.jpeg', '.webp', '.woff2']);
 const types = {'.mjs': 'text/javascript', '.js': 'text/javascript', '.css': 'text/css',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-  '.webp': 'image/webp', '.woff2': 'font/woff2'};
+  '.webp': 'image/webp', '.woff2': 'font/woff2', '.json': 'application/json'};
 const moduleDirectories = new Set(['document-format', 'workspace-context', 'workspace-persistence',
   'workspace-ui', 'release-candidate', 'assets', 'materials']);
 const sdkPaths = {'/staging-sdk/app.js': 'node_modules/firebase/firebase-app-compat.js',
@@ -25,6 +25,8 @@ const sdkPaths = {'/staging-sdk/app.js': 'node_modules/firebase/firebase-app-com
 const blocked = new Set(['/cloud.js', '/local-reset.js', '/sw.js', '/app-release.js']);
 
 function assetPath(path) {
+  // The editor needs the bundled material catalog. Other JSON is private.
+  if (path === '/materials/default.json') return path.slice(1);
   if (Object.hasOwn(sdkPaths, path)) return sdkPaths[path];
   if (path === '/rollout-preflight/staging-auth.mjs' || path === '/pilot/config.mjs') return path.slice(1);
   if (!assets.has(extname(path)) || blocked.has(path) || path.includes('\\')) return null;

@@ -21,17 +21,36 @@ export function pilotConfig(env) {
   return Object.freeze(config);
 }
 
-export function restrictPilot(verify, uid) {
+export function restrictPilot(verify, uid, report = () => {}) {
+  const deny = reason => {
+    report(reason);
+    throw new Error('Pilot identity is not authorized');
+  };
   return async token => {
     const principal = await verify(token);
-    if (principal?.uid !== uid || principal.firebase?.sign_in_provider !== 'google.com' ||
-      principal.email_verified !== true) throw new Error('Pilot identity is not authorized');
+    if (principal?.uid !== uid) deny('pilot-uid-mismatch');
+    if (principal.firebase?.sign_in_provider !== 'google.com') deny('pilot-provider-mismatch');
+    if (principal.email_verified !== true) deny('pilot-email-unverified');
     return principal;
   };
 }
 
-export function createPilotVerifier(auth, uid, {now = Date.now, limit = 120} = {}) {
-  const verify = restrictPilot(token => auth.verifyIdToken(token, true), uid);
+const authFailures = new Map([
+  ['auth/insufficient-permission', 'auth-insufficient-permission'],
+  ['auth/id-token-revoked', 'auth-token-revoked'],
+  ['auth/id-token-expired', 'auth-token-expired'],
+  ['auth/user-disabled', 'auth-user-disabled'],
+]);
+
+export function createPilotVerifier(auth, uid, {now = Date.now, limit = 120, report = () => {}} = {}) {
+  const verify = restrictPilot(async token => {
+    try {
+      return await auth.verifyIdToken(token, true);
+    } catch (error) {
+      report(authFailures.get(error?.code) ?? 'auth-verification-failed');
+      throw error;
+    }
+  }, uid, report);
   let minute = -1;
   let accepted = 0;
   return async token => {
@@ -41,17 +60,28 @@ export function createPilotVerifier(auth, uid, {now = Date.now, limit = 120} = {
       minute = current;
       accepted = 0;
     }
-    if (++accepted > limit) throw new Error('Pilot request limit exceeded');
+    if (++accepted > limit) {
+      report('pilot-quota-exceeded');
+      throw new Error('Pilot request limit exceeded');
+    }
     return principal;
   };
 }
 
-export function restrictPilotDispatch(dispatch, uid) {
-  return input => {
+export function restrictPilotDispatch(dispatch, uid, report = () => {}) {
+  return async input => {
     const scope = input.request?.scope;
     if (scope?.ownerUid !== uid || scope.actorUid !== uid) {
+      report('pilot-scope-mismatch');
       throw Object.assign(new Error('Pilot scope is not authorized'), {code: 'permission-denied'});
     }
-    return dispatch(input);
+    try {
+      return await dispatch(input);
+    } catch (error) {
+      // Admin Firestore reports gRPC PERMISSION_DENIED as status 7.
+      // App authorization uses the string 'permission-denied' instead.
+      if (input.operation === 'pending' && error?.code === 7) report('firestore-pending-permission-denied');
+      throw error;
+    }
   };
 }

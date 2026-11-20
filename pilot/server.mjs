@@ -19,8 +19,10 @@ if (!config) {
   }).listen(port, '0.0.0.0');
 } else {
   const app = initializeApp({projectId});
-  const verify = createPilotVerifier(getAuth(app), config.uid);
+  // Emit only fixed reason codes. Do not serialize SDK errors or request data.
+  const report = reason => console.warn(JSON.stringify({event: 'nediq-pilot-access', reason}));
+  const verify = createPilotVerifier(getAuth(app), config.uid, {report});
   const db = getFirestore(app, databaseId);
-  const dispatch = restrictPilotDispatch(createWorkspaceService({db, verifyToken: verify}), config.uid);
+  const dispatch = restrictPilotDispatch(createWorkspaceService({db, verifyToken: verify}), config.uid, report);
   await startWorkspaceHost({pilot: config, port, createPilotDispatch: () => dispatch});
 }
