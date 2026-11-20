@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {request} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {createPilotVerifier, pilotConfig, projectId, restrictPilot, restrictPilotDispatch} from '../pilot/config.mjs';
 import {createWorkspaceHttpHandler} from '../release-candidate/http.mjs';
 import {createWorkspaceService} from '../release-candidate/service.mjs';
-import {startLocalStaging} from '../rollout-preflight/stage-server.mjs';
+import {startLocalStaging, startWorkspaceHost} from '../rollout-preflight/stage-server.mjs';
 import {buildPilotPreview} from '../rollout-preflight/staging-html.mjs';
 import {exportPlan, planPilotMigration, applyPilotMigration} from '../pilot/migration.mjs';
 
@@ -144,4 +145,36 @@ test('workspace host serves the bundled material catalog and blocks other JSON',
   for (const path of ['/package.json', '/firebase.json', '/materials/internal.json']) {
     assert.equal((await fetch(host.origin + path)).status, 404);
   }
+});
+
+test('real pilot HTTP routes distinguish the candidate, service URL and configured auth origin', async t => {
+  const configured = 'nediq-v3-pilot-579302190437.europe-west1.run.app';
+  const canonical = 'nediq-v3-pilot-inu5wh5ola-ew.a.run.app';
+  const candidate = 'candidate---' + canonical;
+  const pilot = pilotConfig({...env, NEDIQ_PILOT_ORIGIN: 'https://' + configured});
+  const server = await startWorkspaceHost({pilot, createPilotDispatch: () => () => {
+    assert.fail('Alias or unauthenticated request reached the dispatcher');
+  }});
+  t.after(() => server.close());
+  const http = (host, path, method = 'GET', origin = 'https://' + host) => new Promise((resolve, reject) => {
+    request({hostname: '127.0.0.1', port: server.port, path, method, headers: {host, origin}}, async response => {
+      const chunks = [];
+      for await (const chunk of response) chunks.push(chunk);
+      resolve({status: response.statusCode, location: response.headers.location, body: Buffer.concat(chunks).toString()});
+    }).on('error', reject).end();
+  });
+  for (const host of [candidate, canonical, configured]) {
+    const response = await http(host, '/fallback');
+    assert.equal(response.status, 302);
+    assert.equal(response.location, 'https://nedkoradev.github.io/kitchen-calculator/');
+  }
+  assert.equal((await http(canonical, '/')).location, pilot.origin + '/');
+  assert.match((await http(configured, '/')).body, /Pilot v3\.0\.1/);
+  assert.equal((await http(configured, '/materials/default.json')).status, 200);
+  assert.equal((await http(configured, '/rollout-preflight/staging-auth.mjs')).status, 200);
+  assert.equal((await http(candidate, '/')).status, 403);
+  assert.equal((await http('nediq-v3-pilot-other.a.run.app', '/fallback')).status, 403);
+  assert.equal((await http(canonical, '/staging-api', 'POST', pilot.origin)).status, 403);
+  assert.equal((await http(configured, '/staging-api', 'POST', 'https://' + canonical)).status, 403);
+  assert.equal((await http(configured, '/staging-api', 'POST')).status, 401);
 });
