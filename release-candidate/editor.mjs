@@ -293,7 +293,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     return bridge.execute(command, ...args);
   }
 
-  async function openLibrary() {
+  async function openLibrary(selectedFolderId = null) {
     if (!await flush()) return;
     const scope = bridge.state.scope;
     const {folders, documents, revision} = await store.list({scope});
@@ -302,6 +302,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       const select = document.createElement('select');
       select.setAttribute('aria-label', 'Папка');
       for (const folder of folders) select.add(new Option(folderLabel(folder, folders), folder.id));
+      if (selectedFolderId && folders.some(folder => folder.id === selectedFolderId)) select.value = selectedFolderId;
       const listing = documentElement('div', 'libraryDialogItems');
       const folderActions = documentElement('div', 'nedConfirmActions');
       const refresh = () => {
@@ -347,6 +348,36 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     if (!bridge.state.canAct || bridge.state.scope.ownerUid !== scope.ownerUid) return;
     await store.changeFolder({scope, change, revision});
     return openLibrary();
+  }
+
+  // The legacy menu categories are not authoritative in the v3 Pilot.
+  // Resolve every folder entry from the same authenticated v3 manifest used by Save and Settings.
+  if (panels) {
+    const menu = byId('libraryMenu');
+    const items = menu?.querySelector('.documentMenuItems');
+    if (items) {
+      const refreshMenu = async () => {
+        items.replaceChildren();
+        const scope = bridge.state.scope;
+        if (!scope || !bridge.state.canAct) return;
+        try {
+          const {folders} = await store.list({scope});
+          if (bridge.state.scope?.ownerUid !== scope.ownerUid || !bridge.state.canAct) return;
+          const add = (label, folderId) => {
+            const item = button(label, () => {
+              menu.open = false;
+              void openLibrary(folderId).catch(report);
+            });
+            item.setAttribute('role', 'menuitem');
+            items.append(item);
+          };
+          add('Всички модели…', null);
+          for (const folder of folders) add(folderLabel(folder, folders), folder.id);
+        } catch (error) { report(error); }
+      };
+      menu.addEventListener('toggle', () => { if (menu.open) void refreshMenu(); });
+      items.replaceChildren();
+    }
   }
 
   async function save(saveAs) {
