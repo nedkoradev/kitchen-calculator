@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+: "${PROJECT:?}" "${REGION:?}" "${SERVICE:?}" "${IMAGE:?}" "${IMAGE_REF:?}" "${RELEASE_SHA:?}" "${GITHUB_STEP_SUMMARY:?}"
+[[ "$PROJECT/$REGION/$SERVICE" == kitchen-designer-9d437/europe-west1/nediq-v3-pilot ]]
+[[ "$IMAGE" == europe-west1-docker.pkg.dev/kitchen-designer-9d437/nediq/nediq-v3-pilot ]]
+[[ "$IMAGE_REF" == "$IMAGE"@sha256:* && "${IMAGE_REF##*@}" =~ ^sha256:[0-9a-f]{64}$ ]]
+[[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+cloud=(--project "$PROJECT" --region "$REGION" --quiet)
+traffic() {
+  gcloud run services describe "$SERVICE" "${cloud[@]}" --format='json(status.traffic)' |
+    jq -er '[.status.traffic[] | select(.percent > 0)] | if length == 1 and .[0].percent == 100 then .[0].revisionName else error("Expected a single serving revision") end'
+}
+previous=$(traffic)
+[[ "$previous" == "$SERVICE"-* ]]
+suffix="gh-${GITHUB_RUN_ID:?${SERVICE}}-${GITHUB_RUN_ATTEMPT:?}"
+[[ "$suffix" =~ ^gh-[0-9]+-[0-9]+$ ]]
+revision="$SERVICE-$suffix"
+printf '### Pilot deployment\n\n- Commit: `%s`\n- Image: `%s`\n- Previous revision: `%s`\n- Candidate: `%s`\n' \
+  "$RELEASE_SHA" "$IMAGE_REF" "$previous" "$revision" >> "$GITHUB_STEP_SUMMARY"
+
+gcloud run deploy "$SERVICE" "${cloud[@]}" --image "$IMAGE_REF" --no-traffic --revision-suffix "$suffix"
+gcloud run revisions describe "$revision" "${cloud[@]}" --format='json(spec.containers,status.conditions)' |
+  jq -e --arg image "$IMAGE_REF" '.spec.containers[0].image == $image and any(.status.conditions[]; .type == "Ready" and .status == "True")' >/dev/null
+[[ "$(traffic)" == "$previous" ]]
+gcloud run services update-traffic "$SERVICE" "${cloud[@]}" --to-revisions "$revision=100"
+[[ "$(traffic)" == "$revision" ]]
+url=$(gcloud run services describe "$SERVICE" "${cloud[@]}" --format='value(status.url)')
+[[ "$url" =~ ^https://[a-z0-9.-]+\.run\.app$ ]]
+printf -- '- Serving URL: %s\n- Traffic: 100%% on `%s`\n' "$url" "$revision" >> "$GITHUB_STEP_SUMMARY"
