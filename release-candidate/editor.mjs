@@ -371,12 +371,12 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
             item.setAttribute('role', 'menuitem');
             items.append(item);
           };
-          add('Всички модели…', null);
+          byId('navLibrary').textContent = 'Всички модели…';
           for (const folder of folders) add(folderLabel(folder, folders), folder.id);
         } catch (error) { report(error); }
       };
       menu.addEventListener('toggle', () => { if (menu.open) void refreshMenu(); });
-      items.replaceChildren();
+      items.replaceChildren(byId('navLibrary'));
     }
   }
 
