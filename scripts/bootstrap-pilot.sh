@@ -28,20 +28,57 @@ echo "GitHub: $REPO (repository ID $REPO_ID)"
 echo "Cloud project number: $PROJECT_NUMBER"
 echo "Deploy identity: $DEPLOYER"
 echo 'Changes if --apply: create dedicated deployer, OIDC pool/provider; grant Artifact Registry writer, Cloud Run developer, runtime actAs; configure two GitHub pilot environment variables.'
+# Inspect existing resources before asking for permission to mutate anything.
+# A nonzero describe result can mean missing resource OR insufficient permissions.
+# Fail closed on errors other than a confirmed NOT_FOUND.
+describe_optional() {
+  local output rc
+  output="$("$@" 2>&1)" && { printf '%s' "$output"; return 0; }
+  rc=$?
+  if [[ "$output" == *NOT_FOUND* || "$output" == *"not found"* || "$output" == *"does not exist"* ]]; then
+    return 3
+  fi
+  echo "STOP: cannot inspect resource: $*" >&2
+  echo "$output" >&2
+  return "$rc"
+}
+CONDITION="assertion.repository_id == '$REPO_ID' && assertion.ref == 'refs/heads/main' && assertion.environment == 'pilot' && assertion.event_name == 'workflow_dispatch' && assertion.workflow_ref == '$REPO/.github/workflows/pilot-deploy.yml@refs/heads/main'"
+EXPECTED_MAPPING='google.subject=assertion.sub,attribute.repository_id=assertion.repository_id'
+PROVIDER_JSON=''
+PROVIDER_PRESENT=false
+if PROVIDER_JSON="$(describe_optional gcloud iam workload-identity-pools providers describe "$PROVIDER" --project "$PROJECT" --location global --workload-identity-pool "$POOL" --format=json)"; then
+  PROVIDER_PRESENT=true
+  jq -e --arg condition "$CONDITION" --arg issuer 'https://token.actions.githubusercontent.com' '
+    .state == "ACTIVE" and .oidc.issuerUri == $issuer and
+    .attributeCondition == $condition and
+    .attributeMapping["google.subject"] == "assertion.sub" and
+    .attributeMapping["attribute.repository_id"] == "assertion.repository_id"
+  ' <<<"$PROVIDER_JSON" >/dev/null || { echo 'STOP: existing OIDC provider differs from approved trust configuration'; exit 1; }
+  echo 'Existing OIDC provider: exact trust configuration verified.'
+else
+  rc=$?
+  [[ "$rc" == 3 ]] || exit "$rc"
+  echo 'OIDC provider: not found; creation would be required.'
+fi
 if [[ "$MODE" == --check ]]; then echo 'Read-only checks complete. No changes made.'; exit 0; fi
 read -r -p 'Type APPLY-PILOT to authorize the changes above: ' CONFIRM
 [[ "$CONFIRM" == APPLY-PILOT ]] || { echo 'Cancelled'; exit 1; }
-if ! gcloud iam service-accounts describe "$DEPLOYER" --project "$PROJECT" >/dev/null 2>&1; then
-  gcloud iam service-accounts create nediq-pilot-deployer --project "$PROJECT"
-fi
-if ! gcloud iam workload-identity-pools describe "$POOL" --project "$PROJECT" --location global >/dev/null 2>&1; then
-  gcloud iam workload-identity-pools create "$POOL" --project "$PROJECT" --location global
-fi
-CONDITION="assertion.repository_id == '$REPO_ID' && assertion.ref == 'refs/heads/main' && assertion.environment == 'pilot' && assertion.event_name == 'workflow_dispatch' && assertion.workflow_ref == '$REPO/.github/workflows/pilot-deploy.yml@refs/heads/main'"
-if gcloud iam workload-identity-pools providers describe "$PROVIDER" --project "$PROJECT" --location global --workload-identity-pool "$POOL" >/dev/null 2>&1; then
-  echo 'STOP: provider already exists; verify its conditions manually. No automatic widening of existing trust.'
+# Existing resources are never silently assumed safe; operators must review
+# their configuration before any apply. This script does not overwrite providers.
+if [[ "$PROVIDER_PRESENT" == true ]]; then
+  echo 'STOP: provider exists and was verified. No automatic IAM or variable reconciliation; inspect remaining bindings manually.'
   exit 1
 fi
+if gcloud iam service-accounts describe "$DEPLOYER" --project "$PROJECT" >/dev/null 2>&1; then
+  echo 'STOP: deploy service account exists. Review its permissions before proceeding.'
+  exit 1
+fi
+if gcloud iam workload-identity-pools describe "$POOL" --project "$PROJECT" --location global >/dev/null 2>&1; then
+  echo 'STOP: workload identity pool exists. Review its configuration before proceeding.'
+  exit 1
+fi
+gcloud iam service-accounts create nediq-pilot-deployer --project "$PROJECT"
+gcloud iam workload-identity-pools create "$POOL" --project "$PROJECT" --location global
 gcloud iam workload-identity-pools providers create-oidc "$PROVIDER" --project "$PROJECT" --location global --workload-identity-pool "$POOL" \
   --issuer-uri https://token.actions.githubusercontent.com \
   --attribute-mapping 'google.subject=assertion.sub,attribute.repository_id=assertion.repository_id' \
