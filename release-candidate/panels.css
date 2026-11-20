@@ -1,0 +1,75 @@
+#staging-auth {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+}
+
+#staging-auth label { padding: 4px; }
+body[data-stage-auth="locked"] main { visibility: hidden; }
+body[data-stage-auth="active"] #staging-auth { padding: 0; font-size: 11px; line-height: 1.1; }
+body[data-stage-auth="active"] #staging-auth [role="status"]::before { content: "● "; color: #86efac; }
+body[data-stage-auth="active"] #shellModes:has(> button[hidden]):not(:has(> button:not([hidden]))) { display: none; }
+body[data-stage-auth="active"] #integration-status {
+  flex: none;
+  min-width: 0;
+  margin: 0;
+  padding: 3px 8px;
+  font-size: 12px;
+  background: #f1f4f8;
+  color: #19334e;
+  overflow-wrap: anywhere;
+}
+
+body.ned-shell dialog.pilotWindow {
+  position: fixed !important;
+  inset: var(--pilot-top) auto auto var(--pilot-left) !important;
+  width: var(--pilot-width) !important;
+  height: var(--pilot-height) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+  max-width: none !important;
+  max-height: none !important;
+  max-inline-size: none !important;
+  max-block-size: none !important;
+  border: 1px solid #cbd7e5;
+  border-radius: 10px;
+  background: #fff;
+  color: #19334e;
+  overflow: hidden;
+}
+
+body.ned-shell dialog.pilotWindow[open] { display: flex; flex-direction: column; }
+dialog.pilotWindow::backdrop { background: rgba(21, 45, 71, .14); }
+.pilotWindow > .dialogHead { flex: none; background: #19334e; color: #fff; }
+.pilotWindow > .dialogHead > .nedDialogClose { order: 1; }
+.pilotWindowControls { display: flex; align-items: center; gap: 4px; margin-inline-start: auto; }
+.pilotWindowControls button { min-width: 32px; min-height: 32px; }
+.pilotWindowControls [hidden] { display: none !important; }
+.pilotWindowBody { flex: 1; min-height: 0; padding: 12px; overflow: auto; overscroll-behavior: contain; }
+.pilotWindowBody #projectExtraPane.materialsPage { padding: 0; }
+.pilotWindowBody #projectResults { height: auto; padding: 8px; overflow: visible; }
+.pilotWindowBody .nedBasePanel { display: none; }
+.pilotWindowBody .settingsSections > section { margin-block: 10px; }
+.pilotWindowBody .settingsSections a { color: #125ba9; }
+.pilotWindow .pilotResize { position: absolute; z-index: 4; touch-action: none; }
+.pilotWindow[data-full="true"] :is(.pilotResize, .pilotKeyboardMove) { display: none; }
+.pilotWindow[data-full="true"] > .nedDialogHandle { cursor: default; }
+.pilotResize[data-edge="n"], .pilotResize[data-edge="s"] { inset-inline: 12px; height: 7px; cursor: ns-resize; }
+.pilotResize[data-edge="e"], .pilotResize[data-edge="w"] { inset-block: 12px; width: 7px; cursor: ew-resize; }
+.pilotResize[data-edge="ne"], .pilotResize[data-edge="se"],
+.pilotResize[data-edge="sw"], .pilotResize[data-edge="nw"] { width: 12px; height: 12px; }
+.pilotResize[data-edge^="n"] { top: 0; }
+.pilotResize[data-edge^="s"] { bottom: 0; }
+.pilotResize[data-edge$="e"] { right: 0; }
+.pilotResize[data-edge$="w"] { left: 0; }
+.pilotResize[data-edge="ne"], .pilotResize[data-edge="sw"] { cursor: nesw-resize; }
+.pilotResize[data-edge="nw"], .pilotResize[data-edge="se"] { cursor: nwse-resize; }
+
+@media (max-width: 620px) {
+  .pilotWindowBody { padding: 8px; }
+  .pilotWindowBody .materialSection { padding: 8px; overflow-x: auto; }
+  body[data-stage-auth="active"] #staging-auth { max-inline-size: 80px; }
+}

@@ -1,10 +1,11 @@
 import {fallbackUrl} from '../pilot/config.mjs';
+import {installPilotPanels} from '../release-candidate/panels.mjs';
 import {mountWorkspaceEditor} from '../release-candidate/editor.mjs';
 import {createWorkspaceHttpClient} from '../release-candidate/client.mjs';
 import {createWorkspaceDraftAdapter} from '../workspace-persistence/drafts.mjs';
 import {prepareNewDocument} from '../workspace-context/context.mjs';
 
-export async function startStagingAuth({authOrigin, pilot, materialsReady, activate, editor}) {
+export async function startStagingAuth({authOrigin, pilot, materialsReady, activate, editor, views}) {
   if (pilot ? (location.protocol !== 'https:' || location.origin !== pilot.origin) : location.hostname !== '127.0.0.1' || !/^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(authOrigin)) {
     throw new Error('Staging Auth requires loopback');
   }
@@ -30,8 +31,8 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
   const status = panel.querySelector('[role=status]');
   status.textContent = pilot ? 'Пилотен вход' : 'Локален тестов вход';
   form.hidden = !!pilot;
-  if (pilot) {
-    const back = document.createElement('a');
+  const back = pilot ? document.createElement('a') : null;
+  if (back) {
     back.href = fallbackUrl;
     back.textContent = 'Отвори NED-IQ v2.95';
     panel.append(back);
@@ -41,7 +42,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
 
   function lock() {
     document.body.dataset.stageAuth = 'locked';
-    for (const selector of ['main', '#documentMenus', '#mainNavigation', '#nedShellMenus']) {
+    for (const selector of ['main', '#documentMenus', '#mainNavigation', '#shellMenus']) {
       const node = document.querySelector(selector);
       if (node) node.inert = true;
     }
@@ -108,10 +109,15 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
     if (session || auth.currentUser?.uid !== user.uid) return;
     activate();
     const startingDocument = prepareNewDocument({materials: editor.capture().materials});
-    const integration = mountWorkspaceEditor(editor, {store, drafts: createWorkspaceDraftAdapter(localStorage),
-      initialScope: scope, startingDocument});
+    let integration;
+    const panels = installPilotPanels({...views, logout, fallback: back,
+      canEdit: () => integration?.bridge.state.canAct === true,
+      onMaterialApply: () => integration.flush()});
+    integration = mountWorkspaceEditor(editor, {store, drafts: createWorkspaceDraftAdapter(localStorage),
+      initialScope: scope, startingDocument, panels});
+    document.getElementById('headerRight').prepend(panel);
     session = {uid: user.uid, ...integration};
-    for (const selector of ['#documentMenus', '#mainNavigation', '#nedShellMenus']) {
+    for (const selector of ['#documentMenus', '#mainNavigation', '#shellMenus']) {
       const node = document.querySelector(selector);
       if (node) node.inert = false;
     }
