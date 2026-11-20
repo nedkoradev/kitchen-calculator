@@ -32,7 +32,7 @@ check_http() {
     rm -f "$headers"
     return 1
   }
-  if [[ "$code" != 302 ]] || ! grep -Eiq '^location: https://nedkoradev\.github\.io/kitchen-calculator/\r?$' "$headers"; then
+  if [[ "$code" != 302 ]] || ! tr -d '\r' < "$headers" | grep -Fixq 'location: https://nedkoradev.github.io/kitchen-calculator/'; then
     rm -f "$headers"
     return 1
   fi
