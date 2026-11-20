@@ -357,7 +357,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     const items = menu?.querySelector('.documentMenuItems');
     if (items) {
       const refreshMenu = async () => {
-        items.replaceChildren();
+        items.replaceChildren(byId('navLibrary'));
         const scope = bridge.state.scope;
         if (!scope || !bridge.state.canAct) return;
         try {
