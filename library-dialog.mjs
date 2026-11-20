@@ -1,10 +1,10 @@
 import {decorateAction} from './icons.mjs';
 import {configurationRequest} from './parameters.mjs';
-import {defaultFolders,validateFolders,resolveFolder,mergeLegacyFolders,cabinetSize} from './library-folders.mjs';
+import {validateFolders,resolveFolder,mergeLegacyFolders,effectiveFolders,cabinetSize} from './library-folders.mjs';
 export function installLibraryDialog({getItems,getContext,renderPreview,choose,invalidate,duplicate,remove}){
- const $=id=>document.getElementById(id);let owner=null,folders=defaultFolders(),revision=0,loaded=false,epoch=0,dialog=null,busy=false,render=null;
+ const $=id=>document.getElementById(id);let owner=null,folders=[],revision=0,loaded=false,epoch=0,dialog=null,busy=false,render=null;
  const notify=()=>window.dispatchEvent(new CustomEvent('ned-folders-change',{detail:{folders:folders.filter(f=>!f.deleted)}}));
- async function load(){const e=epoch;try{const data=await configurationRequest('load');if(e!==epoch)return;revision=data.folderRevision||0;const stored=Array.isArray(data.folders)?data.folders:null;folders=mergeLegacyFolders(stored===null||(stored.length===0&&revision===0)?defaultFolders():stored,getItems());loaded=true;notify()}catch{loaded=false}}
+ async function load(){const e=epoch;try{const data=await configurationRequest('load');if(e!==epoch)return;revision=data.folderRevision||0;folders=effectiveFolders(data.folders,revision,getItems());loaded=true;notify()}catch{loaded=false}}
  window.addEventListener('kitchen-project-auth',e=>{const uid=e.detail?.uid||null,scope=uid?JSON.stringify([uid,e.detail?.actorUid||uid]):null;if(scope===owner)return;owner=scope;epoch++;loaded=false;dialog?.close();$('foldersDialog')?.close();folders=[];notify();if(owner)load()});
  window.addEventListener('kitchen-v2-cloud-list',()=>{folders=mergeLegacyFolders(folders,getItems());notify();render?.()});
  window.addEventListener('kitchen-v2-cloud-deleted',()=>{if(dialog?.open)window.dispatchEvent(new Event('kitchen-v2-cloud-list-request'))});
