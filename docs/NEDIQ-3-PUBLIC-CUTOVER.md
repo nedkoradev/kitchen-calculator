@@ -6,7 +6,7 @@
 
 ## Действия с операторски достъп
 
-1. Настрой защитения GitHub Environment `public-v3` с независим reviewer и достъп само от `main`. Използвай отделен deployer `nediq-public-deployer@kitchen-designer-9d437.iam.gserviceaccount.com` и WIF по [схемата за Pilot CI](NEDIQ-3-PILOT-CI.md), с точния repository ID, `refs/heads/main`, средата `public-v3`, `workflow_dispatch` и workflow ref `nedkoradev/kitchen-calculator/.github/workflows/public-v3-candidate.yml@refs/heads/main`. Задай Environment variables `PUBLIC_V3_WIF_PROVIDER` и `PUBLIC_V3_DEPLOY_SERVICE_ACCOUNT`. За режима `image-only` deployer-ът има само федеративно удостоверяване и Artifact Registry Writer върху `nediq`. Хранилището трябва да използва неизменяеми тагове.
+1. Настрой защитения GitHub Environment `public-v3` с независим reviewer и достъп само от `main`. Използвай отделен deployer `ned-iq-public-deployer@kitchen-designer-9d437.iam.gserviceaccount.com` и WIF по [схемата за Pilot CI](NEDIQ-3-PILOT-CI.md), с точния repository ID, `refs/heads/main`, средата `public-v3`, `workflow_dispatch` и workflow ref `nedkoradev/kitchen-calculator/.github/workflows/public-v3-candidate.yml@refs/heads/main`. Използвай pool `ned-iq-public-github`. Задай Environment variables `PUBLIC_V3_WIF_PROVIDER` и `PUBLIC_V3_DEPLOY_SERVICE_ACCOUNT`. За режима `image-only` deployer-ът има само федеративно удостоверяване и Artifact Registry Writer върху `nediq`. Хранилището трябва да използва неизменяеми тагове.
 2. След като workflow-ът е наличен в `main`, стартирай `image-only`. Вземи адреса с digest от отчета и създай услугата еднократно с операторския си акаунт. Първата ревизия на Cloud Run получава 100% от **вътрешното** разпределение. `--ingress internal` и изискването за IAM вход ограничават достъпа. Не добавяй домейн или публичен invoker на този етап.
 
    ```bash
@@ -14,7 +14,7 @@
    REGION=europe-west1
    SERVICE=nediq-v3-public
    RUNTIME="nediq-v3-public@$PROJECT.iam.gserviceaccount.com"
-   DEPLOYER="nediq-public-deployer@$PROJECT.iam.gserviceaccount.com"
+   DEPLOYER="ned-iq-public-deployer@$PROJECT.iam.gserviceaccount.com"
    # DIGEST_REF е пълният адрес на проверения образ с @sha256:… от GitHub.
    # FIREBASE_WEB_API_KEY е одобреният ключ за Firebase Web.
    gcloud run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" \
@@ -27,6 +27,8 @@
    gcloud iam service-accounts add-iam-policy-binding "$RUNTIME" --project "$PROJECT" \
      --member "serviceAccount:$DEPLOYER" --role roles/iam.serviceAccountUser
    ```
+
+   След потвърждение на правата върху конкретната услуга премахни широката проектна роля Cloud Run Admin от deployer-а. Остави Artifact Registry Writer за `nediq`, Cloud Run Developer за тази услуга и Service Account User само върху `nediq-v3-public` runtime акаунта.
 
    След това `candidate` обновява само тази съществуваща услуга и оставя новата ревизия с 0% трафик. Проверява вътрешния ingress, действащия IAM invoker check и точния runtime акаунт. Двата режима не променят DNS, Pages или Pilot.
 3. В Firebase и Google OAuth потвърди `nediq.eu` като разрешен домейн и провери ограниченията на API ключа. Подготви Cloud Run маршрутизация, собственост на домейна и TLS. Създай проверен Firestore архив за v2 и v3 и изпитай възстановяването в отделна база. Локалните v2 чернови са на отделен формат. Запази копия от тях чрез v2 преди превключване.
