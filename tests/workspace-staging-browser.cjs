@@ -26,6 +26,10 @@ const path = require('node:path');
       args: ['--no-sandbox', '--enable-unsafe-swiftshader'],
       proxy: process.env.HTTPS_PROXY ? {server: process.env.HTTPS_PROXY, bypass: '127.0.0.1,localhost'} : undefined});
     const page = await browser.newPage({viewport: {width: 390, height: 820}});
+    const sheetJsRequests = [];
+    page.on('request', request => {
+      if (request.url().includes('xlsx')) sheetJsRequests.push(request.url());
+    });
     const outside = [];
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -193,6 +197,21 @@ const path = require('node:path');
     await page.locator('#reportsMenu summary').click();
     await page.locator('#navCut').click();
     await reports.locator('#projectCutList tbody tr').first().waitFor();
+    assert.deepEqual(sheetJsRequests, [stage.origin + '/staging-sdk/xlsx-0.20.3.min.js']);
+    assert.equal(await page.evaluate(() => XLSX.version), '0.20.3');
+    const download = page.waitForEvent('download');
+    await reports.locator('#exportProjectCut').click();
+    const workbookFile = await download;
+    assert.equal(workbookFile.suggestedFilename(), 'Salex_RIK_order.xlsx');
+    const encoded = fs.readFileSync(await workbookFile.path()).toString('base64');
+    const rows = await page.evaluate(bytes => {
+      const workbook = XLSX.read(bytes, {type: 'base64'});
+      return XLSX.utils.sheet_to_json(workbook.Sheets.RIK_order, {header: 1, defval: ''});
+    }, encoded);
+    assert.equal(rows[0].length, 17);
+    assert.equal(rows[0][6], 'забележка');
+    assert.ok(rows.slice(1).some(row => Number.isInteger(row[3]) && Number.isInteger(row[4])));
+
     await assertScene();
     await reports.getByRole('button', {name: 'Себестойност', exact: true}).click();
     await reports.locator('#projectCosts tbody tr').first().waitFor();

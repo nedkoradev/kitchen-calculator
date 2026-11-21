@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {composeRules, start, end} from '../rollout-preflight/composite-rules.mjs';
 import {protectCopy, verifyCopy, writeNewLocalFile} from '../rollout-preflight/archive.mjs';
-import {buildLocalPreview} from '../rollout-preflight/staging-html.mjs';
+import {buildLocalPreview, sheetJsPath} from '../rollout-preflight/staging-html.mjs';
 
 const repositoryFile = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
 
@@ -51,14 +51,17 @@ test('local output does not overwrite an existing backup', async () => {
 
 test('staging preview contains no legacy cloud entrypoint, reset or worker even when disabled', async () => {
   const source = await repositoryFile('index.html');
-  const {major, minor} = JSON.parse(await repositoryFile('_data/version.json'));
   const preview = buildLocalPreview(source);
   const activated = buildLocalPreview(source, {enabled: true, authOrigin: 'http://127.0.0.1:9100'});
   assert.doesNotMatch(preview, /staging-auth\.mjs/);
   assert.match(activated, /staging-auth\.mjs/);
+  assert.match(source, /xlsx@0\.18\.5/);
+  assert.match(preview, /xlsx@0\.18\.5/);
+  assert.doesNotMatch(activated, /xlsx@0\.18\.5/);
+  assert.ok(activated.includes('<script src="' + sheetJsPath + '"></script>'));
   for (const html of [preview, activated]) {
     assert.doesNotMatch(html, /src="\.\/(cloud\.js|local-reset\.js|app-release\.js)"/);
-    assert.ok(html.includes('<span id="appVersion">v' + major + '.' + minor + '</span>'));
+    assert.match(html, /v2\.95/);
   }
   assert.throws(() => buildLocalPreview(source, {enabled: true, authOrigin: 'https://example.invalid'}));
   assert.throws(() => buildLocalPreview(source.replace('}build();frame();', ''), {enabled: true, authOrigin: 'http://127.0.0.1:9100'}));

@@ -7,7 +7,7 @@ import {Readable} from 'node:stream';
 import {initializeApp, deleteApp} from 'firebase-admin/app';
 import {getAuth} from 'firebase-admin/auth';
 import {getFirestore} from 'firebase-admin/firestore';
-import {buildLocalPreview, buildPilotPreview} from './staging-html.mjs';
+import {buildLocalPreview, buildPilotPreview, sheetJsPath} from './staging-html.mjs';
 import {createWorkspaceService} from '../release-candidate/service.mjs';
 import {createWorkspaceHttpHandler} from '../release-candidate/http.mjs';
 
@@ -23,7 +23,8 @@ const types = {'.mjs': 'text/javascript', '.js': 'text/javascript', '.css': 'tex
 const moduleDirectories = new Set(['document-format', 'workspace-context', 'workspace-persistence',
   'workspace-ui', 'release-candidate', 'assets', 'materials']);
 const sdkPaths = {'/staging-sdk/app.js': 'node_modules/firebase/firebase-app-compat.js',
-  '/staging-sdk/auth.js': 'node_modules/firebase/firebase-auth-compat.js'};
+  '/staging-sdk/auth.js': 'node_modules/firebase/firebase-auth-compat.js',
+  [sheetJsPath]: 'rollout-preflight/vendor/sheetjs/xlsx-0.20.3.min.js'};
 const blocked = new Set(['/cloud.js', '/local-reset.js', '/sw.js', '/app-release.js']);
 
 function assetPath(path) {

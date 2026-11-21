@@ -1,3 +1,5 @@
+export const sheetJsPath = '/staging-sdk/xlsx-0.20.3.min.js';
+const legacySheetJs = '<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>';
 const seam = '}build();frame();';
 const loadMaterials = '\nloadDefaultMaterials();';
 const welcome = 'requestAnimationFrame(help.showStartup);';
@@ -17,6 +19,8 @@ function buildPreview(source, {enabled, settings}) {
     html = html.replace(tag, '');
   }
   if (!enabled) return html;
+  if (html.split(legacySheetJs).length !== 2) throw new Error('Expected one legacy SheetJS script');
+  html = html.replace(legacySheetJs, '<script src="' + sheetJsPath + '"></script>');
   if (html.split(seam).length !== 2 || html.split(loadMaterials).length !== 2 ||
       html.split(welcome).length !== 2 || html.split('<body>').length !== 2 || html.split('</head>').length !== 2) {
     throw new Error('Expected a local emulator and one renderer bootstrap seam');

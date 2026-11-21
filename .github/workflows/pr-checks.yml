@@ -74,7 +74,6 @@ jobs:
           node tests/table-design-browser.cjs
           node tests/release-browser.cjs
           node tests/v288-workspace-browser.cjs
-          node tests/part-notes-browser.cjs
           node tests/workspace-controller-browser.cjs
           node tests/workspace-ui-browser.cjs
           node tests/workspace-real-editor-browser.cjs

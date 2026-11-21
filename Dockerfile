@@ -17,6 +17,7 @@ COPY --chown=node:node workspace-persistence ./workspace-persistence
 COPY --chown=node:node workspace-ui ./workspace-ui
 COPY --chown=node:node release-candidate ./release-candidate
 COPY --chown=node:node rollout-preflight/staging-auth.mjs rollout-preflight/staging-html.mjs rollout-preflight/stage-server.mjs ./rollout-preflight/
+COPY --chown=node:node rollout-preflight/vendor/sheetjs/ ./rollout-preflight/vendor/sheetjs/
 COPY --chown=node:node pilot/config.mjs pilot/server.mjs ./pilot/
 ENV NODE_ENV=production
 USER node
