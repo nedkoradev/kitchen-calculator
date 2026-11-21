@@ -87,10 +87,13 @@ jobs:
       - name: Check public deployment identity validation
         run: bash tests/public-wif-smoke.sh
       - name: Test public Cloud Run bootstrap and updates
-        run: bash tests/public-deploy-smoke.sh
+        run: |
+          bash tests/public-deploy-smoke.sh
+          bash tests/public-cloud-access-smoke.sh
       - name: Test the pilot deployment guardrails with a local mock
         run: bash tests/pilot-deploy-smoke.sh
       - name: Build and exercise the disabled Cloud Run image
         run: |
           docker build -t nediq-pilot-check .
           bash tests/pilot-container-smoke.sh nediq-pilot-check
+          bash tests/public-container-smoke.sh nediq-pilot-check

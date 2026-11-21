@@ -15,10 +15,22 @@ describe() {
 }
 
 verify_private() {
-  jq -e --arg runtime "$RUNTIME_ACCOUNT" '
+  jq -e --arg runtime "$RUNTIME_ACCOUNT" --arg project "$PROJECT" '
+    (.spec.template.spec.containers[0].env | map({key:.name,value:.}) | from_entries) as $env |
     .metadata.annotations["run.googleapis.com/ingress"] == "internal"
     and .metadata.annotations["run.googleapis.com/invoker-iam-disabled"] != "true"
-    and .spec.template.spec.serviceAccountName == $runtime' >/dev/null
+    and .spec.template.spec.serviceAccountName == $runtime
+    and $env.GOOGLE_CLOUD_PROJECT.value == $project
+    and $env.NEDIQ_PUBLIC_ENABLED.value == "1"
+    and $env.NEDIQ_PUBLIC_ORIGIN.value == "https://nediq.eu"
+    and $env.NEDIQ_FIREBASE_AUTH_DOMAIN.value == ($project + ".firebaseapp.com")
+    and (($env.NEDIQ_FIREBASE_WEB_API_KEY.value // "" | test("^[A-Za-z0-9_-]{25,100}$"))
+      or ($env.NEDIQ_FIREBASE_WEB_API_KEY.valueFrom.secretKeyRef != null))
+    and ($env.NEDIQ_PILOT_ENABLED.value // "0") != "1"
+    and $env.FIRESTORE_EMULATOR_HOST == null and $env.FIREBASE_AUTH_EMULATOR_HOST == null' >/dev/null || {
+    echo "::error::Cloud Run service does not match the private public-v3 runtime configuration." >&2
+    return 1
+  }
   gcloud run services get-iam-policy "$SERVICE" "${cloud[@]}" --format=json |
     jq -e 'all(.bindings[]?.members[]?; . != "allUsers" and . != "allAuthenticatedUsers")' >/dev/null
 }
