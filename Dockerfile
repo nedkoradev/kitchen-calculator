@@ -1,14 +1,11 @@
-FROM node:24-bookworm-slim AS dependencies
+FROM node:24.22.3-bookworm-slim AS dependencies
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN --mount=type=secret,id=npm_ca \
     if [ -f /run/secrets/npm_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/npm_ca; fi; \
-    npm ci --ignore-scripts --no-audit --no-fund && \
-    npm pkg delete devDependencies && \
-    npm pkg set dependencies.firebase=10.14.1 dependencies.firebase-admin=13.6.0 && \
-    npm prune --omit=dev --ignore-scripts --no-audit --no-fund
+    npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
-FROM node:24-bookworm-slim
+FROM node:24.22.3-bookworm-slim
 WORKDIR /app
 COPY --chown=node:node --from=dependencies /app/node_modules ./node_modules
 COPY --chown=node:node index.html *.css *.mjs *.js ./
