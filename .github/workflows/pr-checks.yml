@@ -86,6 +86,8 @@ jobs:
         run: bash tests/bootstrap-pilot-mock.sh
       - name: Check public deployment identity validation
         run: bash tests/public-wif-smoke.sh
+      - name: Test public Cloud Run bootstrap and updates
+        run: bash tests/public-deploy-smoke.sh
       - name: Test the pilot deployment guardrails with a local mock
         run: bash tests/pilot-deploy-smoke.sh
       - name: Build and exercise the disabled Cloud Run image
