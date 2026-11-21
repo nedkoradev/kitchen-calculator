@@ -24,3 +24,30 @@
 5. При rollback възстанови предишните DNS записи и Pages конфигурацията. Запази v3 документите и черновите. v2.95 не чете v3 записи, затова преди cutover трябва да е изпитан и отделен начин за достъп или експорт на v3 работата след rollback. DNS връщането само не покрива тази проверка.
 
 Подготовката не включва продукционен архив, DNS промяна или активиране на кандидата.
+
+## Защитен тест от Chrome с реален Google вход
+
+Локалният маршрут изпълнява същия v3 интерфейс и API с отделен Firebase Authentication проект и локален Firestore Emulator. Подходящ е за функционални тестове със синтетични данни. Проверката на внедрената Cloud Run ревизия остава отделна и изисква разрешен вътрешен маршрут. Cloud Run, DNS, Pages и продукционният Firestore не участват в локалния тест.
+
+1. В отделен Firebase проект създай Web App. В **Authentication → Sign-in method** включи Google и избери support email. В **Authentication → Settings → Authorized domains** добави `localhost`. Използвай Project ID и Web API Key от тази Web App. Тестовият оператор има нужда от Firebase Authentication Viewer само в тестовия проект за проверка на отнети токени. На компютъра изпълни `gcloud auth application-default login` с този операторски акаунт. В Chrome използвай отделни тестови Google потребители.
+2. От корена на хранилището изпълни `npm ci`. В първи терминал стартирай Firestore Emulator (необходима е Java 21).
+
+   ```bash
+   scratch=$(mktemp -d)
+   trap 'rm -rf -- "$scratch"' EXIT
+   node rollout-preflight/composite-rules.mjs > "$scratch/workspace-v3.rules"
+   cp tests/emulator/workspace-v3.json "$scratch/firebase.json"
+   ./node_modules/.bin/firebase emulators:start --only firestore \
+     --project demo-nediq-v3-release --config "$scratch/firebase.json"
+   ```
+
+3. Във втори терминал стартирай приложението, като замениш примерните стойности. Отвори [http://localhost:8053/](http://localhost:8053/) в Chrome. Двата локални процеса трябва да останат стартирани. Използвай URL с `localhost`, за да съвпадне с разрешения origin.
+
+   ```bash
+   FIRESTORE_EMULATOR_HOST=127.0.0.1:8090 \
+   NEDIQ_TEST_AUTH_PROJECT='your-test-project-id' \
+   NEDIQ_TEST_FIREBASE_WEB_API_KEY='your-test-web-api-key' \
+   node rollout-preflight/local-google.mjs
+   ```
+
+4. Провери вход, обновяване на страницата и изход в Chrome. С два отделни профила запази синтетичен шкаф или проект с първия акаунт и провери, че вторият не го вижда. Провери папки, дублиране, отваряне след запис, материали, кантове, разкрой и мобилен изглед. За проверка на v2.95 съвместимостта подготви синтетични v2 записи в същия емулатор с UID на тестовия потребител от тестовия Firebase проект.

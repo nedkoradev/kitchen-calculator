@@ -68,6 +68,7 @@ export function buildLocalPreview(source, {enabled = false, authOrigin} = {}) {
 
 export function buildPilotPreview(source, config) {
   const settings = {pilot: {origin: config.origin, authDomain: config.authDomain, apiKey: config.apiKey, public: config.public === true}};
+  if (config.localGoogle) Object.assign(settings.pilot, {localGoogle: true, projectId: config.projectId});
   const html = buildPreview(source, {enabled: true, settings});
   if (config.public) return html.replace('<title>Kitchen Designer</title>', '<title>NED-IQ v3.0.0</title>')
     .replace(/(id="appVersion">)v[0-9.]+/, '$1v3.0.0');

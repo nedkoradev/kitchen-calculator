@@ -191,3 +191,53 @@ test('public rendering is independently enabled and keeps the dedicated Pilot un
   assert.match(buildPilotPreview(html, config), /id="appVersion">v3\.0\.0/);
   assert.match(buildPilotPreview(html, pilotConfig(env)), /Pilot v3\.0\.1/);
 });
+
+test('local Google acceptance uses separate Auth and an exact loopback emulator', async t => {
+  const {localGoogleConfig} = await import('../rollout-preflight/local-google.mjs');
+  const localEnv = {NEDIQ_TEST_AUTH_PROJECT: 'nediq-acceptance-test',
+    NEDIQ_TEST_FIREBASE_WEB_API_KEY: 'synthetic-config-only-test-key',
+    FIRESTORE_EMULATOR_HOST: '127.0.0.1:8090'};
+  for (const overrides of [
+    {NEDIQ_TEST_AUTH_PROJECT: projectId},
+    {NEDIQ_TEST_AUTH_PROJECT: 'demo-nediq-v3-release'},
+    {NEDIQ_TEST_FIREBASE_WEB_API_KEY: ''},
+    {FIRESTORE_EMULATOR_HOST: ''},
+    {FIRESTORE_EMULATOR_HOST: 'example.com:8090'},
+    {FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9100'},
+  ]) {
+    assert.throws(() => localGoogleConfig({...localEnv, ...overrides}), /separate Firebase Auth project/);
+  }
+  const pilot = localGoogleConfig(localEnv);
+  const start = () => startWorkspaceHost({pilot, port: 8053, createPilotDispatch: () => () => {
+    assert.fail('Request without valid Host, Origin or credentials reached the dispatcher');
+  }});
+  for (const key of ['FIRESTORE_EMULATOR_HOST', 'FIREBASE_AUTH_EMULATOR_HOST']) {
+    const original = process.env[key];
+    t.after(() => {
+      if (original === undefined) delete process.env[key];
+      else process.env[key] = original;
+    });
+    delete process.env[key];
+  }
+  await assert.rejects(start(), /loopback Firestore Emulator/);
+  process.env.FIRESTORE_EMULATOR_HOST = localEnv.FIRESTORE_EMULATOR_HOST;
+  const server = await start();
+  t.after(() => server.close());
+  assert.equal(server.address, '127.0.0.1');
+  const http = (host, path, method = 'GET', origin = pilot.origin) => new Promise((resolve, reject) => {
+    request({hostname: '127.0.0.1', port: server.port, path, method, headers: {host, origin}}, async response => {
+      const chunks = [];
+      for await (const chunk of response) chunks.push(chunk);
+      resolve({status: response.statusCode, body: Buffer.concat(chunks).toString()});
+    }).on('error', reject).end();
+  });
+  const validHost = new URL(pilot.origin).host;
+  const page = await http(validHost, '/');
+  assert.equal(page.status, 200);
+  assert.match(page.body, /id="appVersion">v3\.0\.0/);
+  assert.match(page.body, /"projectId":"nediq-acceptance-test"/);
+  assert.doesNotMatch(page.body, /kitchen-designer-9d437/);
+  assert.equal((await http('example.com', '/')).status, 403);
+  assert.equal((await http(validHost, '/staging-api', 'POST', 'https://example.com')).status, 403);
+  assert.equal((await http(validHost, '/staging-api', 'POST')).status, 401);
+});

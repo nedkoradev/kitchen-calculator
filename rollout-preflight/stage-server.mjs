@@ -43,6 +43,10 @@ export function startLocalStaging({enabled = false, port = 0} = {}) {
 }
 
 export async function startWorkspaceHost({enabled = false, port = 0, pilot = null, createPilotDispatch} = {}) {
+  if (pilot?.localGoogle && (pilot.origin !== 'http://localhost:8053' || port !== 8053 || enabled ||
+      process.env.FIRESTORE_EMULATOR_HOST !== '127.0.0.1:8090' || process.env.FIREBASE_AUTH_EMULATOR_HOST)) {
+    throw new Error('Local Google acceptance must use localhost and the loopback Firestore Emulator');
+  }
   const authHost = process.env.FIREBASE_AUTH_EMULATOR_HOST;
   if (enabled && (!isLoopback(authHost) || !isLoopback(process.env.FIRESTORE_EMULATOR_HOST))) {
     throw new Error('Enable staged Auth only inside the two local emulators');
@@ -100,7 +104,7 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
   });
   await new Promise((done, reject) => {
     listener.once('error', reject);
-    listener.listen(port, pilot ? '0.0.0.0' : '127.0.0.1', done);
+    listener.listen(port, pilot && !pilot.localGoogle ? '0.0.0.0' : '127.0.0.1', done);
   });
   origin ??= 'http://127.0.0.1:' + listener.address().port;
   if (app) {
@@ -108,7 +112,7 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
     endpoint = createWorkspaceHttpHandler({dispatch, allowedOrigins: [origin]});
   }
   if (pilot) endpoint = createWorkspaceHttpHandler({dispatch: createPilotDispatch(), allowedOrigins: [origin]});
-  return {origin, port: listener.address().port, async close() {
+  return {origin, port: listener.address().port, address: listener.address().address, async close() {
     await new Promise((done, reject) => listener.close(error => error ? reject(error) : done()));
     if (app) await deleteApp(app);
   }};
