@@ -6,11 +6,14 @@ import {createWorkspaceDraftAdapter} from '../workspace-persistence/drafts.mjs';
 import {prepareNewDocument} from '../workspace-context/context.mjs';
 
 export async function startStagingAuth({authOrigin, pilot, materialsReady, activate, editor, views}) {
-  if (pilot ? (location.protocol !== 'https:' || location.origin !== pilot.origin) : location.hostname !== '127.0.0.1' || !/^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(authOrigin)) {
-    throw new Error('Staging Auth requires loopback');
-  }
+  const allowedOrigin = pilot?.localGoogle
+    ? pilot.origin === 'http://localhost:8053' && location.origin === pilot.origin
+    : pilot
+      ? location.protocol === 'https:' && location.origin === pilot.origin
+      : location.hostname === '127.0.0.1' && /^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(authOrigin);
+  if (!allowedOrigin) throw new Error('Unexpected authentication origin');
   const app = window.firebase.initializeApp(pilot
-    ? {apiKey: pilot.apiKey, authDomain: pilot.authDomain, projectId: 'kitchen-designer-9d437'}
+    ? {apiKey: pilot.apiKey, authDomain: pilot.authDomain, projectId: pilot.localGoogle ? pilot.projectId : 'kitchen-designer-9d437'}
     : {apiKey: 'demo-emulator-key', authDomain: 'demo-nediq-v3-release.firebaseapp.com', projectId: 'demo-nediq-v3-release'},
   'workspace-pilot');
   const auth = window.firebase.auth(app);
@@ -29,7 +32,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
   const logout = panel.querySelector('[data-logout]');
   for (const id of ['cloudLogin', 'cloudLogout']) document.getElementById(id).hidden = true;
   const status = panel.querySelector('[role=status]');
-  status.textContent = pilot?.public ? 'Вход в NED-IQ' : pilot ? 'Пилотен вход' : 'Локален тестов вход';
+  status.textContent = pilot?.localGoogle ? 'Локален тестов вход' : pilot?.public ? 'Вход в NED-IQ' : pilot ? 'Пилотен вход' : 'Локален тестов вход';
   form.hidden = !!pilot;
   const back = pilot && !pilot.public ? document.createElement('a') : null;
   if (back) {
