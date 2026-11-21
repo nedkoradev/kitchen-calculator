@@ -57,6 +57,9 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
   const fallback = buildLocalPreview(source);
   const preview = pilot ? buildPilotPreview(source, pilot) : enabled ? buildLocalPreview(source, {enabled, authOrigin: 'http://' + authHost}) : fallback;
   const app = enabled ? initializeApp({projectId}, 'local-staging-' + crypto.randomUUID()) : null;
+  const alternateHosts = new Map((pilot?.alternateOrigins ?? []).map(origin => [new URL(origin).host, {
+    origin, preview: buildPilotPreview(source, {...pilot, origin}),
+  }]));
   let endpoint;
   let origin = pilot?.origin;
 
@@ -67,8 +70,10 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
     };
     try {
       const host = incoming.headers.host;
-      const path = decodeURIComponent(new URL(incoming.url, origin).pathname);
-      if (host !== new URL(origin).host) {
+      const alternate = alternateHosts.get(host);
+      const requestOrigin = alternate?.origin ?? origin;
+      const path = decodeURIComponent(new URL(incoming.url, requestOrigin).pathname);
+      if (host !== new URL(requestOrigin).host) {
         // Cloud Run probes its tagged and canonical URLs. Only the configured
         // origin serves the workspace and its authenticated API.
         if (!pilot || pilot.public || incoming.method !== 'GET') return send(403, 'Unexpected host');
@@ -80,10 +85,11 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
         return outgoing.end();
       }
       if (path === '/staging-api') {
-        if (!endpoint) return send(404, 'Disabled');
-        const request = new Request(origin + path, {method: incoming.method, headers: incoming.headers,
+        const handle = alternate?.endpoint ?? endpoint;
+        if (!handle) return send(404, 'Disabled');
+        const request = new Request(requestOrigin + path, {method: incoming.method, headers: incoming.headers,
           ...(['GET', 'HEAD'].includes(incoming.method) ? {} : {body: Readable.toWeb(incoming), duplex: 'half'})});
-        const response = await endpoint(request);
+        const response = await handle(request);
         outgoing.writeHead(response.status, Object.fromEntries(response.headers));
         return outgoing.end(Buffer.from(await response.arrayBuffer()));
       }
@@ -92,7 +98,7 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
         outgoing.writeHead(302, {location: fallbackUrl, 'cache-control': 'no-store'});
         return outgoing.end();
       }
-      if (path === '/' || path === '/fallback') return send(200, path === '/' ? preview : fallback, 'text/html; charset=utf-8');
+      if (path === '/' || path === '/fallback') return send(200, path === '/' ? alternate?.preview ?? preview : fallback, 'text/html; charset=utf-8');
       const file = assetPath(path);
       if (!file) return send(404, 'Not found');
       const resolved = await realpath(resolve(root, file));
@@ -112,7 +118,13 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
     const dispatch = createWorkspaceService({db: getFirestore(app), verifyToken: token => getAuth(app).verifyIdToken(token, true)});
     endpoint = createWorkspaceHttpHandler({dispatch, allowedOrigins: [origin]});
   }
-  if (pilot) endpoint = createWorkspaceHttpHandler({dispatch: createPilotDispatch(), allowedOrigins: [origin]});
+  if (pilot) {
+    const dispatch = createPilotDispatch();
+    endpoint = createWorkspaceHttpHandler({dispatch, allowedOrigins: [origin]});
+    for (const alternate of alternateHosts.values()) {
+      alternate.endpoint = createWorkspaceHttpHandler({dispatch, allowedOrigins: [alternate.origin]});
+    }
+  }
   return {origin, port: listener.address().port, address: listener.address().address, async close() {
     await new Promise((done, reject) => listener.close(error => error ? reject(error) : done()));
     if (app) await deleteApp(app);

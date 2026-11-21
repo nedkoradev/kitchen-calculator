@@ -38,5 +38,23 @@ assert.equal((await probe('/staging-sdk/xlsx-0.20.3.min.js')).status, 200);
 assert.equal((await probe('/', {host: 'other.example'})).status, 403);
 assert.equal((await probe('/staging-api', {method: 'POST'})).status, 401);
 assert.equal((await probe('/staging-api', {method: 'POST', origin: 'https://other.example'})).status, 403);
+for (const host of ['nediq.eu', 'nediq-v3-public-579302190437.europe-west1.run.app',
+  'nediq-v3-public-inu5wh5ola-ew.a.run.app']) {
+  const origin = 'https://' + host;
+  const options = {host, origin};
+  const root = await probe('/', options);
+  assert.equal(root.status, 200);
+  assert.ok(root.body.includes('"origin":"' + origin + '"'));
+  assert.equal((await probe('/staging-sdk/auth.js', options)).status, 200);
+  assert.equal((await probe('/staging-api', {...options, method: 'OPTIONS'})).status, 204);
+  assert.equal((await probe('/staging-api', {...options, method: 'POST'})).status, 401);
+  assert.equal((await probe('/staging-api', {...options, origin: 'http://' + host, method: 'POST'})).status, 403);
+  const crossOrigin = host === 'nediq.eu' ? 'https://nediq-v3-public-579302190437.europe-west1.run.app' : 'https://nediq.eu';
+  assert.equal((await probe('/staging-api', {...options, origin: crossOrigin, method: 'POST'})).status, 403);
+}
+for (const host of ['other.example', 'nediq.eu.other.example', 'candidate---nediq-v3-public-inu5wh5ola-ew.a.run.app',
+  'other-service-579302190437.europe-west1.run.app']) {
+  assert.equal((await probe('/', {host})).status, 403);
+}
 console.log('PASS public container serves v3.0.0 and rejects foreign host, origin and anonymous API');
 NODE
