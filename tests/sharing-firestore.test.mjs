@@ -179,3 +179,34 @@ test('v2.93 shared editors cannot replace a newer project revision',async()=>{
  assert.equal((await store(viewer).open(initial.id)).revision,current.revision);
  assert.deepEqual((await store(owner).open(initial.id)).data,update);
 });
+
+test('v3 Firebase compat management uses the same rules and recipient index', async () => {
+ const {default: firebase} = await import('firebase/compat/app');
+ await import('firebase/compat/firestore');
+ const {createV3SharingStore} = await import('../release-candidate/sharing.mjs');
+ const [host, port] = process.env.FIRESTORE_EMULATOR_HOST.split(':');
+ const apps = [];
+ const create = uid => {
+  const app = firebase.initializeApp({projectId:'demo-kitchen-projects'}, 'v3-'+uid);
+  apps.push(app);
+  const email = uid+'@example.test';
+  const db = app.firestore();
+  db.useEmulator(host, Number(port), {mockUserToken:{sub:uid,email,email_verified:true,firebase:{sign_in_provider:'google.com'}}});
+  return {db, sharing:createV3SharingStore(db, () => ({uid,email,emailVerified:true}))};
+ };
+ try {
+  const owner = create('v3-owner'), editor = create('v3-editor'), outsider = create('v3-outsider');
+  const email = 'v3-editor@example.test';
+  const canonical = 'users/v3-owner/access_grants/'+email;
+  const member = 'nediq_access/'+email+'/bases/v3-owner';
+  await owner.sharing.add(email, 'editor');
+  assert.equal((await owner.sharing.members())[0].role, 'editor');
+  assert.equal((await editor.db.doc(member).get({source:'server'})).data().role, 'editor');
+  await assertFails(editor.db.doc(canonical).update({role:'viewer'}));
+  await assertFails(outsider.db.doc(member).get({source:'server'}));
+  await owner.sharing.changeRole(email, 'viewer');
+  assert.equal((await editor.db.doc(member).get({source:'server'})).data().role, 'viewer');
+  await owner.sharing.revoke(email);
+  assert.equal((await editor.db.doc(member).get({source:'server'})).exists, false);
+ } finally { await Promise.all(apps.map(app => app.delete())); }
+});

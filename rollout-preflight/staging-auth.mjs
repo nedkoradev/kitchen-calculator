@@ -1,4 +1,4 @@
-import {createSharingStore} from '../sharing-store.mjs';
+import {createV3SharingStore} from '../release-candidate/sharing.mjs';
 import {installSharingUI} from '../sharing-ui.mjs';
 import {fallbackUrl} from '../pilot/config.mjs';
 import {installPilotPanels} from '../release-candidate/panels.mjs';
@@ -120,16 +120,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
       const db = app.firestore();
       const account = () => ({actorUid: auth.currentUser?.uid,
         sharingAuth: auth.currentUser?.emailVerified ? 'ready' : 'unverified'});
-      const sharing = createSharingStore({db, getUser: () => auth.currentUser, sdk: {
-        doc: (db, ...path) => db.doc(path.join('/')),
-        collection: (db, ...path) => db.collection(path.join('/')),
-        getDocsFromServer: ref => ref.get({source: 'server'}),
-        runTransaction: (db, callback) => db.runTransaction(tx => callback({
-          get: async ref => { const snap = await tx.get(ref); return {exists: () => snap.exists}; },
-          set: (...args) => tx.set(...args),
-          delete: ref => tx.delete(ref),
-        })),
-      }});
+      const sharing = createV3SharingStore(db, () => auth.currentUser);
       openSharing = installSharingUI({sharing, account, personalOnly: true});
     }
     const panels = installPilotPanels({...views, logout, fallback: back, openSharing,
