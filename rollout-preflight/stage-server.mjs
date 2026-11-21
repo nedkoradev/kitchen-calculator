@@ -23,6 +23,7 @@ const types = {'.mjs': 'text/javascript', '.js': 'text/javascript', '.css': 'tex
 const moduleDirectories = new Set(['document-format', 'workspace-context', 'workspace-persistence',
   'workspace-ui', 'release-candidate', 'assets', 'materials']);
 const sdkPaths = {'/staging-sdk/app.js': 'node_modules/firebase/firebase-app-compat.js',
+  '/staging-sdk/firestore.js': 'node_modules/firebase/firebase-firestore-compat.js',
   '/staging-sdk/auth.js': 'node_modules/firebase/firebase-auth-compat.js',
   [sheetJsPath]: 'rollout-preflight/vendor/sheetjs/xlsx-0.20.3.min.js'};
 const blocked = new Set(['/cloud.js', '/local-reset.js', '/sw.js', '/app-release.js']);

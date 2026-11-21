@@ -6,6 +6,7 @@
   padding: 8px;
 }
 
+#staging-auth.publicProfile [role="status"] { overflow-wrap: anywhere; }
 #staging-auth label { padding: 4px; }
 body[data-stage-auth="locked"] main { visibility: hidden; }
 body[data-stage-auth="active"] #staging-auth { padding: 0; font-size: 11px; line-height: 1.1; }
@@ -72,6 +73,7 @@ dialog.pilotWindow::backdrop { background: rgba(21, 45, 71, .14); }
   .pilotWindowBody { padding: 8px; }
   .pilotWindowBody .materialSection { padding: 8px; overflow-x: auto; }
   body[data-stage-auth="active"] #staging-auth { max-inline-size: 80px; }
+  body[data-stage-auth="active"] #staging-auth.publicProfile { max-inline-size: 32vw; }
 }
 
 /* Pilot-only save dialog: labels and controls occupy separate rows. */

@@ -32,6 +32,8 @@ assert.ok(JSON.parse(catalog.body).pdcMaterials.length > 0);
 assert.equal((await probe('/rollout-preflight/staging-auth.mjs')).status, 200);
 assert.equal((await probe('/staging-sdk/app.js')).status, 200);
 assert.equal((await probe('/staging-sdk/auth.js')).status, 200);
+assert.match(page.body, /staging-sdk\/firestore\.js/);
+assert.equal((await probe('/staging-sdk/firestore.js')).status, 200);
 assert.match(page.body, /src="\/staging-sdk\/xlsx-0\.20\.3\.min\.js"/);
 assert.doesNotMatch(page.body, /xlsx@0\.18\.5/);
 assert.equal((await probe('/staging-sdk/xlsx-0.20.3.min.js')).status, 200);
