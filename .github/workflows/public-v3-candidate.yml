@@ -84,25 +84,9 @@ jobs:
           printf 'ref=%s@%s\n' "$IMAGE" "$digest" >> "$GITHUB_OUTPUT"
           printf 'Image: %s@%s\n\nCommit: %s\n' "$IMAGE" "$digest" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Deploy a ready revision with zero traffic
+      - name: Prepare the internal Cloud Run candidate
         if: inputs.mode == 'candidate'
         env:
           IMAGE_REF: ${{ steps.image.outputs.ref }}
-        run: |
-          set -euo pipefail
-          cloud=(--project "$PROJECT" --region "$REGION" --quiet)
-          gcloud run services describe "$SERVICE" "${cloud[@]}" --format=json |
-            jq -e --arg runtime "$RUNTIME_ACCOUNT" '
-              .metadata.annotations["run.googleapis.com/ingress"] == "internal"
-              and .metadata.annotations["run.googleapis.com/invoker-iam-disabled"] != "true"
-              and .spec.template.spec.serviceAccountName == $runtime' >/dev/null
-          suffix="gh-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
-          revision="$SERVICE-$suffix"
-          gcloud run deploy "$SERVICE" "${cloud[@]}" --image "$IMAGE_REF" --no-traffic --revision-suffix "$suffix"
-          gcloud run revisions describe "$revision" "${cloud[@]}" --format='json(spec.containers,spec.serviceAccountName,status.conditions)' |
-            jq -e --arg image "$IMAGE_REF" --arg runtime "$RUNTIME_ACCOUNT" '
-              .spec.containers[0].image == $image and .spec.serviceAccountName == $runtime
-              and any(.status.conditions[]; .type == "Ready" and .status == "True")' >/dev/null
-          gcloud run services describe "$SERVICE" "${cloud[@]}" --format='json(status.traffic)' |
-            jq -e --arg revision "$revision" 'all(.status.traffic[]; .revisionName != $revision or (.percent // 0) == 0)' >/dev/null
-          printf 'Ready revision %s has zero traffic.\n' "$revision" >> "$GITHUB_STEP_SUMMARY"
+          FIREBASE_WEB_API_KEY: ${{ secrets.PUBLIC_V3_FIREBASE_WEB_API_KEY }}
+        run: bash scripts/deploy-public-candidate.sh
