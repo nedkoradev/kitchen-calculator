@@ -178,7 +178,7 @@ function protectMaterialEditors(onApply) {
   }).observe(document.body, {subtree: true, attributes: true, attributeFilter: ['open']});
 }
 
-export function installPilotPanels({renderMaterials, renderReport, logout, fallback, onMaterialApply, canEdit}) {
+export function installPilotPanels({renderMaterials, renderReport, logout, fallback, openSharing, onMaterialApply, canEdit}) {
   const create = (id, title, existing = byId(id)) => {
     const dialog = existing ?? document.createElement('dialog');
     dialog.id = id;
@@ -237,7 +237,13 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
   const projectsMenuItem = byId('libraryMenu')?.querySelector('[role="menuitem"]');
   if (projectsMenuItem) projectsMenuItem.onclick = () => byId('navLibrary').click();
   byId('commandLogout')?.remove();
-  byId('sharingOpen')?.remove();
+  const sharingControl = byId('sharingOpen');
+  if (sharingControl && openSharing) sharingControl.onclick = () => {
+    sharingControl.closest('details').open = false;
+    settings.dialog.close();
+    openSharing();
+  };
+  else sharingControl?.remove();
   const commands = new Map([
     ['navMaterials', showMaterials], ['navCut', () => showReport('cut')], ['navCosts', () => showReport('costs')],
     ['tabProjectCut', () => showReport('cut')], ['tabProjectCosts', () => showReport('costs')],

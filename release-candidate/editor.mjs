@@ -298,19 +298,27 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     const scope = bridge.state.scope;
     const bases = await store.legacyBases({scope});
     const owner = await dialog('Библиотеки v2.95', (panel, done) => {
-      for (const base of bases) panel.append(button(base.name, () => done(base.id)));
+      for (const base of bases) panel.append(button(base.name + ' · ' + ({owner: 'Собственик', editor: 'Редактор', viewer: 'Наблюдател'}[base.role] ?? ''), () => done(base.id)));
       panel.append(button('Отказ', () => done(null)));
     });
     if (!owner || bridge.state.scope?.actorUid !== scope.actorUid || !bridge.state.canAct) return;
-    const {documents, catalogs} = await store.legacyList({scope, legacyOwnerId: owner});
+    const {documents, catalogs, folders = []} = await store.legacyList({scope, legacyOwnerId: owner});
     const item = await dialog('Документи v2.95', (panel, done) => {
       const hint = document.createElement('p');
       hint.textContent = 'Оригиналът остава във v2.95. Записването тук създава личен v3 документ.';
       panel.append(hint);
       const listing = documentElement('div', 'libraryDialogItems');
-      for (const item of documents) listing.append(button(
-        (item.type === 'project' ? 'Отвори проект · ' : 'Добави модел · ') + item.name, () => done(item)));
-      panel.append(listing, button('Отказ', () => done(null)));
+      const select = document.createElement('select');
+      select.setAttribute('aria-label', 'Папка v2.95');
+      select.add(new Option('Всички документи', ''));
+      for (const folder of folders) select.add(new Option(folder.label, folder.id));
+      const refresh = () => listing.replaceChildren(...documents
+        .filter(item => !select.value || item.folderId === select.value)
+        .map(item => button((item.type === 'project' ? 'Отвори проект · ' : 'Добави модел · ') + item.name,
+          () => done(item))));
+      select.onchange = refresh;
+      refresh();
+      panel.append(select, listing, button('Отказ', () => done(null)));
     });
     if (!item || bridge.state.scope?.actorUid !== scope.actorUid || !bridge.state.canAct) return;
     let catalogId;

@@ -148,11 +148,14 @@ test('public v3 reads personal and granted v2 sources while keeping writes in th
     const owner = 'legacy-owner';
     const project = {schemaVersion: 1, revision: 3, name: 'Стара кухня',
       data: {materials, parts, room: {w: 3000, h: 2600, d: 3000}}};
-    const model = {name: 'Стар шкаф', parts, v2: true};
+    const model = {name: 'Стар шкаф', parts, v2: true, category: 'Долен шкаф'};
     const projectRef = backend.db.doc('users/' + owner + '/v2_projects/legacy-project');
     const modelRef = backend.db.doc('users/' + owner + '/v2_cabinets/legacy-model');
     const grant = (uid, role) => ({ownerUid: owner, role, ownerName: 'Споделена база'});
     await Promise.all([projectRef.set(project), modelRef.set(model),
+      backend.db.doc('users/' + owner + '/materials/_app_preferences').set({
+        folders: [{id: 'wardrobes', label: 'Гардероби', aliases: ['Гардероби'], deleted: false, target: null}],
+      }),
       backend.db.doc('users/' + owner + '/materials/source').set({name: 'Оригинална', ...materials}),
       ...['viewer', 'editor'].flatMap(role => [
         backend.db.doc('users/' + owner + '/access_grants/' + role + '@example.test').set(grant(role, role)),
@@ -172,6 +175,12 @@ test('public v3 reads personal and granted v2 sources while keeping writes in th
       [['viewer', 'owner'], [owner, 'viewer']]);
     assert.deepEqual((await call(owner, 'legacyList')).documents.map(doc => [doc.type, doc.requiresCatalog]),
       [['project', false], ['model', true]]);
+    for (const role of [owner, 'viewer', 'editor']) {
+      const listing = await call(role, 'legacyList');
+      const folderId = listing.documents.find(doc => doc.id === 'legacy-model').folderId;
+      assert.equal(listing.folders.find(folder => folder.id === folderId).label, 'Долен шкаф');
+      assert.deepEqual(listing.folders.find(folder => folder.id === 'wardrobes'), {id: 'wardrobes', label: 'Гардероби'});
+    }
     for (const role of ['viewer', 'editor']) {
       const result = await call(role, 'legacyRead', {id: 'legacy-project', type: 'project'});
       assert.deepEqual(toEditorSnapshot(result).parts, parts);

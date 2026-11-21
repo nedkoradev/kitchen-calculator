@@ -1,3 +1,4 @@
+import {defaultFolders, mergeLegacyFolders, resolveFolder} from '../library-folders.mjs';
 import {identifier} from '../document-format/model.mjs';
 import {readLegacyCabinet, readLegacyProject} from '../document-format/legacy.mjs';
 
@@ -32,17 +33,23 @@ export function createLegacyLibrary(db, bundledCatalog) {
     const owner = owners.doc(ownerId);
     const materials = owner.collection('materials');
     if (operation === 'legacyList') {
-      const [projects, models, bases] = await Promise.all([
+      const [projects, models, bases, preferences] = await Promise.all([
         tx.get(owner.collection(collections.project).select('name', 'data.materials')),
-        tx.get(owner.collection(collections.model).select('name', 'materials')),
+        tx.get(owner.collection(collections.model).select('name', 'materials', 'folderId', 'category')),
         tx.get(materials.select('name')),
+        tx.get(materials.doc(preferencesId)),
       ]);
       const documents = (rows, type, embedded) => rows.docs.map(doc => ({
         id: doc.id, name: doc.data().name, type, requiresCatalog: !embedded(doc.data()),
       }));
+      const modelRows = models.docs.map(doc => doc.data());
+      const folders = mergeLegacyFolders(preferences.data()?.folders ?? defaultFolders(), modelRows);
       return {
+        folders: folders.filter(folder => !folder.deleted).map(({id, label}) => ({id, label})),
         documents: [...documents(projects, 'project', row => row.data?.materials),
-          ...documents(models, 'model', row => row.materials)],
+          ...documents(models, 'model', row => row.materials).map((document, index) => ({
+            ...document, folderId: resolveFolder(modelRows[index], folders),
+          }))],
         catalogs: [{id: '', name: 'Вградена стандартна база'}, ...bases.docs.filter(doc => doc.id !== preferencesId)
           .map(doc => ({id: doc.id, name: doc.data().name ?? doc.id}))],
       };

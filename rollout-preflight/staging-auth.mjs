@@ -1,3 +1,5 @@
+import {createSharingStore} from '../sharing-store.mjs';
+import {installSharingUI} from '../sharing-ui.mjs';
 import {fallbackUrl} from '../pilot/config.mjs';
 import {installPilotPanels} from '../release-candidate/panels.mjs';
 import {mountWorkspaceEditor} from '../release-candidate/editor.mjs';
@@ -113,7 +115,24 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
     activate();
     const startingDocument = prepareNewDocument({materials: editor.capture().materials});
     let integration;
-    const panels = installPilotPanels({...views, logout, fallback: back,
+    let openSharing;
+    if (pilot?.public && !pilot.localGoogle) {
+      const db = app.firestore();
+      const account = () => ({actorUid: auth.currentUser?.uid,
+        sharingAuth: auth.currentUser?.emailVerified ? 'ready' : 'unverified'});
+      const sharing = createSharingStore({db, getUser: () => auth.currentUser, sdk: {
+        doc: (db, ...path) => db.doc(path.join('/')),
+        collection: (db, ...path) => db.collection(path.join('/')),
+        getDocsFromServer: ref => ref.get({source: 'server'}),
+        runTransaction: (db, callback) => db.runTransaction(tx => callback({
+          get: async ref => { const snap = await tx.get(ref); return {exists: () => snap.exists}; },
+          set: (...args) => tx.set(...args),
+          delete: ref => tx.delete(ref),
+        })),
+      }});
+      openSharing = installSharingUI({sharing, account, personalOnly: true});
+    }
+    const panels = installPilotPanels({...views, logout, fallback: back, openSharing,
       canEdit: () => integration?.bridge.state.canAct === true,
       onMaterialApply: () => integration.flush()});
     integration = mountWorkspaceEditor(editor, {store, drafts: createWorkspaceDraftAdapter(localStorage),
@@ -127,7 +146,9 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
     document.body.dataset.stageAuth = 'active';
     form.hidden = google.hidden = true;
     logout.hidden = false;
-    status.textContent = 'Профилът е удостоверен';
+    status.textContent = pilot?.public ? user.email + ' · Собственик' : 'Профилът е удостоверен';
+    status.title = status.textContent;
+    if (pilot?.public) panel.classList.add('publicProfile');
     if (pilot) document.getElementById('appVersion').textContent = pilot.public ? 'v3.0.0' : 'v3.0';
   });
 }

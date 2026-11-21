@@ -62,7 +62,8 @@ function buildPreview(source, {enabled, settings}) {
   `);
   // The compat distribution is served from the installed, pinned SDK on loopback.
   return html.replace('</head>', '<script defer src="/staging-sdk/app.js"></script>' +
-    '<script defer src="/staging-sdk/auth.js"></script></head>');
+    '<script defer src="/staging-sdk/auth.js"></script>' +
+    (settings.pilot?.public && !settings.pilot.localGoogle ? '<script defer src="/staging-sdk/firestore.js"></script>' : '') + '</head>');
 }
 
 export function buildLocalPreview(source, {enabled = false, authOrigin} = {}) {

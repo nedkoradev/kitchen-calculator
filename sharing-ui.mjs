@@ -29,13 +29,13 @@ function roleSelect(selected,label){
  return select;
 }
 
-export function installSharingUI({sharing,account,selectBase}){
+export function installSharingUI({sharing,account,selectBase,personalOnly=false}){
  let dialog=null,refresh=null,discovery=0;
  const indicator=button('',()=>open('choose'));
  indicator.id='sharedBaseStatus';indicator.hidden=true;
  const indicatorName=element('span'),indicatorRole=element('span');
  indicator.append(indicatorName,indicatorRole);
- document.getElementById('cloudStatus').after(indicator);
+ if(!personalOnly)document.getElementById('cloudStatus').after(indicator);
  function open(kind='manage'){
   if(dialog?.open)dialog.close();
   const active=element('dialog'),heading=element('h3',kind==='choose'?'Избор на база данни':'Потребители и достъп');
@@ -90,8 +90,8 @@ export function installSharingUI({sharing,account,selectBase}){
     }
     return;
    }
-   body.append(button('Смени активната база',()=>open('choose')));
-   body.append(element('p','Управляваш достъпа до личната си база.'));
+   if(!personalOnly)body.append(button('Смени активната база',()=>open('choose')));
+   body.append(element('p',personalOnly?'Управляваш достъпа до личната си библиотека v2.95.':'Управляваш достъпа до личната си база.'));
    const form=element('form'),email=element('input'),role=roleSelect('viewer','Роля');
    email.type='email';email.required=true;email.maxLength=254;email.placeholder='Google имейл';
    email.setAttribute('aria-label','Google имейл');
@@ -115,6 +115,7 @@ export function installSharingUI({sharing,account,selectBase}){
   }
   refresh=render;render();
  }
+ if(personalOnly)return open;
  window.addEventListener('ned-sharing-open',()=>open());
  window.addEventListener('kitchen-project-auth',()=>{
   const state=account();

@@ -51,6 +51,7 @@ test('local output does not overwrite an existing backup', async () => {
 
 test('staging preview contains no legacy cloud entrypoint, reset or worker even when disabled', async () => {
   const source = await repositoryFile('index.html');
+  const {major, minor} = JSON.parse(await repositoryFile('_data/version.json'));
   const preview = buildLocalPreview(source);
   const activated = buildLocalPreview(source, {enabled: true, authOrigin: 'http://127.0.0.1:9100'});
   assert.doesNotMatch(preview, /staging-auth\.mjs/);
@@ -61,7 +62,7 @@ test('staging preview contains no legacy cloud entrypoint, reset or worker even 
   assert.ok(activated.includes('<script src="' + sheetJsPath + '"></script>'));
   for (const html of [preview, activated]) {
     assert.doesNotMatch(html, /src="\.\/(cloud\.js|local-reset\.js|app-release\.js)"/);
-    assert.match(html, /v2\.95/);
+    assert.ok(html.includes('<span id="appVersion">v' + major + '.' + minor + '</span>'));
   }
   assert.throws(() => buildLocalPreview(source, {enabled: true, authOrigin: 'https://example.invalid'}));
   assert.throws(() => buildLocalPreview(source.replace('}build();frame();', ''), {enabled: true, authOrigin: 'http://127.0.0.1:9100'}));

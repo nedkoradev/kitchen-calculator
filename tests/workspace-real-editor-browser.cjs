@@ -73,8 +73,13 @@ const {openKitchen} = require('./browser-harness.cjs');
       const http = createWorkspaceHttpClient({endpoint: '/workspace-rc-rpc', getIdToken: scope => tokens[scope.actorUid]});
       const store = createWorkspaceClient(async (operation, request) => {
         if (operation === 'pending' && connection.offline === request.scope.ownerUid) throw Error('Journal offline');
-        if (operation === 'legacyBases') return [{id: 'legacy-owner', name: 'Споделена стара база', role: 'viewer'}];
-        if (operation === 'legacyList') return {documents: [{id: 'v2-project', type: 'project', name: 'Стара кухня'}]};
+        if (operation === 'legacyBases') return [
+          {id: request.scope.actorUid, name: 'Моята библиотека v2.95', role: 'owner'},
+          ...(request.scope.actorUid === 'beta' ? [{id: 'legacy-owner', name: 'Споделена стара база', role: 'editor'}] : []),
+        ];
+        if (operation === 'legacyList') return {folders: [{id: 'wardrobes', label: 'Гардероби'}, {id: 'lower', label: 'Долен шкаф'}],
+          documents: [{id: 'v2-project', type: 'project', name: 'Стара кухня'},
+            {id: 'lower-model', type: 'model', name: 'Контролен шкаф', folderId: 'lower'}]};
         if (operation === 'legacyRead') return {...fixtureDocuments()[0], id: request.id, name: 'Стара кухня', nameKey: 'стара кухня'};
         const result = await http[operation](request);
         if (operation === 'write' && connection.dropAcknowledgement) {
@@ -180,6 +185,13 @@ const {openKitchen} = require('./browser-harness.cjs');
     assert.equal((await state()).workspace.canUndo, beforeInvalid.canUndo);
     assert.equal((await snapshot()).room.w, 3400);
     await page.evaluate(() => { window.__integration.connection.invalidProject = null; });
+    if (e2e) {
+      await libraryButton.click();
+      await page.getByRole('button', {name: 'Документи v2.95…', exact: true}).click();
+      await page.getByRole('button', {name: 'Моята библиотека v2.95 · Собственик', exact: true}).waitFor();
+      assert.equal(await page.getByRole('button', {name: /Споделена стара база/}).count(), 0);
+      await page.keyboard.press('Escape');
+    }
     await page.evaluate(() => { window.__integration.connection.offline = 'beta'; });
     await page.getByLabel('Тестов профил').selectOption('beta');
     await page.waitForFunction(() => window.__integration.bridge.state.gate === 'journal-blocked');
@@ -234,7 +246,14 @@ const {openKitchen} = require('./browser-harness.cjs');
     if (e2e) {
       await libraryButton.click();
       await page.getByRole('button', {name: 'Документи v2.95…', exact: true}).click();
-      await page.getByRole('button', {name: 'Споделена стара база', exact: true}).click();
+      await page.getByRole('button', {name: 'Моята библиотека v2.95 · Собственик', exact: true}).waitFor();
+      await page.getByRole('button', {name: 'Споделена стара база · Редактор', exact: true}).click();
+      const legacyFolder = page.getByLabel('Папка v2.95', {exact: true});
+      await legacyFolder.selectOption({label: 'Гардероби'});
+      assert.equal(await page.getByRole('button', {name: 'Добави модел · Контролен шкаф'}).count(), 0);
+      await legacyFolder.selectOption({label: 'Долен шкаф'});
+      await page.getByRole('button', {name: 'Добави модел · Контролен шкаф'}).waitFor();
+      await legacyFolder.selectOption('');
       await page.getByRole('button', {name: 'Отвори проект · Стара кухня', exact: true}).click();
       await partCount(2);
       await settled();
