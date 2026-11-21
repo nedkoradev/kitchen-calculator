@@ -68,3 +68,30 @@ Workflow режимът `candidate` е за частна услуга. За ве
 image ref от GitHub Actions. Запази текущото разпределение на трафика за
 rollback и настройките за ingress, Firebase и runtime акаунта. Временно
 връщане на ingress към private само за изпълнение на workflow не е нужно.
+
+### Диагностика на Google входа
+
+v3 използва Firebase Auth compat с `signInWithPopup` и `authDomain`
+`kitchen-designer-9d437.firebaseapp.com`. Няма автоматичен redirect fallback.
+След вход браузърът изпраща Firebase ID token към `/staging-api`. Сървърът
+проверява отнемането на токена, Google provider, потвърдения имейл и UID.
+Ограничението `NEDIQ_PILOT_UID` важи за отделния Pilot.
+
+Във Firebase Console избери `kitchen-designer-9d437`. В **Authentication →
+Sign-in method** провери, че Google е активен. В **Authentication → Settings →
+Authorized domains** провери точния хост от адресната лента, например
+`nediq-v3-public-579302190437.europe-west1.run.app`, без схема или път.
+Добавяй само официалния Cloud Run адрес, на който ще тестваш. При персонализиран
+Google OAuth клиент провери, че е разрешен redirect URI
+`https://kitchen-designer-9d437.firebaseapp.com/__/auth/handler`. Ако Web API
+ключът има HTTP referrer ограничения, провери дали допускат тестовия хост.
+
+Ако браузърът откаже сесийното хранилище, приложението опитва Firebase сесия
+в паметта до презареждане. Това не заобикаля браузърните ограничения на Google
+popup. Видимото съобщение различава отказан домейн, блокиран popup или storage
+и потвърден Google вход, последван от отказ или недостъпност на API.
+
+При проверката на 21.11.2026 г. Firebase Identity Toolkit върна разрешените
+домейни на проекта с HTTP 200. Списъкът съдържаше `nediq.eu` и регионалния
+адрес на Pilot, но липсваха двата адреса на `nediq-v3-public`. За тест на
+регионалния публичен URL добави само него. Провери в чист Chrome профил.

@@ -44,6 +44,22 @@ const path = require('node:path');
       outside.push(url.host);
       return route.abort();
     });
+    // Chromium uses a fresh non-persistent profile. Reject session persistence
+    // explicitly to model a browser policy that disables it.
+    await page.route('**/staging-sdk/auth.js', async route => {
+      const response = await route.fetch();
+      const body = await response.text();
+      await route.fulfill({response, body: body + `
+        ;(() => {
+          const prototype = firebase.auth.Auth.prototype;
+          const setPersistence = prototype.setPersistence;
+          prototype.setPersistence = function (mode) {
+            if (!window.__allowSessionFixture && mode === firebase.auth.Auth.Persistence.SESSION) return Promise.reject(new Error('fixture storage blocked'));
+            return setPersistence.call(this, mode);
+          };
+        })();
+      `});
+    });
     let releaseCatalog;
     const catalogGate = new Promise(resolve => { releaseCatalog = resolve; });
     await page.route('**/materials/default.json', async route => {
@@ -52,14 +68,35 @@ const path = require('node:path');
     });
     await page.goto(stage.origin + '/', {waitUntil: 'domcontentloaded'});
     const panel = page.getByRole('region', {name: 'Вход в локалния преглед'});
-    await panel.getByText('Локален тестов вход').waitFor();
+    await panel.getByText('Входът важи само до презареждане на страницата.').waitFor();
+    const authAlert = panel.getByRole('alert');
+    const google = panel.getByRole('button', {name: 'Вход с Google'});
+    const expectGoogleError = async (code, message) => {
+      await page.evaluate(code => {
+        const auth = window.firebase.auth(window.firebase.app('workspace-pilot'));
+        auth.signInWithPopup = () => Promise.reject(Object.assign(new Error('private fixture error'), {code}));
+      }, code);
+      await google.click();
+      await panel.getByText(message).waitFor({state: 'visible'});
+      assert.doesNotMatch(await authAlert.textContent(), /private fixture error/);
+      assert.equal(await page.evaluate(() => document.querySelector('main').inert), true);
+    };
+    await expectGoogleError('auth/unauthorized-domain', /адрес не е разрешен/);
+    await expectGoogleError('auth/web-storage-unsupported', /блокира хранилището/);
     assert.equal(await page.evaluate(() => document.querySelector('main').inert), true);
     assert.equal(await page.getByLabel('Тестов профил').count(), 0);
-    await panel.getByLabel('Имейл').fill('stage-pilot@fixture.invalid');
-    await panel.getByLabel('Парола').fill('fixture-password');
+    await page.unroute('**/staging-sdk/auth.js');
+    await page.evaluate(async () => {
+      window.__allowSessionFixture = true;
+      const auth = window.firebase.auth(window.firebase.app('workspace-pilot'));
+      await auth.setPersistence(window.firebase.auth.Auth.Persistence.SESSION);
+      // Replace only external Google OAuth. The SDK Auth observer and token
+      // handling still use the real emulator session.
+      auth.signInWithPopup = () => auth.signInWithEmailAndPassword('stage-pilot@fixture.invalid', 'fixture-password');
+    });
     const signIn = page.waitForResponse(response => response.url().includes('accounts:signInWithPassword'));
     try {
-      await panel.getByLabel('Парола').press('Enter');
+      await google.click();
       assert.ok((await signIn).ok());
       await page.waitForFunction(() => window.firebase.auth(window.firebase.app('workspace-pilot')).currentUser !== null);
       assert.equal(await page.evaluate(() => document.querySelector('main').inert), true);
