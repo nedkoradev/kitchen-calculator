@@ -48,16 +48,7 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
       - name: Validate public WIF configuration
-        run: |
-          set -euo pipefail
-          if [[ ! "$WIF_PROVIDER" =~ ^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$ ]]; then
-            echo "::error::Set PUBLIC_V3_WIF_PROVIDER in the public-v3 GitHub Environment to the full Google WIF provider resource name."
-            exit 1
-          fi
-          if [[ "$DEPLOY_ACCOUNT" != "nediq-public-deployer@$PROJECT.iam.gserviceaccount.com" ]]; then
-            echo "::error::Set PUBLIC_V3_DEPLOY_SERVICE_ACCOUNT in the public-v3 GitHub Environment to nediq-public-deployer@$PROJECT.iam.gserviceaccount.com."
-            exit 1
-          fi
+        run: bash scripts/check-public-wif.sh
       - name: Build the exact tested source
         run: |
           set -euo pipefail
