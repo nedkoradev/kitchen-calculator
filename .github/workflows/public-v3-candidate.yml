@@ -55,11 +55,17 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           docker build --platform linux/amd64 --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$IMAGE:$GITHUB_SHA" .
           bash tests/pilot-container-smoke.sh "$IMAGE:$GITHUB_SHA"
+          bash tests/public-container-smoke.sh "$IMAGE:$GITHUB_SHA"
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
         with:
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
           service_account: ${{ env.DEPLOY_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+      - name: Check effective Cloud Run access
+        if: inputs.mode == 'candidate'
+        env:
+          FIREBASE_WEB_API_KEY: ${{ secrets.PUBLIC_V3_FIREBASE_WEB_API_KEY }}
+        run: bash scripts/check-public-cloud-access.sh
       - name: Publish or verify the immutable image
         id: image
         run: |
@@ -76,6 +82,7 @@ jobs:
             label=$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$IMAGE@$digest")
             [[ "$label" == "$GITHUB_SHA" ]]
             bash tests/pilot-container-smoke.sh "$IMAGE@$digest"
+            bash tests/public-container-smoke.sh "$IMAGE@$digest"
           else
             docker push "$IMAGE:$GITHUB_SHA"
             digest=$(describe_tag)

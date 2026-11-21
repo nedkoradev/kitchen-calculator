@@ -19,9 +19,17 @@ case "$1 $2 $3" in
   'run services describe')
     ingress=internal
     if [[ "${SCENARIO:-}" == insecure ]]; then ingress=all; fi
-    jq -n --arg runtime "$RUNTIME_ACCOUNT" --arg ingress "$ingress" --arg revision "$(cat "$STATE")" '
+    enabled=1
+    if [[ "${SCENARIO:-}" == disabled ]]; then enabled=0; fi
+    jq -n --arg project "$PROJECT" --arg enabled "$enabled" --arg runtime "$RUNTIME_ACCOUNT" --arg ingress "$ingress" --arg revision "$(cat "$STATE")" '
       {metadata:{annotations:{"run.googleapis.com/ingress":$ingress}},
-       spec:{template:{spec:{serviceAccountName:$runtime}}},
+       spec:{template:{spec:{serviceAccountName:$runtime,containers:[{env:[
+         {name:"GOOGLE_CLOUD_PROJECT",value:$project},
+         {name:"NEDIQ_PUBLIC_ENABLED",value:$enabled},
+         {name:"NEDIQ_PUBLIC_ORIGIN",value:"https://nediq.eu"},
+         {name:"NEDIQ_FIREBASE_AUTH_DOMAIN",value:($project+".firebaseapp.com")},
+         {name:"NEDIQ_FIREBASE_WEB_API_KEY",value:"synthetic-config-only-test-key"}
+       ]}]}}},
        status:{url:"https://private-test.run.app",traffic:[{revisionName:$revision,percent:100}]}}' ;;
   'run services get-iam-policy')
     if [[ "${SCENARIO:-}" == public ]]; then echo '{"bindings":[{"members":["allUsers"]}]}'; else echo '{}'; fi ;;
@@ -59,7 +67,7 @@ bash scripts/deploy-public-candidate.sh
 [[ "$(cat "$STATE")" == "$REVISION" && ! -e "$STATE.updated" ]]
 grep -Fq 'First revision of a private service' "$GITHUB_STEP_SUMMARY"
 echo "$SERVICE-previous" > "$STATE"
-for scenario in insecure public; do
+for scenario in insecure public disabled; do
   if SCENARIO="$scenario" bash scripts/deploy-public-candidate.sh; then exit 1; fi
 done
 [[ ! -e "$STATE.updated" ]]
