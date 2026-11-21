@@ -5,7 +5,7 @@ trap 'rm -rf "$scratch"' EXIT
 export PATH="$scratch:$PATH" STATE="$scratch/state" GITHUB_STEP_SUMMARY="$scratch/summary"
 export PROJECT=kitchen-designer-9d437 REGION=europe-west1 SERVICE=nediq-v3-public
 export RUNTIME_ACCOUNT="ned-iq-v3-public@$PROJECT.iam.gserviceaccount.com"
-export IMAGE_REF="europe-west1-docker.pkg.dev/$PROJECT/nediq/ned-iq-v3-public@sha256:$(printf '%064d' 1)"
+export IMAGE_REF="europe-west1-docker.pkg.dev/$PROJECT/nediq/nediq-v3-public@sha256:$(printf '%064d' 1)"
 export GITHUB_RUN_ID=123 GITHUB_RUN_ATTEMPT=1 FIREBASE_WEB_API_KEY=synthetic-config-only-test-key
 export REVISION="$SERVICE-gh-123-1"
 cat > "$scratch/gcloud" <<'MOCK'
@@ -60,6 +60,14 @@ printf '%s\n' "$REVISION" > "$STATE"
 echo '{"name":"projects/123/locations/europe-west1/operations/operation-123","done":true}'
 MOCK
 chmod +x "$scratch/gcloud" "$scratch/curl"
+# Service, image and runtime identity are separate names.
+for setting in   "IMAGE_REF=${IMAGE_REF/\/nediq-v3-public@/\/ned-iq-v3-public@}"   "SERVICE=ned-iq-v3-public"   "RUNTIME_ACCOUNT=nediq-v3-public@$PROJECT.iam.gserviceaccount.com"; do
+  if env "$setting" bash scripts/deploy-public-candidate.sh; then
+    echo 'Candidate accepted a swapped service, image, or runtime name' >&2
+    exit 1
+  fi
+done
+[[ ! -e "$STATE" ]]
 if SCENARIO=denied bash scripts/deploy-public-candidate.sh; then exit 1; fi
 if FIREBASE_WEB_API_KEY='' bash scripts/deploy-public-candidate.sh; then exit 1; fi
 [[ ! -e "$STATE" ]]
