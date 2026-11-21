@@ -13,6 +13,8 @@
 
 ## Архитектура
 
+- [Архитектурна карта на NED-IQ](docs/ARCHITECTURE.md) — слоеве, потоци на данни, v2/v3 граници, Cloud Run, Firebase, CI/CD, версии и rollback. Поддържай я при архитектурни промени.
+
 - Статично приложение HTML/CSS/JavaScript, коренен `index.html`; Three.js за 3D, 2D изгледи, отделни ES modules.
 - `cloud.js`: Firebase Google Authentication + Firestore, събития `kitchen-v2-*`; съществуващите имена са договор за съвместимост.
 - `geometry.mjs`: ограничения при преместване и оразмеряване; не заобикаляй общата геометрична логика.
