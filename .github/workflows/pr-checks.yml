@@ -35,7 +35,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - name: Check PR diff and pin release base
         run: |
@@ -78,6 +78,10 @@ jobs:
           node tests/workspace-ui-browser.cjs
           node tests/workspace-real-editor-browser.cjs
           node tests/responsive-workspace-browser.cjs
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
       - name: Run legacy Firestore Emulator checks
         run: npm run test:firestore
       - name: Run authenticated v3 release checks and Chromium with Emulators

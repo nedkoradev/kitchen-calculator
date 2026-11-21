@@ -23,6 +23,9 @@
 !rollout-preflight/
 !rollout-preflight/staging-*.mjs
 !rollout-preflight/stage-server.mjs
+!rollout-preflight/vendor/
+!rollout-preflight/vendor/sheetjs/
+!rollout-preflight/vendor/sheetjs/**
 !pilot/
 !pilot/config.mjs
 !pilot/server.mjs
