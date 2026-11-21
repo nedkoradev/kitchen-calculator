@@ -20,6 +20,12 @@ test_permissions() {
 }
 
 test_permissions "https://iam.googleapis.com/v1/projects/$PROJECT/serviceAccounts/$RUNTIME_ACCOUNT:testIamPermissions" iam.serviceAccounts.actAs
+if [[ "${MODE:-}" == production || "${MODE:-}" == production-probe ]]; then
+  test_permissions "https://run.googleapis.com/v2/projects/$PROJECT/locations/$REGION/services/$SERVICE:testIamPermissions" \
+    run.services.get run.services.update
+  echo 'PASS runtime actAs and production Cloud Run permissions'
+  exit
+fi
 existing=$(gcloud run services list --project "$PROJECT" --region "$REGION" --quiet \
   --filter="metadata.name=$SERVICE" --format='value(metadata.name)')
 if [[ -z "$existing" ]]; then

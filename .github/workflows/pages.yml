@@ -12,6 +12,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
+    if: github.event_name == 'workflow_dispatch' || vars.NEDIQ_V3_AUTO_DEPLOY != '1'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

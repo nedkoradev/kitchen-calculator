@@ -1,3 +1,4 @@
+import {releaseMetadata} from './release.mjs';
 import {identifier} from '../document-format/model.mjs';
 import {createLegacyLibrary, legacyOperations} from './legacy-library.mjs';
 import {createWorkspaceService} from './service.mjs';
@@ -16,7 +17,7 @@ export function publicConfig(env) {
       env.NEDIQ_PUBLIC_ORIGIN !== publicOrigin ||
       env.NEDIQ_FIREBASE_AUTH_DOMAIN !== projectId + '.firebaseapp.com' ||
       !/^[\w-]{25,100}$/.test(env.NEDIQ_FIREBASE_WEB_API_KEY ?? '')) throw new Error('Invalid public configuration');
-  return Object.freeze({public: true, origin: publicOrigin, alternateOrigins: cloudRunOrigins,
+  return Object.freeze({public: true, origin: publicOrigin, release: releaseMetadata(env), alternateOrigins: cloudRunOrigins,
     authDomain: env.NEDIQ_FIREBASE_AUTH_DOMAIN, apiKey: env.NEDIQ_FIREBASE_WEB_API_KEY});
 }
 

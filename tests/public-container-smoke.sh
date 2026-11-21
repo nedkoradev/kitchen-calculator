@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 container=$(docker run --network none --rm -d \
+  -e NEDIQ_RELEASE_SHA=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+  -e NEDIQ_RELEASE_DIGEST=sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+  -e K_REVISION=nediq-v3-public-gh-123-1 -e NEDIQ_RELEASE_TIME=2026-11-21T10:00:00Z -e NEDIQ_RELEASE_RUN=123 \
   -e GOOGLE_CLOUD_PROJECT=kitchen-designer-9d437 -e NEDIQ_PUBLIC_ENABLED=1 \
   -e NEDIQ_PUBLIC_ORIGIN=https://nediq.eu \
   -e NEDIQ_FIREBASE_AUTH_DOMAIN=kitchen-designer-9d437.firebaseapp.com \
   -e NEDIQ_FIREBASE_WEB_API_KEY=synthetic-config-only-test-key "$1")
 trap 'docker stop "$container" >/dev/null 2>&1 || true' EXIT
 docker exec -i "$container" node --input-type=module <<'NODE'
+import {version, probeHost} from '/app/release-candidate/release.mjs';
 import assert from 'node:assert/strict';
 import {request} from 'node:http';
 import {setTimeout as delay} from 'node:timers/promises';
@@ -25,7 +29,15 @@ for (let attempt = 0; attempt < 30; attempt++) {
   catch { await delay(250); }
 }
 assert.equal(page?.status, 200);
-assert.match(page.body, /<title>NED-IQ v3\.0\.0<\/title>/);
+assert.ok(page.body.includes('<title>NED-IQ v' + version + '</title>'));
+const release = JSON.parse((await probe('/release.json')).body);
+assert.equal(release.version, version);
+assert.equal(release.sha, 'a'.repeat(40));
+assert.equal(release.revision, 'nediq-v3-public-gh-123-1');
+assert.equal((await probe('/release.json', {host: probeHost})).status, 200);
+assert.equal((await probe('/app-shell.css', {host: probeHost})).status, 200);
+assert.equal((await probe('/', {host: probeHost})).status, 403);
+assert.equal((await probe('/staging-api', {host: probeHost, method: 'POST'})).status, 403);
 const catalog = await probe('/materials/default.json');
 assert.equal(catalog.status, 200);
 assert.ok(JSON.parse(catalog.body).pdcMaterials.length > 0);
@@ -58,5 +70,5 @@ for (const host of ['other.example', 'nediq.eu.other.example', 'candidate---nedi
   'other-service-579302190437.europe-west1.run.app']) {
   assert.equal((await probe('/', {host})).status, 403);
 }
-console.log('PASS public container serves v3.0.0 and rejects foreign host, origin and anonymous API');
+console.log('PASS public container serves the configured v3 release and rejects foreign host, origin and anonymous API');
 NODE
