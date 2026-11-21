@@ -3,8 +3,8 @@ set -euo pipefail
 
 : "${PROJECT:?}" "${REGION:?}" "${SERVICE:?}" "${RUNTIME_ACCOUNT:?}" "${IMAGE_REF:?}" "${GITHUB_STEP_SUMMARY:?}"
 [[ "$PROJECT/$REGION/$SERVICE" == kitchen-designer-9d437/europe-west1/nediq-v3-public ]]
-[[ "$RUNTIME_ACCOUNT" == "nediq-v3-public@$PROJECT.iam.gserviceaccount.com" ]]
-[[ "$IMAGE_REF" =~ ^europe-west1-docker\.pkg\.dev/kitchen-designer-9d437/nediq/nediq-v3-public@sha256:[0-9a-f]{64}$ ]]
+[[ "$RUNTIME_ACCOUNT" == "ned-iq-v3-public@$PROJECT.iam.gserviceaccount.com" ]]
+[[ "$IMAGE_REF" =~ ^europe-west1-docker\.pkg\.dev/kitchen-designer-9d437/nediq/ned-iq-v3-public@sha256:[0-9a-f]{64}$ ]]
 suffix="gh-${GITHUB_RUN_ID:?}-${GITHUB_RUN_ATTEMPT:?}"
 [[ "$suffix" =~ ^gh-[0-9]+-[0-9]+$ ]]
 revision="$SERVICE-$suffix"
