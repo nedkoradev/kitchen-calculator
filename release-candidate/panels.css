@@ -6,6 +6,13 @@
   padding: 8px;
 }
 
+#staging-auth .staging-auth-error {
+  margin: 0;
+  flex-basis: 100%;
+  color: #8f2130;
+  overflow-wrap: anywhere;
+}
+#staging-auth .staging-auth-error:empty { display: none; }
 #staging-auth label { padding: 4px; }
 body[data-stage-auth="locked"] main { visibility: hidden; }
 body[data-stage-auth="active"] #staging-auth { padding: 0; font-size: 11px; line-height: 1.1; }
