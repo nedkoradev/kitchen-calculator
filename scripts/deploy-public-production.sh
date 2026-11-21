@@ -67,18 +67,34 @@ live_smoke "$site"
 metadata=$(mktemp)
 trap 'rm -f "$metadata"' EXIT
 status=$(curl --proto '=https' --silent --show-error --max-time 15 --output "$metadata" --write-out '%{http_code}' "$site/release.json")
+ui_version() {
+  local html title header
+  html=$("${http[@]}" "$1/") || return
+  title=$(grep -oE '<title>NED-IQ v3\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)</title>' <<< "$html") || return
+  header=$(grep -oE 'id="appVersion">v3\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)<' <<< "$html") || return
+  title=${title#<title>NED-IQ v}
+  title=${title%</title>}
+  header=${header#'id="appVersion">v'}
+  header=${header%<}
+  [[ "$title" == "$header" && "$title" =~ ^3\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || return 1
+  printf '%s\n' "$title"
+}
+previous_version=$(ui_version "$site")
 if [[ "$status" == 200 ]]; then
-  previous_version=$(jq -er '.version | select(test("^3\\.[0-9]+\\.[0-9]+$"))' "$metadata")
+  [[ "$(jq -er '.version' "$metadata")" == "$previous_version" ]]
   [[ "$(jq -er '.revision' "$metadata")" == "$previous" ]]
-  if [[ "$MODE" == production ]]; then
-    if [[ "$(jq -er '.sha' "$metadata")" == "$GITHUB_SHA" ]]; then
-      printf 'Commit already serves production on %s.\n' "$previous" >> "$GITHUB_STEP_SUMMARY"
-      exit
-    fi
-    [[ "$version" != "$previous_version" && "$(printf '%s\n' "$version" "$previous_version" | sort -V | tail -1)" == "$version" ]]
+  if [[ "$MODE" == production && "$(jq -er '.sha' "$metadata")" == "$GITHUB_SHA" ]]; then
+    [[ "$version" == "$previous_version" && "$(jq -er '.digest' "$metadata")" == "$digest" ]]
+    printf 'Commit already serves production on %s.\n' "$previous" >> "$GITHUB_STEP_SUMMARY"
+    exit
   fi
 else
+  # The first managed release may follow a legacy revision with no JSON endpoint.
   [[ "$status" == 404 ]]
+fi
+if [[ "$version" == "$previous_version" || "$(printf '%s\n' "$version" "$previous_version" | sort -V | tail -1)" != "$version" ]]; then
+  printf 'Refusing v%s because production serves v%s.\n' "$version" "$previous_version" >&2
+  exit 1
 fi
 rm -f "$metadata"
 trap - EXIT
@@ -125,7 +141,7 @@ route "$revision"
 verified=false
 for ((attempt=0; attempt<12; attempt++)); do
   if [[ "$(describe | traffic)" == "$revision" ]] && matches_release "$site" && live_smoke "$site" &&
-    "${http[@]}" "$site/" | grep -F "id=\"appVersion\">v$version<" >/dev/null; then
+    [[ "$(ui_version "$site")" == "$version" ]]; then
     verified=true
     break
   fi

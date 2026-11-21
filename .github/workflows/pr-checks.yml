@@ -46,6 +46,14 @@ jobs:
             git diff --check "$BASE_SHA" HEAD
           fi
           git update-ref refs/remotes/origin/main "$BASE_SHA"
+      - name: Require a higher version for v3 runtime changes
+        run: |
+          if [[ -n "$RELEASE_SHA" ]]; then
+            node scripts/check-v3-version.mjs "$(git rev-parse HEAD^)"
+          else
+            node scripts/check-v3-version.mjs "$BASE_SHA"
+          fi
+          bash tests/v3-version-guard.sh
       - name: Install dependencies
         run: npm ci
       - name: Run unit tests
