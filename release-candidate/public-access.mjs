@@ -4,6 +4,10 @@ import {createWorkspaceService} from './service.mjs';
 import {projectId} from '../pilot/config.mjs';
 
 export const publicOrigin = 'https://nediq.eu';
+const cloudRunOrigins = Object.freeze([
+  'https://nediq-v3-public-579302190437.europe-west1.run.app',
+  'https://nediq-v3-public-inu5wh5ola-ew.a.run.app',
+]);
 
 export function publicConfig(env) {
   if (env.NEDIQ_PUBLIC_ENABLED !== '1') return null;
@@ -12,7 +16,7 @@ export function publicConfig(env) {
       env.NEDIQ_PUBLIC_ORIGIN !== publicOrigin ||
       env.NEDIQ_FIREBASE_AUTH_DOMAIN !== projectId + '.firebaseapp.com' ||
       !/^[\w-]{25,100}$/.test(env.NEDIQ_FIREBASE_WEB_API_KEY ?? '')) throw new Error('Invalid public configuration');
-  return Object.freeze({public: true, origin: publicOrigin,
+  return Object.freeze({public: true, origin: publicOrigin, alternateOrigins: cloudRunOrigins,
     authDomain: env.NEDIQ_FIREBASE_AUTH_DOMAIN, apiKey: env.NEDIQ_FIREBASE_WEB_API_KEY});
 }
 
