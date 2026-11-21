@@ -5,7 +5,7 @@
 - Node.js 24.22.3 е фиксиран в `.nvmrc`, CI и двата Docker етапа.
 - Cloud Run инсталира `firebase@13.4.0` и `firebase-admin@13.6.0` с `npm ci --omit=dev` от общия lockfile. Браузърните Firebase Auth compat ресурси на v3 се сервират от този SDK. Отделният gstatic импорт на v2 в `cloud.js` запазва версията си.
 - Firebase SDK 13.4.0 все още фиксира `@grpc/grpc-js@1.9.16` в `@firebase/firestore`. Override само за тази връзка задава `1.14.7`. Премахни override след обновяване на upstream фиксираната версия и повторен одит.
-- `firebase-tools@15.37.0` използва `tar@7.5.23` и `superstatic@10.0.0`, който декларира Node 24. `@firebase/rules-unit-testing@6.0.0` поддържа Firebase SDK 13. CLI и емулаторните тестови пакети не влизат в крайния образ.
+- `firebase-tools@15.37.0` използва `tar@7.5.23` и `superstatic@10.0.0`, който декларира Node 24. `@firebase/rules-unit-testing@6.0.0` поддържа Firebase SDK 13. CLI и емулаторните тестови пакети не влизат в крайния образ. Firebase CLI 15 изисква Java 21 или по-нова версия за Firestore Emulator. CI зарежда Temurin 21 преди емулаторните тестове.
 
 ## SheetJS и Salex
 
