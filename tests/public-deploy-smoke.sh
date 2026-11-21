@@ -4,8 +4,8 @@ scratch=$(mktemp -d)
 trap 'rm -rf "$scratch"' EXIT
 export PATH="$scratch:$PATH" STATE="$scratch/state" GITHUB_STEP_SUMMARY="$scratch/summary"
 export PROJECT=kitchen-designer-9d437 REGION=europe-west1 SERVICE=nediq-v3-public
-export RUNTIME_ACCOUNT="nediq-v3-public@$PROJECT.iam.gserviceaccount.com"
-export IMAGE_REF="europe-west1-docker.pkg.dev/$PROJECT/nediq/nediq-v3-public@sha256:$(printf '%064d' 1)"
+export RUNTIME_ACCOUNT="ned-iq-v3-public@$PROJECT.iam.gserviceaccount.com"
+export IMAGE_REF="europe-west1-docker.pkg.dev/$PROJECT/nediq/ned-iq-v3-public@sha256:$(printf '%064d' 1)"
 export GITHUB_RUN_ID=123 GITHUB_RUN_ATTEMPT=1 FIREBASE_WEB_API_KEY=synthetic-config-only-test-key
 export REVISION="$SERVICE-gh-123-1"
 cat > "$scratch/gcloud" <<'MOCK'

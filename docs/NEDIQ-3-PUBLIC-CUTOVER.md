@@ -9,10 +9,10 @@
 1. Настрой защитения GitHub Environment `public-v3` с независим reviewer и достъп само от `main`. Използвай отделен deployer `ned-iq-public-deployer@kitchen-designer-9d437.iam.gserviceaccount.com` и WIF по [схемата за Pilot CI](NEDIQ-3-PILOT-CI.md), с точния repository ID, `refs/heads/main`, средата `public-v3`, `workflow_dispatch` и workflow ref `nedkoradev/kitchen-calculator/.github/workflows/public-v3-candidate.yml@refs/heads/main`. Използвай pool `ned-iq-public-github`. Задай Environment variables `PUBLIC_V3_WIF_PROVIDER` и `PUBLIC_V3_DEPLOY_SERVICE_ACCOUNT`. За режима `image-only` deployer-ът има само федеративно удостоверяване и Artifact Registry Writer върху `nediq`. Хранилището трябва да използва неизменяеми тагове.
 2. За първоначално създаване задай GitHub Environment secret `PUBLIC_V3_FIREBASE_WEB_API_KEY` с одобрения Firebase Web ключ и стартирай `candidate` от `main`. Workflow-ът използва Cloud Run API за създаване само когато успешната проверка за наличие върне празен резултат. При съществуваща услуга проверява частния достъп и внедрява ревизия с 0% трафик. Първата ревизия може да получи 100% от **вътрешното** разпределение. И в двата случая няма промяна на DNS, домейни или IAM политика. Резюмето съдържа ревизията и вътрешния URL.
 
-   Използвай runtime акаунта `nediq-v3-public@kitchen-designer-9d437.iam.gserviceaccount.com`. Deployer-ът има нужда от `iam.serviceAccounts.actAs` точно върху него. Ако това право липсва, операторът може да го предостави така:
+   Използвай runtime акаунта `ned-iq-v3-public@kitchen-designer-9d437.iam.gserviceaccount.com`. Deployer-ът има нужда от `iam.serviceAccounts.actAs` точно върху него. Ако това право липсва, операторът може да го предостави така:
 
    ```bash
-   gcloud iam service-accounts add-iam-policy-binding nediq-v3-public@kitchen-designer-9d437.iam.gserviceaccount.com \
+   gcloud iam service-accounts add-iam-policy-binding ned-iq-v3-public@kitchen-designer-9d437.iam.gserviceaccount.com \
      --project kitchen-designer-9d437 \
      --member serviceAccount:ned-iq-public-deployer@kitchen-designer-9d437.iam.gserviceaccount.com \
      --role roles/iam.serviceAccountUser

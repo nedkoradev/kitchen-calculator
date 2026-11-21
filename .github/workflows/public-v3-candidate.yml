@@ -38,7 +38,7 @@ jobs:
       PROJECT: kitchen-designer-9d437
       REGION: europe-west1
       SERVICE: nediq-v3-public
-      RUNTIME_ACCOUNT: nediq-v3-public@kitchen-designer-9d437.iam.gserviceaccount.com
+      RUNTIME_ACCOUNT: ned-iq-v3-public@kitchen-designer-9d437.iam.gserviceaccount.com
       IMAGE: europe-west1-docker.pkg.dev/kitchen-designer-9d437/nediq/nediq-v3-public
       WIF_PROVIDER: ${{ vars.PUBLIC_V3_WIF_PROVIDER }}
       DEPLOY_ACCOUNT: ${{ vars.PUBLIC_V3_DEPLOY_SERVICE_ACCOUNT }}

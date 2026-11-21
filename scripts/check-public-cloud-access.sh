@@ -2,7 +2,7 @@
 set -euo pipefail
 : "${PROJECT:?}" "${REGION:?}" "${SERVICE:?}" "${RUNTIME_ACCOUNT:?}"
 [[ "$PROJECT/$REGION/$SERVICE" == kitchen-designer-9d437/europe-west1/nediq-v3-public ]]
-[[ "$RUNTIME_ACCOUNT" == "nediq-v3-public@$PROJECT.iam.gserviceaccount.com" ]]
+[[ "$RUNTIME_ACCOUNT" == "ned-iq-v3-public@$PROJECT.iam.gserviceaccount.com" ]]
 token=$(gcloud auth print-access-token --quiet)
 test_permissions() {
   local url="$1" payload permission granted

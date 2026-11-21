@@ -3,7 +3,7 @@ set -euo pipefail
 scratch=$(mktemp -d)
 trap 'rm -rf "$scratch"' EXIT
 export PATH="$scratch:$PATH" PROJECT=kitchen-designer-9d437 REGION=europe-west1 SERVICE=nediq-v3-public
-export RUNTIME_ACCOUNT="nediq-v3-public@$PROJECT.iam.gserviceaccount.com"
+export RUNTIME_ACCOUNT="ned-iq-v3-public@$PROJECT.iam.gserviceaccount.com"
 export FIREBASE_WEB_API_KEY=synthetic-config-only-test-key
 cat > "$scratch/gcloud" <<'MOCK'
 #!/usr/bin/env bash
