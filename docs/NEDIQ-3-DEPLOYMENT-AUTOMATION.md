@@ -1,6 +1,8 @@
 # Автоматично публикуване на NED-IQ v3
 
 **Текущ операторски статус:** автоматичното публикуване остава изключено.
+На 2026-11-22 `main` съдържа v3.0.2 (merge `7ff64e1`), но това не е
+потвърдената публична версия.
 На 2026-11-22 публичното `release.json` потвърди v3.0.1 с SHA
 `61437737a6fe16a7721bbce63ad4bcc45f7922fd`; run `45032386755`
 пренасочи 100% трафик към съответната ревизия. Предишният production-probe
@@ -25,6 +27,85 @@ digest и проверка на статични ресурси production ре�
 При несъвпадение възстановяването се отчита като непотвърдено.
 Проверките използват само публични четения.
 Няма промени в DNS, IAM, Firestore Rules или документи и няма миграции.
+
+## Подготовка за автономна работа
+
+При всяка задача класифицирай обхвата като v2, v3 или общ код и започни от
+актуалния `origin/main` в отделен клон. За обичайна нискорискова промяна
+Copilot може да създаде PR и след успешни проверки да поиска merge чрез
+удостоверена идентичност с нужните права. Провери точния head SHA, резултата
+от задължителния GitHub check, ревютата и приложимите rulesets; използвай
+проверка за очаквания head SHA при merge. Не използвай bypass или admin
+override. Ако има конфликт, неуспешна проверка или блокиращо правило, спри.
+Достъпът на текущата сесия не гарантира, че друга Copilot среда има същите
+права. GitHub Actions `GITHUB_TOKEN` не е заместител на подходяща отделна
+идентичност за този процес: събитията, причинени от него, по правило не
+стартират нови workflow изпълнения. Не създавай и не съхранявай токени в кода.
+
+Геометрия, разкрой, ценообразуване, Firebase, съхранение и други рискови или
+неясни промени изискват Draft PR и изрично одобрение за конкретния PR преди
+merge. Firebase правила и реални данни имат отделни ограничения. За v3
+Cloud Run операциите и активирането на автоматизацията продължават да изискват
+отделно операторско одобрение; одобрение на PR не ги разрешава.
+
+Правилото за `main` при проверката на 2026-11-22 изисква PR и успешен
+`Node 24 / unit, release, Chromium and diff`, но не изисква одобрение на
+ревю. `public-v3` допуска само `main`, без задължителен reviewer. Това не
+изпълнява изискването за одобрение на PR от раздела за активиране. Изборът на
+правило за независимо ревю и неговото прилагане изискват решение на
+собственика; задължителен Environment reviewer би спрял напълно автономното
+публикуване до ръчно одобрение.
+
+След включване push към `main` стартира проверките за точния `github.sha`;
+неуспешните проверки спират candidate job. Преди promotion скриптът изисква
+този SHA все още да е върхът на `main`. Concurrency не отменя работещ run,
+но чакащи runs могат да бъдат заменени: не се гарантира публикуване на всеки
+междинен commit. При различен commit със същата или по-ниска версия от
+публичната, включително документационен push, production guard отказва
+promotion. Самото задаване на variable не стартира workflow. При стойност
+`1` автоматичният push workflow за Pages също се пропуска; legacy v2
+публикуването трябва да се планира отделно.
+
+Rollback е опит чрез shell trap след започнато promotion, а не гаранция при
+загуба или принудително прекратяване на runner. Проверете реално връщане
+само в отделно одобрен прозорец; mock тестовете не го доказват. След
+одобрено публикуване сверявай резултата от workflow, публичните SHA/версия в
+`release.json` и видимата версия на https://nediq.eu/. При непотвърден
+rollback или health check спри и уведоми оператора.
+
+### Read-only проверка преди активиране
+
+При липса на Google Cloud CLI в текущата среда оператор с read-only достъп
+може да изпълни следните команди, без промяна на настройките или трафика:
+
+```sh
+gcloud iam workload-identity-pools providers describe ned-iq-public-github \
+  --project=kitchen-designer-9d437 --location=global \
+  --workload-identity-pool=ned-iq-public-github \
+  --format='yaml(disabled,attributeMapping,attributeCondition)'
+gcloud iam service-accounts get-iam-policy \
+  ned-iq-public-deployer@kitchen-designer-9d437.iam.gserviceaccount.com \
+  --project=kitchen-designer-9d437
+gcloud artifacts repositories get-iam-policy nediq \
+  --project=kitchen-designer-9d437 --location=europe-west1
+gcloud run services get-iam-policy nediq-v3-public \
+  --project=kitchen-designer-9d437 --region=europe-west1
+gcloud iam service-accounts get-iam-policy \
+  ned-iq-v3-public@kitchen-designer-9d437.iam.gserviceaccount.com \
+  --project=kitchen-designer-9d437
+gcloud run services describe nediq-v3-public \
+  --project=kitchen-designer-9d437 --region=europe-west1 \
+  --format='yaml(status.traffic,status.conditions,spec.template.spec.serviceAccountName)'
+```
+
+Свери provider-а за enabled и `push`/`workflow_dispatch`, без отслабване на
+repository ID `1404199718`, `refs/heads/main`, `public-v3` и точния
+`nedkoradev/kitchen-calculator/.github/workflows/public-v3-candidate.yml@refs/heads/main`
+workflow ref. Свери необходимите IAM роли от следващия раздел, както и
+наследени bindings, conditions и deny policies; отделните ресурсни политики
+сами по себе си не доказват ефективни права. Свери и Cloud Run revision,
+traffic и runtime акаунт с публичното `release.json`. Не споделяй ключове,
+токени или други чувствителни стойности при докладването.
 
 ## Еднократно активиране
 
