@@ -193,6 +193,33 @@ test('public rendering is independently enabled and keeps the dedicated Pilot un
   assert.match(buildPilotPreview(html, pilotConfig(env)), /Pilot v3\.0\.1/);
 });
 
+test('public workspace HTML and release metadata serve the same version', async t => {
+  const {publicConfig} = await import('../release-candidate/public-access.mjs');
+  const config = publicConfig({...env, NEDIQ_PILOT_ENABLED: '0', NEDIQ_PUBLIC_ENABLED: '1',
+    NEDIQ_PUBLIC_ORIGIN: 'https://nediq.eu', NEDIQ_RELEASE_SHA: 'a'.repeat(40),
+    NEDIQ_RELEASE_DIGEST: 'sha256:' + 'b'.repeat(64), K_REVISION: 'nediq-v3-public-gh-123-1',
+    NEDIQ_RELEASE_TIME: '2026-11-22T00:00:00Z', NEDIQ_RELEASE_RUN: '123'});
+  const server = await startWorkspaceHost({pilot: config, createPilotDispatch: () => () => {
+    assert.fail('Unexpected API request');
+  }});
+  t.after(() => server.close());
+  const get = path => new Promise((resolve, reject) => {
+    request({hostname: '127.0.0.1', port: server.port, path, headers: {host: 'nediq.eu'}}, async response => {
+      const chunks = [];
+      for await (const chunk of response) chunks.push(chunk);
+      resolve({status: response.statusCode, body: Buffer.concat(chunks).toString()});
+    }).on('error', reject).end();
+  });
+  const page = await get('/');
+  const release = await get('/release.json');
+  assert.equal(page.status, 200);
+  assert.equal(release.status, 200);
+  assert.equal(JSON.parse(release.body).version, version);
+  assert.ok(page.body.includes('<title>NED-IQ v' + version + '</title>'));
+  assert.ok(page.body.includes('id="appVersion">v' + version + '</span>'));
+  assert.ok(page.body.includes('"version":"' + version + '"'));
+});
+
 test('local Google acceptance uses separate Auth and an exact loopback emulator', async t => {
   const {localGoogleConfig} = await import('../rollout-preflight/local-google.mjs');
   const localEnv = {NEDIQ_TEST_AUTH_PROJECT: 'nediq-acceptance-test',
