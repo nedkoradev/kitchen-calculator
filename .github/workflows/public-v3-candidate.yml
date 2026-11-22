@@ -31,10 +31,13 @@ concurrency:
 jobs:
   checks:
     if: >-
-      github.repository == 'nedkoradev/kitchen-calculator' && github.ref == 'refs/heads/main' && inputs.mode != 'rollback' &&
-      ((github.event_name == 'push' || inputs.mode == 'production')
-        && vars.NEDIQ_V3_AUTO_DEPLOY == '1' ||
-       github.event_name == 'workflow_dispatch' && inputs.mode != 'production')
+      github.repository == 'nedkoradev/kitchen-calculator' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.mode != 'rollback' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'push' && vars.NEDIQ_V3_AUTO_DEPLOY == '1')
+      )
     uses: ./.github/workflows/pr-checks.yml
     with:
       release_sha: ${{ github.sha }}
@@ -43,7 +46,7 @@ jobs:
     needs: checks
     if: >-
       !cancelled() &&
-      (needs.checks.result == 'success' ||
+      ((needs.checks.result == 'success' && inputs.mode != 'rollback') ||
        (needs.checks.result == 'skipped' && github.event_name == 'workflow_dispatch' &&
         github.repository == 'nedkoradev/kitchen-calculator' && github.ref == 'refs/heads/main' &&
         inputs.mode == 'rollback'))
