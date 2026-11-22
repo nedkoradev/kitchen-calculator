@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${MODE:-}" == rollback ]]; then
+  node scripts/validate-public-rollback.mjs
+fi
+
 : "${PROJECT:?}" "${REGION:?}" "${SERVICE:?}" "${RUNTIME_ACCOUNT:?}" "${GITHUB_SHA:?}" "${GITHUB_STEP_SUMMARY:?}"
 [[ "$PROJECT/$REGION/$SERVICE" == kitchen-designer-9d437/europe-west1/nediq-v3-public ]]
 [[ "$RUNTIME_ACCOUNT" == "ned-iq-v3-public@$PROJECT.iam.gserviceaccount.com" ]]
@@ -45,8 +49,11 @@ previous=$(traffic <<< "$before")
 [[ "$previous" =~ ^nediq-v3-public-[a-z0-9-]+$ ]]
 
 if [[ "${MODE:-}" == rollback ]]; then
-  [[ "${ROLLBACK_REVISION:-}" =~ ^nediq-v3-public-[a-z0-9-]+$ ]]
-  ready "$ROLLBACK_REVISION"
+  if ! ready "$ROLLBACK_REVISION"; then
+    printf 'Rollback revision %s does not exist, is not Ready, or does not use the expected runtime service account. No traffic was changed.\n' \
+      "$ROLLBACK_REVISION" >&2
+    exit 1
+  fi
   route "$ROLLBACK_REVISION"
   [[ "$(describe | traffic)" == "$ROLLBACK_REVISION" ]]
   live_smoke "$site"

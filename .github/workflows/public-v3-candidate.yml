@@ -17,7 +17,7 @@ on:
           - production
           - rollback
       rollback_revision:
-        description: Exact previously working Cloud Run revision (rollback only)
+        description: Exact previously working revision (required only for rollback)
         type: string
         required: false
 
@@ -74,6 +74,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
+      - name: Validate rollback revision
+        if: env.MODE == 'rollback'
+        run: node scripts/validate-public-rollback.mjs
       - name: Validate public WIF configuration
         run: bash scripts/check-public-wif.sh
       - name: Build the exact tested source

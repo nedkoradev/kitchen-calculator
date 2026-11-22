@@ -19,6 +19,7 @@
 - **Legacy v2:** статично приложение HTML/CSS/JavaScript, коренен `index.html`, Three.js и отделни ES modules. `cloud.js` използва Firebase Google Authentication + Firestore; съществуващите имена са договор за съвместимост.
 - **Legacy v2 модели:** `geometry.mjs`, `project-model.mjs`, `project-store.mjs`, `project-ui.mjs`, `library-dialog.mjs`, `cabinet-generator*.mjs`, `grain.mjs`, `edge-editor.mjs`, `material-textures.mjs` и `view-pan.mjs` са product paths за v2, освен ако отделна документация изрично заяви обратното.
 - **NED-IQ v3:** Cloud Run HTTP host е `pilot/server.mjs`, workspace/runtime adapter-ите са в `release-candidate/`, `rollout-preflight/`, `workspace-*` и `document-format/`, а container entry point е `Dockerfile`. Не работи срещу кореновия `index.html` като единствен entry point.
+- Ръчното v3 rollback действие изисква точното име на предишна Cloud Run revision; workflow-ът валидира входа преди WIF auth, а deploy скриптът проверява повторно преди Cloud Run заявки. Production и production-probe не използват rollback revision.
 - Общите CI/test/release инструменти не са доказателство за тип на функционалността. Класифицирай първо засегнатия продукт и изпълни най-малкия подходящ набор проверки.
 - Подробните технически правила и тестове са в съществуващия `AGENTS.md` и `docs/`. При противоречие с реалния код първо установи причината и актуализирай документацията в PR.
 
