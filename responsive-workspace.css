@@ -48,3 +48,25 @@ body.ned-shell.compactWorkspace>main:not(.catalogMode){display:flex!important;fl
  body.ned-shell #headerRight #sharedBaseStatus:not([hidden]){max-width:22vw}
  body.ned-shell #sharedBaseStatus span:last-child{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 }
+
+/* Mobile menu: 4×2 grid of 44px targets, dropdown opens directly under its title. */
+@media(max-width:900px){
+body.ned-shell #shellMenus{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px!important;padding:2px 4px!important;overflow:visible!important;min-height:0}
+body.ned-shell #shellMenus>*{min-width:0}
+body.ned-shell #shellMenus>#documentMenus{display:contents!important}
+body.ned-shell #shellMenus :is(button,.shellMenu>summary,#fileMenu>summary){min-height:44px!important;display:flex!important;align-items:center;justify-content:center;width:100%;padding:6px 2px!important;font-size:12px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.ned-shell #shellMenus details>summary::after{margin-left:3px}
+body.ned-shell #shellMenus .documentMenuItems{top:auto!important}
+body.ned-shell #shellMenus .documentMenuItems button{justify-content:flex-start!important;text-align:left!important;min-height:44px!important;padding:8px 12px!important;font-size:14px!important;white-space:normal}
+body.ned-shell #headerRight :is(#cloudLogin,#settingsButton){min-height:44px!important;min-width:44px!important}
+body.ned-shell #headerRight #settingsButton{width:44px!important}
+}
+@media(max-width:360px){body.ned-shell #shellMenus :is(.shellMenu>summary,#fileMenu>summary){font-size:11px!important}body.ned-shell #shellMenus details>summary::after{display:none}}
+
+/* Touch tablets above 900 px (landscape iPad etc.) keep 44px targets without changing the desktop density. */
+@media(min-width:901px) and (pointer:coarse){
+body.ned-shell #shellMenus :is(button,.shellMenu>summary,#fileMenu>summary){min-height:44px!important}
+body.ned-shell #shellMenus .documentMenuItems button{min-height:44px!important}
+body.ned-shell #headerRight :is(#cloudLogin,#settingsButton){min-height:44px!important;min-width:44px!important}
+html body.ned-shell #shellTools :is(#toolsPanel,#projectTools,.historyTools,#viewControlsDock) button:not([hidden]){width:44px!important;min-width:44px!important;max-width:44px!important;height:44px!important;min-height:44px!important}
+}
