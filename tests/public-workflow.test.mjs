@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
+import {validateRollbackRevision} from '../scripts/validate-public-rollback.mjs';
 
 const workflowPath = '.github/workflows/public-v3-candidate.yml';
 const workflow = readFileSync(workflowPath, 'utf8');
+const productionScript = readFileSync('scripts/deploy-public-production.sh', 'utf8');
 
 function checksShouldRun({eventName, mode, autoDeploy, repository, ref}) {
   if (repository !== 'nedkoradev/kitchen-calculator') return false;
@@ -92,6 +94,37 @@ test('rollback remains dispatch-only and does not require checks success', () =>
   assert.equal(candidateShouldRun({...common, checksResult: 'success'}), false);
   assert.equal(candidateShouldRun({...common, checksResult: 'failure'}), false);
   assert.equal(candidateShouldRun({...common, ref: 'refs/heads/feature', checksResult: 'skipped'}), false);
+});
+
+test('rollback requires a valid exact revision and reports empty or malformed values', () => {
+  assert.equal(validateRollbackRevision('nediq-v3-public-00004-fixture'), 'nediq-v3-public-00004-fixture');
+  for (const value of [undefined, '', '   ']) {
+    assert.throws(() => validateRollbackRevision(value), /requires rollback_revision/);
+  }
+  for (const value of [
+    'nediq-v3-public-',
+    'nediq-v3-public-foo--bar',
+    'NEDIQ-v3-public-revision',
+    'nediq-v3-public-revision;echo unsafe',
+    'some-other-service-revision'
+  ]) {
+    assert.throws(() => validateRollbackRevision(value), /Invalid rollback_revision/);
+  }
+});
+
+test('rollback validation is dispatched only for rollback and does not block production', () => {
+  assert.match(workflow, /name: Validate rollback revision\s+if: env\.MODE == 'rollback'\s+run: node scripts\/validate-public-rollback\.mjs/);
+  assert.ok(workflow.indexOf('name: Validate rollback revision') < workflow.indexOf('uses: google-github-actions/auth@'));
+  assert.match(productionScript, /if \[\[ "\$\{MODE:-\}" == rollback \]\]; then\s+node scripts\/validate-public-rollback\.mjs\s+fi/);
+  const production = {
+    eventName: 'workflow_dispatch',
+    mode: 'production',
+    autoDeploy: '0',
+    repository: 'nedkoradev/kitchen-calculator',
+    ref: 'refs/heads/main'
+  };
+  assert.equal(checksShouldRun(production), true);
+  assert.equal(candidateShouldRun({...production, checksResult: 'success'}), true);
 });
 
 test('push candidate requires auto deploy and manual probe, production, and candidate stay approved', () => {

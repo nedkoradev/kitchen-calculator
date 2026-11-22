@@ -28,6 +28,7 @@ case "$2 $3" in
         status:{traffic:([{percent:100,revisionName:$target}] + (if $tag == null then [] else [$tag] end))}}'
     ;;
   'revisions describe')
+    [[ "$FAILURE" != revision ]] || exit 1
     jq -cn --arg image "$IMAGE_REF" --arg account "$RUNTIME_ACCOUNT" '{spec:{serviceAccountName:$account,
       containers:[{image:$image}]},status:{conditions:[{type:"Ready",status:"True"}]}}'
     ;;
@@ -96,6 +97,9 @@ scenario() {
 }
 scenario production-probe none 0 "$OLD"
 [[ ! -e "$STATE.transitions" ]]
+unset ROLLBACK_REVISION
+scenario production-probe none 0 "$OLD"
+[[ ! -e "$STATE.transitions" ]]
 scenario production probe 4 "$OLD"
 [[ ! -e "$STATE.transitions" ]]
 scenario production none 0 "$NEW"
@@ -125,4 +129,27 @@ printf '%s' "$NEW" >"$STATE"
 bash scripts/deploy-public-production.sh
 [[ "$(cat "$STATE")" == "$OLD" ]]
 grep -q "Rollback revision: $OLD" "$GITHUB_STEP_SUMMARY"
+for invalid in '' 'nediq-v3-public-' 'nediq-v3-public-foo--bar' 'other-service-00001'; do
+  export ROLLBACK_REVISION="$invalid"
+  output=''
+  if output=$(bash scripts/deploy-public-production.sh 2>&1); then
+    echo "Expected invalid rollback revision to fail: $invalid" >&2
+    exit 1
+  fi
+  if [[ -z "$invalid" ]]; then
+    grep -q 'requires rollback_revision' <<<"$output"
+  else
+    grep -q 'Invalid rollback_revision' <<<"$output"
+  fi
+done
+export ROLLBACK_REVISION="$OLD" FAILURE=revision
+printf '%s' "$NEW" >"$STATE"
+rm -f "$STATE.transitions"
+output=''
+if output=$(bash scripts/deploy-public-production.sh 2>&1); then
+  echo 'Expected unavailable rollback revision to fail' >&2
+  exit 1
+fi
+grep -q 'does not exist, is not Ready' <<<"$output"
+[[ "$(cat "$STATE")" == "$NEW" && ! -e "$STATE.transitions" ]]
 echo 'PASS manual rollback to explicit ready revision'
