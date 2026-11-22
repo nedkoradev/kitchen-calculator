@@ -62,3 +62,11 @@ body.ned-shell #headerRight :is(#cloudLogin,#settingsButton){min-height:44px!imp
 body.ned-shell #headerRight #settingsButton{width:44px!important}
 }
 @media(max-width:360px){body.ned-shell #shellMenus :is(.shellMenu>summary,#fileMenu>summary){font-size:11px!important}body.ned-shell #shellMenus details>summary::after{display:none}}
+
+/* Touch tablets above 900 px (landscape iPad etc.) keep 44px targets without changing the desktop density. */
+@media(min-width:901px) and (pointer:coarse){
+body.ned-shell #shellMenus :is(button,.shellMenu>summary,#fileMenu>summary){min-height:44px!important}
+body.ned-shell #shellMenus .documentMenuItems button{min-height:44px!important}
+body.ned-shell #headerRight :is(#cloudLogin,#settingsButton){min-height:44px!important;min-width:44px!important}
+html body.ned-shell #shellTools :is(#toolsPanel,#projectTools,.historyTools,#viewControlsDock) button:not([hidden]){width:44px!important;min-width:44px!important;max-width:44px!important;height:44px!important;min-height:44px!important}
+}
