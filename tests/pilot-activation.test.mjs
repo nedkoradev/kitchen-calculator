@@ -1,3 +1,4 @@
+import {version} from '../release-candidate/release.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {request} from 'node:http';
@@ -188,7 +189,7 @@ test('public rendering is independently enabled and keeps the dedicated Pilot un
   assert.throws(() => publicConfig({...candidateEnv, NEDIQ_PILOT_ENABLED: '1'}));
   assert.throws(() => publicConfig({...candidateEnv, NEDIQ_PUBLIC_ORIGIN: 'https://example.run.app'}));
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(buildPilotPreview(html, config), /id="appVersion">v3\.0\.0/);
+  assert.ok(buildPilotPreview(html, config).includes('id="appVersion">v' + version));
   assert.match(buildPilotPreview(html, pilotConfig(env)), /Pilot v3\.0\.1/);
 });
 
@@ -234,7 +235,7 @@ test('local Google acceptance uses separate Auth and an exact loopback emulator'
   const validHost = new URL(pilot.origin).host;
   const page = await http(validHost, '/');
   assert.equal(page.status, 200);
-  assert.match(page.body, /id="appVersion">v3\.0\.0/);
+  assert.ok(page.body.includes('id="appVersion">v' + version));
   assert.match(page.body, /"projectId":"nediq-acceptance-test"/);
   assert.doesNotMatch(page.body, /kitchen-designer-9d437/);
   assert.equal((await http('example.com', '/')).status, 403);

@@ -46,6 +46,14 @@ jobs:
             git diff --check "$BASE_SHA" HEAD
           fi
           git update-ref refs/remotes/origin/main "$BASE_SHA"
+      - name: Require a higher version for v3 runtime changes
+        run: |
+          if [[ -n "$RELEASE_SHA" ]]; then
+            node scripts/check-v3-version.mjs "$(git rev-parse HEAD^)"
+          else
+            node scripts/check-v3-version.mjs "$BASE_SHA"
+          fi
+          bash tests/v3-version-guard.sh
       - name: Install dependencies
         run: npm ci
       - name: Run unit tests
@@ -94,6 +102,8 @@ jobs:
         run: |
           bash tests/public-deploy-smoke.sh
           bash tests/public-cloud-access-smoke.sh
+      - name: Test production traffic promotion and rollback
+        run: bash tests/public-production-smoke.sh
       - name: Test the pilot deployment guardrails with a local mock
         run: bash tests/pilot-deploy-smoke.sh
       - name: Build and exercise the disabled Cloud Run image

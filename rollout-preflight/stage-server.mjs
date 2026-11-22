@@ -1,3 +1,4 @@
+import {probeHost} from '../release-candidate/release.mjs';
 import {fallbackUrl} from '../pilot/config.mjs';
 import {createServer} from 'node:http';
 import {readFile, realpath} from 'node:fs/promises';
@@ -74,7 +75,11 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
       const alternate = alternateHosts.get(host);
       const requestOrigin = alternate?.origin ?? origin;
       const path = decodeURIComponent(new URL(incoming.url, requestOrigin).pathname);
-      if (host !== new URL(requestOrigin).host) {
+      const probe = pilot?.release && host === probeHost;
+      if (probe) {
+        if (incoming.method !== 'GET' || !['/release.json', '/app-shell.css',
+          '/rollout-preflight/staging-auth.mjs', '/staging-sdk/auth.js'].includes(path)) return send(403, 'Probe only');
+      } else if (host !== new URL(requestOrigin).host) {
         // Cloud Run probes its tagged and canonical URLs. Only the configured
         // origin serves the workspace and its authenticated API.
         if (!pilot || pilot.public || incoming.method !== 'GET') return send(403, 'Unexpected host');
@@ -95,6 +100,9 @@ export async function startWorkspaceHost({enabled = false, port = 0, pilot = nul
         return outgoing.end(Buffer.from(await response.arrayBuffer()));
       }
       if (incoming.method !== 'GET') return send(405, 'Read-only preview');
+      if (path === '/release.json' && pilot?.release) {
+        return send(200, JSON.stringify(pilot.release), 'application/json');
+      }
       if (pilot && path === '/fallback') {
         outgoing.writeHead(302, {location: fallbackUrl, 'cache-control': 'no-store'});
         return outgoing.end();

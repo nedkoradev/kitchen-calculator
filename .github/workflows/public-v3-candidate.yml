@@ -1,6 +1,8 @@
-name: Prepare approved NED-IQ v3 public candidate
+name: NED-IQ v3 public delivery
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       mode:
@@ -11,6 +13,13 @@ on:
         options:
           - image-only
           - candidate
+          - production-probe
+          - production
+          - rollback
+      rollback_revision:
+        description: Exact previously working Cloud Run revision (rollback only)
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -21,13 +30,23 @@ concurrency:
 
 jobs:
   checks:
-    if: github.repository == 'nedkoradev/kitchen-calculator' && github.ref == 'refs/heads/main'
+    if: >-
+      github.repository == 'nedkoradev/kitchen-calculator' && github.ref == 'refs/heads/main' && inputs.mode != 'rollback' &&
+      ((github.event_name == 'push' || inputs.mode == 'production')
+        && vars.NEDIQ_V3_AUTO_DEPLOY == '1' ||
+       github.event_name == 'workflow_dispatch' && inputs.mode != 'production')
     uses: ./.github/workflows/pr-checks.yml
     with:
       release_sha: ${{ github.sha }}
 
   candidate:
     needs: checks
+    if: >-
+      !cancelled() &&
+      (needs.checks.result == 'success' ||
+       (needs.checks.result == 'skipped' && github.event_name == 'workflow_dispatch' &&
+        github.repository == 'nedkoradev/kitchen-calculator' && github.ref == 'refs/heads/main' &&
+        inputs.mode == 'rollback'))
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     environment: public-v3
@@ -35,6 +54,8 @@ jobs:
       contents: read
       id-token: write
     env:
+      MODE: ${{ github.event_name == 'push' && 'production' || inputs.mode }}
+      ROLLBACK_REVISION: ${{ inputs.rollback_revision }}
       PROJECT: kitchen-designer-9d437
       REGION: europe-west1
       SERVICE: nediq-v3-public
@@ -47,9 +68,13 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
       - name: Validate public WIF configuration
         run: bash scripts/check-public-wif.sh
       - name: Build the exact tested source
+        if: env.MODE != 'rollback'
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
@@ -62,11 +87,12 @@ jobs:
           service_account: ${{ env.DEPLOY_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
       - name: Check effective Cloud Run access
-        if: inputs.mode == 'candidate'
+        if: env.MODE == 'candidate' || env.MODE == 'production' || env.MODE == 'production-probe'
         env:
           FIREBASE_WEB_API_KEY: ${{ secrets.PUBLIC_V3_FIREBASE_WEB_API_KEY }}
         run: bash scripts/check-public-cloud-access.sh
       - name: Publish or verify the immutable image
+        if: env.MODE != 'rollback'
         id: image
         run: |
           set -euo pipefail
@@ -92,8 +118,14 @@ jobs:
           printf 'Image: %s@%s\n\nCommit: %s\n' "$IMAGE" "$digest" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Prepare the internal Cloud Run candidate
-        if: inputs.mode == 'candidate'
+        if: env.MODE == 'candidate'
         env:
           IMAGE_REF: ${{ steps.image.outputs.ref }}
           FIREBASE_WEB_API_KEY: ${{ secrets.PUBLIC_V3_FIREBASE_WEB_API_KEY }}
         run: bash scripts/deploy-public-candidate.sh
+
+      - name: Verify, promote or restore production revision
+        if: env.MODE == 'production' || env.MODE == 'production-probe' || env.MODE == 'rollback'
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.ref }}
+        run: bash scripts/deploy-public-production.sh
