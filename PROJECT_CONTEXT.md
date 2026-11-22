@@ -7,19 +7,19 @@
 - Продукт: **NED-IQ**, онлайн приложение за проектиране на мебели.
 - Хранилище: `nedkoradev/kitchen-calculator`; основен клон `main`.
 - Публичен адрес: https://nediq.eu/ ; GitHub Pages: https://nedkoradev.github.io/kitchen-calculator/.
+- Сегашното публично състояние: legacy frontend **v2.96** на GitHub Pages; потвърден public NED-IQ v3 release **v3.0.0**; production candidate **v3.0.1**; production traffic остава 0% за candidate.
+- Автоматичното публикуване на v3 остава изключено. GitHub Actions production probe е проверявал ревизията и потвърдил 0% production traffic.
 - Версията се определя от `_data/version.json`, видимото заглавие и `release.json` след Jekyll build; не предполагай версия само по този документ.
 - Потвърдена публикация преди въвеждането на двата режима: **v2.90**, слят PR #88, commit `82548ab`. При започване на задача сверявай актуалните `main` и `release.json`.
 - Активна продукционна Firebase конфигурация: `kitchen-designer-9d437`. Никога не променяй production правила/данни без изрично разрешение.
 
 ## Архитектура
 
-- Статично приложение HTML/CSS/JavaScript, коренен `index.html`; Three.js за 3D, 2D изгледи, отделни ES modules.
-- `cloud.js`: Firebase Google Authentication + Firestore, събития `kitchen-v2-*`; съществуващите имена са договор за съвместимост.
-- `geometry.mjs`: ограничения при преместване и оразмеряване; не заобикаляй общата геометрична логика.
-- `project-model.mjs`, `project-store.mjs`, `project-ui.mjs`: облачни проекти.
-- `library-dialog.mjs`: библиотека с модели и папки; `cabinet-generator*.mjs`: създаване на шкафове.
-- `grain.mjs`, `edge-editor.mjs`, `material-textures.mjs`: фладер, кантове, материали и снимки.
-- `view-pan.mjs`: хоризонтално/вертикално преместване на изгледа; тъмна писта и една синя точка от v2.86.
+- Виж [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) за точната карта на v2, v3 и общите компоненти.
+- **Legacy v2:** статично приложение HTML/CSS/JavaScript, коренен `index.html`, Three.js и отделни ES modules. `cloud.js` използва Firebase Google Authentication + Firestore; съществуващите имена са договор за съвместимост.
+- **Legacy v2 модели:** `geometry.mjs`, `project-model.mjs`, `project-store.mjs`, `project-ui.mjs`, `library-dialog.mjs`, `cabinet-generator*.mjs`, `grain.mjs`, `edge-editor.mjs`, `material-textures.mjs` и `view-pan.mjs` са product paths за v2, освен ако отделна документация изрично заяви обратното.
+- **NED-IQ v3:** Cloud Run HTTP host е `pilot/server.mjs`, workspace/runtime adapter-ите са в `release-candidate/`, `rollout-preflight/`, `workspace-*` и `document-format/`, а container entry point е `Dockerfile`. Не работи срещу кореновия `index.html` като единствен entry point.
+- Общите CI/test/release инструменти не са доказателство за тип на функционалността. Класифицирай първо засегнатия продукт и изпълни най-малкия подходящ набор проверки.
 - Подробните технически правила и тестове са в съществуващия `AGENTS.md` и `docs/`. При противоречие с реалния код първо установи причината и актуализирай документацията в PR.
 
 ## Подготовка за NED-IQ 3.0

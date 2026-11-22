@@ -1,5 +1,11 @@
 # Автоматично публикуване на NED-IQ v3
 
+**Текущ операторски статус:** автоматичното публикуване остава изключено.
+Последно потвърденото публично издание е v3.0.0, кандидатът е v3.0.1,
+а production-probe #4500525259 е завършил успешно с ревизията на 0%
+production traffic. Не включвай traffic promotion или промяна на трафика
+без отделно одобрение.
+
 Задача → Codex → PR → Tests → одобрен Merge → Automatic deployment → Production verification.
 
 `public-v3-candidate.yml` използва същите PR проверки върху точния commit от
