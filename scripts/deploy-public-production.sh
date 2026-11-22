@@ -135,7 +135,8 @@ fi
 [[ "$(describe | traffic)" == "$previous" ]]
 restore() {
   trap - EXIT
-  if route "$previous" && [[ "$(describe | traffic)" == "$previous" ]] && live_smoke "$site"; then
+  if route "$previous" && [[ "$(describe | traffic)" == "$previous" ]] && live_smoke "$site" &&
+    [[ "$(ui_version "$site")" == "$previous_version" ]]; then
     printf 'Public verification failed. Restored %s.\n' "$previous" >> "$GITHUB_STEP_SUMMARY"
   else
     printf 'Rollback failed or could not be verified. Restore %s manually.\n' "$previous" >> "$GITHUB_STEP_SUMMARY"

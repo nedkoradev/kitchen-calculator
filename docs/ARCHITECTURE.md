@@ -44,10 +44,10 @@ entry point.
 
 ## Deployment state
 
-- Confirmed public v3 release: v3.0.0
-- Public production candidate: v3.0.1
-- Production probe: GitHub Actions run #4500525259 completed successfully
-- The probe found the candidate at 0% production traffic
+- Public v3 release verified on 2026-11-22: v3.0.1, commit `61437737a6fe16a7721bbce63ad4bcc45f7922fd`
+- GitHub Actions run #45032386755 routed 100% traffic to that revision;
+  verify the current state again before any operation
+- An earlier production probe checked a candidate at 0% production traffic
 - Automatic v3 deployment remains disabled
 - DNS, IAM, Firestore rules/data, production traffic and the public cutover
   require separate approval and operator action

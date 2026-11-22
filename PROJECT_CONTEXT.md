@@ -7,8 +7,8 @@
 - Продукт: **NED-IQ**, онлайн приложение за проектиране на мебели.
 - Хранилище: `nedkoradev/kitchen-calculator`; основен клон `main`.
 - Публичен адрес: https://nediq.eu/ ; GitHub Pages: https://nedkoradev.github.io/kitchen-calculator/.
-- Сегашното публично състояние: legacy frontend **v2.96** на GitHub Pages; потвърден public NED-IQ v3 release **v3.0.0**; production candidate **v3.0.1**; production traffic остава 0% за candidate.
-- Автоматичното публикуване на v3 остава изключено. GitHub Actions production probe е проверявал ревизията и потвърдил 0% production traffic.
+- Състояние, проверено на 2026-11-22: legacy source **v2.96**; публичното `release.json` на NED-IQ v3 показва **v3.0.1**, SHA `61437737a6fe16a7721bbce63ad4bcc45f7922fd`. Run `45032386755` е пренасочил 100% трафик към същата ревизия; при следваща задача провери отново.
+- Автоматичното публикуване на v3 остава изключено. Предходният production probe е проверил кандидат с 0% production traffic; това е исторически статус, а не текущият production маршрут.
 - Версията се определя от `_data/version.json`, видимото заглавие и `release.json` след Jekyll build; не предполагай версия само по този документ.
 - Потвърдена публикация преди въвеждането на двата режима: **v2.90**, слят PR #88, commit `82548ab`. При започване на задача сверявай актуалните `main` и `release.json`.
 - Активна продукционна Firebase конфигурация: `kitchen-designer-9d437`. Никога не променяй production правила/данни без изрично разрешение.
@@ -20,6 +20,7 @@
 - **Legacy v2 модели:** `geometry.mjs`, `project-model.mjs`, `project-store.mjs`, `project-ui.mjs`, `library-dialog.mjs`, `cabinet-generator*.mjs`, `grain.mjs`, `edge-editor.mjs`, `material-textures.mjs` и `view-pan.mjs` са product paths за v2, освен ако отделна документация изрично заяви обратното.
 - **NED-IQ v3:** Cloud Run HTTP host е `pilot/server.mjs`, workspace/runtime adapter-ите са в `release-candidate/`, `rollout-preflight/`, `workspace-*` и `document-format/`, а container entry point е `Dockerfile`. Не работи срещу кореновия `index.html` като единствен entry point.
 - Ръчното v3 rollback действие изисква точното име на предишна Cloud Run revision; workflow-ът валидира входа преди WIF auth, а deploy скриптът проверява повторно преди Cloud Run заявки. Production и production-probe не използват rollback revision.
+- При автоматично връщане след неуспешна production проверка deploy скриптът потвърждава маршрута и видимата предишна версия; при несъвпадение отчита непотвърден rollback.
 - Общите CI/test/release инструменти не са доказателство за тип на функционалността. Класифицирай първо засегнатия продукт и изпълни най-малкия подходящ набор проверки.
 - Подробните технически правила и тестове са в съществуващия `AGENTS.md` и `docs/`. При противоречие с реалния код първо установи причината и актуализирай документацията в PR.
 

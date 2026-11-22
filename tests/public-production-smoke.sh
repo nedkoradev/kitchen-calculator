@@ -64,7 +64,7 @@ case "$url" in
       printf '%s' "$PREVIOUS_STATUS"
       exit
     fi
-    [[ "$FAILURE" != site && "$(cat "$STATE")" == "$NEW" ]] || exit 22
+    [[ "$FAILURE" != site && "$FAILURE" != stale-rollback && "$(cat "$STATE")" == "$NEW" ]] || exit 22
     ;;
   https://release-check---*/release.json)
     [[ "$FAILURE" != probe ]] || exit 22
@@ -73,6 +73,8 @@ case "$url" in
   https://nediq.eu/)
     version="$PREVIOUS_VERSION"
     if [[ "$(cat "$STATE")" == "$NEW" ]]; then version="$RELEASE_VERSION"; fi
+    if [[ "$FAILURE" == stale-rollback && -f "$STATE.transitions" ]] &&
+      grep -qx "$OLD" "$STATE.transitions"; then version="$RELEASE_VERSION"; fi
     header="$version"
     if [[ "$FAILURE" == ui && "$(cat "$STATE")" == "$NEW" ]]; then header=3.0.0; fi
     printf '<title>NED-IQ v%s</title><span id="appVersion">v%s</span>\n' "$version" "$header"
@@ -108,6 +110,9 @@ scenario production site 1 "$OLD"
 [[ "$(cat "$STATE.transitions")" == "$NEW"$'\n'"$OLD" ]]
 scenario production ui 1 "$OLD"
 [[ "$(cat "$STATE.transitions")" == "$NEW"$'\n'"$OLD" ]]
+scenario production stale-rollback 1 "$OLD"
+[[ "$(cat "$STATE.transitions")" == "$NEW"$'\n'"$OLD" ]]
+tail -1 "$GITHUB_STEP_SUMMARY" | grep -q "Rollback failed or could not be verified"
 for status in 200 404; do
   scenario production none 1 "$OLD" "$RELEASE_VERSION" "$status"
   [[ ! -e "$STATE.tag" ]]
