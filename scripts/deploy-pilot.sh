@@ -5,6 +5,12 @@ set -euo pipefail
 [[ "$IMAGE" == europe-west1-docker.pkg.dev/kitchen-designer-9d437/nediq/nediq-v3-pilot ]]
 [[ "$IMAGE_REF" == "$IMAGE"@sha256:* && "${IMAGE_REF##*@}" =~ ^sha256:[0-9a-f]{64}$ ]]
 [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+require_current_main() {
+  local current
+  current=$(gh api repos/nedkoradev/kitchen-calculator/commits/main --jq .sha)
+  [[ "$current" == "$RELEASE_SHA" ]] || { echo 'Approved SHA is no longer the current main HEAD' >&2; return 1; }
+}
+require_current_main
 cloud=(--project "$PROJECT" --region "$REGION" --quiet)
 traffic() {
   gcloud run services describe "$SERVICE" "${cloud[@]}" --format='json(status.traffic)' |
@@ -40,6 +46,7 @@ check_http() {
   rm -f "$headers"
 }
 check_http "$candidate_url" || { echo 'Candidate HTTP smoke test failed; previous revision remains serving' >&2; exit 1; }
+require_current_main
 promoted=false
 rollback() {
   if [[ "$promoted" == true ]]; then

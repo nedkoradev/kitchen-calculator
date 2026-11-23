@@ -59,6 +59,7 @@ jobs:
       - name: Run unit tests
         run: |
           node --test --test-isolation=none tests/public-workflow.test.mjs
+          node --test --test-isolation=none tests/pilot-image-workflow.test.mjs
           npm test
       - name: Verify committed release metadata
         run: |
