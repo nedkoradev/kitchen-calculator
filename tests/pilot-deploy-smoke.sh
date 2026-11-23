@@ -24,7 +24,8 @@ case "$1 $2 $3" in
       jq -n --arg revision "$(cat "$MOCK_TRAFFIC")" '{status:{traffic:[{revisionName:$revision, percent:100}]}}'
     fi ;;
   "run deploy $SERVICE")
-    [[ "$*" == *"--image $IMAGE_REF --no-traffic --tag candidate --revision-suffix gh-123-1" ]] ;;
+    [[ "$*" == *"--image $IMAGE_REF --no-traffic --tag candidate --revision-suffix gh-123-1" ]]
+    touch "$MOCK_STATE_DEPLOYED" ;;
   'run revisions describe')
     [[ "$4" == "$CANDIDATE" ]]
     jq -n --arg image "$IMAGE_REF" --arg ready "$MOCK_READY" '{spec:{containers:[{image:$image}]},status:{conditions:[{type:"Ready",status:$ready}]}}' ;;
@@ -35,6 +36,19 @@ case "$1 $2 $3" in
 esac
 MOCK
 chmod +x "$scratch/gcloud"
+export MOCK_STATE_DEPLOYED="$scratch/deployed"
+cat > "$scratch/gh" <<'MOCK_GH'
+#!/usr/bin/env bash
+set -euo pipefail
+[[ "$*" == 'api repos/nedkoradev/kitchen-calculator/commits/main --jq .sha' ]]
+if [[ "${MOCK_GH_FAIL:-}" == 1 ]]; then exit 1; fi
+if [[ "${MOCK_STALE_AFTER_DEPLOY:-}" == 1 && -e "$MOCK_STATE_DEPLOYED" ]]; then
+  printf '%040d\n' 2
+else
+  echo "${MOCK_MAIN_SHA:-$RELEASE_SHA}"
+fi
+MOCK_GH
+chmod +x "$scratch/gh"
 cat > "$scratch/curl" <<'MOCK_CURL'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -71,6 +85,20 @@ MOCK_CURL
 chmod +x "$scratch/curl"
 
 echo "$previous" > "$MOCK_TRAFFIC"
+if MOCK_MAIN_SHA="$(printf '%040d' 2)" bash scripts/deploy-pilot.sh; then
+  echo 'Stale release was accepted' >&2
+  exit 1
+fi
+if MOCK_GH_FAIL=1 bash scripts/deploy-pilot.sh; then
+  echo 'Unavailable main HEAD was accepted' >&2
+  exit 1
+fi
+rm -f "$MOCK_STATE_DEPLOYED"
+if MOCK_STALE_AFTER_DEPLOY=1 bash scripts/deploy-pilot.sh; then
+  echo 'Release stale before promotion was accepted' >&2
+  exit 1
+fi
+[[ "$(cat "$MOCK_TRAFFIC")" == "$previous" ]]
 if MOCK_READY=False bash scripts/deploy-pilot.sh; then
   echo 'Unready revision was accepted' >&2
   exit 1
