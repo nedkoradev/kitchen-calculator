@@ -375,6 +375,11 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       }
 
       const catalogList = documentElement('div', 'migrationCatalogList');
+      catalogList.style.height = window.matchMedia('(max-width:620px)').matches ? '38dvh' : '42dvh';
+      catalogList.style.maxHeight = catalogList.style.height;
+      catalogList.style.minHeight = '90px';
+      catalogList.style.overflowY = 'auto';
+      catalogList.style.overscrollBehavior = 'contain';
       const catalogSelects = new Map();
       if (needsCatalog.length) {
         const catalogHint = document.createElement('p');

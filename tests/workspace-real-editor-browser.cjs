@@ -219,7 +219,7 @@ const {openKitchen} = require('./browser-harness.cjs');
       await page.getByRole('button', {name: 'Моята библиотека v2.95 · Собственик', exact: true}).click();
       await page.getByRole('button', {name: 'Мигрирай всички мои документи в v3…', exact: true}).click();
       const migrationOptions = page.getByRole('dialog', {name: 'Подготовка на миграция'});
-      await migrationOptions.getByText('Целева папка във v3', {exact: true}).waitFor();
+      await migrationOptions.getByLabel('Целева папка във v3', {exact: true}).waitFor();
       await migrationOptions.getByRole('button', {name: 'Създай папка „Импорт от v2.95“', exact: true}).waitFor();
       await fitsSupportedWidths(migrationOptions);
       await migrationOptions.getByLabel('Целева папка във v3', {exact: true}).selectOption('shelves');
@@ -273,7 +273,13 @@ const {openKitchen} = require('./browser-harness.cjs');
         const bounds = node.getBoundingClientRect();
         return bounds.x >= 0 && bounds.x + bounds.width <= 321;
       }));
-      assert.ok(await longList.evaluate(node => node.scrollHeight > node.clientHeight));
+      const catalogScroll = await longList.evaluate(node => ({
+        scrollHeight: node.scrollHeight,
+        clientHeight: node.clientHeight,
+        childCount: node.querySelectorAll('label').length,
+      }));
+      assert.ok(catalogScroll.scrollHeight > catalogScroll.clientHeight,
+        `Catalog list must scroll: ${JSON.stringify(catalogScroll)}`);
       await page.keyboard.press('Escape');
       await page.evaluate(() => {
         window.__integration.store.legacyList = window.__migrationLegacyList;

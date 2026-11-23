@@ -136,6 +136,7 @@ dialog.pilotWindow::backdrop { background: rgba(21, 45, 71, .14); }
 }
 .nedConfirmPanel.migrationDialogPanel .migrationCatalogList {
   min-height: 90px;
+  height: 42dvh;
   max-height: 42dvh;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -166,6 +167,7 @@ dialog.pilotWindow::backdrop { background: rgba(21, 45, 71, .14); }
     max-height: calc(100dvh - 24px);
   }
   .nedConfirmPanel.migrationDialogPanel .migrationCatalogList {
+    height: 38dvh;
     max-height: 38dvh;
   }
   .nedConfirmPanel.migrationDialogPanel .migrationFolderActions button,
