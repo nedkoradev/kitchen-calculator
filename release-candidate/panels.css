@@ -109,6 +109,73 @@ dialog.pilotWindow::backdrop { background: rgba(21, 45, 71, .14); }
   justify-content: flex-end;
 }
 
+.nedConfirmPanel.migrationDialogPanel {
+  max-height: calc(90dvh - 40px);
+  overflow: hidden;
+}
+.nedConfirmPanel.migrationDialogPanel .migrationFolderControls {
+  flex: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding-block: 8px;
+  border-block: 1px solid #bdccde;
+  background: #f6f8fb;
+}
+.nedConfirmPanel.migrationDialogPanel .migrationFolderControls > label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  margin: 0;
+  font-weight: 600;
+}
+.nedConfirmPanel.migrationDialogPanel .migrationFolderActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.nedConfirmPanel.migrationDialogPanel .migrationCatalogList {
+  min-height: 90px;
+  height: 42dvh;
+  max-height: 42dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: 8px;
+  padding-block: 8px;
+}
+.nedConfirmPanel.migrationDialogPanel [role="status"],
+.nedConfirmPanel.migrationDialogPanel .nedConfirmActions {
+  flex: none;
+  background: #f6f8fb;
+}
+.nedConfirmPanel.migrationDialogPanel [role="status"] {
+  min-height: 20px;
+  margin: 8px 0 0;
+  padding-block: 4px;
+}
+.nedConfirmPanel.migrationDialogPanel .nedConfirmActions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding-top: 8px;
+  border-top: 1px solid #d3dae3;
+}
+
+@media (max-width: 620px) {
+  .nedConfirmPanel.migrationDialogPanel {
+    max-height: calc(100dvh - 24px);
+  }
+  .nedConfirmPanel.migrationDialogPanel .migrationCatalogList {
+    height: 38dvh;
+    max-height: 38dvh;
+  }
+  .nedConfirmPanel.migrationDialogPanel .migrationFolderActions button,
+  .nedConfirmPanel.migrationDialogPanel .nedConfirmActions button {
+    width: 100%;
+  }
+}
+
 #pilotVersion {
   position: fixed;
   right: 12px;

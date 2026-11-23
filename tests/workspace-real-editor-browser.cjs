@@ -219,8 +219,10 @@ const {openKitchen} = require('./browser-harness.cjs');
       await page.getByRole('button', {name: 'Моята библиотека v2.95 · Собственик', exact: true}).click();
       await page.getByRole('button', {name: 'Мигрирай всички мои документи в v3…', exact: true}).click();
       const migrationOptions = page.getByRole('dialog', {name: 'Подготовка на миграция'});
+      await migrationOptions.getByLabel('Целева папка във v3', {exact: true}).waitFor();
+      await migrationOptions.getByRole('button', {name: 'Създай папка „Импорт от v2.95“', exact: true}).waitFor();
       await fitsSupportedWidths(migrationOptions);
-      await migrationOptions.getByLabel('Папка за мигрираните модели').selectOption('shelves');
+      await migrationOptions.getByLabel('Целева папка във v3', {exact: true}).selectOption('shelves');
       await migrationOptions.getByLabel('Оригинална материална база · Контролен шкаф').selectOption({label: 'Оригинална база 2.96'});
       await page.getByRole('button', {name: 'Провери съвместимостта', exact: true}).click();
       await fitsSupportedWidths(page.getByRole('dialog', {name: /Проверка на миграция/}));
@@ -236,6 +238,54 @@ const {openKitchen} = require('./browser-harness.cjs');
       });
       assert.equal(afterV3Documents.length, beforeV3Documents.length + 2);
       await page.getByRole('button', {name: 'Затвори', exact: true}).click();
+
+      await page.evaluate(() => {
+        if (!window.__migrationLegacyList) window.__migrationLegacyList = window.__integration.store.legacyList;
+        window.__integration.store.legacyList = async () => ({
+          folders: [{id: 'wardrobes', label: 'Гардероби'}, {id: 'lower', label: 'Долен шкаф'}],
+          documents: Array.from({length: 18}, (_, index) => ({
+            id: `long-list-model-${index + 1}`,
+            type: 'model',
+            name: `Много шкафове ${index + 1}`,
+            folderId: 'lower',
+            requiresCatalog: true,
+          })),
+          catalogs: [
+            {id: 'catalog-a', name: 'Материална база А'},
+            {id: 'catalog-b', name: 'Материална база Б'},
+            {id: 'catalog-c', name: 'Материална база В'},
+          ],
+        });
+      });
+      await page.setViewportSize({width: 320, height: 820});
+      await libraryButton.click();
+      await page.getByRole('button', {name: 'Документи v2.95…', exact: true}).click();
+      await page.getByRole('button', {name: 'Моята библиотека v2.95 · Собственик', exact: true}).click();
+      await page.getByRole('button', {name: 'Мигрирай всички мои документи в v3…', exact: true}).click();
+      const longMigration = page.getByRole('dialog', {name: 'Подготовка на миграция'});
+      await longMigration.waitFor();
+      const longList = longMigration.locator('.migrationCatalogList');
+      await longList.evaluate(node => { node.scrollTop = node.scrollHeight; });
+      await longMigration.getByLabel('Целева папка във v3', {exact: true}).waitFor();
+      await longMigration.getByRole('button', {name: 'Създай папка „Импорт от v2.95“', exact: true}).waitFor();
+      await longMigration.getByRole('button', {name: 'Провери съвместимостта', exact: true}).waitFor();
+      assert.ok(await longMigration.evaluate(node => {
+        const bounds = node.getBoundingClientRect();
+        return bounds.x >= 0 && bounds.x + bounds.width <= 321;
+      }));
+      const catalogScroll = await longList.evaluate(node => ({
+        scrollHeight: node.scrollHeight,
+        clientHeight: node.clientHeight,
+        childCount: node.querySelectorAll('label').length,
+      }));
+      assert.ok(catalogScroll.scrollHeight > catalogScroll.clientHeight,
+        `Catalog list must scroll: ${JSON.stringify(catalogScroll)}`);
+      await page.keyboard.press('Escape');
+      await page.evaluate(() => {
+        window.__integration.store.legacyList = window.__migrationLegacyList;
+      });
+      await page.setViewportSize({width: 1400, height: 1000});
+
       await libraryButton.click();
       const importedLibrary = page.getByRole('dialog', {name: 'Обща библиотека'});
       await importedLibrary.getByLabel('Папка').selectOption('system:projects');
