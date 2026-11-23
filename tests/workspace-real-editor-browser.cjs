@@ -86,12 +86,13 @@ const {openKitchen} = require('./browser-harness.cjs');
           ...(request.scope.actorUid === 'beta' ? [{id: 'legacy-owner', name: 'Споделена стара база', role: 'editor'}] : []),
         ];
         if (operation === 'legacyList') return {folders: [{id: 'wardrobes', label: 'Гардероби'}, {id: 'lower', label: 'Долен шкаф'}],
-          documents: [{id: 'v2-project', type: 'project', name: 'Стара кухня'},
-            {id: 'lower-model', type: 'model', name: 'Контролен шкаф', folderId: 'lower'}]};
+          documents: [{id: 'v2-project', type: 'project', name: 'Стара кухня', requiresCatalog: false},
+            {id: 'lower-model', type: 'model', name: 'Контролен шкаф', folderId: 'lower', requiresCatalog: true}],
+          catalogs: [{id: '', name: 'Вградена стандартна база'}, {id: 'v2-old-base', name: 'Оригинална база 2.96'}]};
         if (operation === 'legacyRead') return request.type === 'project'
           ? readLegacyProject(oldProject, {scope: request.legacyOwnerId, id: request.id})
           : readLegacyCabinet(oldModel, {scope: request.legacyOwnerId, id: request.id,
-            folderId: request.folderId});
+            catalog: documentToSnapshot(legacyModelSource).snapshot.materials, folderId: request.folderId});
         const result = await http[operation](request);
         if (operation === 'write' && connection.dropAcknowledgement) {
           connection.dropAcknowledgement = false;
@@ -220,6 +221,7 @@ const {openKitchen} = require('./browser-harness.cjs');
       const migrationOptions = page.getByRole('dialog', {name: 'Подготовка на миграция'});
       await fitsSupportedWidths(migrationOptions);
       await migrationOptions.getByLabel('Папка за мигрираните модели').selectOption('shelves');
+      await migrationOptions.getByLabel('Оригинална материална база · Контролен шкаф').selectOption({label: 'Оригинална база 2.96'});
       await page.getByRole('button', {name: 'Провери съвместимостта', exact: true}).click();
       await fitsSupportedWidths(page.getByRole('dialog', {name: /Проверка на миграция/}));
       await page.getByRole('button', {name: 'Мигрирай 2 съвместими документа', exact: true}).click();
