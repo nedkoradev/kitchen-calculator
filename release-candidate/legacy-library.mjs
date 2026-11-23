@@ -74,6 +74,8 @@ export function createLegacyLibrary(db, bundledCatalog) {
       catalog = {pdcMaterials, edgeMaterials, backMaterials, worktops, servicePrices};
     }
     const read = project ? readLegacyProject : readLegacyCabinet;
-    return read(record, {scope: ownerId, id, catalog, folderId: null});
+    const document = await read(record, {scope: ownerId, id, catalog, folderId: request.folderId ?? null});
+    if (request.catalogId !== undefined) document.source.catalogId = request.catalogId;
+    return document;
   }, {readOnly: true});
 }

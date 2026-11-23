@@ -1,9 +1,11 @@
-import {identifier, PROJECTS_FOLDER, validateLibrary} from '../document-format/model.mjs';
+import {identifier, PROJECTS_FOLDER, validateDocument, validateLibrary} from '../document-format/model.mjs';
+import {legacyDocumentId} from '../document-format/legacy.mjs';
+import {comparableJson} from '../workspace-context/insertion.mjs';
 import {createFirestorePersistence} from '../workspace-persistence/firestore-adapter.mjs';
 
 const namespace = 'workspace_v3';
 const failure = (code, message = code) => Object.assign(new Error(message), {code});
-const operations = new Set(['readProject', 'readModel', 'write', 'pending', 'reconcile', 'acknowledge', 'list', 'changeFolder']);
+const operations = new Set(['readProject', 'readModel', 'write', 'migrateLegacy', 'pending', 'reconcile', 'acknowledge', 'list', 'changeFolder']);
 const blankLibrary = () => ({revision: 0, folders: [PROJECTS_FOLDER]});
 
 // A trusted process owns writes. The deployment supplies Admin Firestore and
@@ -37,6 +39,46 @@ export function createWorkspaceService({db, verifyToken, newId = () => crypto.ra
         return (await transaction.get(manifest)).data()?.folders.some(folder => folder.id === document.folderId) === true;
       },
     });
+
+    if (operation === 'migrateLegacy') {
+      const document = request.document;
+      validateDocument(document);
+      const source = document.source;
+      if (source?.type !== document.type || source.scope !== ownerUid ||
+          document.id !== await legacyDocumentId(document.type, source.scope, source.id)) {
+        throw failure('invalid-legacy-source');
+      }
+      if (document.type === 'model' && document.folderId === null) {
+        throw failure('legacy-folder-required');
+      }
+      if (new TextEncoder().encode(comparableJson(document)).length > 800_000) {
+        throw failure('document-too-large');
+      }
+      const documentRef = documents.doc(document.id);
+      const nameRef = owner.collection('names').doc(document.nameKey);
+      return db.runTransaction(async tx => {
+        const access = await role(tx);
+        if (!['owner', 'editor'].includes(access)) throw failure('permission-denied');
+        const [previousSnapshot, claimSnapshot] = await Promise.all([tx.get(documentRef), tx.get(nameRef)]);
+        const previous = previousSnapshot.data();
+        if (previous) {
+          const sameSource = previous.source?.type === source.type &&
+            previous.source?.scope === source.scope && previous.source?.id === source.id;
+          if (!sameSource) return {status: 'id-conflict'};
+          return {status: comparableJson(previous) === comparableJson(document)
+            ? 'already-imported' : 'existing-not-updated'};
+        }
+        const claim = claimSnapshot.data();
+        if (claim) return {status: claim.id === document.id ? 'index-conflict' : 'name-conflict'};
+        if (document.folderId !== null && document.folderId !== PROJECTS_FOLDER.id &&
+            (await tx.get(manifest)).data()?.folders.some(folder => folder.id === document.folderId) !== true) {
+          return {status: 'folder-not-found'};
+        }
+        tx.create(documentRef, JSON.parse(JSON.stringify(document)));
+        tx.create(nameRef, {id: document.id});
+        return {status: 'imported'};
+      });
+    }
 
     if (operation === 'list') {
       return db.runTransaction(async tx => {

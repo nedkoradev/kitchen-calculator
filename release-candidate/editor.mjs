@@ -2,6 +2,7 @@ import {createWorkspaceBridge} from '../workspace-ui/bridge.mjs';
 import {createWorkspaceController} from '../workspace-context/editor-controller.mjs';
 import {comparableJson} from '../workspace-context/insertion.mjs';
 import {documentToSnapshot, snapshotToDocument, toEditorSnapshot} from '../workspace-ui/scene-adapter.mjs';
+import {applyLegacyMigration, inspectLegacyMigration} from './legacy-migration.mjs';
 import {nedConfirmDelete, nedPromptName} from '../ui-messages.mjs';
 import {decorateAction} from '../icons.mjs';
 import {PROJECTS_FOLDER} from '../document-format/model.mjs';
@@ -294,6 +295,147 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     return bridge.execute(command, ...args);
   }
 
+  const migrationLabels = {
+    ready: 'готов за миграция',
+    blocked: 'блокиран',
+    conflict: 'конфликт',
+    'already-imported': 'вече мигриран',
+    'existing-not-updated': 'съществуващият v3 документ е запазен',
+    imported: 'мигриран',
+    failed: 'неуспешен',
+    unknown: 'резултатът не е потвърден',
+    'not-attempted': 'не е изпълнен',
+  };
+
+  function migrationReport(panel, rows) {
+    const listing = documentElement('div', 'libraryDialogItems');
+    for (const row of rows) {
+      const item = document.createElement('p');
+      item.textContent = `${migrationLabels[row.status] ?? row.status} · ${row.type === 'project' ? 'Проект' : 'Модел'} · ${row.name}: ${row.reason}`;
+      listing.append(item);
+    }
+    panel.append(listing);
+  }
+
+  async function migrateLegacyLibrary(ownerUid, legacy, catalogs) {
+    const scope = bridge.state.scope;
+    const sameOwner = () => bridge.state.scope?.ownerUid === scope.ownerUid &&
+      bridge.state.scope?.actorUid === scope.actorUid && scope.actorUid === scope.ownerUid &&
+      ownerUid === scope.ownerUid && bridge.state.canAct;
+    if (!sameOwner() || !await flush()) return;
+
+    let {folders, revision} = await store.list({scope});
+    if (!sameOwner()) return;
+    const models = legacy.documents.filter(item => item.type === 'model');
+    const needsCatalog = legacy.documents.filter(item => item.requiresCatalog);
+    const options = await dialog('Подготовка на миграция', (panel, done) => {
+      const description = document.createElement('p');
+      description.textContent = 'Провери съвместимостта преди запис. Оригиналите v2.95 остават непроменени; съществуващи документи във v3 не се презаписват.';
+      panel.append(description);
+
+      const folder = document.createElement('select');
+      folder.setAttribute('aria-label', 'Папка за мигрираните модели');
+      const refreshFolders = (selected = '') => {
+        folder.replaceChildren(new Option('Избери папка…', ''),
+          ...folders.filter(item => item.id !== PROJECTS_FOLDER.id)
+            .map(item => new Option(folderLabel(item, folders), item.id)));
+        folder.value = selected;
+      };
+      if (models.length) {
+        const label = document.createElement('label');
+        label.textContent = `Папка в библиотеката за ${models.length} модела`;
+        label.append(folder);
+        panel.append(label);
+        refreshFolders();
+        const create = button('Създай папка „Импорт от v2.95“', async () => {
+          create.disabled = true;
+          try {
+            ({folders, revision} = await store.changeFolder({scope, revision,
+              change: {action: 'create', name: 'Импорт от v2.95', parentId: null}}));
+            refreshFolders(folders.find(item => item.name === 'Импорт от v2.95')?.id ?? '');
+          } catch (error) {
+            feedback.textContent = error.message;
+            try {
+              const latest = await store.list({scope});
+              ({folders, revision} = latest);
+              refreshFolders(folders.find(item => item.name === 'Импорт от v2.95')?.id ?? '');
+            } catch (refreshError) {
+              feedback.textContent += `; папките не са презаредени: ${refreshError.message}`;
+            }
+          } finally {
+            create.disabled = false;
+          }
+        });
+        panel.append(create);
+      }
+
+      const catalogSelects = new Map();
+      for (const item of needsCatalog) {
+        const label = document.createElement('label');
+        label.textContent = `Оригинална материална база · ${item.name}`;
+        const select = document.createElement('select');
+        select.setAttribute('aria-label', label.textContent);
+        select.add(new Option('Избери точната база…', ''));
+        catalogs.forEach((catalog, index) => select.add(new Option(catalog.name, String(index))));
+        label.append(select);
+        panel.append(label);
+        catalogSelects.set(item.id, select);
+      }
+
+      const feedback = document.createElement('p');
+      feedback.setAttribute('role', 'status');
+      const actions = documentElement('div', 'nedConfirmActions');
+      const cancel = button('Отказ', () => done(null));
+      const confirm = button('Провери съвместимостта', () => {
+        if (models.length && !folder.value) {
+          feedback.textContent = 'Избери или създай папка за моделите.';
+          return;
+        }
+        const catalogIds = {};
+        for (const [id, select] of catalogSelects) {
+          if (select.value === '') {
+            feedback.textContent = 'Избери точната материална база за всеки документ, който я изисква.';
+            return;
+          }
+          catalogIds[id] = catalogs[Number(select.value)].id;
+        }
+        if (!sameOwner()) return;
+        done({modelFolderId: folder.value || null, catalogIds});
+      });
+      actions.append(cancel, confirm);
+      panel.append(feedback, actions);
+    });
+    if (!options || !sameOwner()) return;
+
+    const plan = await inspectLegacyMigration({store, scope, ownerUid,
+      catalogIds: options.catalogIds, modelFolderId: options.modelFolderId});
+    if (!sameOwner()) return;
+    const ready = plan.rows.filter(row => row.status === 'ready').length;
+    const proceed = await dialog('Проверка на миграция v2.95 → v3', (panel, done) => {
+      const summary = document.createElement('p');
+      summary.textContent = `Проекти: ${legacy.documents.filter(item => item.type === 'project').length} · Модели: ${models.length} · Готови: ${ready}. Само съвместимите документи ще се създадат; оригиналите няма да се променят.`;
+      panel.append(summary);
+      migrationReport(panel, plan.rows);
+      const actions = documentElement('div', 'nedConfirmActions');
+      actions.append(button('Отказ', () => done(false)));
+      if (ready) actions.append(button(`Мигрирай ${ready} съвместими документа`, () => done(true)));
+      panel.append(actions);
+    });
+    if (!proceed || !sameOwner()) return;
+
+    const result = await applyLegacyMigration({store, plan});
+    await dialog('Отчет за миграцията', (panel, done) => {
+      const imported = result.rows.filter(row => row.status === 'imported').length;
+      const skipped = result.rows.filter(row => row.status === 'already-imported').length;
+      const failed = result.rows.filter(row => ['blocked', 'conflict', 'existing-not-updated', 'failed', 'unknown', 'not-attempted'].includes(row.status)).length;
+      const summary = document.createElement('p');
+      summary.textContent = `Добавени: ${imported} · Вече съществуват: ${skipped} · Нерешени: ${failed}. Оригиналите v2.95 са запазени. При неясен резултат повторната проверка не създава дубликати.`;
+      panel.append(summary);
+      migrationReport(panel, result.rows);
+      panel.append(button('Затвори', () => done(true)));
+    });
+  }
+
   async function openLegacyLibrary() {
     const scope = bridge.state.scope;
     const bases = await store.legacyBases({scope});
@@ -319,7 +461,14 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       select.onchange = refresh;
       refresh();
       panel.append(select, listing, button('Отказ', () => done(null)));
+      if (owner === scope.ownerUid && scope.actorUid === scope.ownerUid && documents.length) {
+        panel.append(button('Мигрирай всички мои документи в v3…',
+          () => done({migration: true})));
+      }
     });
+    if (item?.migration && bridge.state.scope?.actorUid === scope.actorUid && bridge.state.canAct) {
+      return migrateLegacyLibrary(owner, {documents, catalogs}, catalogs);
+    }
     if (!item || bridge.state.scope?.actorUid !== scope.actorUid || !bridge.state.canAct) return;
     let catalogId;
     if (item.requiresCatalog) {
