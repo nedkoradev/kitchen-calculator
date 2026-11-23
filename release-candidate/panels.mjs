@@ -404,7 +404,9 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
         const base = await api.activate(baseSelect.value);
         setActiveBase(base.id, base.name);
         showBasePreview(base);
-        setBaseStatus('Активна база: ' + base.name);
+        if (!baseStatus.textContent.includes('Записаният документ запазва своята материална база')) {
+          setBaseStatus('Активна база: ' + base.name);
+        }
       } catch (error) {
         setBaseStatus(error.message, true);
       } finally {
