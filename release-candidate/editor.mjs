@@ -330,13 +330,14 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     const needsCatalog = legacy.documents.filter(item => item.requiresCatalog);
     const catalogOptions = Array.isArray(catalogs) ? catalogs : [];
     const options = await dialog('Подготовка на миграция', (panel, done) => {
-      panel.classList.add('pilotSaveFolderForm');
+      panel.classList.add('pilotSaveFolderForm', 'migrationDialogPanel');
       const description = document.createElement('p');
       description.textContent = 'Провери съвместимостта преди запис. Оригиналите v2.95 остават непроменени; съществуващи документи във v3 не се презаписват. Папката е само целево място за моделите във v3.';
       panel.append(description);
 
+      const folderControls = documentElement('div', 'migrationFolderControls');
       const folder = document.createElement('select');
-      folder.setAttribute('aria-label', 'Папка за мигрираните модели');
+      folder.setAttribute('aria-label', 'Целева папка във v3');
       const refreshFolders = (selected = '') => {
         const choices = folders.filter(item => item.id !== PROJECTS_FOLDER.id);
         folder.replaceChildren(new Option(choices.length ? 'Избери папка в библиотеката…' : 'Няма папка във v3 — създай папка по-долу…', ''),
@@ -345,10 +346,10 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       };
       if (models.length) {
         const label = document.createElement('label');
-        label.textContent = `Папка в библиотеката за ${models.length} модела`;
+        label.textContent = 'Целева папка във v3';
         label.append(folder);
-        panel.append(label);
         refreshFolders();
+        const createRow = documentElement('div', 'migrationFolderActions');
         const create = button('Създай папка „Импорт от v2.95“', async () => {
           create.disabled = true;
           try {
@@ -368,18 +369,21 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
             create.disabled = false;
           }
         });
-        panel.append(create);
+        createRow.append(create);
+        folderControls.append(label, createRow);
+        panel.append(folderControls);
       }
 
+      const catalogList = documentElement('div', 'migrationCatalogList');
       const catalogSelects = new Map();
       if (needsCatalog.length) {
         const catalogHint = document.createElement('p');
         catalogHint.textContent = 'Материалните бази не се копират автоматично. За всеки документ с индекси избери точната оригинална база от v2.95.';
-        panel.append(catalogHint);
+        catalogList.append(catalogHint);
       } else if (models.length || legacy.documents.length) {
         const catalogHint = document.createElement('p');
         catalogHint.textContent = 'Документите имат вградена или стандартна материална информация. Отделна обща база Материали не се копира автоматично.';
-        panel.append(catalogHint);
+        catalogList.append(catalogHint);
       }
       for (const item of needsCatalog) {
         const label = document.createElement('label');
@@ -389,9 +393,10 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
         select.add(new Option('Избери точната база…', ''));
         catalogOptions.forEach((catalog, index) => select.add(new Option(catalog.name, String(index))));
         label.append(select);
-        panel.append(label);
+        catalogList.append(label);
         catalogSelects.set(item.id, select);
       }
+      panel.append(catalogList);
 
       const feedback = document.createElement('p');
       feedback.setAttribute('role', 'status');
