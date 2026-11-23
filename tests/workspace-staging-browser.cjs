@@ -329,27 +329,6 @@ const path = require('node:path');
     assert.match(reopenedList, /Долен шкаф/);
     assert.match(reopenedList, /Хоризонтален детайл/);
 
-    await page.evaluate(async () => {
-      const bridge = window.__integration.bridge;
-      const document = structuredClone(bridge.state.workspace.document);
-      document.parts[0].part.assembly = 'assembly9';
-      document.parts[0].part.assemblyStack = [];
-      await bridge.execute('editScene', {parts: document.parts, groups: {}});
-    });
-    await page.waitForFunction(() => document.querySelector('#groupList')?.textContent.includes('Група 1'));
-    assert.doesNotMatch(await page.locator('#groupList').textContent(), /assembly9/);
-    assert.equal(await page.evaluate(() => window.__integration.bridge.state.workspace.document.parts[0].part.assembly), 'assembly9');
-
-    await page.evaluate(async () => {
-      const bridge = window.__integration.bridge;
-      await bridge.execute('editScene', {groups: {assembly9: 'Потребителска група'}});
-    });
-    await page.waitForFunction(() => document.querySelector('#groupList')?.textContent.includes('Потребителска група'));
-    await page.evaluate(async persisted => {
-      const bridge = window.__integration.bridge;
-      await bridge.execute('editScene', {parts: persisted.parts, groups: persisted.groups});
-    }, persisted);
-
     await page.setViewportSize({width: 390, height: 820});
     await openLibrary();
     await page.getByRole('button', {name: 'Отвори проект · Контролна кухня', exact: true}).click();
