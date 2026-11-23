@@ -170,7 +170,7 @@ test('real pilot HTTP routes distinguish the candidate, service URL and configur
     assert.equal(response.location, 'https://nedkoradev.github.io/kitchen-calculator/');
   }
   assert.equal((await http(canonical, '/')).location, pilot.origin + '/');
-  assert.ok((await http(configured, '/')).body.includes('Pilot v' + version));
+  assert.match((await http(configured, '/')).body, /Pilot v3\.0\.1/);
   assert.equal((await http(configured, '/materials/default.json')).status, 200);
   assert.equal((await http(configured, '/rollout-preflight/staging-auth.mjs')).status, 200);
   assert.equal((await http(candidate, '/')).status, 403);
@@ -190,7 +190,11 @@ test('public rendering is independently enabled and keeps the dedicated Pilot un
   assert.throws(() => publicConfig({...candidateEnv, NEDIQ_PUBLIC_ORIGIN: 'https://example.run.app'}));
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   assert.ok(buildPilotPreview(html, config).includes('id="appVersion">v' + version));
-  assert.ok(buildPilotPreview(html, pilotConfig(env)).includes('Pilot v' + version));
+  assert.match(buildPilotPreview(html, pilotConfig(env)), /Pilot v3\.0\.1/);
+  const pilotHtml = buildPilotPreview(html, pilotConfig(env));
+  assert.match(pilotHtml, /import \{v3GroupNameMap\} from "\.\/release-candidate\/group-names\.mjs";/);
+  assert.match(pilotHtml, /names:Object\.fromEntries\(document\.body\.dataset\.stageAuth \? v3GroupNameMap/);
+  assert.doesNotMatch(pilotHtml, /MutationObserver/);
 });
 
 test('public workspace HTML and release metadata serve the same version', async t => {

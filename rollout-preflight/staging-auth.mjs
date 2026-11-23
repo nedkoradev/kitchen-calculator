@@ -140,6 +140,6 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
     status.textContent = pilot?.public ? user.email + ' · Собственик' : 'Профилът е удостоверен';
     status.title = status.textContent;
     if (pilot?.public) panel.classList.add('publicProfile');
-    if (pilot) document.getElementById('appVersion').textContent = 'v' + pilot.version;
+    if (pilot) document.getElementById('appVersion').textContent = pilot.public ? 'v' + pilot.version : 'v3.0';
   });
 }

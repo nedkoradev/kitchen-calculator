@@ -26,6 +26,14 @@ function buildPreview(source, {enabled, settings}) {
       html.split(welcome).length !== 2 || html.split('<body>').length !== 2 || html.split('</head>').length !== 2) {
     throw new Error('Expected a local emulator and one renderer bootstrap seam');
   }
+  if (html.split('<script type="module">').length !== 2 ||
+      html.split('names:Object.fromEntries(projectInstances)').length !== 2) {
+    throw new Error('Expected one v3 group-name visualization seam');
+  }
+  html = html.replace('<script type="module">',
+    '<script type="module">\nimport {v3GroupNameMap} from "./release-candidate/group-names.mjs";');
+  html = html.replace('names:Object.fromEntries(projectInstances)',
+    'names:Object.fromEntries(document.body.dataset.stageAuth ? v3GroupNameMap(customParts,Object.fromEntries(projectInstances)) : Object.fromEntries(projectInstances))');
   const css = '<link rel="stylesheet" href="./release-candidate/panels.css">';
   html = html.replace(loadMaterials, '\nconst stagingMaterialsReady = loadDefaultMaterials();');
   html = html.replace(welcome, '').replace('</head>', css + '</head>');
@@ -73,10 +81,10 @@ export function buildLocalPreview(source, {enabled = false, authOrigin} = {}) {
 }
 
 export function buildPilotPreview(source, config) {
-  const settings = {pilot: {origin: config.origin, authDomain: config.authDomain, apiKey: config.apiKey, public: config.public === true, version}};
+  const settings = {pilot: {origin: config.origin, authDomain: config.authDomain, apiKey: config.apiKey, public: config.public === true, version: config.public ? version : undefined}};
   if (config.localGoogle) Object.assign(settings.pilot, {localGoogle: true, projectId: config.projectId});
   const html = buildPreview(source, {enabled: true, settings});
   if (config.public) return html.replace('<title>Kitchen Designer</title>', '<title>NED-IQ v' + version + '</title>')
     .replace(/(id="appVersion">)v[0-9.]+/, '$1v' + version);
-  return html.replace('</body>', '<span id="pilotVersion" aria-label="Версия на NED-IQ Pilot">Pilot v' + version + '</span></body>');
+  return html.replace('</body>', '<span id="pilotVersion" aria-label="Версия на NED-IQ Pilot">Pilot v3.0.1</span></body>');
 }
