@@ -191,6 +191,10 @@ test('public rendering is independently enabled and keeps the dedicated Pilot un
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   assert.ok(buildPilotPreview(html, config).includes('id="appVersion">v' + version));
   assert.match(buildPilotPreview(html, pilotConfig(env)), /Pilot v3\.0\.1/);
+  const pilotHtml = buildPilotPreview(html, pilotConfig(env));
+  assert.match(pilotHtml, /import \{v3GroupNameMap\} from "\.\/release-candidate\/group-names\.mjs";/);
+  assert.match(pilotHtml, /names:Object\.fromEntries\(document\.body\.dataset\.stageAuth \? v3GroupNameMap/);
+  assert.doesNotMatch(pilotHtml, /MutationObserver/);
 });
 
 test('public workspace HTML and release metadata serve the same version', async t => {

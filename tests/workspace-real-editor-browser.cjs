@@ -134,6 +134,8 @@ const {openKitchen} = require('./browser-harness.cjs');
     await partCount(2);
     await settled();
     const original = await snapshot();
+    assert.match(await page.locator('#groupList').textContent(), /Корпус/);
+    assert.match(await page.locator('#groupList').textContent(), /Рафтова група/);
     assert.equal((await state()).workspace.document.id, 'test-project');
     assert.deepEqual(original.assemblyNames, {outer: 'Корпус', inner: 'Рафтова група'});
     assert.equal(original.parts[0].finish.grainAxis, 'x');

@@ -26,6 +26,14 @@ function buildPreview(source, {enabled, settings}) {
       html.split(welcome).length !== 2 || html.split('<body>').length !== 2 || html.split('</head>').length !== 2) {
     throw new Error('Expected a local emulator and one renderer bootstrap seam');
   }
+  if (html.split('<script type="module">').length !== 2 ||
+      html.split('names:Object.fromEntries(projectInstances)').length !== 2) {
+    throw new Error('Expected one v3 group-name visualization seam');
+  }
+  html = html.replace('<script type="module">',
+    '<script type="module">\nimport {v3GroupNameMap} from "./release-candidate/group-names.mjs";');
+  html = html.replace('names:Object.fromEntries(projectInstances)',
+    'names:Object.fromEntries(document.body.dataset.stageAuth ? v3GroupNameMap(customParts,Object.fromEntries(projectInstances)) : Object.fromEntries(projectInstances))');
   const css = '<link rel="stylesheet" href="./release-candidate/panels.css">';
   html = html.replace(loadMaterials, '\nconst stagingMaterialsReady = loadDefaultMaterials();');
   html = html.replace(welcome, '').replace('</head>', css + '</head>');
