@@ -14,6 +14,28 @@ const path = require('node:path');
     const [fixture] = fixtureDocuments();
     await backend.db.doc('workspace_v3/stage-pilot/documents/' + fixture.id).set(fixture);
     await backend.db.doc('workspace_v3/stage-pilot/names/' + fixture.nameKey).set({id: fixture.id});
+    await Promise.all([
+      backend.db.doc('users/stage-pilot/materials/base_a').set({
+        name: 'База A',
+        pdcMaterials: [{name: 'A плоскост', color: '#aabbcc', fullW: 2800, fullH: 2070, fullPrice: 42}],
+        edgeMaterials: [{name: 'A кант', color: '#333333', price: 1.5}],
+        backMaterials: [{name: 'A HDF', thick: 3, fullW: 2800, fullH: 2070, fullPrice: 20}],
+        worktops: [{name: 'A плот', fullW: 3000, depth: 600, fullPrice: 90}],
+        servicePrices: {cutStart: 2},
+      }),
+      backend.db.doc('users/stage-pilot/materials/base_b').set({
+        name: 'База B',
+        pdcMaterials: [{name: 'B плоскост', color: '#ddeeff', fullW: 2500, fullH: 1830, fullPrice: 55}],
+        edgeMaterials: [{name: 'B кант', color: '#ffffff', price: 2}],
+        backMaterials: [{name: 'B HDF', thick: 4, fullW: 2500, fullH: 1830, fullPrice: 28}],
+        worktops: [{name: 'B плот', fullW: 3100, depth: 620, fullPrice: 110}],
+        servicePrices: {cutStart: 3},
+      }),
+      backend.db.doc('users/stage-pilot/materials/_app_preferences').set({
+        schemaVersion: 1,
+        defaultMaterialBaseId: 'base_a',
+      }),
+    ]);
     stage = await startLocalStaging({enabled: true});
     assert.equal((await fetch(stage.origin + '/cloud.js')).status, 404);
     assert.equal((await fetch(stage.origin + '/sw.js')).status, 404);
@@ -117,7 +139,8 @@ const path = require('node:path');
     const groupId = combined.parts[1].part.assembly;
     assert.equal(combined.groups[groupId], 'Долен шкаф');
     assert.ok(combined.parts.slice(1).every(({part}) => part.assembly === groupId));
-    assert.ok(operations.every(operation => operation === 'pending'), 'Object creation must commit locally before any Firestore write');
+    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead'].includes(operation)),
+      'Object creation must commit locally before any Firestore write');
 
     const scene = page.locator('#view canvas');
     const canvas = await scene.elementHandle();
@@ -223,7 +246,7 @@ const path = require('node:path');
     await page.keyboard.press('Escape');
     await libraryWindow.waitFor({state: 'hidden'});
     await assertScene();
-    assert.ok(operations.every(operation => ['pending', 'list'].includes(operation)));
+    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead'].includes(operation)));
 
     const settingsButton = page.locator('#settingsButton');
     const settings = page.getByRole('dialog', {name: 'Настройки', exact: true});
@@ -242,7 +265,7 @@ const path = require('node:path');
     await page.keyboard.press('Escape');
     await settings.waitFor({state: 'hidden'});
     await assertScene();
-    assert.ok(operations.every(operation => ['pending', 'list'].includes(operation)));
+    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead'].includes(operation)));
 
     for (const width of [900, 390, 320]) {
       await page.setViewportSize({width, height: 820});
@@ -305,6 +328,7 @@ const path = require('node:path');
     const reopenedList = await page.locator('#groupList').textContent();
     assert.match(reopenedList, /Долен шкаф/);
     assert.match(reopenedList, /Хоризонтален детайл/);
+
     await page.setViewportSize({width: 390, height: 820});
     await openLibrary();
     await page.getByRole('button', {name: 'Отвори проект · Контролна кухня', exact: true}).click();
@@ -373,6 +397,47 @@ const path = require('node:path');
     await page.reload();
     await panel.getByText('Профилът е удостоверен').waitFor();
     await page.locator('#integration-status').getByText(/Възстановена чернова/).waitFor();
+
+    await openMaterials();
+    await materials.getByLabel('Активна материална база').waitFor();
+    assert.deepEqual(await materials.locator('#pilotActiveMaterialBase option').allTextContents(),
+      ['Избери база…', 'База A', 'База B']);
+    await materials.getByLabel('Активна материална база').selectOption('base_b');
+    await page.waitForFunction(() => document.querySelector('.pilotMaterialBaseStatus')?.textContent.includes('Записаният документ запазва своята материална база'));
+    assert.match(await materials.locator('.pilotMaterialPreviewTitle').textContent(), /База B/);
+    assert.match(await materials.locator('.pilotMaterialPreviewSection').first().textContent(), /B плоскост/);
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const preference = (await backend.db.doc('users/stage-pilot/materials/_app_preferences').get()).data();
+      if (preference?.defaultMaterialBaseId === 'base_b') break;
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    assert.equal((await backend.db.doc('users/stage-pilot/materials/_app_preferences').get()).data().defaultMaterialBaseId, 'base_b');
+    assert.deepEqual((await backend.db.doc('workspace_v3/stage-pilot/documents/' + fixture.id).get()).data().materials,
+      fixture.materials);
+    await materials.getByRole('button', {name: 'Преименувай', exact: true}).click();
+    const renameDialog = page.getByRole('dialog', {name: 'Преименуване', exact: true});
+    await renameDialog.getByRole('textbox').fill('База Beta');
+    await renameDialog.getByRole('button', {name: 'Преименувай', exact: true}).click();
+    await page.waitForFunction(() => document.querySelector('.pilotMaterialBaseStatus')?.textContent.includes('преименувана'));
+    await materials.getByRole('button', {name: 'Нова база', exact: true}).click();
+    const createDialog = page.getByRole('dialog', {name: 'Нова материална база', exact: true});
+    await createDialog.getByRole('textbox').fill('База C');
+    await createDialog.getByRole('button', {name: 'Създай', exact: true}).click();
+    await page.waitForFunction(() => document.querySelector('.pilotMaterialBaseStatus')?.textContent.includes('Създадена е база'));
+    await materials.getByRole('button', {name: 'Запази базата', exact: true}).click();
+    await page.waitForFunction(() => document.querySelector('.pilotMaterialBaseStatus')?.textContent.includes('е записана'));
+    const cRows = await Promise.all((await backend.db.collection('users/stage-pilot/materials').listDocuments()).map(ref => ref.get()));
+    assert.equal(cRows.some(row => row.exists && row.data().name === 'База C'), true);
+    await materials.getByRole('button', {name: 'Изтрий базата', exact: true}).click();
+    const deleteDialog = page.getByRole('dialog', {name: 'Потвърждение за изтриване', exact: true});
+    await deleteDialog.getByRole('button', {name: 'Изтрий', exact: true}).click();
+    await page.waitForFunction(() => document.querySelector('.pilotMaterialBaseStatus')?.textContent.includes('е изтрита'));
+    await materials.getByLabel('Активна материална база').selectOption('base_b');
+    await page.waitForFunction(() => document.querySelector('.pilotMaterialBaseStatus')?.textContent.includes('Активна база'));
+    assert.equal((await backend.db.doc('users/stage-pilot/materials/base_b').get()).data().name, 'База Beta');
+    await materials.getByRole('button', {name: 'Затваряне на прозореца', exact: true}).click();
+    await materials.waitFor({state: 'hidden'});
+
     await settingsButton.click();
     await settings.getByRole('button', {name: 'Изход', exact: true}).click();
     await panel.getByText('Локален тестов вход').waitFor();

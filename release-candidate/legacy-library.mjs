@@ -1,19 +1,25 @@
 import {defaultFolders, mergeLegacyFolders, resolveFolder} from '../library-folders.mjs';
 import {identifier} from '../document-format/model.mjs';
 import {readLegacyCabinet, readLegacyProject} from '../document-format/legacy.mjs';
+import {handleMaterialBaseOperation, materialBaseOperations} from './material-bases.mjs';
 
 const collections = {project: 'v2_projects', model: 'v2_cabinets'};
 const roles = ['editor', 'viewer'];
 const fail = code => Object.assign(new Error(code), {code});
 const preferencesId = '_app_preferences';
 
-export const legacyOperations = new Set(['legacyBases', 'legacyList', 'legacyRead']);
+export const legacyOperations = new Set(['legacyBases', 'legacyList', 'legacyRead', ...materialBaseOperations]);
 
 export function createLegacyLibrary(db, bundledCatalog) {
   const owners = db.collection('users');
   return ({operation, request, principal}) => db.runTransaction(async tx => {
     const actor = identifier(principal.uid);
     const email = identifier(principal.email.trim().toLowerCase());
+    if (materialBaseOperations.has(operation)) {
+      const scope = request?.scope;
+      if (scope?.actorUid !== actor || scope?.ownerUid !== actor) throw fail('permission-denied');
+      return handleMaterialBaseOperation({db, tx, operation, request, uid: actor});
+    }
     async function sharedRole(ownerId) {
       const grant = (await tx.get(owners.doc(ownerId).collection('access_grants').doc(email))).data();
       return grant?.ownerUid === ownerId && roles.includes(grant.role) ? grant.role : null;
@@ -77,5 +83,5 @@ export function createLegacyLibrary(db, bundledCatalog) {
     const document = await read(record, {scope: ownerId, id, catalog, folderId: request.folderId ?? null});
     if (request.catalogId !== undefined) document.source.catalogId = request.catalogId;
     return document;
-  }, {readOnly: true});
+  });
 }

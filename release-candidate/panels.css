@@ -54,6 +54,73 @@ dialog.pilotWindow::backdrop { background: rgba(21, 45, 71, .14); }
 .pilotWindowBody #projectExtraPane.materialsPage { padding: 0; }
 .pilotWindowBody #projectResults { height: auto; padding: 8px; overflow: visible; }
 .pilotWindowBody .nedBasePanel { display: none; }
+.pilotMaterialBaseBar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto;
+  gap: 10px 12px;
+  margin: 0 0 12px;
+  padding: 10px;
+  border: 1px solid #cbd7e5;
+  border-radius: 8px;
+  background: #f6f8fb;
+}
+.pilotMaterialBaseField {
+  display: grid;
+  grid-template-columns: minmax(150px, auto) minmax(180px, 360px);
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 600;
+}
+.pilotMaterialBaseField select { min-width: 180px; width: 100%; }
+.pilotMaterialBaseActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.pilotMaterialBaseActions button { min-height: 36px; }
+.pilotMaterialBaseStatus {
+  grid-column: 1 / -1;
+  min-height: 18px;
+  margin: 0;
+  color: #50637a;
+}
+.pilotMaterialBaseStatus.pilotError { color: #8b2f40; }
+.pilotMaterialBasePreview {
+  grid-column: 1 / -1;
+  max-height: 260px;
+  overflow: auto;
+  display: grid;
+  gap: 8px;
+}
+.pilotMaterialPreviewTitle { margin: 0; font-size: 15px; }
+.pilotMaterialPreviewSection {
+  padding: 8px;
+  border: 1px solid #d3dae3;
+  border-radius: 6px;
+  background: #fff;
+}
+.pilotMaterialPreviewSection h3 { margin: 0 0 6px; font-size: 14px; }
+.pilotMaterialPreviewTable { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.pilotMaterialPreviewTable th,
+.pilotMaterialPreviewTable td {
+  border: 1px solid #d3dae3;
+  padding: 5px 7px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.pilotMaterialPreviewTable th { background: #dce7f4; }
+.pilotMaterialPreviewTable td { background: #fff; }
+@media (max-width: 620px) {
+  .pilotMaterialBaseBar { grid-template-columns: minmax(0, 1fr); }
+  .pilotMaterialBaseField { grid-template-columns: minmax(0, 1fr); }
+  .pilotMaterialBaseField select { min-height: 44px; }
+  .pilotMaterialBaseActions { justify-content: stretch; }
+  .pilotMaterialBaseActions button { flex: 1 1 145px; min-height: 44px; }
+  .pilotMaterialBasePreview { max-height: 220px; }
+  .pilotMaterialPreviewTable { min-width: 620px; }
+}
 .pilotWindowBody .settingsSections > section { margin-block: 10px; }
 .pilotWindowBody .settingsSections a { color: #125ba9; }
 .pilotWindow .pilotResize { position: absolute; z-index: 4; touch-action: none; }

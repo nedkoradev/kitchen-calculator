@@ -1,4 +1,5 @@
-const methods = ['readProject', 'readModel', 'write', 'migrateLegacy', 'pending', 'reconcile', 'acknowledge', 'list', 'changeFolder', 'legacyBases', 'legacyList', 'legacyRead'];
+const methods = ['readProject', 'readModel', 'write', 'migrateLegacy', 'pending', 'reconcile', 'acknowledge', 'list', 'changeFolder', 'legacyBases', 'legacyList', 'legacyRead',
+  'materialBases', 'materialBaseRead', 'materialBaseSave', 'materialBaseRename', 'materialBaseDelete', 'materialBaseSetDefault'];
 
 export function createWorkspaceClient(invoke) {
   return Object.fromEntries(methods.map(operation => [operation, request => invoke(operation, request)]));
