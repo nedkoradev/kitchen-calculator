@@ -7,8 +7,8 @@
 - Продукт: **NED-IQ**, онлайн приложение за проектиране на мебели.
 - Хранилище: `nedkoradev/kitchen-calculator`; основен клон `main`.
 - Публичен адрес: https://nediq.eu/ ; GitHub Pages: https://nedkoradev.github.io/kitchen-calculator/.
-- Проверка за тази миграционна задача: `origin/main` е `7ff64e1` (v3 **3.0.2**, v2 **2.96**); публичният `release.json` е потвърден на v3.0.2 за същия SHA. PR #151 предлага v3.0.3 и е отворен; провери отново преди release/version preparation.
-- Автоматичното публикуване на v3 остава изключено. Предходният production probe е проверил кандидат с 0% production traffic; това е исторически статус, а не текущият production маршрут.
+- Проверка за тази задача: `origin/main` е `1b36aa5` (v3 **3.0.6**, v2 **2.96**); публичният nediq.eu `release.json` е потвърден на v3.0.5, SHA `49efd68764873a999ec4b2d6c1b2bf0c2efaf7f9`. Предложената нова версия за тази PR е v3.0.7; не публикувай без отделен production check и сверяване на SHA.
+- Автоматичното публикуване на v3 се управлява от `NEDIQ_V3_AUTO_DEPLOY`. Не стартирай deployment workflow ръчно. След merge и успешен GitHub check проследи автоматичното изпълнение и public `release.json`.
 - Версията се определя от `_data/version.json`, видимото заглавие и `release.json` след Jekyll build; не предполагай версия само по този документ.
 - Потвърдена публикация преди въвеждането на двата режима: **v2.90**, слят PR #88, commit `82548ab`. При започване на задача сверявай актуалните `main` и `release.json`.
 - Активна продукционна Firebase конфигурация: `kitchen-designer-9d437`. Никога не променяй production правила/данни без изрично разрешение.
@@ -19,6 +19,7 @@
 - **Legacy v2:** статично приложение HTML/CSS/JavaScript, коренен `index.html`, Three.js и отделни ES modules. `cloud.js` използва Firebase Google Authentication + Firestore; съществуващите имена са договор за съвместимост.
 - **Legacy v2 модели:** `geometry.mjs`, `project-model.mjs`, `project-store.mjs`, `project-ui.mjs`, `library-dialog.mjs`, `cabinet-generator*.mjs`, `grain.mjs`, `edge-editor.mjs`, `material-textures.mjs` и `view-pan.mjs` са product paths за v2, освен ако отделна документация изрично заяви обратното.
 - **NED-IQ v3:** Cloud Run HTTP host е `pilot/server.mjs`, workspace/runtime adapter-ите са в `release-candidate/`, `rollout-preflight/`, `workspace-*` и `document-format/`, а container entry point е `Dockerfile`. Не работи срещу кореновия `index.html` като единствен entry point.
+- **NED-IQ v3 материални бази:** v3 показва съществуващите `users/{uid}/materials` записи от v2.96 в контрол на `release-candidate/panels.mjs`; trusted server операции ги четат и управляват без миграция, дубликати или промяна на Firestore Rules. `_app_preferences.defaultMaterialBaseId` запомня последната активна база за потребителя. Нов/незаписан документ може да приеме активния каталог; вече записан документ запазва собствените си embedded материали при смяна на базата.
 - Ръчното v3 rollback действие изисква точното име на предишна Cloud Run revision; workflow-ът валидира входа преди WIF auth, а deploy скриптът проверява повторно преди Cloud Run заявки. Production и production-probe не използват rollback revision.
 - При автоматично връщане след неуспешна production проверка deploy скриптът потвърждава маршрута и видимата предишна версия; при несъвпадение отчита непотвърден rollback.
 - Общите CI/test/release инструменти не са доказателство за тип на функционалността. Класифицирай първо засегнатия продукт и изпълни най-малкия подходящ набор проверки.

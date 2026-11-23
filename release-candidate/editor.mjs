@@ -216,7 +216,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     });
   }
 
-  const initialScene = {materials: startingDocument.materials, settings: startingDocument.settings};
+  let initialScene = {materials: startingDocument.materials, settings: startingDocument.settings};
   const bridge = createWorkspaceBridge({
     activate: (scope, candidate) => installCandidate(candidate, scope),
     createController: options => createWorkspaceController({...options, drafts, initialScene, beforeSceneChange: installCandidate,
@@ -248,6 +248,222 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     },
     render,
   });
+
+  let activeMaterialBaseId = '';
+  let activeMaterialBaseName = '';
+
+  function emitMaterial(type, detail) {
+    window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-' + type, {detail}));
+  }
+  function materialScope() {
+    return bridge.state.scope ?? initialScope;
+  }
+  function sameMaterialScope(scope) {
+    return bridge.state.scope?.ownerUid === scope.ownerUid &&
+      bridge.state.scope?.actorUid === scope.actorUid;
+  }
+  function catalogFromEditor() {
+    const materials = editor.capture().materials ?? {};
+    return {
+      pdcMaterials: Array.isArray(materials.pdcMaterials) ? structuredClone(materials.pdcMaterials) : [],
+      edgeMaterials: Array.isArray(materials.edgeMaterials) ? structuredClone(materials.edgeMaterials) : [],
+      backMaterials: Array.isArray(materials.backMaterials) ? structuredClone(materials.backMaterials) : [],
+      worktops: Array.isArray(materials.worktops) ? structuredClone(materials.worktops) : [],
+      servicePrices: materials.servicePrices && typeof materials.servicePrices === 'object'
+        ? structuredClone(materials.servicePrices) : {},
+    };
+  }
+  function catalogForBase(data, name) {
+    return {
+      pdcMaterials: Array.isArray(data?.pdcMaterials) ? structuredClone(data.pdcMaterials) : [],
+      edgeMaterials: Array.isArray(data?.edgeMaterials) ? structuredClone(data.edgeMaterials) : [],
+      backMaterials: Array.isArray(data?.backMaterials) ? structuredClone(data.backMaterials) : [],
+      worktops: Array.isArray(data?.worktops) ? structuredClone(data.worktops) : [],
+      servicePrices: data?.servicePrices && typeof data.servicePrices === 'object'
+        ? structuredClone(data.servicePrices) : {},
+      activeBase: name || '',
+    };
+  }
+  function updateInitialSceneForBase(data, name) {
+    initialScene = {...initialScene, materials: catalogForBase(data, name)};
+  }
+
+  async function refreshMaterialBases() {
+    const scope = materialScope();
+    const result = await store.materialBases({scope});
+    if (!sameMaterialScope(scope) && bridge.state.scope) return result;
+    const detail = {uid: scope.ownerUid, items: result.items ?? [], defaultBaseId: result.defaultBaseId ?? ''};
+    emitMaterial('material-list', detail);
+    panels?.setMaterialBases?.(result);
+    return result;
+  }
+
+  async function setMaterialDefault(id) {
+    const scope = materialScope();
+    try {
+      await store.materialBaseSetDefault({scope, id});
+      if (!sameMaterialScope(scope) && bridge.state.scope) return;
+      emitMaterial('material-default-saved', {uid: scope.ownerUid, id});
+    } catch (error) {
+      if (!sameMaterialScope(scope) && bridge.state.scope) return;
+      emitMaterial('material-default-error', {message: error.message});
+    }
+  }
+
+  async function activateMaterialBase(id, automatic = false) {
+    const scope = materialScope();
+    const base = await store.materialBaseRead({scope, id});
+    if (!sameMaterialScope(scope) && bridge.state.scope) throw Error('Профилът или базата са променени.');
+    activeMaterialBaseId = base.id;
+    activeMaterialBaseName = base.name;
+    updateInitialSceneForBase(base.data, base.name);
+    panels?.setActiveMaterialBase?.(base.id, base.name);
+    panels?.showMaterialBasePreview?.(base);
+    const savedDocument = !!bridge.state.workspace?.document?.id;
+    if (!savedDocument || automatic) {
+      emitMaterial('material-loaded', {
+        uid: scope.ownerUid,
+        id: base.id,
+        automatic,
+        name: base.name,
+        data: base.data,
+      });
+    } else {
+      panels?.setMaterialBaseStatus?.('Активна база: ' + base.name + '. Записаният документ запазва своята материална база.');
+    }
+    if (!automatic) await setMaterialDefault(base.id);
+    return base;
+  }
+
+  async function saveCurrentMaterialBase() {
+    const scope = materialScope();
+    const data = catalogFromEditor();
+    let id = activeMaterialBaseId || null;
+    let name = activeMaterialBaseName;
+    if (!id) {
+      name = await nedPromptName('Име на новата материална база', '', {
+        heading: 'Нова материална база',
+        okLabel: 'Създай',
+      });
+      if (!name) throw Error('Операцията е отказана.');
+    }
+    const result = await store.materialBaseSave({scope, id, name, data});
+    if (!sameMaterialScope(scope) && bridge.state.scope) throw Error('Профилът или базата са променени.');
+    activeMaterialBaseId = result.id;
+    activeMaterialBaseName = result.name;
+    updateInitialSceneForBase(result.data, result.name);
+    if (!id) await setMaterialDefault(result.id);
+    emitMaterial('material-saved', {uid: scope.ownerUid, id: result.id, name: result.name});
+    await refreshMaterialBases();
+    panels?.setActiveMaterialBase?.(result.id, result.name);
+    panels?.showMaterialBasePreview?.({id: result.id, name: result.name, data: result.data});
+    return {id: result.id, name: result.name, data: result.data};
+  }
+
+  async function createMaterialBase(name) {
+    const scope = materialScope();
+    const data = catalogFromEditor();
+    const result = await store.materialBaseSave({scope, id: null, name, data});
+    if (!sameMaterialScope(scope) && bridge.state.scope) throw Error('Профилът или базата са променени.');
+    activeMaterialBaseId = result.id;
+    activeMaterialBaseName = result.name;
+    updateInitialSceneForBase(result.data, result.name);
+    await setMaterialDefault(result.id);
+    emitMaterial('material-saved', {uid: scope.ownerUid, id: result.id, name: result.name});
+    await refreshMaterialBases();
+    return {id: result.id, name: result.name, data: result.data};
+  }
+
+  async function renameMaterialBase(id, name) {
+    const scope = materialScope();
+    const result = await store.materialBaseRename({scope, id, name});
+    if (!sameMaterialScope(scope) && bridge.state.scope) throw Error('Профилът или базата са променени.');
+    if (activeMaterialBaseId === result.id) {
+      activeMaterialBaseName = result.name;
+      updateInitialSceneForBase(initialScene.materials, result.name);
+    }
+    await refreshMaterialBases();
+    return result;
+  }
+
+  async function deleteMaterialBase(id) {
+    const scope = materialScope();
+    const result = await store.materialBaseDelete({scope, id});
+    if (!sameMaterialScope(scope) && bridge.state.scope) throw Error('Профилът или базата са променени.');
+    if (activeMaterialBaseId === result.id) {
+      activeMaterialBaseId = '';
+      activeMaterialBaseName = '';
+      updateInitialSceneForBase({}, '');
+    }
+    emitMaterial('material-list', await store.materialBases({scope}));
+    await refreshMaterialBases();
+    return result;
+  }
+
+  if (panels && typeof store.materialBases === 'function') {
+    panels.installMaterialBases({
+      refresh: refreshMaterialBases,
+      activate: activateMaterialBase,
+      create: createMaterialBase,
+      save: saveCurrentMaterialBase,
+      rename: renameMaterialBase,
+      remove: deleteMaterialBase,
+      getCatalog: catalogFromEditor,
+    });
+
+    window.addEventListener('kitchen-v2-material-list-request', () => {
+      void refreshMaterialBases().catch(error => emitMaterial('material-error', {
+        operation: 'list',
+        automatic: false,
+        message: error.message,
+      }));
+    });
+    window.addEventListener('kitchen-v2-material-load-request', event => {
+      void activateMaterialBase(event.detail?.id, !!event.detail?.automatic).catch(error => {
+        emitMaterial('material-error', {
+          operation: 'load',
+          automatic: !!event.detail?.automatic,
+          message: error.message,
+        });
+      });
+    });
+    window.addEventListener('kitchen-v2-material-default-request', event => {
+      void setMaterialDefault(event.detail?.id || '');
+    });
+    window.addEventListener('kitchen-v2-material-save-request', event => {
+      const detail = event.detail ?? {};
+      void (async () => {
+        const scope = materialScope();
+        if (!activeMaterialBaseId) throw Error('Избери или създай активна материална база.');
+        const result = await store.materialBaseSave({
+          scope,
+          id: activeMaterialBaseId,
+          name: activeMaterialBaseName,
+          data: detail.data ?? catalogFromEditor(),
+        });
+        if (!sameMaterialScope(scope) && bridge.state.scope) throw Error('Профилът или базата са променени.');
+        activeMaterialBaseId = result.id;
+        activeMaterialBaseName = result.name;
+        updateInitialSceneForBase(result.data, result.name);
+        emitMaterial('material-saved', {uid: scope.ownerUid, id: result.id, name: result.name});
+        await refreshMaterialBases();
+        panels?.setActiveMaterialBase?.(result.id, result.name);
+        panels?.showMaterialBasePreview?.({id: result.id, name: result.name, data: result.data});
+      })().catch(error => emitMaterial('material-error', {
+        operation: 'save',
+        automatic: false,
+        message: error.message,
+      }));
+    });
+    window.dispatchEvent(new CustomEvent('kitchen-project-auth', {
+      detail: {
+        uid: initialScope.ownerUid,
+        role: 'owner',
+        sharingAuth: 'ready',
+        scope: initialScope,
+      },
+    }));
+  }
 
   async function flush() {
     if (applying || capturing || !bridge.state.canAct || !displayed || visualError) return false;

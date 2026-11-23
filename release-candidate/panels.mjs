@@ -1,5 +1,5 @@
 import {decorateAction} from '../icons.mjs';
-import {nedConfirmAction} from '../ui-messages.mjs';
+import {nedConfirmAction, nedConfirmDelete, nedPromptName} from '../ui-messages.mjs';
 
 const byId = id => document.getElementById(id);
 const element = (tag, className) => Object.assign(document.createElement(tag), {className});
@@ -193,7 +193,226 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
   create('helpDialog', 'Помощ');
   create('uiCatalogDialog', 'UI каталог');
   const extra = byId('projectExtraPane');
+  const baseBar = element('section', 'pilotMaterialBaseBar');
+  baseBar.hidden = true;
+  const baseField = document.createElement('label');
+  baseField.className = 'pilotMaterialBaseField';
+  const baseLabel = document.createElement('span');
+  baseLabel.textContent = 'Активна материална база';
+  const baseSelect = document.createElement('select');
+  baseSelect.id = 'pilotActiveMaterialBase';
+  baseSelect.setAttribute('aria-label', 'Активна материална база');
+  baseField.append(baseLabel, baseSelect);
+  const baseActions = element('div', 'pilotMaterialBaseActions');
+  const baseStatus = document.createElement('p');
+  baseStatus.className = 'pilotMaterialBaseStatus';
+  baseStatus.setAttribute('role', 'status');
+  const basePreview = element('div', 'pilotMaterialBasePreview');
+  baseBar.append(baseField, baseActions, baseStatus, basePreview);
+  materials.content.append(baseBar);
   materials.content.append(extra);
+  let materialControlApi = null;
+
+  function setBaseStatus(message, isError = false) {
+    baseStatus.textContent = message;
+    baseStatus.classList.toggle('pilotError', isError);
+  }
+  function setBaseOptions(result = {}) {
+    const items = Array.isArray(result.items) ? result.items : [];
+    const prior = baseSelect.value;
+    baseSelect.replaceChildren(new Option(items.length ? 'Избери база…' : 'Няма материални бази', ''));
+    for (const item of items) baseSelect.add(new Option(item.name, item.id));
+    baseSelect.value = items.some(item => item.id === prior) ? prior :
+      items.some(item => item.id === result.defaultBaseId) ? result.defaultBaseId :
+      items.some(item => item.id === materialControlApi?.activeBaseId) ? materialControlApi.activeBaseId : '';
+  }
+  function setActiveBase(id, name) {
+    baseSelect.value = id || '';
+    baseSelect.dataset.activeId = id || '';
+    baseSelect.dataset.activeName = name || '';
+  }
+  function formatSize(a, b) {
+    return a && b ? a + ' × ' + b + ' мм' : '—';
+  }
+  function formatPrice(value) {
+    return value !== undefined && value !== null && value !== '' ? Number(value).toFixed(2) + ' €' : '—';
+  }
+  function previewTable(title, headers, rows) {
+    if (!rows.length) return null;
+    const section = element('section', 'pilotMaterialPreviewSection');
+    const heading = document.createElement('h3');
+    heading.textContent = title;
+    const table = document.createElement('table');
+    table.className = 'pilotMaterialPreviewTable';
+    const head = table.createTHead().insertRow();
+    for (const label of headers) {
+      const cell = document.createElement('th');
+      cell.textContent = label;
+      head.append(cell);
+    }
+    const body = table.createTBody();
+    for (const row of rows) {
+      const tr = body.insertRow();
+      for (const value of row) tr.insertCell().textContent = value;
+    }
+    section.append(heading, table);
+    return section;
+  }
+  function showBasePreview(base) {
+    basePreview.replaceChildren();
+    if (!base) {
+      basePreview.hidden = true;
+      return;
+    }
+    basePreview.hidden = false;
+    const title = document.createElement('h3');
+    title.className = 'pilotMaterialPreviewTitle';
+    title.textContent = base.name;
+    basePreview.append(title);
+    const data = base.data ?? {};
+    const pdc = previewTable('ПДЧ',
+      ['Материал', 'Цял лист', 'Половин лист', 'Цени', 'Текстура'],
+      (data.pdcMaterials ?? []).map(item => [
+        item.name || '',
+        formatSize(item.fullW, item.fullH),
+        formatSize(item.halfW, item.halfH),
+        `${formatPrice(item.fullPrice)} / ${formatPrice(item.halfPrice)}`,
+        item.textureUrl ? 'Да' : 'Не',
+      ]));
+    const hdf = previewTable('Гръб HDF',
+      ['Материал', 'Размер', 'Дебелина', 'Цени', 'Текстура'],
+      (data.backMaterials ?? []).map(item => [
+        item.name || '',
+        formatSize(item.fullW, item.fullH),
+        item.thick ? item.thick + ' мм' : '—',
+        `${formatPrice(item.fullPrice)} / ${formatPrice(item.halfPrice)}`,
+        item.textureUrl ? 'Да' : 'Не',
+      ]));
+    const worktops = previewTable('Плотове',
+      ['Плот', 'Цял', 'Половин', '1/4', 'Цени', 'Текстура'],
+      (data.worktops ?? []).map(item => [
+        item.name || '',
+        formatSize(item.fullW, item.depth),
+        formatSize(item.halfW, item.depth),
+        formatSize(item.quarterW, item.depth),
+        `${formatPrice(item.fullPrice)} / ${formatPrice(item.halfPrice)} / ${formatPrice(item.quarterPrice)}`,
+        item.textureUrl ? 'Да' : 'Не',
+      ]));
+    const edges = previewTable('Кантове',
+      ['Кант', 'Цвят', 'Цена за метър', 'Текстура'],
+      (data.edgeMaterials ?? []).map(item => [
+        item.name || '',
+        item.color || '—',
+        formatPrice(item.price),
+        item.textureUrl ? 'Да' : 'Не',
+      ]));
+    for (const table of [pdc, hdf, worktops, edges]) if (table) basePreview.append(table);
+  }
+  function installMaterialBases(api) {
+    materialControlApi = api;
+    baseBar.hidden = false;
+    baseActions.replaceChildren();
+    const textAction = (label, icon, click) => {
+      const node = Object.assign(document.createElement('button'), {type: 'button', onclick: click});
+      node.textContent = label;
+      decorateAction(node, icon, label);
+      return node;
+    };
+    const create = textAction('Нова база', 'horizontal', async () => {
+      const name = await nedPromptName('Име на новата материална база', '', {
+        heading: 'Нова материална база',
+        okLabel: 'Създай',
+      });
+      if (!name) return;
+      create.disabled = save.disabled = true;
+      try {
+        const result = await api.create(name);
+        setActiveBase(result.id, result.name);
+        showBasePreview(result);
+        setBaseStatus('Създадена е база „' + result.name + '“.');
+      } catch (error) {
+        setBaseStatus(error.message, true);
+      } finally {
+        create.disabled = save.disabled = false;
+      }
+    });
+    const save = textAction('Запази базата', 'save', async () => {
+      save.disabled = create.disabled = true;
+      try {
+        const result = await api.save();
+        setActiveBase(result.id, result.name);
+        showBasePreview(result);
+        setBaseStatus('Базата „' + result.name + '“ е записана.');
+      } catch (error) {
+        setBaseStatus(error.message, true);
+      } finally {
+        save.disabled = create.disabled = false;
+      }
+    });
+    const rename = textAction('Преименувай', 'edit', async () => {
+      const current = baseSelect.dataset.activeName;
+      if (!baseSelect.dataset.activeId) {
+        setBaseStatus('Избери база за преименуване.', true);
+        return;
+      }
+      const name = await nedPromptName('Ново име на материалната база', current, {
+        heading: 'Преименуване',
+        okLabel: 'Преименувай',
+      });
+      if (!name) return;
+      rename.disabled = true;
+      try {
+        const result = await api.rename(baseSelect.dataset.activeId, name);
+        setActiveBase(result.id, result.name);
+        setBaseStatus('Базата е преименувана на „' + result.name + '“.');
+        const listing = await api.refresh();
+        setBaseOptions(listing);
+        setActiveBase(result.id, result.name);
+      } catch (error) {
+        setBaseStatus(error.message, true);
+      } finally {
+        rename.disabled = false;
+      }
+    });
+    const remove = textAction('Изтрий базата', 'trash', async () => {
+      const id = baseSelect.dataset.activeId;
+      const name = baseSelect.dataset.activeName;
+      if (!id) {
+        setBaseStatus('Избери база за изтриване.', true);
+        return;
+      }
+      if (!await nedConfirmDelete('Да изтрия ли материалната база „' + name + '“?')) return;
+      remove.disabled = true;
+      try {
+        await api.remove(id);
+        showBasePreview(null);
+        setActiveBase('', '');
+        setBaseStatus('Базата „' + name + '“ е изтрита.');
+        const listing = await api.refresh();
+        setBaseOptions(listing);
+      } catch (error) {
+        setBaseStatus(error.message, true);
+      } finally {
+        remove.disabled = false;
+      }
+    });
+    baseActions.append(create, save, rename, remove);
+    baseSelect.onchange = async () => {
+      if (!baseSelect.value) return;
+      baseSelect.disabled = true;
+      try {
+        const base = await api.activate(baseSelect.value);
+        setActiveBase(base.id, base.name);
+        showBasePreview(base);
+        setBaseStatus('Активна база: ' + base.name);
+      } catch (error) {
+        setBaseStatus(error.message, true);
+      } finally {
+        baseSelect.disabled = false;
+      }
+    };
+    void api.refresh().then(result => setBaseOptions(result)).catch(error => setBaseStatus(error.message, true));
+  }
   const results = byId('projectResults');
   // Reuse the report tables without switching the editor out of its 3D tab.
   reports.content.append(results);
@@ -217,6 +436,7 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
   function showMaterials() {
     if (!canEdit()) return;
     if (extra.parentElement !== materials.content) materials.content.append(extra);
+    if (materialControlApi) void materialControlApi.refresh().catch(error => setBaseStatus(error.message, true));
     renderMaterials();
     extra.hidden = false;
     materials.show();
@@ -272,17 +492,25 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
   protectMaterialEditors(onMaterialApply);
   let finishLibrary;
   library.dialog.addEventListener('close', () => { if (!library.dialog.open) finishLibrary?.(null); });
-  return {diagnostics, library(build) {
-    if (library.dialog.open) return Promise.resolve(null);
-    return new Promise(resolve => {
-      finishLibrary = result => {
-        finishLibrary = undefined;
-        library.dialog.close();
-        resolve(result);
-      };
-      library.content.replaceChildren();
-      build(library.content, finishLibrary);
-      library.show();
-    });
-  }};
+  return {
+    diagnostics,
+    installMaterialBases,
+    setMaterialBases: setBaseOptions,
+    setActiveMaterialBase: setActiveBase,
+    showMaterialBasePreview: showBasePreview,
+    setMaterialBaseStatus: setBaseStatus,
+    library(build) {
+      if (library.dialog.open) return Promise.resolve(null);
+      return new Promise(resolve => {
+        finishLibrary = result => {
+          finishLibrary = undefined;
+          library.dialog.close();
+          resolve(result);
+        };
+        library.content.replaceChildren();
+        build(library.content, finishLibrary);
+        library.show();
+      });
+    },
+  };
 }

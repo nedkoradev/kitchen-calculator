@@ -154,10 +154,27 @@ test('public v3 reads personal and granted v2 sources while keeping writes in th
     const modelRef = backend.db.doc('users/' + owner + '/v2_cabinets/legacy-model');
     const grant = (uid, role) => ({ownerUid: owner, role, ownerName: 'Споделена база'});
     await Promise.all([projectRef.set(project), modelRef.set(model),
+      backend.db.doc('users/' + owner + '/materials/source').set({name: 'Оригинална', ...materials}),
+      backend.db.doc('users/' + owner + '/materials/base_a').set({
+        name: 'База A',
+        pdcMaterials: [{name: 'ПДЧ A', fullW: 2800, fullH: 2070, fullPrice: 42}],
+        edgeMaterials: [{name: 'Кант A', price: 1.5}],
+        backMaterials: [{name: 'HDF A', thick: 3}],
+        worktops: [{name: 'Плот A', fullW: 3000, depth: 600, fullPrice: 90}],
+        servicePrices: {cutStart: 2},
+      }),
+      backend.db.doc('users/' + owner + '/materials/base_b').set({
+        name: 'База B',
+        pdcMaterials: [{name: 'ПДЧ B', fullW: 2500, fullH: 1830, fullPrice: 55}],
+        edgeMaterials: [],
+        backMaterials: [],
+        worktops: [],
+        servicePrices: {},
+      }),
       backend.db.doc('users/' + owner + '/materials/_app_preferences').set({
         folders: [{id: 'wardrobes', label: 'Гардероби', aliases: ['Гардероби'], deleted: false, target: null}],
+        defaultMaterialBaseId: 'base_a',
       }),
-      backend.db.doc('users/' + owner + '/materials/source').set({name: 'Оригинална', ...materials}),
       ...['viewer', 'editor'].flatMap(role => [
         backend.db.doc('users/' + owner + '/access_grants/' + role + '@example.test').set(grant(role, role)),
         backend.db.doc('nediq_access/' + role + '@example.test/bases/' + owner).set(grant(role, role)),
@@ -176,6 +193,32 @@ test('public v3 reads personal and granted v2 sources while keeping writes in th
       [['viewer', 'owner'], [owner, 'viewer']]);
     assert.deepEqual((await call(owner, 'legacyList')).documents.map(doc => [doc.type, doc.requiresCatalog]),
       [['project', false], ['model', true]]);
+    const materialListing = await call(owner, 'materialBases');
+    assert.equal(materialListing.defaultBaseId, 'base_a');
+    assert.deepEqual(materialListing.items.map(item => item.id).sort(), ['base_a', 'base_b', 'source']);
+    assert.equal((await call(owner, 'materialBaseRead', {id: 'base_a'})).data.pdcMaterials[0].name, 'ПДЧ A');
+    assert.deepEqual(await call(owner, 'materialBaseSetDefault', {id: 'base_b'}), {id: 'base_b'});
+    const saved = await call(owner, 'materialBaseSave', {
+      id: 'base_b',
+      name: 'База B',
+      data: {pdcMaterials: [{name: 'ПДЧ B2'}], edgeMaterials: [], backMaterials: [], worktops: [], servicePrices: {}},
+    });
+    assert.equal(saved.id, 'base_b');
+    assert.equal((await backend.db.doc('users/' + owner + '/materials/base_b').get()).data().pdcMaterials[0].name, 'ПДЧ B2');
+    assert.equal((await call(owner, 'materialBaseRename', {id: 'base_b', name: 'База Beta'})).name, 'База Beta');
+    await assert.rejects(call(owner, 'materialBaseSave', {name: 'База A', data: {}}),
+      {code: 'material-base-name-conflict'});
+    const created = await call(owner, 'materialBaseSave', {
+      name: 'База C',
+      data: {pdcMaterials: [{name: 'ПДЧ C'}], edgeMaterials: [], backMaterials: [], worktops: [], servicePrices: {}},
+    });
+    assert.equal(created.name, 'База C');
+    assert.equal((await call(owner, 'materialBaseRead', {id: created.id})).data.pdcMaterials[0].name, 'ПДЧ C');
+    assert.deepEqual(await call(owner, 'materialBaseDelete', {id: created.id}), {id: created.id});
+    assert.equal((await backend.db.doc('users/' + owner + '/materials/' + created.id).get()).exists, false);
+    assert.equal((await backend.db.doc('users/' + owner + '/materials/base_a').get()).data().pdcMaterials[0].name, 'ПДЧ A');
+    assert.equal((await backend.db.doc('users/' + owner + '/materials/base_b').get()).data().name, 'База Beta');
+    assert.equal((await backend.db.doc('users/' + owner + '/materials/_app_preferences').get()).data().defaultMaterialBaseId, 'base_b');
     for (const role of [owner, 'viewer', 'editor']) {
       const listing = await call(role, 'legacyList');
       const folderId = listing.documents.find(doc => doc.id === 'legacy-model').folderId;

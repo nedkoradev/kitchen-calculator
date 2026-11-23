@@ -2,10 +2,11 @@ import {identifier, PROJECTS_FOLDER, validateDocument, validateLibrary} from '..
 import {legacyDocumentId} from '../document-format/legacy.mjs';
 import {comparableJson} from '../workspace-context/insertion.mjs';
 import {createFirestorePersistence} from '../workspace-persistence/firestore-adapter.mjs';
+import {handleMaterialBaseOperation, materialBaseOperations} from './material-bases.mjs';
 
 const namespace = 'workspace_v3';
 const failure = (code, message = code) => Object.assign(new Error(message), {code});
-const operations = new Set(['readProject', 'readModel', 'write', 'migrateLegacy', 'pending', 'reconcile', 'acknowledge', 'list', 'changeFolder']);
+const operations = new Set(['readProject', 'readModel', 'write', 'migrateLegacy', 'pending', 'reconcile', 'acknowledge', 'list', 'changeFolder', ...materialBaseOperations]);
 const blankLibrary = () => ({revision: 0, folders: [PROJECTS_FOLDER]});
 
 // A trusted process owns writes. The deployment supplies Admin Firestore and
@@ -28,6 +29,10 @@ export function createWorkspaceService({db, verifyToken, newId = () => crypto.ra
     const owner = db.collection(namespace).doc(ownerUid);
     const manifest = owner.collection('settings').doc('folders');
     const documents = owner.collection('documents');
+    if (materialBaseOperations.has(operation)) {
+      if (ownerUid !== actorUid) throw failure('permission-denied');
+      return db.runTransaction(tx => handleMaterialBaseOperation({db, tx, operation, request, uid: actorUid}));
+    }
     async function role(transaction) {
       if (ownerUid === actorUid) return 'owner';
       return (await transaction.get(owner.collection('grants').doc(actorUid))).data()?.role;
