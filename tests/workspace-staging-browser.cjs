@@ -361,6 +361,11 @@ const path = require('node:path');
     await materials.getByLabel('Активна материална база').selectOption('base_b');
     await page.waitForFunction(() => document.querySelector('.pilotMaterialBaseStatus')?.textContent.includes('Активна база'));
     assert.equal((await backend.db.doc('users/stage-pilot/materials/base_b').get()).data().name, 'База Beta');
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const preference = (await backend.db.doc('users/stage-pilot/materials/_app_preferences').get()).data();
+      if (preference?.defaultMaterialBaseId === 'base_b') break;
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
     assert.equal((await backend.db.doc('users/stage-pilot/materials/_app_preferences').get()).data().defaultMaterialBaseId, 'base_b');
     assert.deepEqual((await backend.db.doc('workspace_v3/stage-pilot/documents/' + saved.id).get()).data().materials,
       persisted.materials);

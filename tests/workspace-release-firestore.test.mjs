@@ -214,8 +214,11 @@ test('public v3 reads personal and granted v2 sources while keeping writes in th
     });
     assert.equal(created.name, 'База C');
     assert.equal((await call(owner, 'materialBaseRead', {id: created.id})).data.pdcMaterials[0].name, 'ПДЧ C');
+    assert.deepEqual(await call(owner, 'materialBaseSetDefault', {id: created.id}), {id: created.id});
     assert.deepEqual(await call(owner, 'materialBaseDelete', {id: created.id}), {id: created.id});
     assert.equal((await backend.db.doc('users/' + owner + '/materials/' + created.id).get()).exists, false);
+    assert.equal((await backend.db.doc('users/' + owner + '/materials/_app_preferences').get()).data().defaultMaterialBaseId, '');
+    assert.deepEqual(await call(owner, 'materialBaseSetDefault', {id: 'base_b'}), {id: 'base_b'});
     assert.equal((await backend.db.doc('users/' + owner + '/materials/base_a').get()).data().pdcMaterials[0].name, 'ПДЧ A');
     assert.equal((await backend.db.doc('users/' + owner + '/materials/base_b').get()).data().name, 'База Beta');
     assert.equal((await backend.db.doc('users/' + owner + '/materials/_app_preferences').get()).data().defaultMaterialBaseId, 'base_b');

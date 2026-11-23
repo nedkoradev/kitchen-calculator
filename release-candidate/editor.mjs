@@ -320,6 +320,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     updateInitialSceneForBase(base.data, base.name);
     panels?.setActiveMaterialBase?.(base.id, base.name);
     panels?.showMaterialBasePreview?.(base);
+    if (!automatic) await setMaterialDefault(base.id);
     const savedDocument = !!bridge.state.workspace?.document?.id;
     if (!savedDocument || automatic) {
       suppressMaterialBaseSave = true;
@@ -337,7 +338,6 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     } else {
       panels?.setMaterialBaseStatus?.('Активна база: ' + base.name + '. Записаният документ запазва своята материална база.');
     }
-    if (!automatic) await setMaterialDefault(base.id);
     return base;
   }
 
