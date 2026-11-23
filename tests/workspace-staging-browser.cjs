@@ -139,7 +139,8 @@ const path = require('node:path');
     const groupId = combined.parts[1].part.assembly;
     assert.equal(combined.groups[groupId], 'Долен шкаф');
     assert.ok(combined.parts.slice(1).every(({part}) => part.assembly === groupId));
-    assert.ok(operations.every(operation => operation === 'pending'), 'Object creation must commit locally before any Firestore write');
+    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead'].includes(operation)),
+      'Object creation must commit locally before any Firestore write');
 
     const scene = page.locator('#view canvas');
     const canvas = await scene.elementHandle();
@@ -245,7 +246,7 @@ const path = require('node:path');
     await page.keyboard.press('Escape');
     await libraryWindow.waitFor({state: 'hidden'});
     await assertScene();
-    assert.ok(operations.every(operation => ['pending', 'list'].includes(operation)));
+    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead'].includes(operation)));
 
     const settingsButton = page.locator('#settingsButton');
     const settings = page.getByRole('dialog', {name: 'Настройки', exact: true});
@@ -264,7 +265,7 @@ const path = require('node:path');
     await page.keyboard.press('Escape');
     await settings.waitFor({state: 'hidden'});
     await assertScene();
-    assert.ok(operations.every(operation => ['pending', 'list'].includes(operation)));
+    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead'].includes(operation)));
 
     for (const width of [900, 390, 320]) {
       await page.setViewportSize({width, height: 820});

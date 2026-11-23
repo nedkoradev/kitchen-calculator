@@ -251,6 +251,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
 
   let activeMaterialBaseId = '';
   let activeMaterialBaseName = '';
+  let suppressMaterialBaseSave = false;
 
   function emitMaterial(type, detail) {
     window.dispatchEvent(new CustomEvent('kitchen-v2-cloud-' + type, {detail}));
@@ -321,13 +322,18 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     panels?.showMaterialBasePreview?.(base);
     const savedDocument = !!bridge.state.workspace?.document?.id;
     if (!savedDocument || automatic) {
-      emitMaterial('material-loaded', {
-        uid: scope.ownerUid,
-        id: base.id,
-        automatic,
-        name: base.name,
-        data: base.data,
-      });
+      suppressMaterialBaseSave = true;
+      try {
+        emitMaterial('material-loaded', {
+          uid: scope.ownerUid,
+          id: base.id,
+          automatic,
+          name: base.name,
+          data: base.data,
+        });
+      } finally {
+        suppressMaterialBaseSave = false;
+      }
     } else {
       panels?.setMaterialBaseStatus?.('Активна база: ' + base.name + '. Записаният документ запазва своята материална база.');
     }
@@ -432,6 +438,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     });
     window.addEventListener('kitchen-v2-material-save-request', event => {
       const detail = event.detail ?? {};
+      if (suppressMaterialBaseSave) return;
       void (async () => {
         const scope = materialScope();
         if (!activeMaterialBaseId) throw Error('Избери или създай активна материална база.');
