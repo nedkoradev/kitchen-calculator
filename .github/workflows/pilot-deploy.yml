@@ -52,6 +52,7 @@ jobs:
       REPOSITORY: nediq
       IMAGE: europe-west1-docker.pkg.dev/kitchen-designer-9d437/nediq/nediq-v3-pilot
       RELEASE_SHA: ${{ inputs.release_sha }}
+      IMAGE_TAG: ${{ inputs.release_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
       WIF_PROVIDER: ${{ vars.PILOT_WIF_PROVIDER }}
       DEPLOY_ACCOUNT: ${{ vars.PILOT_DEPLOY_SERVICE_ACCOUNT }}
     steps:
@@ -63,8 +64,8 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
-          docker build --platform linux/amd64 --label "org.opencontainers.image.revision=$RELEASE_SHA" -t "$IMAGE:$RELEASE_SHA" .
-          bash tests/pilot-container-smoke.sh "$IMAGE:$RELEASE_SHA"
+          docker build --platform linux/amd64 --label "org.opencontainers.image.revision=$RELEASE_SHA" -t "$IMAGE:$IMAGE_TAG" .
+          bash tests/pilot-container-smoke.sh "$IMAGE:$IMAGE_TAG"
       - name: Require the pilot identity configuration
         run: |
           set -euo pipefail
@@ -75,15 +76,15 @@ jobs:
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
           service_account: ${{ env.DEPLOY_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
-      - name: Publish the immutable SHA tag
+      - name: Publish the immutable attempt tag
         id: image
         run: |
           set -euo pipefail
           immutable=$(gcloud artifacts repositories describe "$REPOSITORY" --project "$PROJECT" --location "$REGION" --format='value(dockerConfig.immutableTags)')
           [[ "${immutable,,}" == true ]]
           gcloud auth configure-docker "$REGISTRY" --quiet
-          docker push "$IMAGE:$RELEASE_SHA"
-          digest=$(gcloud artifacts docker images describe "$IMAGE:$RELEASE_SHA" --project "$PROJECT" --format='value(image_summary.digest)')
+          docker push "$IMAGE:$IMAGE_TAG"
+          digest=$(gcloud artifacts docker images describe "$IMAGE:$IMAGE_TAG" --project "$PROJECT" --format='value(image_summary.digest)')
           [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
           echo "ref=$IMAGE@$digest" >> "$GITHUB_OUTPUT"
       - name: Check candidate readiness and promote traffic
