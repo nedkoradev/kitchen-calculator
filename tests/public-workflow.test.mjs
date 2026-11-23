@@ -34,6 +34,16 @@ test('public delivery workflow separates push automation from manual dispatch', 
   );
 });
 
+test('pilot auto-dispatch is off unless NEDIQ_PILOT_AUTO_DEPLOY is exactly 1', () => {
+  const dispatch = readFileSync('.github/workflows/pilot-auto-dispatch.yml', 'utf8');
+  assert.match(dispatch, /dispatch:\n\s+if: >-\n(?:.*\n)*?\s+vars\.NEDIQ_PILOT_AUTO_DEPLOY == '1'\n\s+runs-on:/);
+  assert.match(dispatch, /push:\n\s+branches: \[main\]/);
+  assert.doesNotMatch(dispatch, /NEDIQ_V3_AUTO_DEPLOY/);
+  const pilotDeploy = readFileSync('.github/workflows/pilot-deploy.yml', 'utf8');
+  assert.match(pilotDeploy, /on:\n\s+workflow_dispatch:/);
+  assert.doesNotMatch(pilotDeploy, /vars\.NEDIQ_PILOT_AUTO_DEPLOY/);
+});
+
 test('manual production dispatch executes checks and candidate without auto deploy', () => {
   const context = {
     eventName: 'workflow_dispatch',
