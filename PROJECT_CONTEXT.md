@@ -8,7 +8,7 @@
 - Хранилище: `nedkoradev/kitchen-calculator`; основен клон `main`.
 - Публичен адрес: https://nediq.eu/ ; GitHub Pages: https://nedkoradev.github.io/kitchen-calculator/.
 - Състояние, проверено на 2026-11-22: legacy source **v2.96**; публичното `release.json` на NED-IQ v3 показва **v3.0.1**, SHA `61437737a6fe16a7721bbce63ad4bcc45f7922fd`. Run `45032386755` е пренасочил 100% трафик към същата ревизия; при следваща задача провери отново.
-- Автоматичното публикуване на v3 остава изключено. Предходният production probe е проверил кандидат с 0% production traffic; това е исторически статус, а не текущият production маршрут.
+- Автоматичното публикуване на v3 остава изключено. Автоматичното pilot стартиране след push в `main` също е изключено по подразбиране и изисква repository variable `NEDIQ_PILOT_AUTO_DEPLOY=1` (ръчният `pilot-deploy.yml` остава достъпен). Предходният production probe е проверил кандидат с 0% production traffic; това е исторически статус, а не текущият production маршрут.
 - Версията се определя от `_data/version.json`, видимото заглавие и `release.json` след Jekyll build; не предполагай версия само по този документ.
 - Потвърдена публикация преди въвеждането на двата режима: **v2.90**, слят PR #88, commit `82548ab`. При започване на задача сверявай актуалните `main` и `release.json`.
 - Активна продукционна Firebase конфигурация: `kitchen-designer-9d437`. Никога не променяй production правила/данни без изрично разрешение.

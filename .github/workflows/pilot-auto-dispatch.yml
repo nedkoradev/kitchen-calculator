@@ -10,6 +10,9 @@ permissions:
 
 jobs:
   dispatch:
+    if: >-
+      github.repository == 'nedkoradev/kitchen-calculator' &&
+      vars.NEDIQ_PILOT_AUTO_DEPLOY == '1'
     runs-on: ubuntu-24.04
     steps:
       - name: Request guarded pilot deployment of exact main SHA

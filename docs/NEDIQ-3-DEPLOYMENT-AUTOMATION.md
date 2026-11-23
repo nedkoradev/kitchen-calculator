@@ -58,6 +58,15 @@ digest и проверка на статични ресурси production ре�
    успешни проверки. Същата настройка спира автоматичното Pages публикуване.
    Не използвай `[skip ci]` при merge, предназначен за v3 публикуване.
 
+## Автоматичен pilot deploy
+
+`pilot-auto-dispatch.yml` стартира `pilot-deploy.yml` след push в `main` само
+когато repository variable `NEDIQ_PILOT_AUTO_DEPLOY` е точно `1`. Липсваща
+или различна стойност оставя задачата пропусната и не стартира deploy.
+Променливата е независима от `NEDIQ_V3_AUTO_DEPLOY`. Ръчното стартиране на
+`pilot-deploy.yml` (workflow_dispatch с точен SHA на `main`) не зависи от нея.
+Преди включване на променливата одобри конкретното pilot въздействие.
+
 ## Версия и възстановяване
 
 PR CI сравнява v3 runtime файловете с точния base SHA и отказва еднаква или по-ниска v3 версия. Документация и тестове не изискват bump. В GitHub ruleset маркирай съществуващия job `Node 24 / unit, release, Chromium and diff` като задължителен за `main`.
