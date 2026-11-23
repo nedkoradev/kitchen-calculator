@@ -73,10 +73,10 @@ export function buildLocalPreview(source, {enabled = false, authOrigin} = {}) {
 }
 
 export function buildPilotPreview(source, config) {
-  const settings = {pilot: {origin: config.origin, authDomain: config.authDomain, apiKey: config.apiKey, public: config.public === true, version: config.public ? version : undefined}};
+  const settings = {pilot: {origin: config.origin, authDomain: config.authDomain, apiKey: config.apiKey, public: config.public === true, version}};
   if (config.localGoogle) Object.assign(settings.pilot, {localGoogle: true, projectId: config.projectId});
   const html = buildPreview(source, {enabled: true, settings});
   if (config.public) return html.replace('<title>Kitchen Designer</title>', '<title>NED-IQ v' + version + '</title>')
     .replace(/(id="appVersion">)v[0-9.]+/, '$1v' + version);
-  return html.replace('</body>', '<span id="pilotVersion" aria-label="Версия на NED-IQ Pilot">Pilot v3.0.1</span></body>');
+  return html.replace('</body>', '<span id="pilotVersion" aria-label="Версия на NED-IQ Pilot">Pilot v' + version + '</span></body>');
 }

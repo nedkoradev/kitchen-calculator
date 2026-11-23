@@ -134,6 +134,26 @@ const {openKitchen} = require('./browser-harness.cjs');
     await partCount(2);
     await settled();
     const original = await snapshot();
+    const beforeDocument = structuredClone((await state()).workspace.document);
+    assert.match(await page.locator('#groupList').textContent(), /Корпус/);
+    assert.match(await page.locator('#groupList').textContent(), /Рафтова група/);
+    await page.evaluate(async () => {
+      const bridge = window.__integration.bridge;
+      const document = structuredClone(bridge.state.workspace.document);
+      document.parts[0].part.assembly = 'assembly9';
+      document.parts[0].part.assemblyStack = [];
+      await bridge.execute('editScene', {parts: document.parts, groups: {}});
+    });
+    await page.waitForFunction(() => document.querySelector('#groupList')?.textContent.includes('Група 1'));
+    assert.doesNotMatch(await page.locator('#groupList').textContent(), /assembly9/);
+    assert.equal(await page.evaluate(() => window.__integration.bridge.state.workspace.document.parts[0].part.assembly), 'assembly9');
+    await page.evaluate(async () => {
+      await window.__integration.bridge.execute('editScene', {groups: {assembly9: 'Потребителска група'}});
+    });
+    await page.waitForFunction(() => document.querySelector('#groupList')?.textContent.includes('Потребителска група'));
+    await page.evaluate(async document => {
+      await window.__integration.bridge.execute('editScene', {parts: document.parts, groups: document.groups});
+    }, beforeDocument);
     assert.equal((await state()).workspace.document.id, 'test-project');
     assert.deepEqual(original.assemblyNames, {outer: 'Корпус', inner: 'Рафтова група'});
     assert.equal(original.parts[0].finish.grainAxis, 'x');

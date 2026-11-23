@@ -6,6 +6,7 @@ import {applyLegacyMigration, inspectLegacyMigration} from './legacy-migration.m
 import {nedConfirmDelete, nedPromptName} from '../ui-messages.mjs';
 import {decorateAction} from '../icons.mjs';
 import {PROJECTS_FOLDER} from '../document-format/model.mjs';
+import {installV3GroupNames} from './group-names.mjs';
 
 const byId = id => document.getElementById(id);
 const isTyping = event => event.target?.matches?.('input, textarea, select, [contenteditable]');
@@ -85,6 +86,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
   let visualError = null;
   let captureError = null;
   let pointerGesture = null;
+  let v3GroupNames = null;
 
   function render(state) {
     const workspace = state.workspace;
@@ -118,6 +120,8 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     }
     byId('undoStep').disabled = !workspace.canUndo;
     byId('redoStep').disabled = !workspace.canRedo;
+    v3GroupNames?.refresh();
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => v3GroupNames?.refresh());
   }
 
   function sceneSignature(state) {
@@ -248,6 +252,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     },
     render,
   });
+  v3GroupNames = installV3GroupNames({getDocument: () => bridge.state.workspace?.document});
 
   let activeMaterialBaseId = '';
   let activeMaterialBaseName = '';
