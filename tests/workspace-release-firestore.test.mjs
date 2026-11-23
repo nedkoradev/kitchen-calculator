@@ -140,6 +140,7 @@ test('pilot exporter reads one legacy subtree and applies a reviewed migration e
 
 test('public v3 reads personal and granted v2 sources while keeping writes in the signed-in user’s base', async () => {
   const {createPublicDispatch} = await import('../release-candidate/public-access.mjs');
+  const {PROJECTS_FOLDER} = await import('../document-format/model.mjs');
   const {toEditorSnapshot} = await import('../workspace-ui/scene-adapter.mjs');
   const backend = await createEmulatorBackend();
   try {
@@ -190,6 +191,22 @@ test('public v3 reads personal and granted v2 sources while keeping writes in th
       const converted = await call('editor', 'legacyRead', {id: 'legacy-model', type: 'model', catalogId});
       assert.deepEqual(converted.materials.pdcMaterials, materials.pdcMaterials);
     }
+    await backend.db.doc('workspace_v3/' + owner + '/settings/folders').set({revision: 1, folders: [
+      PROJECTS_FOLDER, {id: 'v2-imports', parentId: null, name: 'Документи v2.95'},
+    ]});
+    const projectCandidate = await call(owner, 'legacyRead', {id: 'legacy-project', type: 'project'});
+    assert.deepEqual(await call(owner, 'migrateLegacy', {document: projectCandidate}), {status: 'imported'});
+    assert.deepEqual(await call(owner, 'migrateLegacy', {document: projectCandidate}), {status: 'already-imported'});
+    const modelCandidate = await call(owner, 'legacyRead', {id: 'legacy-model', type: 'model',
+      catalogId: 'source', folderId: 'v2-imports'});
+    assert.equal(modelCandidate.source.catalogId, 'source');
+    assert.deepEqual(await call(owner, 'migrateLegacy', {document: modelCandidate}), {status: 'imported'});
+    const storedModel = (await backend.db.doc('workspace_v3/' + owner + '/documents/' + modelCandidate.id).get()).data();
+    assert.deepEqual(storedModel, modelCandidate);
+    await assert.rejects(call('editor', 'migrateLegacy', {document: projectCandidate}), {code: 'permission-denied'});
+    const altered = structuredClone(modelCandidate);
+    altered.parts[0].part.w++;
+    await assert.rejects(call(owner, 'migrateLegacy', {document: altered}), {code: 'legacy-source-changed'});
     for (const uid of ['password', 'unverified', 'revoked', 'outsider']) {
       await assert.rejects(call(uid, 'legacyList'), {code: 'permission-denied'});
     }

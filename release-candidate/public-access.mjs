@@ -1,5 +1,6 @@
 import {releaseMetadata} from './release.mjs';
 import {identifier} from '../document-format/model.mjs';
+import {comparableJson} from '../workspace-context/insertion.mjs';
 import {createLegacyLibrary, legacyOperations} from './legacy-library.mjs';
 import {createWorkspaceService} from './service.mjs';
 import {projectId} from '../pilot/config.mjs';
@@ -35,6 +36,22 @@ export function createPublicDispatch({db, auth, bundledCatalog}) {
     const scope = input.request?.scope;
     if (scope?.actorUid !== principal.uid || scope.ownerUid !== principal.uid) throw denied();
     if (legacyOperations.has(input.operation)) return legacy({...input, principal});
+    if (input.operation === 'migrateLegacy') {
+      const document = input.request?.document;
+      const source = document?.source;
+      if (!source || source.scope !== principal.uid || source.type !== document.type || typeof source.id !== 'string') {
+        throw denied();
+      }
+      const request = {
+        scope, legacyOwnerId: principal.uid, id: source.id, type: source.type,
+        folderId: document.type === 'model' ? document.folderId : null,
+        ...(Object.hasOwn(source, 'catalogId') ? {catalogId: source.catalogId} : {}),
+      };
+      const original = await legacy({operation: 'legacyRead', request, principal});
+      if (comparableJson(original) !== comparableJson(document)) {
+        throw Object.assign(new Error('The v2 source changed; recheck the migration'), {code: 'legacy-source-changed'});
+      }
+    }
     // The sharing grant for a v2 source only authorizes a legacy read. All v3
     // operations, including the journal, remain in the verified user's base.
     return createWorkspaceService({db, verifyToken: async () => principal})(input);

@@ -69,7 +69,15 @@ const {openKitchen} = require('./browser-harness.cjs');
       const {mountWorkspaceEditor} = await import('/release-candidate/editor.mjs');
       const {createWorkspaceClient, createWorkspaceHttpClient} = await import('/release-candidate/client.mjs');
       const {createWorkspaceDraftAdapter} = await import('/workspace-persistence/drafts.mjs');
+      const {readLegacyCabinet, readLegacyProject} = await import('/document-format/legacy.mjs');
+      const {documentToSnapshot} = await import('/workspace-ui/scene-adapter.mjs');
       const connection = {};
+      const [legacyProjectSource, legacyModelSource] = fixtureDocuments();
+      const oldProject = {schemaVersion: 1, revision: 3, name: 'Стара кухня',
+        data: documentToSnapshot(legacyProjectSource).snapshot};
+      const oldModel = {id: 'lower-model', v2: true, name: 'Контролен шкаф', category: 'Долен шкаф',
+        ...documentToSnapshot(legacyModelSource).snapshot};
+      const oldDocuments = structuredClone([oldProject, oldModel]);
       const http = createWorkspaceHttpClient({endpoint: '/workspace-rc-rpc', getIdToken: scope => tokens[scope.actorUid]});
       const store = createWorkspaceClient(async (operation, request) => {
         if (operation === 'pending' && connection.offline === request.scope.ownerUid) throw Error('Journal offline');
@@ -80,7 +88,10 @@ const {openKitchen} = require('./browser-harness.cjs');
         if (operation === 'legacyList') return {folders: [{id: 'wardrobes', label: 'Гардероби'}, {id: 'lower', label: 'Долен шкаф'}],
           documents: [{id: 'v2-project', type: 'project', name: 'Стара кухня'},
             {id: 'lower-model', type: 'model', name: 'Контролен шкаф', folderId: 'lower'}]};
-        if (operation === 'legacyRead') return {...fixtureDocuments()[0], id: request.id, name: 'Стара кухня', nameKey: 'стара кухня'};
+        if (operation === 'legacyRead') return request.type === 'project'
+          ? readLegacyProject(oldProject, {scope: request.legacyOwnerId, id: request.id})
+          : readLegacyCabinet(oldModel, {scope: request.legacyOwnerId, id: request.id,
+            folderId: request.folderId});
         const result = await http[operation](request);
         if (operation === 'write' && connection.dropAcknowledgement) {
           connection.dropAcknowledgement = false;
@@ -93,7 +104,8 @@ const {openKitchen} = require('./browser-harness.cjs');
         ({scope: {ownerUid: uid, actorUid: uid}, label}));
       window.__integration = {...mountWorkspaceEditor(window.__realEditorPorts, {store, profiles,
         initialScope: profiles[0].scope, startingDocument: fixtureDocuments()[0],
-        drafts: createWorkspaceDraftAdapter(localStorage), legacy: true}), store, connection};
+        drafts: createWorkspaceDraftAdapter(localStorage), legacy: true}), store, connection,
+        legacySources: oldDocuments};
     }, tokens);
     const status = page.locator('#integration-status');
     const settled = () => page.waitForFunction(() => window.__integration.bridge.state.canAct);
@@ -101,6 +113,15 @@ const {openKitchen} = require('./browser-harness.cjs');
     const state = () => page.evaluate(() => window.__integration.bridge.state);
     const partCount = count => page.waitForFunction(count => window.__test.parts().length === count, count);
     const libraryButton = page.getByRole('button', {name: 'Обща библиотека', exact: true});
+    const fitsSupportedWidths = async dialog => {
+      for (const width of [1400, 900, 390, 320]) {
+        await page.setViewportSize({width, height: 820});
+        const bounds = await dialog.boundingBox();
+        assert.ok(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width + 1,
+          `Dialog must fit within ${width}px`);
+      }
+      await page.setViewportSize({width: 1400, height: 1000});
+    };
     const open = async (label, folder) => {
       await libraryButton.click();
       const library = page.getByRole('dialog', {name: 'Обща библиотека'});
@@ -185,6 +206,62 @@ const {openKitchen} = require('./browser-harness.cjs');
     assert.equal((await state()).workspace.canUndo, beforeInvalid.canUndo);
     assert.equal((await snapshot()).room.w, 3400);
     await page.evaluate(() => { window.__integration.connection.invalidProject = null; });
+    if (e2e) {
+      const beforeMigrationScene = await snapshot();
+      const beforeV3Documents = await page.evaluate(async () => {
+        const {scope} = window.__integration.bridge.state;
+        return (await window.__integration.store.list({scope})).documents;
+      });
+      const originalV2Documents = await page.evaluate(() => window.__integration.legacySources);
+      await libraryButton.click();
+      await page.getByRole('button', {name: 'Документи v2.95…', exact: true}).click();
+      await page.getByRole('button', {name: 'Моята библиотека v2.95 · Собственик', exact: true}).click();
+      await page.getByRole('button', {name: 'Мигрирай всички мои документи в v3…', exact: true}).click();
+      const migrationOptions = page.getByRole('dialog', {name: 'Подготовка на миграция'});
+      await fitsSupportedWidths(migrationOptions);
+      await migrationOptions.getByLabel('Папка за мигрираните модели').selectOption('shelves');
+      await page.getByRole('button', {name: 'Провери съвместимостта', exact: true}).click();
+      await fitsSupportedWidths(page.getByRole('dialog', {name: /Проверка на миграция/}));
+      await page.getByRole('button', {name: 'Мигрирай 2 съвместими документа', exact: true}).click();
+      const migrationReport = page.getByRole('dialog', {name: 'Отчет за миграцията'});
+      await migrationReport.getByText(/Добавени: 2/).waitFor();
+      await fitsSupportedWidths(migrationReport);
+      assert.deepEqual(await snapshot(), beforeMigrationScene);
+      assert.deepEqual(await page.evaluate(() => window.__integration.legacySources), originalV2Documents);
+      const afterV3Documents = await page.evaluate(async () => {
+        const {scope} = window.__integration.bridge.state;
+        return (await window.__integration.store.list({scope})).documents;
+      });
+      assert.equal(afterV3Documents.length, beforeV3Documents.length + 2);
+      await page.getByRole('button', {name: 'Затвори', exact: true}).click();
+      await libraryButton.click();
+      const importedLibrary = page.getByRole('dialog', {name: 'Обща библиотека'});
+      await importedLibrary.getByLabel('Папка').selectOption('system:projects');
+      await importedLibrary.getByRole('button', {name: 'Отвори проект · Стара кухня', exact: true}).click();
+      await partCount(2);
+      await settled();
+      const migratedProject = await state();
+      assert.match(migratedProject.workspace.document.id, /^legacy:v1:/);
+      assert.equal(migratedProject.workspace.document.name, 'Стара кухня');
+      await libraryButton.click();
+      const modelLibrary = page.getByRole('dialog', {name: 'Обща библиотека'});
+      await modelLibrary.getByLabel('Папка').selectOption('shelves');
+      await modelLibrary.getByRole('button', {name: 'Добави модел · Контролен шкаф', exact: true}).click();
+      await page.waitForFunction(() => window.__test.parts().length === 3 ||
+        window.__integration.bridge.state.error);
+      assert.equal((await state()).error?.message ?? null, null);
+      await settled();
+      await page.locator('#undoStep').evaluate(button => button.click());
+      await partCount(2);
+      await settled();
+      assert.equal((await state()).workspace.document.id, migratedProject.workspace.document.id);
+      assert.equal((await state()).workspace.dirty, false);
+      await libraryButton.click();
+      const importedLibraryAgain = page.getByRole('dialog', {name: 'Обща библиотека'});
+      await importedLibraryAgain.getByLabel('Папка').selectOption('system:projects');
+      await importedLibraryAgain.getByRole('button', {name: 'Отвори проект · Стара кухня', exact: true}).waitFor();
+      await page.keyboard.press('Escape');
+    }
     if (e2e) {
       await libraryButton.click();
       await page.getByRole('button', {name: 'Документи v2.95…', exact: true}).click();
