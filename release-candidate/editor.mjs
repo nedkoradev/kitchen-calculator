@@ -342,9 +342,12 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     return base;
   }
 
-  async function saveCurrentMaterialBase() {
+  async function saveCurrentMaterialBase(selected) {
     const scope = materialScope();
-    const data = catalogFromEditor();
+    const data = selected?.data;
+    if (!data || !selected.id || selected.id !== activeMaterialBaseId) {
+      throw Error('Избери материалната база за редактиране, преди да я запазиш.');
+    }
     let id = activeMaterialBaseId || null;
     let name = activeMaterialBaseName;
     if (!id) {
@@ -367,9 +370,9 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     return {id: result.id, name: result.name, data: result.data};
   }
 
-  async function createMaterialBase(name) {
+  async function createMaterialBase(name, data) {
     const scope = materialScope();
-    const data = catalogFromEditor();
+    data ??= {pdcMaterials: [], edgeMaterials: [], backMaterials: [], worktops: [], servicePrices: {}};
     const result = await store.materialBaseSave({scope, id: null, name, data});
     if (!sameMaterialScope(scope) && bridge.state.scope) throw Error('Профилът или базата са променени.');
     activeMaterialBaseId = result.id;
@@ -437,32 +440,8 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     window.addEventListener('kitchen-v2-material-default-request', event => {
       void setMaterialDefault(event.detail?.id || '');
     });
-    window.addEventListener('kitchen-v2-material-save-request', event => {
-      const detail = event.detail ?? {};
-      if (suppressMaterialBaseSave) return;
-      void (async () => {
-        const scope = materialScope();
-        if (!activeMaterialBaseId) throw Error('Избери или създай активна материална база.');
-        const result = await store.materialBaseSave({
-          scope,
-          id: activeMaterialBaseId,
-          name: activeMaterialBaseName,
-          data: detail.data ?? catalogFromEditor(),
-        });
-        if (!sameMaterialScope(scope) && bridge.state.scope) throw Error('Профилът или базата са променени.');
-        activeMaterialBaseId = result.id;
-        activeMaterialBaseName = result.name;
-        updateInitialSceneForBase(result.data, result.name);
-        emitMaterial('material-saved', {uid: scope.ownerUid, id: result.id, name: result.name});
-        await refreshMaterialBases();
-        panels?.setActiveMaterialBase?.(result.id, result.name);
-        panels?.showMaterialBasePreview?.({id: result.id, name: result.name, data: result.data});
-      })().catch(error => emitMaterial('material-error', {
-        operation: 'save',
-        automatic: false,
-        message: error.message,
-      }));
-    });
+    // The v2 material autosave event carries the workspace's embedded catalog.
+    // v3 cloud base writes are explicit and use the isolated base editor only.
     window.dispatchEvent(new CustomEvent('kitchen-project-auth', {
       detail: {
         uid: initialScope.ownerUid,
