@@ -67,6 +67,29 @@ test('authenticated release rules and trusted service enforce roles, journals an
     assert.equal((await backend.db.doc('workspace_v3/owner/names/копие').get()).exists, false);
     assert.equal((await backend.db.doc('workspace_v3/owner/names/модел').get()).exists, false);
     assert.equal((await backend.db.doc('workspace_v3/owner/names/нов модел').get()).data().id, 'model');
+    // Projects share the guarded library operations but cannot move into model folders.
+    const project = {...prepareNewDocument({name: 'Проект проба', type: 'project'}),
+      id: 'project', revision: 1};
+    await backend.db.doc('workspace_v3/owner/documents/project').set(project);
+    await backend.db.doc('workspace_v3/owner/names/проект проба').set({id: 'project'});
+    const projectAction = (actor, action, props = {}) => call(actor, 'changeModel',
+      {action, id: 'project', revision: 1, ...props});
+    await assert.rejects(projectAction('viewer', 'delete'), {code: 'permission-denied'});
+    await assert.rejects(projectAction('outsider', 'rename', {name: 'Чужд проект'}), {code: 'permission-denied'});
+    await assert.rejects(projectAction('owner', 'move', {folderId: target}), {code: 'protected-folder'});
+    await assert.rejects(projectAction('owner', 'copy', {name: 'Лошо копие', folderId: target}), {code: 'protected-folder'});
+    const projectCopy = await projectAction('editor', 'copy', {name: 'Проект копие', folderId: 'system:projects'});
+    assert.notEqual(projectCopy.id, project.id);
+    assert.deepEqual(await call('owner', 'readProject', {id: projectCopy.id}),
+      {...project, id: projectCopy.id, name: 'Проект копие', nameKey: 'проект копие'});
+    await assert.rejects(projectAction('owner', 'rename', {name: 'Проект копие'}), {code: 'name-conflict'});
+    await projectAction('editor', 'rename', {name: 'Преименуван проект'});
+    await assert.rejects(projectAction('owner', 'delete'), {code: 'revision-conflict'});
+    assert.equal((await call('owner', 'readProject', {id: 'project'})).name, 'Преименуван проект');
+    await projectAction('owner', 'delete', {id: projectCopy.id});
+    await assert.rejects(call('owner', 'readProject', {id: projectCopy.id}), {code: 'not-found'});
+    assert.equal((await backend.db.doc('workspace_v3/owner/names/проект копие').get()).exists, false);
+    assert.equal((await backend.db.doc('workspace_v3/owner/names/проект проба').get()).exists, false);
     await backend.db.doc('workspace_v3/owner/grants/editor').delete();
     await assertFails(sdk.getDoc(sdk.doc(editor, 'workspace_v3/owner/documents/model')));
     assert.deepEqual(await call('editor', 'reconcile', {operationId: 'op'}), {status: 'committed', ...receipt});
