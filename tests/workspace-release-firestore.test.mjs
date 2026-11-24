@@ -45,6 +45,28 @@ test('authenticated release rules and trusted service enforce roles, journals an
     await assertSucceeds(sdk.getDoc(journal));
     await assertFails(sdk.deleteDoc(journal));
     await assertFails(sdk.getDoc(sdk.doc(rules.authenticatedContext('viewer').firestore(), journal.path)));
+    const change = (actor, action, props = {}) => call(actor, 'changeModel',
+      {action, id: 'model', revision: 1, ...props});
+    await assert.rejects(change('viewer', 'delete'), {code: 'permission-denied'});
+    await assert.rejects(change('outsider', 'rename', {name: 'Чужд'}), {code: 'permission-denied'});
+    const copy = await change('editor', 'copy', {name: 'Копие', folderId: child});
+    assert.notEqual(copy.id, 'model');
+    const copyDoc = await call('editor', 'readModel', {id: copy.id});
+    assert.deepEqual(copyDoc, {...document, id: copy.id, name: 'Копие', nameKey: 'копие'});
+    await assert.rejects(change('owner', 'rename', {name: 'КОПИЕ'}), {code: 'name-conflict'});
+    await assert.rejects(change('owner', 'move', {folderId: 'system:projects'}), {code: 'folder-not-found'});
+    const {folders} = await call('owner', 'changeFolder', {change: {action: 'create', name: 'Целева'}, revision: 5});
+    const target = folders.at(-1).id;
+    await change('owner', 'rename', {name: 'Нов модел'});
+    await assert.rejects(change('owner', 'delete'), {code: 'revision-conflict'});
+    await change('editor', 'move', {revision: 2, folderId: target});
+    const moved = await call('owner', 'readModel', {id: 'model'});
+    assert.deepEqual(moved, {...document, name: 'Нов модел', nameKey: 'нов модел', folderId: target, revision: 3});
+    await change('editor', 'delete', {id: copy.id});
+    await assert.rejects(call('owner', 'readModel', {id: copy.id}), {code: 'not-found'});
+    assert.equal((await backend.db.doc('workspace_v3/owner/names/копие').get()).exists, false);
+    assert.equal((await backend.db.doc('workspace_v3/owner/names/модел').get()).exists, false);
+    assert.equal((await backend.db.doc('workspace_v3/owner/names/нов модел').get()).data().id, 'model');
     await backend.db.doc('workspace_v3/owner/grants/editor').delete();
     await assertFails(sdk.getDoc(sdk.doc(editor, 'workspace_v3/owner/documents/model')));
     assert.deepEqual(await call('editor', 'reconcile', {operationId: 'op'}), {status: 'committed', ...receipt});

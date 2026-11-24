@@ -1,3 +1,4 @@
+import {projectName} from '../project-model.mjs';
 import {identifier, PROJECTS_FOLDER, validateDocument, validateLibrary} from '../document-format/model.mjs';
 import {legacyDocumentId} from '../document-format/legacy.mjs';
 import {comparableJson} from '../workspace-context/insertion.mjs';
@@ -6,7 +7,7 @@ import {handleMaterialBaseOperation, materialBaseOperations} from './material-ba
 
 const namespace = 'workspace_v3';
 const failure = (code, message = code) => Object.assign(new Error(message), {code});
-const operations = new Set(['readProject', 'readModel', 'write', 'migrateLegacy', 'pending', 'reconcile', 'acknowledge', 'list', 'changeFolder', ...materialBaseOperations]);
+const operations = new Set(['readProject', 'readModel', 'write', 'migrateLegacy', 'pending', 'reconcile', 'acknowledge', 'list', 'changeFolder', 'changeModel', ...materialBaseOperations]);
 const blankLibrary = () => ({revision: 0, folders: [PROJECTS_FOLDER]});
 
 // A trusted process owns writes. The deployment supplies Admin Firestore and
@@ -93,6 +94,54 @@ export function createWorkspaceService({db, verifyToken, newId = () => crypto.ra
         const query = documents.select('id', 'type', 'folderId', 'name', 'revision');
         const rows = (await tx.get(query)).docs.map(row => row.data());
         return {...library, documents: rows};
+      });
+    }
+    if (operation === 'changeModel') {
+      const {action, id, revision, folderId} = request;
+      if (!['rename', 'move', 'copy', 'delete'].includes(action)) throw failure('invalid-operation');
+      const ref = documents.doc(identifier(id));
+      const copyId = action === 'copy' ? identifier(newId()) : null;
+      return db.runTransaction(async tx => {
+        if (!['owner', 'editor'].includes(await role(tx))) throw failure('permission-denied');
+        const previous = (await tx.get(ref)).data();
+        if (previous?.type !== 'model') throw failure('not-found');
+        if (previous.revision !== revision) throw failure('revision-conflict');
+        const names = owner.collection('names');
+        if (action === 'delete') {
+          const nameRef = names.doc(previous.nameKey);
+          const claim = (await tx.get(nameRef)).data();
+          if (claim && claim.id !== id) throw failure('index-conflict');
+          tx.delete(ref);
+          if (claim) tx.delete(nameRef);
+          return null;
+        }
+        const placement = action === 'move' || action === 'copy' ? identifier(folderId) : previous.folderId;
+        if (action === 'move' || action === 'copy') {
+          const library = (await tx.get(manifest)).data() ?? blankLibrary();
+          if (placement === PROJECTS_FOLDER.id || !library.folders.some(folder => folder.id === placement)) {
+            throw failure('folder-not-found');
+          }
+        }
+        const naming = action === 'rename' || action === 'copy' ? projectName(request.name) : {};
+        const next = {...previous, ...naming, folderId: placement, id: copyId ?? id,
+          revision: copyId ? 1 : revision + 1};
+        if (copyId) delete next.source;
+        validateDocument(next);
+        const nameRef = names.doc(next.nameKey);
+        if (copyId || next.nameKey !== previous.nameKey) {
+          const claim = (await tx.get(nameRef)).data();
+          if (claim) throw failure('name-conflict');
+          if (!copyId) {
+            const oldNameRef = names.doc(previous.nameKey);
+            const oldClaim = (await tx.get(oldNameRef)).data();
+            if (oldClaim && oldClaim.id !== id) throw failure('index-conflict');
+            if (oldClaim) tx.delete(oldNameRef);
+          }
+          tx.create(nameRef, {id: next.id});
+        }
+        if (copyId) tx.create(documents.doc(copyId), next);
+        else tx.set(ref, next);
+        return {id: next.id, revision: next.revision};
       });
     }
     if (operation === 'changeFolder') {

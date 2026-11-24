@@ -270,3 +270,23 @@ body.ned-shell #shellTools #projectNewCabinet:hover:not(:disabled) {
   background: #1b7045 !important;
   border-color: #145a37 !important;
 }
+
+.libraryModelRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 4px;
+}
+.libraryModelRow > button { min-width: 0; overflow-wrap: anywhere; }
+.libraryModelActions summary {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  list-style: none;
+  cursor: pointer;
+  border: 1px solid #b5c7dc;
+  border-radius: 4px;
+  background: #fff;
+}
+.libraryModelActions[open] button { display: block; width: 100%; margin-top: 4px; }

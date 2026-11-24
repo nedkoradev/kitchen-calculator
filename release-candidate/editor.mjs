@@ -11,7 +11,8 @@ const byId = id => document.getElementById(id);
 const isTyping = event => event.target?.matches?.('input, textarea, select, [contenteditable]');
 function folderLabel(folder, folders) {
   const parent = folders.find(candidate => candidate.id === folder.parentId);
-  return parent ? folderLabel(parent, folders) + ' / ' + folder.name : folder.name;
+  const name = folder.name === 'Импорт от v2.95' ? 'За подреждане' : folder.name;
+  return parent ? folderLabel(parent, folders) + ' / ' + name : name;
 }
 
 function dialog(heading, build) {
@@ -729,6 +730,50 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     return run('openLegacyDocument', {legacyOwnerId: owner, id: item.id, type: item.type, catalogId});
   }
 
+  async function changeLibraryModel(scope, item, action, folders) {
+    const request = {scope, id: item.id, revision: item.revision, action};
+    if (action === 'delete' && !await nedConfirmDelete('Да изтрия ли модела „' + item.name + '“ от библиотеката?')) return;
+    if (action === 'move' || action === 'copy') {
+      request.folderId = await dialog('Целева папка', (panel, done) => {
+        for (const folder of folders.filter(folder => folder.id !== PROJECTS_FOLDER.id && folder.id !== item.folderId)) {
+          panel.append(button(folderLabel(folder, folders), () => done(folder.id)));
+        }
+        panel.append(button('Отказ', () => done(null)));
+      });
+      if (!request.folderId) return;
+    }
+    const naming = action === 'rename' || action === 'copy';
+    let name = action === 'copy' ? (item.name.slice(0, 90) + ' – копие') : item.name;
+    let prompt = 'Име на модела';
+    while (bridge.state.canAct && bridge.state.scope?.ownerUid === scope.ownerUid &&
+           bridge.state.scope?.actorUid === scope.actorUid) {
+      if (naming) {
+        name = await nedPromptName(prompt, name);
+        if (!name) return;
+        request.name = name;
+      }
+      if (!bridge.state.canAct || bridge.state.scope?.actorUid !== scope.actorUid ||
+          bridge.state.scope?.ownerUid !== scope.ownerUid) return;
+      try {
+        await store.changeModel(request);
+        return;
+      } catch (error) {
+        if (naming && error.code === 'name-conflict') {
+          prompt = 'Името е заето. Въведи друго име.';
+          continue;
+        }
+        report(new Error({
+          'revision-conflict': 'Моделът е променен в друг прозорец. Провери обновения списък.',
+          'not-found': 'Моделът вече не е в библиотеката.',
+          'permission-denied': 'Нямаш право да променяш този модел.',
+          'folder-not-found': 'Целевата папка вече не е налична.',
+          'invalid-name': 'Въведи име до 100 знака, без „/“.',
+        }[error.code] ?? 'Промяната не е потвърдена. Провери обновения списък.'));
+        return;
+      }
+    }
+  }
+
   async function openLibrary(selectedFolderId = null) {
     if (!await flush()) return;
     const scope = bridge.state.scope;
@@ -737,19 +782,40 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     const build = (panel, done) => {
       const select = document.createElement('select');
       select.setAttribute('aria-label', 'Папка');
+      if (documents.some(item => item.type === 'model' && item.folderId === null)) {
+        select.add(new Option('Без папка', ''));
+      }
       for (const folder of folders) select.add(new Option(folderLabel(folder, folders), folder.id));
-      if (selectedFolderId && folders.some(folder => folder.id === selectedFolderId)) select.value = selectedFolderId;
+      if ([...select.options].some(option => option.value === selectedFolderId)) select.value = selectedFolderId;
       const listing = documentElement('div', 'libraryDialogItems');
       const folderActions = documentElement('div', 'nedConfirmActions');
       const refresh = () => {
-        listing.replaceChildren(...documents.filter(item => item.folderId === select.value)
-          .map(item => button((item.type === 'project' ? 'Отвори проект · ' : 'Добави модел · ') + item.name,
-            () => done({item}))));
+        listing.replaceChildren(...documents.filter(item => item.folderId === (select.value || null))
+          .map(item => {
+            const open = button(item.type === 'project' ? 'Отвори проект · ' + item.name : item.name, () => done({item}));
+            if (item.type !== 'model' || !store.changeModel) return open;
+            const row = documentElement('div', 'libraryModelRow');
+            const actions = documentElement('details', 'libraryModelActions');
+            const toggle = document.createElement('summary');
+            toggle.textContent = '⋯';
+            toggle.setAttribute('aria-label', 'Действия за ' + item.name);
+            actions.append(toggle);
+            for (const [label, action] of [['Преименувай', 'rename'], ['Премести в папка', 'move'],
+              ['Копирай в папка', 'copy'], ['Изтрий', 'delete']]) {
+              const control = button(label, () => done({modelChange: {item, action}, folderId: select.value}));
+              if (action === 'move' || action === 'copy') {
+                control.disabled = !folders.some(folder => folder.id !== PROJECTS_FOLDER.id && folder.id !== item.folderId);
+              }
+              actions.append(control);
+            }
+            row.append(open, actions);
+            return row;
+          }));
         if (!store.changeFolder) return;
         const id = select.value;
         folderActions.replaceChildren(button('Нова папка', () => done({change: {action: 'create',
-          parentId: id === PROJECTS_FOLDER.id ? null : id}})));
-        if (id !== PROJECTS_FOLDER.id) {
+          parentId: !id || id === PROJECTS_FOLDER.id ? null : id}})));
+        if (id && id !== PROJECTS_FOLDER.id) {
           for (const [label, action] of [['Преименувай', 'rename'], ['Премести', 'move'], ['Изтрий празна папка', 'delete']]) {
             folderActions.append(button(label, () => done({change: {action, id}})));
           }
@@ -758,12 +824,17 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       select.onchange = refresh;
       refresh();
       panel.append(select, listing, folderActions);
-      if (legacy) panel.append(button('Документи v2.95…', () => done({legacy: true})));
       panel.append(button('Отказ', () => done(null)));
     };
     const chosen = await (panels ? panels.library(build) : dialog('Обща библиотека', build));
     if (!chosen) return;
-    if (chosen.legacy) return openLegacyLibrary();
+    if (chosen.modelChange) {
+      await changeLibraryModel(scope, chosen.modelChange.item, chosen.modelChange.action, folders);
+      if (bridge.state.scope?.actorUid === scope.actorUid && bridge.state.scope?.ownerUid === scope.ownerUid) {
+        return openLibrary(chosen.folderId);
+      }
+      return;
+    }
     if (chosen.item) {
       const {item} = chosen;
       return run(item.type === 'project' ? 'openProject' : 'insertModel', item.id);
@@ -795,12 +866,13 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     const menu = byId('libraryMenu');
     const items = menu?.querySelector('.documentMenuItems');
     if (items) {
+      byId('navLibrary').hidden = true;
       const refreshMenu = async () => {
         items.replaceChildren(byId('navLibrary'));
         const scope = bridge.state.scope;
         if (!scope || !bridge.state.canAct) return;
         try {
-          const {folders} = await store.list({scope});
+          const {folders, documents} = await store.list({scope});
           if (bridge.state.scope?.ownerUid !== scope.ownerUid || !bridge.state.canAct) return;
           const add = (label, folderId) => {
             const item = button(label, () => {
@@ -810,7 +882,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
             item.setAttribute('role', 'menuitem');
             items.append(item);
           };
-          byId('navLibrary').textContent = 'Всички модели…';
+          if (documents.some(item => item.type === 'model' && item.folderId === null)) add('Без папка', '');
           for (const folder of folders) add(folderLabel(folder, folders), folder.id);
         } catch (error) { report(error); }
       };
@@ -918,5 +990,5 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
   document.addEventListener('change', sceneChanged, true);
   editor.onChange(sceneChanged);
   void bridge.initialize(initialScope);
-  return {bridge, flush};
+  return {bridge, flush, ...(legacy ? {openLegacyLibrary} : {})};
 }
