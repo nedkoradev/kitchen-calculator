@@ -730,10 +730,13 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     return run('openLegacyDocument', {legacyOwnerId: owner, id: item.id, type: item.type, catalogId});
   }
 
-  async function changeLibraryModel(scope, item, action, folders) {
+  async function changeLibraryDocument(scope, item, action, folders) {
+    const isProject = item.type === 'project';
     const request = {scope, id: item.id, revision: item.revision, action};
-    if (action === 'delete' && !await nedConfirmDelete('Да изтрия ли модела „' + item.name + '“ от библиотеката?')) return;
-    if (action === 'move' || action === 'copy') {
+    if (action === 'delete' && !await nedConfirmDelete('Да изтрия ли ' +
+      (isProject ? 'проекта' : 'модела') + ' „' + item.name + '“ от библиотеката?')) return;
+    if (isProject && action === 'move') return 'Проектите могат да бъдат само в папка „Проекти“.';
+    if (!isProject && (action === 'move' || action === 'copy')) {
       request.folderId = await dialog('Целева папка', (panel, done) => {
         for (const folder of folders.filter(folder => folder.id !== PROJECTS_FOLDER.id && folder.id !== item.folderId)) {
           panel.append(button(folderLabel(folder, folders), () => done(folder.id)));
@@ -742,9 +745,10 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       });
       if (!request.folderId) return;
     }
+    if (isProject && action === 'copy') request.folderId = PROJECTS_FOLDER.id;
     const naming = action === 'rename' || action === 'copy';
     let name = action === 'copy' ? (item.name.slice(0, 90) + ' – копие') : item.name;
-    let prompt = 'Име на модела';
+    let prompt = isProject ? 'Име на проекта' : 'Име на модела';
     while (bridge.state.canAct && bridge.state.scope?.ownerUid === scope.ownerUid &&
            bridge.state.scope?.actorUid === scope.actorUid) {
       if (naming) {
@@ -798,15 +802,18 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
         listing.replaceChildren(...documents.filter(item => item.folderId === (select.value || null))
           .map(item => {
             const open = button(item.type === 'project' ? 'Отвори проект · ' + item.name : item.name, () => done({item}));
-            if (item.type !== 'model' || !store.changeModel) return open;
+            if (!['model', 'project'].includes(item.type) || !store.changeModel) return open;
             const row = documentElement('div', 'libraryModelRow');
             const actions = documentElement('div', 'libraryModelActions');
             actions.setAttribute('role', 'group');
             actions.setAttribute('aria-label', 'Действия за ' + item.name);
             for (const [label, action] of [['Преименувай', 'rename'], ['Премести', 'move'],
               ['Копирай', 'copy'], ['Изтрий', 'delete']]) {
-              const control = button(label, () => done({modelChange: {item, action}, folderId: select.value}));
-              if (action === 'move' || action === 'copy') {
+              const control = button(label, () => done({documentChange: {item, action}, folderId: select.value}));
+              if (action === 'move' && item.type === 'project') {
+                control.disabled = true;
+                control.title = 'Проектите остават в системната папка „Проекти“.';
+              } else if (item.type === 'model' && (action === 'move' || action === 'copy')) {
                 control.disabled = !folders.some(folder => folder.id !== PROJECTS_FOLDER.id && folder.id !== item.folderId);
               }
               actions.append(control);
@@ -831,8 +838,8 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     };
     const chosen = await (panels ? panels.library(build) : dialog('Обща библиотека', build));
     if (!chosen) return;
-    if (chosen.modelChange) {
-      const notice = await changeLibraryModel(scope, chosen.modelChange.item, chosen.modelChange.action, folders);
+    if (chosen.documentChange) {
+      const notice = await changeLibraryDocument(scope, chosen.documentChange.item, chosen.documentChange.action, folders);
       if (bridge.state.scope?.actorUid === scope.actorUid && bridge.state.scope?.ownerUid === scope.ownerUid) {
         return openLibrary(chosen.folderId, notice);
       }
