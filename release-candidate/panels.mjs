@@ -337,7 +337,7 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
       }
       baseSelect.disabled = true;
       try {
-        const base = await api.activate(requested);
+        const base = await api.activate(requested, false, true);
         setActiveBase(base.id, base.name);
         showBasePreview(base);
         if (!baseStatus.textContent.includes('Записаният документ запазва своята материална база')) {
@@ -381,7 +381,7 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
     extra.hidden = true;
     materials.show();
     if (materialControlApi && !baseEditor.id && baseSelect.value) {
-      void materialControlApi.activate(baseSelect.value).catch(error => setBaseStatus(error.message, true));
+      void materialControlApi.activate(baseSelect.value, false, true).catch(error => setBaseStatus(error.message, true));
     }
   }
   const sections = settings.content.querySelector('.settingsSections');
