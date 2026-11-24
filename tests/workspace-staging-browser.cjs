@@ -94,7 +94,7 @@ const path = require('node:path');
     const library = page.locator('#libraryMenu summary');
     const openLibrary = async () => {
       await library.click();
-      await page.locator('#navLibrary').click();
+      await page.getByRole('menuitem', {name: 'Проекти', exact: true}).click();
     };
     const operations = [];
     page.on('request', request => {

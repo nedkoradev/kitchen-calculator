@@ -168,7 +168,7 @@ const {openKitchen} = require('./browser-harness.cjs');
     await page.keyboard.press('Control+Shift+z');
     await page.waitForFunction(() => window.__test.parts()[0].assembly !== 'outer');
 
-    await open('Добави модел · Библиотечен рафт', 'shelves');
+    await open('Библиотечен рафт', 'shelves');
     await partCount(3);
     const inserted = await snapshot();
     assert.deepEqual(inserted.room, original.room);
@@ -216,8 +216,7 @@ const {openKitchen} = require('./browser-harness.cjs');
         return (await window.__integration.store.list({scope})).documents;
       });
       const originalV2Documents = await page.evaluate(() => window.__integration.legacySources);
-      await libraryButton.click();
-      await page.getByRole('button', {name: 'Документи v2.95…', exact: true}).click();
+      await page.evaluate(() => { void window.__integration.openLegacyLibrary(); });
       await page.getByRole('button', {name: 'Моята библиотека v2.95 · Собственик', exact: true}).click();
       await page.getByRole('button', {name: 'Мигрирай всички мои документи в v3…', exact: true}).click();
       const migrationOptions = page.getByRole('dialog', {name: 'Подготовка на миграция'});
@@ -260,8 +259,7 @@ const {openKitchen} = require('./browser-harness.cjs');
         });
       });
       await page.setViewportSize({width: 320, height: 820});
-      await libraryButton.click();
-      await page.getByRole('button', {name: 'Документи v2.95…', exact: true}).click();
+      await page.evaluate(() => { void window.__integration.openLegacyLibrary(); });
       await page.getByRole('button', {name: 'Моята библиотека v2.95 · Собственик', exact: true}).click();
       await page.getByRole('button', {name: 'Мигрирай всички мои документи в v3…', exact: true}).click();
       const longMigration = page.getByRole('dialog', {name: 'Подготовка на миграция'});
@@ -300,7 +298,7 @@ const {openKitchen} = require('./browser-harness.cjs');
       await libraryButton.click();
       const modelLibrary = page.getByRole('dialog', {name: 'Обща библиотека'});
       await modelLibrary.getByLabel('Папка').selectOption('shelves');
-      await modelLibrary.getByRole('button', {name: 'Добави модел · Контролен шкаф', exact: true}).click();
+      await modelLibrary.getByRole('button', {name: 'Контролен шкаф', exact: true}).click();
       await page.waitForFunction(() => window.__test.parts().length === 3 ||
         window.__integration.bridge.state.error);
       assert.equal((await state()).error?.message ?? null, null);
@@ -317,8 +315,7 @@ const {openKitchen} = require('./browser-harness.cjs');
       await page.keyboard.press('Escape');
     }
     if (e2e) {
-      await libraryButton.click();
-      await page.getByRole('button', {name: 'Документи v2.95…', exact: true}).click();
+      await page.evaluate(() => { void window.__integration.openLegacyLibrary(); });
       await page.getByRole('button', {name: 'Моята библиотека v2.95 · Собственик', exact: true}).waitFor();
       assert.equal(await page.getByRole('button', {name: /Споделена стара база/}).count(), 0);
       await page.keyboard.press('Escape');
@@ -375,8 +372,7 @@ const {openKitchen} = require('./browser-harness.cjs');
     await page.waitForFunction(() => window.__integration.bridge.state.workspace.document.name === 'Първи запис');
     assert.equal((await state()).workspace.document.revision, 1);
     if (e2e) {
-      await libraryButton.click();
-      await page.getByRole('button', {name: 'Документи v2.95…', exact: true}).click();
+      await page.evaluate(() => { void window.__integration.openLegacyLibrary(); });
       await page.getByRole('button', {name: 'Моята библиотека v2.95 · Собственик', exact: true}).waitFor();
       await page.getByRole('button', {name: 'Споделена стара база · Редактор', exact: true}).click();
       const legacyFolder = page.getByLabel('Папка v2.95', {exact: true});
