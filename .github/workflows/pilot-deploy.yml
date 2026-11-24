@@ -33,6 +33,7 @@ jobs:
     needs: validate
     uses: ./.github/workflows/pr-checks.yml
     with:
+      release_lane: pilot
       release_sha: ${{ inputs.release_sha }}
 
   deploy:
@@ -65,6 +66,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
           docker build --platform linux/amd64 --label "org.opencontainers.image.revision=$RELEASE_SHA" -t "$IMAGE:$RELEASE_SHA" .
           bash tests/pilot-container-smoke.sh "$IMAGE:$RELEASE_SHA"
+          bash tests/public-container-smoke.sh "$IMAGE:$RELEASE_SHA"
       - name: Require the pilot identity configuration
         run: |
           set -euo pipefail

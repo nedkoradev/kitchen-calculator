@@ -7,6 +7,9 @@ on:
 
   workflow_call:
     inputs:
+      release_lane:
+        required: true
+        type: string
       release_sha:
         required: true
         type: string
@@ -15,8 +18,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr-checks-${{ github.event.pull_request.number || inputs.release_sha }}
-  cancel-in-progress: true
+  group: pr-checks-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('release-{0}-{1}', inputs.release_lane, inputs.release_sha) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   checks:
@@ -109,6 +112,7 @@ jobs:
       - name: Test the pilot deployment guardrails with a local mock
         run: bash tests/pilot-deploy-smoke.sh
       - name: Build and exercise the disabled Cloud Run image
+        if: github.event_name == 'pull_request'
         run: |
           docker build -t nediq-pilot-check .
           bash tests/pilot-container-smoke.sh nediq-pilot-check
