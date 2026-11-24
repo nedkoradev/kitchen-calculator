@@ -7,7 +7,7 @@
 - Продукт: **NED-IQ**, онлайн приложение за проектиране на мебели.
 - Хранилище: `nedkoradev/kitchen-calculator`; основен клон `main`.
 - Публичен адрес: https://nediq.eu/ ; GitHub Pages: https://nedkoradev.github.io/kitchen-calculator/.
-- Проверка за тази задача: `origin/main` е `608a7c5` (v3 **3.0.7**, v2 **2.96**). Предложената нова версия за тази PR е v3.0.8; не публикувай без отделен production check и сверяване на SHA.
+- Начална проверка за тази промяна (2026-11-24): `origin/main` е `6be0b26` (v3 **3.0.10**, v2 **2.96**). Предложената версия в PR е v3.0.11. Публичният `release.json` при започване показва v3.0.9 със SHA `7d8d27e48142d6afb84665a185ce685a9508c78e`; сверявай действителното състояние преди и след внедряване.
 - PR CI, Pilot и production използват отделни concurrency групи. Само остарял PR CI се отменя при нов commit. След сливане всеки deployment проверява точния SHA, а Docker smoke тестовете се изпълняват върху образа в неговия deployment job.
 - Автоматичното публикуване на v3 се управлява от `NEDIQ_V3_AUTO_DEPLOY`. Не стартирай deployment workflow ръчно. След merge и успешен GitHub check проследи автоматичното изпълнение и public `release.json`.
 - Версията се определя от `_data/version.json`, видимото заглавие и `release.json` след Jekyll build; не предполагай версия само по този документ.
