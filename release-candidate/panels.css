@@ -262,6 +262,10 @@ body.ned-shell #shellTools #projectNewCabinet {
   border-color: #1d7046 !important;
   color: #fff !important;
 }
+body.ned-shell #shellTools #projectNewCabinet.iconOnly > svg.actionSvg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
 body.ned-shell #shellTools #projectNewCabinet:hover:not(:disabled) {
   background: #1b7045 !important;
   border-color: #145a37 !important;
