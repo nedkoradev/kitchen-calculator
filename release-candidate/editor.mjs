@@ -762,24 +762,29 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
           prompt = 'Името е заето. Въведи друго име.';
           continue;
         }
-        report(new Error({
+        return {
           'revision-conflict': 'Моделът е променен в друг прозорец. Провери обновения списък.',
           'not-found': 'Моделът вече не е в библиотеката.',
           'permission-denied': 'Нямаш право да променяш този модел.',
           'folder-not-found': 'Целевата папка вече не е налична.',
           'invalid-name': 'Въведи име до 100 знака, без „/“.',
-        }[error.code] ?? 'Промяната не е потвърдена. Провери обновения списък.'));
-        return;
+        }[error.code] ?? 'Промяната не е потвърдена. Провери обновения списък.';
       }
     }
   }
 
-  async function openLibrary(selectedFolderId = null) {
+  async function openLibrary(selectedFolderId = null, notice) {
     if (!await flush()) return;
     const scope = bridge.state.scope;
     const {folders, documents, revision} = await store.list({scope});
     if (bridge.state.scope.ownerUid !== scope.ownerUid || !bridge.state.canAct) return;
     const build = (panel, done) => {
+      if (notice) {
+        const alert = document.createElement('p');
+        alert.setAttribute('role', 'alert');
+        alert.textContent = notice;
+        panel.append(alert);
+      }
       const select = document.createElement('select');
       select.setAttribute('aria-label', 'Папка');
       if (documents.some(item => item.type === 'model' && item.folderId === null)) {
@@ -829,9 +834,9 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     const chosen = await (panels ? panels.library(build) : dialog('Обща библиотека', build));
     if (!chosen) return;
     if (chosen.modelChange) {
-      await changeLibraryModel(scope, chosen.modelChange.item, chosen.modelChange.action, folders);
+      const notice = await changeLibraryModel(scope, chosen.modelChange.item, chosen.modelChange.action, folders);
       if (bridge.state.scope?.actorUid === scope.actorUid && bridge.state.scope?.ownerUid === scope.ownerUid) {
-        return openLibrary(chosen.folderId);
+        return openLibrary(chosen.folderId, notice);
       }
       return;
     }
