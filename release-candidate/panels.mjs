@@ -1,5 +1,6 @@
 import {decorateAction} from '../icons.mjs';
 import {nedConfirmAction, nedConfirmDelete, nedPromptName} from '../ui-messages.mjs';
+import {createPilotMaterialEditor} from './material-editor.mjs';
 
 const byId = id => document.getElementById(id);
 const element = (tag, className) => Object.assign(document.createElement(tag), {className});
@@ -231,82 +232,12 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
     baseSelect.dataset.activeId = id || '';
     baseSelect.dataset.activeName = name || '';
   }
-  function formatSize(a, b) {
-    return a && b ? a + ' × ' + b + ' мм' : '—';
-  }
-  function formatPrice(value) {
-    return value !== undefined && value !== null && value !== '' ? Number(value).toFixed(2) + ' €' : '—';
-  }
-  function previewTable(title, headers, rows) {
-    if (!rows.length) return null;
-    const section = element('section', 'pilotMaterialPreviewSection');
-    const heading = document.createElement('h3');
-    heading.textContent = title;
-    const table = document.createElement('table');
-    table.className = 'pilotMaterialPreviewTable';
-    const head = table.createTHead().insertRow();
-    for (const label of headers) {
-      const cell = document.createElement('th');
-      cell.textContent = label;
-      head.append(cell);
-    }
-    const body = table.createTBody();
-    for (const row of rows) {
-      const tr = body.insertRow();
-      for (const value of row) tr.insertCell().textContent = value;
-    }
-    section.append(heading, table);
-    return section;
-  }
+  const baseEditor = createPilotMaterialEditor(basePreview, dirty => {
+    if (dirty) setBaseStatus('Има незаписани промени. Натисни „Запази базата“.');
+  });
   function showBasePreview(base) {
-    basePreview.replaceChildren();
-    if (!base) {
-      basePreview.hidden = true;
-      return;
-    }
-    basePreview.hidden = false;
-    const title = document.createElement('h3');
-    title.className = 'pilotMaterialPreviewTitle';
-    title.textContent = base.name;
-    basePreview.append(title);
-    const data = base.data ?? {};
-    const pdc = previewTable('ПДЧ',
-      ['Материал', 'Цял лист', 'Половин лист', 'Цени', 'Текстура'],
-      (data.pdcMaterials ?? []).map(item => [
-        item.name || '',
-        formatSize(item.fullW, item.fullH),
-        formatSize(item.halfW, item.halfH),
-        `${formatPrice(item.fullPrice)} / ${formatPrice(item.halfPrice)}`,
-        item.textureUrl ? 'Да' : 'Не',
-      ]));
-    const hdf = previewTable('Гръб HDF',
-      ['Материал', 'Размер', 'Дебелина', 'Цени', 'Текстура'],
-      (data.backMaterials ?? []).map(item => [
-        item.name || '',
-        formatSize(item.fullW, item.fullH),
-        item.thick ? item.thick + ' мм' : '—',
-        `${formatPrice(item.fullPrice)} / ${formatPrice(item.halfPrice)}`,
-        item.textureUrl ? 'Да' : 'Не',
-      ]));
-    const worktops = previewTable('Плотове',
-      ['Плот', 'Цял', 'Половин', '1/4', 'Цени', 'Текстура'],
-      (data.worktops ?? []).map(item => [
-        item.name || '',
-        formatSize(item.fullW, item.depth),
-        formatSize(item.halfW, item.depth),
-        formatSize(item.quarterW, item.depth),
-        `${formatPrice(item.fullPrice)} / ${formatPrice(item.halfPrice)} / ${formatPrice(item.quarterPrice)}`,
-        item.textureUrl ? 'Да' : 'Не',
-      ]));
-    const edges = previewTable('Кантове',
-      ['Кант', 'Цвят', 'Цена за метър', 'Текстура'],
-      (data.edgeMaterials ?? []).map(item => [
-        item.name || '',
-        item.color || '—',
-        formatPrice(item.price),
-        item.textureUrl ? 'Да' : 'Не',
-      ]));
-    for (const table of [pdc, hdf, worktops, edges]) if (table) basePreview.append(table);
+    basePreview.hidden = !base;
+    baseEditor.setBase(base);
   }
   function installMaterialBases(api) {
     materialControlApi = api;
@@ -326,7 +257,7 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
       if (!name) return;
       create.disabled = save.disabled = true;
       try {
-        const result = await api.create(name);
+        const result = await api.create(name, baseEditor.getData());
         setActiveBase(result.id, result.name);
         showBasePreview(result);
         setBaseStatus('Създадена е база „' + result.name + '“.');
@@ -339,7 +270,7 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
     const save = textAction('Запази базата', 'save', async () => {
       save.disabled = create.disabled = true;
       try {
-        const result = await api.save();
+        const result = await api.save({id: baseEditor.id, data: baseEditor.getData()});
         setActiveBase(result.id, result.name);
         showBasePreview(result);
         setBaseStatus('Базата „' + result.name + '“ е записана.');
@@ -398,16 +329,22 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
     });
     baseActions.append(create, save, rename, remove);
     baseSelect.onchange = async () => {
-      if (!baseSelect.value) return;
+      const requested = baseSelect.value;
+      if (!requested) return;
+      if (baseEditor.isDirty() && !await nedConfirmAction('Има незаписани промени в материалната база. Да ги отхвърля ли?')) {
+        baseSelect.value = baseEditor.id;
+        return;
+      }
       baseSelect.disabled = true;
       try {
-        const base = await api.activate(baseSelect.value);
+        const base = await api.activate(requested, false, true);
         setActiveBase(base.id, base.name);
         showBasePreview(base);
         if (!baseStatus.textContent.includes('Записаният документ запазва своята материална база')) {
           setBaseStatus('Активна база: ' + base.name);
         }
       } catch (error) {
+        baseSelect.value = baseEditor.id;
         setBaseStatus(error.message, true);
       } finally {
         baseSelect.disabled = false;
@@ -439,9 +376,13 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
     if (!canEdit()) return;
     if (extra.parentElement !== materials.content) materials.content.append(extra);
     if (materialControlApi) void materialControlApi.refresh().catch(error => setBaseStatus(error.message, true));
-    renderMaterials();
-    extra.hidden = false;
+    // The legacy editor belongs to the current document, not the selected cloud base.
+    // Never show it beside the editable, isolated cloud catalog.
+    extra.hidden = true;
     materials.show();
+    if (materialControlApi && !baseEditor.id && baseSelect.value) {
+      void materialControlApi.activate(baseSelect.value, false, true).catch(error => setBaseStatus(error.message, true));
+    }
   }
   const sections = settings.content.querySelector('.settingsSections');
   const addSection = (title, control) => {

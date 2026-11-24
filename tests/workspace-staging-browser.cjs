@@ -181,7 +181,7 @@ const path = require('node:path');
     };
     const materials = page.getByRole('dialog', {name: 'Материали', exact: true});
     await openMaterials();
-    await materials.locator('.materialGroup tbody tr').first().waitFor();
+    await materials.locator('.pilotMaterialPreviewSection tbody tr').first().waitFor();
     await assertScene();
     const centered = await materials.boundingBox();
     await drag(materials.locator('.dialogHead'), 36, 24, 110);
@@ -207,12 +207,12 @@ const path = require('node:path');
     await openMaterials();
     assert.deepEqual(await materials.boundingBox(), adjusted);
     await materials.getByRole('button', {name: 'Промени', exact: true}).first().click();
-    const materialEditor = page.locator('dialog.materialEditDialog[open]');
-    await materialEditor.getByLabel('Наименование', {exact: true}).fill('Временно име');
+    const materialEditor = page.getByRole('dialog', {name: 'Промени материал'});
+    await materialEditor.getByRole('textbox', {name: 'Материал'}).fill('Временно име');
     await page.keyboard.press('Escape');
     await page.getByRole('dialog', {name: 'Потвърждение', exact: true}).getByRole('button', {name: 'Отказ', exact: true}).click();
     assert.equal(await materialEditor.isVisible(), true);
-    await materialEditor.getByRole('button', {name: 'Затваряне на прозореца'}).click();
+    await materialEditor.getByRole('button', {name: 'Отказ', exact: true}).click();
     await page.getByRole('dialog', {name: 'Потвърждение', exact: true}).getByRole('button', {name: 'Потвърди', exact: true}).click();
     await materialEditor.waitFor({state: 'hidden'});
     await materials.getByRole('button', {name: 'Затваряне на прозореца', exact: true}).click();
@@ -424,6 +424,32 @@ const path = require('node:path');
     await page.waitForFunction(() => document.querySelector('.pilotMaterialBaseStatus')?.textContent.includes('Записаният документ запазва своята материална база'));
     assert.match(await materials.locator('.pilotMaterialPreviewTitle').textContent(), /База B/);
     assert.match(await materials.locator('.pilotMaterialPreviewSection').first().textContent(), /B плоскост/);
+    assert.equal(await materials.locator('#projectExtraPane').isVisible(), false,
+      'The current document must not be shown as a second editable material catalog');
+    assert.equal(await materials.locator('.pilotMaterialBasePreview').locator('table').count(), 4);
+    const selectedBaseTable = materials.locator('.pilotMaterialPreviewSection').first();
+    assert.equal(await selectedBaseTable.getByRole('button', {name: 'Промени'}).count(), 1);
+    await selectedBaseTable.getByRole('button', {name: 'Промени'}).click();
+    const baseEditorDialog = page.getByRole('dialog', {name: 'Промени материал'});
+    await baseEditorDialog.getByRole('textbox', {name: 'Материал'}).fill('B плоскост редакция');
+    await baseEditorDialog.getByRole('button', {name: 'Запази', exact: true}).click();
+    await baseEditorDialog.waitFor({state: 'hidden'});
+    assert.match(await selectedBaseTable.textContent(), /B плоскост редакция/);
+    assert.equal((await backend.db.doc('users/stage-pilot/materials/base_b').get()).data().pdcMaterials[0].name,
+      'B плоскост', 'Cloud base is unchanged until explicit save');
+    assert.deepEqual((await backend.db.doc('workspace_v3/stage-pilot/documents/' + fixture.id).get()).data().materials,
+      fixture.materials, 'Editing a base must not change the saved document');
+    await materials.getByRole('button', {name: 'Запази базата'}).click();
+    await page.waitForFunction(() => document.querySelector('.pilotMaterialBaseStatus')?.textContent.includes('е записана'));
+    assert.equal((await backend.db.doc('users/stage-pilot/materials/base_b').get()).data().pdcMaterials[0].name,
+      'B плоскост редакция');
+    assert.deepEqual((await backend.db.doc('workspace_v3/stage-pilot/documents/' + fixture.id).get()).data().materials,
+      fixture.materials);
+    await materials.getByLabel('Активна материална база').selectOption('base_a');
+    await page.waitForFunction(() => document.querySelector('.pilotMaterialPreviewSection')?.textContent.includes('A плоскост'));
+    assert.equal(await materials.locator('.pilotMaterialPreviewSection').first().textContent().then(v => v.includes('B плоскост редакция')), false);
+    await materials.getByLabel('Активна материална база').selectOption('base_b');
+    await page.waitForFunction(() => document.querySelector('.pilotMaterialPreviewSection')?.textContent.includes('B плоскост редакция'));
     for (let attempt = 0; attempt < 20; attempt++) {
       const preference = (await backend.db.doc('users/stage-pilot/materials/_app_preferences').get()).data();
       if (preference?.defaultMaterialBaseId === 'base_b') break;

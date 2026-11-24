@@ -1,0 +1,229 @@
+import {nedConfirmAction, nedConfirmDelete} from '../ui-messages.mjs';
+
+const sections = [
+  {key: 'pdcMaterials', title: 'ПДЧ материали', fields: [
+    ['name', 'Материал'], ['fullW', 'Ширина на цял лист (мм)', 'number'],
+    ['fullH', 'Височина на цял лист (мм)', 'number'], ['halfW', 'Ширина на половин лист (мм)', 'number'],
+    ['halfH', 'Височина на половин лист (мм)', 'number'], ['fullPrice', 'Цена цял лист (€)', 'number'],
+    ['halfPrice', 'Цена половин лист (€)', 'number'], ['color', 'Цвят'],
+    ['url', 'Връзка към доставчик'], ['textureUrl', 'Текстура (URL)'],
+    ['textureWidthMm', 'Ширина на текстурата (мм)', 'number'],
+    ['textureHeightMm', 'Височина на текстурата (мм)', 'number'],
+    ['grainRequired', 'Посока на фладера е важна', 'checkbox']]},
+  {key: 'backMaterials', title: 'Гръб HDF', fields: [
+    ['name', 'Материал'], ['thick', 'Дебелина (мм)', 'number'],
+    ['fullW', 'Ширина на цял лист (мм)', 'number'], ['fullH', 'Височина на цял лист (мм)', 'number'],
+    ['halfW', 'Ширина на половин лист (мм)', 'number'], ['halfH', 'Височина на половин лист (мм)', 'number'],
+    ['fullPrice', 'Цена цял лист (€)', 'number'], ['halfPrice', 'Цена половин лист (€)', 'number'],
+    ['color', 'Цвят'], ['url', 'Връзка към доставчик'], ['textureUrl', 'Текстура (URL)'],
+    ['textureWidthMm', 'Ширина на текстурата (мм)', 'number'],
+    ['textureHeightMm', 'Височина на текстурата (мм)', 'number'],
+    ['grainRequired', 'Посока на фладера е важна', 'checkbox']]},
+  {key: 'worktops', title: 'Плотове', fields: [
+    ['name', 'Материал'], ['fullW', 'Дължина на цял плот (мм)', 'number'],
+    ['depth', 'Дълбочина (мм)', 'number'], ['halfW', 'Дължина на половин плот (мм)', 'number'],
+    ['quarterW', 'Дължина на 1/4 плот (мм)', 'number'], ['fullPrice', 'Цена цял плот (€)', 'number'],
+    ['halfPrice', 'Цена половин плот (€)', 'number'], ['quarterPrice', 'Цена 1/4 плот (€)', 'number'],
+    ['color', 'Цвят'], ['url', 'Връзка към доставчик'], ['textureUrl', 'Текстура (URL)'],
+    ['textureWidthMm', 'Ширина на текстурата (мм)', 'number'],
+    ['textureHeightMm', 'Височина на текстурата (мм)', 'number'],
+    ['grainRequired', 'Посока на фладера е важна', 'checkbox']]},
+  {key: 'edgeMaterials', title: 'Кантове', fields: [
+    ['name', 'Материал'], ['price', 'Цена за метър (€)', 'number'],
+    ['color', 'Цвят'], ['url', 'Връзка към доставчик'], ['textureUrl', 'Текстура (URL)'],
+    ['textureWidthMm', 'Ширина на текстурата (мм)', 'number'],
+    ['textureHeightMm', 'Височина на текстурата (мм)', 'number'],
+    ['grainRequired', 'Посока на фладера е важна', 'checkbox']]},
+];
+const catalogKeys = [...sections.map(section => section.key), 'servicePrices'];
+function cloneCatalog(value) {
+  const input = value && typeof value === 'object' ? value : {};
+  return Object.fromEntries(catalogKeys.map(key => [key, key === 'servicePrices'
+    ? structuredClone(input[key] && typeof input[key] === 'object' ? input[key] : {})
+    : structuredClone(Array.isArray(input[key]) ? input[key] : [])]));
+}
+function element(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+function action(label, handler) {
+  const node = element('button', '', label);
+  node.type = 'button';
+  node.onclick = handler;
+  return node;
+}
+function summary(section, material) {
+  if (section.key === 'edgeMaterials') return ['—', material.price ?? '—'];
+  if (section.key === 'worktops') return [
+    [material.fullW, material.depth].filter(v => v !== undefined).join(' × ') + ' мм',
+    [material.fullPrice, material.halfPrice, material.quarterPrice].filter(v => v !== undefined).join(' / ') + ' €'];
+  return [[material.fullW, material.fullH].filter(v => v !== undefined).join(' × ') + ' мм',
+    [material.fullPrice, material.halfPrice].filter(v => v !== undefined).join(' / ') + ' €'];
+}
+
+/**
+ * v3-only editor for the selected cloud material base, independent from the
+ * current workspace document's embedded catalog. Mutations stay in memory
+ * until the explicit "Запази базата" action succeeds.
+ */
+export function createPilotMaterialEditor(container, onDirty = () => {}) {
+  let selected = null, catalog = null, baseline = null;
+  const dirty = () => catalog !== null && JSON.stringify(catalog) !== baseline;
+  const announce = () => onDirty(dirty());
+
+  function openForm(section, index) {
+    const original = index === null ? {} : catalog[section.key][index];
+    const draft = structuredClone(original);
+    const popup = element('dialog', 'materialEditDialog pilotMaterialEditorDialog');
+    popup.setAttribute('aria-label', index === null ? 'Нов материал' : 'Промени материал');
+    const form = element('form', 'pilotMaterialEditorForm');
+    const title = element('h3', '', index === null ? 'Нов материал' : 'Промени материал');
+    const inputs = new Map();
+    for (const [key, label, kind] of section.fields) {
+      const row = element('label', 'pilotMaterialEditorField');
+      row.append(element('span', '', label));
+      const input = document.createElement('input');
+      input.type = kind === 'checkbox' ? 'checkbox' : kind === 'number' ? 'number' : 'text';
+      if (kind === 'number') input.step = 'any';
+      if (kind === 'checkbox') input.checked = !!draft[key];
+      else input.value = draft[key] ?? '';
+      if (key === 'name') input.required = true;
+      input.setAttribute('aria-label', label);
+      inputs.set(key, input);
+      row.append(input);
+      form.append(row);
+    }
+    const controls = element('div', 'materialActions');
+    const save = action('Запази', () => {});
+    save.type = 'submit';
+    save.onclick = null;
+    const initialInputs = () => JSON.stringify([...inputs].map(([key, input]) =>
+      [key, input.type === 'checkbox' ? input.checked : input.value]));
+    const startingInputs = initialInputs();
+    const guardedClose = async () => {
+      if (initialInputs() !== startingInputs &&
+          !await nedConfirmAction('Има незаписани промени. Да ги отхвърля ли?')) return;
+      popup.close();
+    };
+    const cancel = action('Отказ', () => { void guardedClose(); });
+    popup.addEventListener('cancel', event => {
+      event.preventDefault();
+      void guardedClose();
+    });
+    controls.append(cancel, save);
+    form.prepend(title);
+    form.append(controls);
+    form.onsubmit = event => {
+      event.preventDefault();
+      for (const [key, , kind] of section.fields) {
+        const input = inputs.get(key);
+        if (kind === 'checkbox') {
+          if (input.checked || Object.hasOwn(draft, key)) draft[key] = input.checked;
+          continue;
+        }
+        if (input.value.trim() === '') {
+          delete draft[key];
+          continue;
+        }
+        if (kind === 'number') {
+          const number = Number(input.value);
+          if (!Number.isFinite(number) || number < 0) { input.setCustomValidity('Невалидна стойност'); input.reportValidity(); return; }
+          draft[key] = number;
+        } else draft[key] = input.value.trim();
+      }
+      if (!draft.name?.trim()) return;
+      if (index === null) catalog[section.key].push(draft);
+      else catalog[section.key][index] = draft;
+      popup.close();
+      render();
+      announce();
+    };
+    popup.append(form);
+    popup.onclose = () => popup.remove();
+    document.body.append(popup);
+    popup.showModal();
+  }
+
+  function render() {
+    container.replaceChildren();
+    if (!selected) {
+      container.append(element('p', 'pilotMaterialEditorHint', 'Избери материална база, за да видиш и редактираш материалите.'));
+      return;
+    }
+    container.append(element('h3', 'pilotMaterialPreviewTitle', selected.name));
+    container.append(element('p', 'pilotMaterialEditorHint',
+      'Редактираш избраната материална база. Материалите на вече записаните проекти не се променят. Използвай „Запази базата“ за запис в облака.'));
+    for (const section of sections) {
+      const block = element('section', 'pilotMaterialPreviewSection');
+      block.append(element('h3', '', section.title));
+      const scroll = element('div', 'pilotMaterialTableScroll');
+      const table = element('table', 'pilotMaterialPreviewTable');
+      const headers = table.createTHead().insertRow();
+      for (const label of ['Материал', 'Размери', 'Цени', 'Действия']) headers.append(element('th', '', label));
+      const body = table.createTBody();
+      catalog[section.key].forEach((item, index) => {
+        const row = body.insertRow();
+        const [size, price] = summary(section, item);
+        row.insertCell().textContent = item.name || 'Без име';
+        row.insertCell().textContent = size;
+        row.insertCell().textContent = String(price);
+        const commands = row.insertCell();
+        commands.className = 'pilotMaterialRowActions';
+        commands.append(action('Промени', () => openForm(section, index)),
+          action('Изтрий', async () => {
+            if (!await nedConfirmDelete('Да изтрия ли материала „' + (item.name || 'Без име') + '“ от тази база?')) return;
+            catalog[section.key].splice(index, 1);
+            render();
+            announce();
+          }));
+      });
+      if (!catalog[section.key].length) {
+        const empty = body.insertRow().insertCell();
+        empty.colSpan = 4;
+        empty.textContent = 'Няма материали.';
+      }
+      scroll.append(table);
+      block.append(scroll, action('Нов материал', () => openForm(section, null)));
+      container.append(block);
+    }
+    const services = element('section', 'pilotMaterialPreviewSection');
+    services.append(element('h3', '', 'Услуги'));
+    for (const [key, value] of Object.entries(catalog.servicePrices)) {
+      const label = element('label', 'pilotMaterialServiceField');
+      label.append(element('span', '', key));
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.step = 'any';
+      input.value = value ?? '';
+      input.setAttribute('aria-label', 'Цена за ' + key);
+      input.onchange = () => {
+        if (input.value === '') return;
+        const number = Number(input.value);
+        if (!Number.isFinite(number) || number < 0) { input.value = value; return; }
+        catalog.servicePrices[key] = number;
+        announce();
+      };
+      label.append(input);
+      services.append(label);
+    }
+    container.append(services);
+  }
+
+  return {
+    setBase(base) {
+      selected = base ? {id: base.id, name: base.name} : null;
+      catalog = base ? cloneCatalog(base.data) : null;
+      baseline = catalog ? JSON.stringify(catalog) : null;
+      render();
+      announce();
+    },
+    getData() { return catalog ? structuredClone(catalog) : null; },
+    isDirty: dirty,
+    markSaved(base) {
+      this.setBase(base);
+    },
+    get id() { return selected?.id || ''; },
+  };
+}
