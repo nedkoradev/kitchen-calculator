@@ -253,6 +253,12 @@ const path = require('node:path');
     }
     await libraryWindow.getByLabel('Папка').selectOption('system:projects');
     await libraryWindow.getByRole('button', {name: 'Отвори проект · Контролна кухня'}).waitFor();
+    const projectActions = libraryWindow.getByRole('group', {name: 'Действия за Контролна кухня'});
+    for (const name of ['Преименувай', 'Премести', 'Копирай', 'Изтрий']) {
+      assert.equal(await projectActions.getByRole('button', {name, exact: true}).isVisible(), true);
+    }
+    assert.equal(await projectActions.getByRole('button', {name: 'Премести'}).isDisabled(), true);
+    assert.equal(await projectActions.getByRole('button', {name: 'Копирай'}).isEnabled(), true);
     await page.keyboard.press('Escape');
     await libraryWindow.waitFor({state: 'hidden'});
     await backend.db.doc('workspace_v3/stage-pilot/documents/' + model.id).delete();
