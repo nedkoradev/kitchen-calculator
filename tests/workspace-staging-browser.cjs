@@ -117,6 +117,7 @@ const path = require('node:path');
     const stageTop = (await page.locator('main').boundingBox()).y;
     const tools = await page.locator('#shellTools').boundingBox();
     assert.ok(Math.abs(stageTop - (tools.y + tools.height)) <= 2, 'The desktop scene starts directly below the tools');
+    assert.equal(await page.locator('#projectNewCabinet').getAttribute('title'), 'Нов шкаф');
     await page.locator('#projectAddHorizontal').click();
     await status.getByText(/Незаписани промени/).waitFor({timeout: 5000});
     const single = await draftDocument(1);
