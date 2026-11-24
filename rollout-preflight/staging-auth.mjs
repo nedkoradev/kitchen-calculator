@@ -14,6 +14,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
       ? location.protocol === 'https:' && location.origin === pilot.origin
       : location.hostname === '127.0.0.1' && /^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(authOrigin);
   if (!allowedOrigin) throw new Error('Unexpected authentication origin');
+  document.getElementById('projectNewCabinet').title = 'Нов шкаф';
   const app = window.firebase.initializeApp(pilot
     ? {apiKey: pilot.apiKey, authDomain: pilot.authDomain, projectId: pilot.localGoogle ? pilot.projectId : 'kitchen-designer-9d437'}
     : {apiKey: 'demo-emulator-key', authDomain: 'demo-nediq-v3-release.firebaseapp.com', projectId: 'demo-nediq-v3-release'},
