@@ -104,8 +104,11 @@ export function createWorkspaceService({db, verifyToken, newId = () => crypto.ra
       return db.runTransaction(async tx => {
         if (!['owner', 'editor'].includes(await role(tx))) throw failure('permission-denied');
         const previous = (await tx.get(ref)).data();
-        if (previous?.type !== 'model') throw failure('not-found');
+        if (!['model', 'project'].includes(previous?.type)) throw failure('not-found');
         if (previous.revision !== revision) throw failure('revision-conflict');
+        if (previous.type === 'project' && action === 'move') throw failure('protected-folder');
+        if (previous.type === 'project' && action === 'copy' &&
+            folderId !== undefined && folderId !== PROJECTS_FOLDER.id) throw failure('protected-folder');
         const names = owner.collection('names');
         if (action === 'delete') {
           const nameRef = names.doc(previous.nameKey);
@@ -115,8 +118,9 @@ export function createWorkspaceService({db, verifyToken, newId = () => crypto.ra
           if (claim) tx.delete(nameRef);
           return null;
         }
-        const placement = action === 'move' || action === 'copy' ? identifier(folderId) : previous.folderId;
-        if (action === 'move' || action === 'copy') {
+        const placement = previous.type === 'project' ? PROJECTS_FOLDER.id :
+          action === 'move' || action === 'copy' ? identifier(folderId) : previous.folderId;
+        if (previous.type === 'model' && (action === 'move' || action === 'copy')) {
           const library = (await tx.get(manifest)).data() ?? blankLibrary();
           if (placement === PROJECTS_FOLDER.id || !library.folders.some(folder => folder.id === placement)) {
             throw failure('folder-not-found');
