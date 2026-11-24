@@ -40,6 +40,7 @@ jobs:
       )
     uses: ./.github/workflows/pr-checks.yml
     with:
+      release_lane: production
       release_sha: ${{ github.sha }}
 
   candidate:

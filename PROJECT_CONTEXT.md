@@ -8,6 +8,7 @@
 - Хранилище: `nedkoradev/kitchen-calculator`; основен клон `main`.
 - Публичен адрес: https://nediq.eu/ ; GitHub Pages: https://nedkoradev.github.io/kitchen-calculator/.
 - Проверка за тази задача: `origin/main` е `608a7c5` (v3 **3.0.7**, v2 **2.96**). Предложената нова версия за тази PR е v3.0.8; не публикувай без отделен production check и сверяване на SHA.
+- PR CI, Pilot и production използват отделни concurrency групи. Само остарял PR CI се отменя при нов commit. След сливане всеки deployment проверява точния SHA, а Docker smoke тестовете се изпълняват върху образа в неговия deployment job.
 - Автоматичното публикуване на v3 се управлява от `NEDIQ_V3_AUTO_DEPLOY`. Не стартирай deployment workflow ръчно. След merge и успешен GitHub check проследи автоматичното изпълнение и public `release.json`.
 - Версията се определя от `_data/version.json`, видимото заглавие и `release.json` след Jekyll build; не предполагай версия само по този документ.
 - Потвърдена публикация преди въвеждането на двата режима: **v2.90**, слят PR #88, commit `82548ab`. При започване на задача сверявай актуалните `main` и `release.json`.
