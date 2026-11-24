@@ -89,8 +89,8 @@ dialog.pilotWindow::backdrop { background: rgba(21, 45, 71, .14); }
 .pilotMaterialBaseStatus.pilotError { color: #8b2f40; }
 .pilotMaterialBasePreview {
   grid-column: 1 / -1;
-  max-height: 260px;
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
   display: grid;
   gap: 8px;
 }
@@ -118,7 +118,6 @@ dialog.pilotWindow::backdrop { background: rgba(21, 45, 71, .14); }
   .pilotMaterialBaseField select { min-height: 44px; }
   .pilotMaterialBaseActions { justify-content: stretch; }
   .pilotMaterialBaseActions button { flex: 1 1 145px; min-height: 44px; }
-  .pilotMaterialBasePreview { max-height: 220px; }
   .pilotMaterialPreviewTable { min-width: 620px; }
 }
 .pilotWindowBody .settingsSections > section { margin-block: 10px; }
@@ -291,4 +290,23 @@ body.ned-shell #shellTools #projectNewCabinet:hover:not(:disabled) {
 .libraryModelActions button { min-height: 44px; }
 @media (max-width: 620px) {
   .libraryModelRow > button { flex-basis: 100%; }
+}
+
+/* v3 cloud base editor: one table per category, no second vertical scroll. */
+.pilotMaterialTableScroll { max-width: 100%; overflow-x: auto; margin: 8px 0; }
+.pilotMaterialPreviewSection > button { min-height: 36px; margin-top: 4px; }
+.pilotMaterialRowActions { white-space: nowrap; }
+.pilotMaterialRowActions button { min-height: 32px; margin: 2px; }
+.pilotMaterialEditorHint { margin: 0 0 4px; color: #50637a; }
+.pilotMaterialEditorDialog { max-width: min(560px, 94vw); max-height: 85dvh; overflow-y: auto; padding: 18px; }
+.pilotMaterialEditorForm { display: grid; gap: 10px; }
+.pilotMaterialEditorField { display: grid; grid-template-columns: minmax(0, 1fr) minmax(140px, 1fr); align-items: center; gap: 8px; }
+.pilotMaterialEditorField input { min-width: 0; width: 100%; box-sizing: border-box; }
+.pilotMaterialEditorField input[type="checkbox"] { width: 20px; }
+.pilotMaterialServiceField { display: flex; gap: 12px; align-items: center; margin: 5px 0; }
+.pilotMaterialServiceField span { min-width: 160px; }
+.pilotMaterialServiceField input { max-width: 180px; }
+@media(max-width: 620px) {
+  .pilotMaterialEditorField { grid-template-columns: minmax(0, 1fr); }
+  .pilotMaterialServiceField { flex-wrap: wrap; }
 }
