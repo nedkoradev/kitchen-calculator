@@ -800,13 +800,11 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
             const open = button(item.type === 'project' ? 'Отвори проект · ' + item.name : item.name, () => done({item}));
             if (item.type !== 'model' || !store.changeModel) return open;
             const row = documentElement('div', 'libraryModelRow');
-            const actions = documentElement('details', 'libraryModelActions');
-            const toggle = document.createElement('summary');
-            toggle.textContent = '⋯';
-            toggle.setAttribute('aria-label', 'Действия за ' + item.name);
-            actions.append(toggle);
-            for (const [label, action] of [['Преименувай', 'rename'], ['Премести в папка', 'move'],
-              ['Копирай в папка', 'copy'], ['Изтрий', 'delete']]) {
+            const actions = documentElement('div', 'libraryModelActions');
+            actions.setAttribute('role', 'group');
+            actions.setAttribute('aria-label', 'Действия за ' + item.name);
+            for (const [label, action] of [['Преименувай', 'rename'], ['Премести', 'move'],
+              ['Копирай', 'copy'], ['Изтрий', 'delete']]) {
               const control = button(label, () => done({modelChange: {item, action}, folderId: select.value}));
               if (action === 'move' || action === 'copy') {
                 control.disabled = !folders.some(folder => folder.id !== PROJECTS_FOLDER.id && folder.id !== item.folderId);

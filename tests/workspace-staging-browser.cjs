@@ -11,7 +11,8 @@ const path = require('node:path');
   let stage, browser;
   try {
     await backend.identity('stage-pilot');
-    const [fixture] = fixtureDocuments();
+    const [fixture, model] = fixtureDocuments();
+    const {folders} = await import('./fixtures/workspace-real-store.mjs');
     await backend.db.doc('workspace_v3/stage-pilot/documents/' + fixture.id).set(fixture);
     await backend.db.doc('workspace_v3/stage-pilot/names/' + fixture.nameKey).set({id: fixture.id});
     await Promise.all([
@@ -241,11 +242,21 @@ const path = require('node:path');
     await reports.locator('#projectCosts tbody tr').first().waitFor();
     await page.keyboard.press('Escape');
     await reports.waitFor({state: 'hidden'});
+    await backend.db.doc('workspace_v3/stage-pilot/settings/folders').set({folders, revision: 1});
+    await backend.db.doc('workspace_v3/stage-pilot/documents/' + model.id).set(model);
     await openLibrary();
     const libraryWindow = page.getByRole('dialog', {name: 'Обща библиотека', exact: true});
+    await libraryWindow.getByLabel('Папка').selectOption('shelves');
+    const modelActions = libraryWindow.getByRole('group', {name: 'Действия за ' + model.name});
+    for (const name of ['Преименувай', 'Премести', 'Копирай', 'Изтрий']) {
+      assert.equal(await modelActions.getByRole('button', {name, exact: true}).isVisible(), true);
+    }
+    await libraryWindow.getByLabel('Папка').selectOption('system:projects');
     await libraryWindow.getByRole('button', {name: 'Отвори проект · Контролна кухня'}).waitFor();
     await page.keyboard.press('Escape');
     await libraryWindow.waitFor({state: 'hidden'});
+    await backend.db.doc('workspace_v3/stage-pilot/documents/' + model.id).delete();
+    await backend.db.doc('workspace_v3/stage-pilot/settings/folders').delete();
     await assertScene();
     assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead'].includes(operation)));
 

@@ -272,21 +272,23 @@ body.ned-shell #shellTools #projectNewCabinet:hover:not(:disabled) {
 }
 
 .libraryModelRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.libraryModelRow > button {
+  flex: 1 1 9rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+.libraryModelActions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
-.libraryModelRow > button { min-width: 0; overflow-wrap: anywhere; }
-.libraryModelActions summary {
-  display: grid;
-  place-items: center;
-  min-width: 44px;
-  min-height: 44px;
-  list-style: none;
-  cursor: pointer;
-  border: 1px solid #b5c7dc;
-  border-radius: 4px;
-  background: #fff;
+.libraryModelActions button { min-height: 44px; }
+@media (max-width: 620px) {
+  .libraryModelRow > button { flex-basis: 100%; }
 }
-.libraryModelActions[open] button { display: block; width: 100%; margin-top: 4px; }
