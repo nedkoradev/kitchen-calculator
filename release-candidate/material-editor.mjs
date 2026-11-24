@@ -1,4 +1,4 @@
-import {nedConfirmDelete} from '../ui-messages.mjs';
+import {nedConfirmAction, nedConfirmDelete} from '../ui-messages.mjs';
 
 const sections = [
   {key: 'pdcMaterials', title: 'ПДЧ материали', fields: [
@@ -99,7 +99,19 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
     const save = action('Запази', () => {});
     save.type = 'submit';
     save.onclick = null;
-    const cancel = action('Отказ', () => popup.close());
+    const initialInputs = () => JSON.stringify([...inputs].map(([key, input]) =>
+      [key, input.type === 'checkbox' ? input.checked : input.value]));
+    const startingInputs = initialInputs();
+    const guardedClose = async () => {
+      if (initialInputs() !== startingInputs &&
+          !await nedConfirmAction('Има незаписани промени. Да ги отхвърля ли?')) return;
+      popup.close();
+    };
+    const cancel = action('Отказ', () => { void guardedClose(); });
+    popup.addEventListener('cancel', event => {
+      event.preventDefault();
+      void guardedClose();
+    });
     controls.append(cancel, save);
     form.prepend(title);
     form.append(controls);
