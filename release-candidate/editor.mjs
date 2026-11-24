@@ -312,7 +312,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     }
   }
 
-  async function activateMaterialBase(id, automatic = false) {
+  async function activateMaterialBase(id, automatic = false, forBaseEditor = false) {
     const scope = materialScope();
     const base = await store.materialBaseRead({scope, id});
     if (!sameMaterialScope(scope) && bridge.state.scope) throw Error('Профилът или базата са променени.');
@@ -323,7 +323,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     panels?.showMaterialBasePreview?.(base);
     if (!automatic) await setMaterialDefault(base.id);
     const savedDocument = !!bridge.state.workspace?.document?.id;
-    if (!savedDocument || automatic) {
+    if (!forBaseEditor && (!savedDocument || automatic)) {
       suppressMaterialBaseSave = true;
       try {
         emitMaterial('material-loaded', {
