@@ -26,7 +26,8 @@ const path = require('node:path');
       }),
       backend.db.doc('users/stage-pilot/materials/base_b').set({
         name: 'База B',
-        pdcMaterials: [{name: 'B плоскост', color: '#ddeeff', fullW: 2500, fullH: 1830, fullPrice: 55}],
+        pdcMaterials: [{name: 'B плоскост', color: '#ddeeff', url: 'https://supplier.example.test/b-board',
+          textureUrl: 'materials/textures/staging-decor.png', fullW: 2500, fullH: 1830, fullPrice: 55}],
         edgeMaterials: [{name: 'B кант', color: '#ffffff', price: 2}],
         backMaterials: [{name: 'B HDF', thick: 4, fullW: 2500, fullH: 1830, fullPrice: 28}],
         worktops: [{name: 'B плот', fullW: 3100, depth: 620, fullPrice: 110}],
@@ -73,6 +74,14 @@ const path = require('node:path');
       await catalogGate;
       await route.continue();
     });
+    const photoBytes = fs.readFileSync(path.join(__dirname, 'fixtures/grain.png'));
+    await page.route('**/materials/textures/staging-decor.png*', route =>
+      route.fulfill({status: 200, contentType: 'image/png', body: photoBytes}));
+    await page.route('https://api.github.com/repos/nedkoradev/kitchen-calculator/contents/materials/textures', route =>
+      route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify([{
+        type: 'file', name: 'staging-decor.png',
+        download_url: stage.origin + '/materials/textures/staging-decor.png',
+      }])}));
     await page.goto(stage.origin + '/', {waitUntil: 'domcontentloaded'});
     const panel = page.getByRole('region', {name: 'Вход в локалния преглед'});
     await panel.getByText('Локален тестов вход').waitFor();
@@ -441,20 +450,62 @@ const path = require('node:path');
     assert.equal(await materials.locator('.pilotMaterialBasePreview').locator('table').count(), 4);
     const selectedBaseTable = materials.locator('.pilotMaterialPreviewSection').first();
     assert.equal(await selectedBaseTable.getByRole('button', {name: 'Промени'}).count(), 1);
+    const supplier = selectedBaseTable.locator('a.pilotMaterialSupplierLink');
+    assert.equal(await supplier.getAttribute('href'), 'https://supplier.example.test/b-board');
+    assert.equal(await supplier.getAttribute('target'), '_blank');
+    assert.equal(await supplier.getAttribute('rel'), 'noopener noreferrer');
+    const preview = selectedBaseTable.locator('img.pilotMaterialTextureThumb');
+    await preview.waitFor();
+    await page.waitForFunction(() => document.querySelector('.pilotMaterialTextureThumb')?.naturalWidth > 0);
     await selectedBaseTable.getByRole('button', {name: 'Промени'}).click();
     const baseEditorDialog = page.getByRole('dialog', {name: 'Промени материал'});
+    const colorPicker = baseEditorDialog.locator('input[type="color"][aria-label="Цвят"]');
+    assert.equal(await colorPicker.isVisible(), true);
+    assert.equal(await baseEditorDialog.getByRole('button', {name: 'Избери цвят'}).isVisible(), true);
+    assert.equal(await baseEditorDialog.getByRole('button', {name: 'Избери снимка'}).isVisible(), true);
+    assert.equal(await baseEditorDialog.getByRole('button', {name: 'Снимка от компютъра'}).isVisible(), true);
+    assert.equal(await baseEditorDialog.locator('#materialPhotoUpload').getAttribute('type'), 'file');
+    await colorPicker.fill('#2468ac');
     await baseEditorDialog.getByRole('textbox', {name: 'Материал'}).fill('B плоскост редакция');
     await baseEditorDialog.getByRole('button', {name: 'Запази', exact: true}).click();
     await baseEditorDialog.waitFor({state: 'hidden'});
     assert.match(await selectedBaseTable.textContent(), /B плоскост редакция/);
-    assert.equal((await backend.db.doc('users/stage-pilot/materials/base_b').get()).data().pdcMaterials[0].name,
-      'B плоскост', 'Cloud base is unchanged until explicit save');
+    assert.equal(await selectedBaseTable.locator('img.pilotMaterialTextureThumb').count(), 0,
+      'Choosing a color replaces the photo preview with the color swatch');
+    assert.equal(await selectedBaseTable.locator('.pilotMaterialSwatch').count(), 1);
+    const beforeSave = (await backend.db.doc('users/stage-pilot/materials/base_b').get()).data().pdcMaterials[0];
+    assert.equal(beforeSave.name, 'B плоскост', 'Cloud base is unchanged until explicit save');
+    assert.equal(beforeSave.color, '#ddeeff');
+    assert.equal(beforeSave.textureUrl, 'materials/textures/staging-decor.png');
     assert.deepEqual((await backend.db.doc('workspace_v3/stage-pilot/documents/' + fixture.id).get()).data().materials,
       fixture.materials, 'Editing a base must not change the saved document');
     await materials.getByRole('button', {name: 'Запази базата'}).click();
     await page.waitForFunction(() => document.querySelector('.pilotMaterialBaseStatus')?.textContent.includes('е записана'));
-    assert.equal((await backend.db.doc('users/stage-pilot/materials/base_b').get()).data().pdcMaterials[0].name,
-      'B плоскост редакция');
+    let savedMaterial = (await backend.db.doc('users/stage-pilot/materials/base_b').get()).data().pdcMaterials[0];
+    assert.equal(savedMaterial.name, 'B плоскост редакция');
+    assert.equal(savedMaterial.color, '#2468ac');
+    assert.equal(savedMaterial.textureUrl, undefined);
+    assert.equal(savedMaterial.url, 'https://supplier.example.test/b-board');
+    assert.deepEqual((await backend.db.doc('workspace_v3/stage-pilot/documents/' + fixture.id).get()).data().materials,
+      fixture.materials);
+    // Choose an existing GitHub photo through the shared v2 photo picker.
+    await selectedBaseTable.getByRole('button', {name: 'Промени'}).click();
+    const photoDialog = page.getByRole('dialog', {name: 'Промени материал'});
+    await photoDialog.getByRole('button', {name: 'Избери снимка'}).click();
+    const gallery = page.locator('dialog.materialEditDialog').filter({hasText: 'Избери снимка за фладер'});
+    await gallery.getByRole('button', {name: 'staging-decor.png'}).click();
+    await page.waitForFunction(() => document.querySelector('#materialPhotoStatus')?.textContent.includes('Снимката е проверена'));
+    await photoDialog.getByRole('button', {name: 'Запази', exact: true}).click();
+    await photoDialog.waitFor({state: 'hidden'});
+    await selectedBaseTable.locator('img.pilotMaterialTextureThumb').waitFor();
+    assert.equal((await backend.db.doc('users/stage-pilot/materials/base_b').get()).data().pdcMaterials[0].textureUrl,
+      undefined, 'Choosing a photo does not save the cloud catalog until explicitly requested');
+    await materials.getByRole('button', {name: 'Запази базата'}).click();
+    await page.waitForFunction(() => document.querySelector('.pilotMaterialBaseStatus')?.textContent.includes('е записана'));
+    savedMaterial = (await backend.db.doc('users/stage-pilot/materials/base_b').get()).data().pdcMaterials[0];
+    assert.equal(savedMaterial.textureUrl, 'materials/textures/staging-decor.png');
+    assert.equal(savedMaterial.color, '#2468ac');
+    assert.ok(!JSON.stringify(savedMaterial).includes('blob:'));
     assert.deepEqual((await backend.db.doc('workspace_v3/stage-pilot/documents/' + fixture.id).get()).data().materials,
       fixture.materials);
     await materials.getByLabel('Активна материална база').selectOption('base_a');
