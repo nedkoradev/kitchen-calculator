@@ -7,8 +7,27 @@ import {join} from 'node:path';
 import {composeRules, start, end} from '../rollout-preflight/composite-rules.mjs';
 import {protectCopy, verifyCopy, writeNewLocalFile} from '../rollout-preflight/archive.mjs';
 import {buildLocalPreview, sheetJsPath} from '../rollout-preflight/staging-html.mjs';
+import {createGoogleAccountChoiceProvider} from '../rollout-preflight/google-account-choice.mjs';
 
 const repositoryFile = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
+
+test('v3 Google popup requests account choice on every explicit login', async () => {
+  const constructed = [];
+  class FakeGoogleAuthProvider {
+    constructor() { constructed.push(this); this.parameters = []; }
+    setCustomParameters(parameters) { this.parameters.push(structuredClone(parameters)); }
+  }
+  const first = createGoogleAccountChoiceProvider(FakeGoogleAuthProvider);
+  const second = createGoogleAccountChoiceProvider(FakeGoogleAuthProvider);
+  assert.notEqual(first, second, 'A fresh Google provider is used for every login');
+  assert.deepEqual(constructed, [first, second]);
+  assert.deepEqual(first.parameters, [{prompt: 'select_account'}]);
+  assert.deepEqual(second.parameters, [{prompt: 'select_account'}]);
+  const auth = await repositoryFile('rollout-preflight/staging-auth.mjs');
+  assert.match(auth, /auth\.signInWithPopup\(\s*createGoogleAccountChoiceProvider\(window\.firebase\.auth\.GoogleAuthProvider\)/);
+  assert.match(auth, /auth\.signOut\(\)/, 'Logout remains explicit and unchanged');
+  assert.doesNotMatch(auth, /localStorage\.clear\(|sessionStorage\.clear\(/);
+});
 
 test('composite rules retain the exact legacy rules and reject changes at the insertion boundary', async () => {
   const legacy = await repositoryFile('firestore.rules');
