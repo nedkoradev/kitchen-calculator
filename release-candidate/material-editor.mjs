@@ -95,6 +95,10 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
     // Reuse the verified v2 gallery, GitHub upload guidance and photo validation.
     // A local file is only a preview: no blob/data URL is ever saved in the catalog.
     const readPhoto = installMaterialPhotoEditor(appearance, original, popup);
+    // The shared picker can select repository images; expose its validated
+    // local-file workflow as well, without uploading or persisting raw bytes.
+    appearance.querySelector('.materialActions')?.append(action('Снимка от компютъра',
+      () => appearance.querySelector('#materialPhotoUpload')?.click()));
     const inputs = new Map();
     for (const [key, label, kind] of section.fields) {
       if (key === 'textureUrl') continue; // The shared photo chooser owns this field.
