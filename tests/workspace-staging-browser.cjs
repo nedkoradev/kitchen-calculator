@@ -112,6 +112,13 @@ const path = require('node:path');
       releaseCatalog();
     }
     await panel.getByText('Профилът е удостоверен').waitFor();
+    const welcome = page.getByRole('dialog', {name: 'Добре дошли в NED-IQ'});
+    await welcome.waitFor();
+    assert.deepEqual(await welcome.locator('h3').allTextContents(),
+      ['Работна база', 'Проектиране', 'Библиотека', 'Свойства и материали', 'Справки']);
+    await welcome.getByRole('checkbox', {name: 'Показвай при стартиране'}).uncheck();
+    await welcome.getByRole('button', {name: 'Започни работа'}).click();
+    await welcome.waitFor({state: 'hidden'});
     assert.equal(await page.locator('#shellTools').isVisible(), true,
       'The authenticated v3 tool shell must become visible');
 
