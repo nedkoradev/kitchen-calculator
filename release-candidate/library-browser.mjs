@@ -1,5 +1,6 @@
 import {decorateAction} from '../icons.mjs';
 import {PROJECTS_FOLDER} from '../document-format/model.mjs';
+import {cabinetPreviewSvg} from './library-preview.mjs';
 
 const OTHER = '__other__'; // UI-only: never persisted as a folder ID.
 const folderName = folder => folder.name === 'Импорт от v2.95' ? 'За подреждане' : folder.name;
@@ -18,18 +19,39 @@ function action(label, callback, icon) {
 }
 
 /**
- * v3-only explorer view. The list endpoint exposes metadata, not thumbnail
- * images: use the existing cabinet/room pictograms, never fabricated previews.
- * The caller owns all mutations, authorization, insertion and cloud refresh.
+ * The list endpoint exposes metadata only. Authenticated readModel/readProject
+ * requests are made on demand to draw actual v2.96-style panel previews.
+ * The caller owns mutations, authorization, insertion and cloud refresh.
  */
 export function renderPilotLibrary(panel, {folders, documents, selectedFolderId = null,
-  notice, canChangeFolder = false, canChangeModel = false, onChoose}) {
+  notice, canChangeFolder = false, canChangeModel = false, onChoose, loadPreview}) {
   const folderById = new Map(folders.map(folder => [folder.id, folder]));
   const unassigned = documents.some(item => item.type === 'model' && item.folderId === null);
   let selected = selectedFolderId === '' && unassigned ? OTHER :
     folderById.has(selectedFolderId) ? selectedFolderId : PROJECTS_FOLDER.id;
   let context = null;
   let contextTrigger = null;
+  const previewCache = new Map();
+  const previewQueue = [];
+  let previewReads = 0;
+  function pumpPreviews() {
+    while (previewReads < 3 && previewQueue.length) {
+      const {item, resolve} = previewQueue.shift();
+      previewReads++;
+      Promise.resolve().then(() => loadPreview(item))
+        .then(document => Array.isArray(document?.parts) ? cabinetPreviewSvg(document.parts) : null)
+        .catch(() => null) // Keep the standard icon when a document is unavailable.
+        .then(markup => { resolve(markup); previewReads--; pumpPreviews(); });
+    }
+  }
+  function previewFor(item) {
+    const key = item.type + ':' + item.id + ':' + item.revision;
+    if (!previewCache.has(key)) previewCache.set(key, new Promise(resolve => {
+      previewQueue.push({item, resolve});
+      pumpPreviews();
+    }));
+    return previewCache.get(key);
+  }
 
   if (notice) {
     const alert = node('p', 'pilotLibraryNotice', notice);
@@ -116,6 +138,16 @@ export function renderPilotLibrary(panel, {folders, documents, selectedFolderId 
     open.classList.add('pilotLibraryTile');
     open.setAttribute('aria-label', label);
     open.title = isProject ? 'Отвори проекта' : 'Добави модела към текущата сцена';
+    if (typeof loadPreview === 'function') {
+      void previewFor(item).then(markup => {
+        if (!markup || !open.isConnected) return;
+        const thumbnail = node('span', 'pilotLibraryThumbnail');
+        thumbnail.setAttribute('aria-hidden', 'true');
+        thumbnail.innerHTML = markup; // Only locally generated SVG from numeric panel geometry.
+        open.querySelector('.actionSvg')?.remove();
+        open.prepend(thumbnail);
+      });
+    }
     const more = action('⋯', () => {
       if (context && contextTrigger === open) closeContext();
       else showContext(item, open);
