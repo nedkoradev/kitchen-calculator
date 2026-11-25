@@ -275,7 +275,10 @@ const path = require('node:path');
     await libraryWindow.getByRole('button', {name: 'Рафтове', exact: true}).click();
     const insert = libraryWindow.getByRole('button', {name: 'Добави модел · ' + model.name});
     await insert.waitFor();
-    assert.equal(await insert.locator('svg.actionSvg').count(), 1);
+    await insert.locator('.pilotLibraryThumbnail svg').waitFor();
+    assert.ok(await insert.locator('.pilotLibraryThumbnail polygon').count() > 0,
+      'Library should show the actual saved model panels, not a generic cabinet icon');
+    assert.equal(await insert.locator('svg.actionSvg').count(), 0);
     assert.equal(await libraryWindow.getByRole('button', {name: 'Действия за ' + model.name}).isVisible(), true);
     await insert.click({button: 'right'});
     const modelActions = libraryWindow.getByRole('menu', {name: 'Действия за ' + model.name});
@@ -289,6 +292,9 @@ const path = require('node:path');
     await libraryWindow.getByRole('button', {name: 'Проекти', exact: true}).click();
     const projectTile = libraryWindow.getByRole('button', {name: 'Отвори проект · Контролна кухня'});
     await projectTile.waitFor();
+    await projectTile.locator('.pilotLibraryThumbnail svg').waitFor();
+    assert.ok(await projectTile.locator('.pilotLibraryThumbnail polygon').count() > 0,
+      'Project thumbnail should render the saved scene geometry');
     await projectTile.click({button: 'right'});
     const projectActions = libraryWindow.getByRole('menu', {name: 'Действия за Контролна кухня'});
     for (const name of ['Преименувай', 'Премести в папка', 'Копирай в папка', 'Изтрий']) {
