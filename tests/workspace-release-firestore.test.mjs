@@ -183,7 +183,7 @@ test('pilot exporter reads one legacy subtree and applies a reviewed migration e
   } finally { await backend.close(); }
 });
 
-test('public v3 reads personal and granted v2 sources while keeping writes in the signed-in user’s base', async () => {
+test('public v3 shares library and materials using only current verified grants', async () => {
   const {createPublicDispatch} = await import('../release-candidate/public-access.mjs');
   const {PROJECTS_FOLDER} = await import('../document-format/model.mjs');
   const {toEditorSnapshot} = await import('../workspace-ui/scene-adapter.mjs');
@@ -301,7 +301,22 @@ test('public v3 reads personal and granted v2 sources while keeping writes in th
     for (const uid of ['password', 'unverified', 'revoked', 'outsider']) {
       await assert.rejects(call(uid, 'legacyList'), {code: 'permission-denied'});
     }
-    await assert.rejects(call('editor', 'pending', {scope: {ownerUid: owner, actorUid: 'editor'}}), {code: 'permission-denied'});
+    const shared = (actor, operation, request) => call(actor, operation,
+      {...request, scope: {ownerUid: owner, actorUid: actor}});
+    assert.equal(await shared('editor', 'pending'), null);
+    assert.equal((await shared('editor', 'list')).documents.find(doc => doc.id === storedModel.id).name, storedModel.name);
+    assert.equal((await shared('viewer', 'materialBaseRead', {id: 'base_a'})).data.pdcMaterials[0].name, 'ПДЧ A');
+    const rename = {action: 'rename', id: storedModel.id, revision: storedModel.revision, name: 'Редактиран шкаф'};
+    await assert.rejects(shared('viewer', 'changeModel', rename), {code: 'permission-denied'});
+    await shared('editor', 'changeModel', rename);
+    assert.equal((await shared('editor', 'readModel', {id: storedModel.id})).name, rename.name);
+    await assert.rejects(shared('editor', 'changeModel', rename), {code: 'revision-conflict'});
+    const renameBase = {id: 'base_b', name: 'Споделена база B'};
+    await assert.rejects(shared('viewer', 'materialBaseRename', renameBase), {code: 'permission-denied'});
+    await shared('editor', 'materialBaseRename', renameBase);
+    assert.equal((await call(owner, 'materialBaseRead', {id: 'base_b'})).name, renameBase.name);
+    await assert.rejects(shared('outsider', 'list'), {code: 'permission-denied'});
+    await assert.rejects(shared('outsider', 'materialBases'), {code: 'permission-denied'});
     assert.equal(await call('editor', 'pending'), null);
     const context = createWorkspaceContext();
     context.openLegacyProject(await call('editor', 'legacyRead', {id: 'legacy-project', type: 'project'}));
@@ -311,6 +326,7 @@ test('public v3 reads personal and granted v2 sources while keeping writes in th
     await backend.db.doc('users/' + owner + '/access_grants/viewer@example.test').delete();
     assert.deepEqual((await call('viewer', 'legacyBases')).map(base => base.id), ['viewer']);
     await assert.rejects(call('viewer', 'legacyRead', {id: 'legacy-project', type: 'project'}), {code: 'permission-denied'});
+    await assert.rejects(shared('viewer', 'list'), {code: 'permission-denied'});
     assert.deepEqual((await projectRef.get()).data(), project);
     assert.deepEqual((await modelRef.get()).data(), model);
   } finally { await backend.close(); }

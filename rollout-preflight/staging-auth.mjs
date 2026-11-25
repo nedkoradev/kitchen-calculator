@@ -147,6 +147,32 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
     status.textContent = pilot?.public ? user.email + ' · Собственик' : 'Профилът е удостоверен';
     status.title = status.textContent;
     if (pilot?.public) panel.classList.add('publicProfile');
+    if (pilot?.public && !pilot.localGoogle) {
+      const choose = document.createElement('button');
+      choose.type = 'button';
+      choose.textContent = 'Избор на база';
+      panel.insertBefore(choose, logout);
+      async function selectBase(automatic = false) {
+        choose.disabled = true;
+        try {
+          const bases = await store.legacyBases({scope});
+          if (automatic && !bases.some(base => base.id !== scope.actorUid)) return;
+          const base = await integration.chooseWorkspaceBase(bases, user.email);
+          if (!base) return;
+          const labels = {owner: 'Собственик', editor: 'Редактор', viewer: 'Наблюдател'};
+          status.textContent = user.email + ' · ' + labels[base.role] + ' · ' + base.name;
+          status.title = status.textContent;
+        } catch (error) {
+          status.textContent = error.code === 'permission-denied'
+            ? 'Достъпът до избраната база е отказан.'
+            : 'Базата не може да се отвори. Опитай отново или презареди приложението.';
+        } finally {
+          choose.disabled = false;
+        }
+      }
+      choose.onclick = () => void selectBase();
+      void selectBase(true);
+    }
     if (pilot) document.getElementById('appVersion').textContent = pilot.public ? 'v' + pilot.version : 'v3.0';
   });
 }

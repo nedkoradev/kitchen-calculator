@@ -322,9 +322,11 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     updateInitialSceneForBase(base.data, base.name);
     panels?.setActiveMaterialBase?.(base.id, base.name);
     panels?.showMaterialBasePreview?.(base);
-    if (!automatic) await setMaterialDefault(base.id);
-    const savedDocument = !!bridge.state.workspace?.document?.id;
-    if (!forBaseEditor && (!savedDocument || automatic)) {
+    if (!automatic && scope.ownerUid === scope.actorUid) await setMaterialDefault(base.id);
+    const workspace = bridge.state.workspace;
+    const savedDocument = !!workspace?.document?.id;
+    if (!forBaseEditor && !savedDocument && (!automatic ||
+        (!workspace?.dirty && workspace?.draftStatus !== 'restored' && !workspace?.document?.parts.length))) {
       suppressMaterialBaseSave = true;
       try {
         emitMaterial('material-loaded', {
@@ -661,6 +663,40 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     });
   }
 
+  async function chooseWorkspaceBase(bases, email) {
+    const labels = {owner: 'Собственик', editor: 'Редактор', viewer: 'Наблюдател'};
+    const base = await dialog('Избор на база', (panel, done) => {
+      const row = documentElement('div', 'nedConfirmActions');
+      for (const base of bases) {
+        const name = base.id === initialScope.actorUid ? 'Моята база' : base.name;
+        row.append(button(name + ' · ' + labels[base.role], () => done({...base, name})));
+      }
+      row.append(button('Отказ', () => done(null)));
+      panel.append(row);
+    });
+    if (!base) return null;
+    if (base.id === bridge.state.scope?.ownerUid) return base;
+    if (!await flush()) throw new Error('Изчакай работата да бъде запазена или презареди приложението, ако достъпът е отнет.');
+    const previousScope = bridge.state.scope;
+    const scope = {ownerUid: base.id, actorUid: initialScope.actorUid};
+    await store.pending({scope});
+    const previousScene = initialScene;
+    initialScene = {materials: startingDocument.materials, settings: startingDocument.settings};
+    if (!await bridge.initialize(scope)) {
+      initialScene = previousScene;
+      await bridge.initialize(previousScope);
+      throw new Error('Базата не беше отворена. Текущата работа е запазена.');
+    }
+    activeMaterialBaseId = '';
+    activeMaterialBaseName = '';
+    panels?.setActiveMaterialBase?.('', '');
+    panels?.setMaterialBases?.({items: [], defaultBaseId: ''});
+    window.dispatchEvent(new CustomEvent('kitchen-project-auth', {
+      detail: {uid: scope.ownerUid, actorUid: scope.actorUid, role: base.role, email, sharingAuth: 'ready', scope},
+    }));
+    return base;
+  }
+
   async function openLegacyLibrary() {
     const scope = bridge.state.scope;
     const bases = await store.legacyBases({scope});
@@ -990,5 +1026,5 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
   document.addEventListener('change', sceneChanged, true);
   editor.onChange(sceneChanged);
   void bridge.initialize(initialScope);
-  return {bridge, flush, ...(legacy ? {openLegacyLibrary} : {})};
+  return {bridge, flush, ...(legacy ? {chooseWorkspaceBase, openLegacyLibrary} : {})};
 }
