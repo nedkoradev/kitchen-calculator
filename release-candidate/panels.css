@@ -326,6 +326,167 @@ body.ned-shell #shellTools #projectNewCabinet:hover:not(:disabled) {
   .libraryModelRow > button { flex-basis: 100%; }
 }
 
+/* v3 library explorer: folder tabs over a compact icon grid. */
+#pilotLibrary .pilotWindowBody {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+.pilotLibraryFolderBar {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-block: 2px 8px;
+  border-bottom: 1px solid #d3dae3;
+}
+.pilotLibraryFolderTab, .pilotLibrarySubfolder {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 7px 11px;
+  border: 1px solid #b6c8dc;
+  border-radius: 6px;
+  background: #f6f8fb;
+  color: #19334e;
+  font: inherit;
+  cursor: pointer;
+}
+.pilotLibraryFolderTab .actionSvg, .pilotLibrarySubfolder .actionSvg {
+  width: 19px;
+  height: 19px;
+}
+.pilotLibraryFolderTab[aria-pressed="true"] {
+  border-color: #2878d0;
+  background: #cee3ff;
+  color: #125ba9;
+  font-weight: 650;
+}
+.pilotLibraryFolderTab:hover, .pilotLibrarySubfolder:hover { background: #e8f1fd; }
+.pilotLibraryPath {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #23384e;
+}
+.pilotLibraryPath strong { overflow-wrap: anywhere; }
+.pilotLibraryPath button {
+  min-height: 34px;
+  border: 1px solid #b6c8dc;
+  background: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.pilotLibrarySubfolders { display: flex; flex-wrap: wrap; gap: 6px; }
+.pilotLibrarySubfolders[hidden] { display: none; }
+.pilotLibraryTiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  align-content: start;
+  gap: 10px;
+  min-height: 130px;
+  padding: 4px;
+}
+.pilotLibraryTileWrap { position: relative; min-width: 0; }
+.pilotLibraryTile {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 136px;
+  padding: 14px 8px 12px;
+  box-sizing: border-box;
+  border: 1px solid #cad7e6;
+  border-radius: 8px;
+  background: #fff;
+  color: #19334e;
+  font: 500 13px/1.35 "Segoe UI", Arial, sans-serif;
+  text-align: center;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.pilotLibraryTile > .actionSvg { width: 56px; height: 56px; color: #43739d; }
+.pilotLibraryTile:hover { background: #f5f9ff; border-color: #6494c7; }
+.pilotLibraryTile:focus-visible,
+.pilotLibraryFolderTab:focus-visible,
+.pilotLibrarySubfolder:focus-visible,
+.pilotLibraryContext button:focus-visible {
+  outline: 2px solid #2878d0;
+  outline-offset: 2px;
+}
+.pilotLibraryMore {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0 5px;
+  border: 1px solid #bbcada;
+  border-radius: 5px;
+  background: #fff;
+  color: #19334e;
+  cursor: pointer;
+}
+.pilotLibraryMore[hidden] { display: none; }
+.pilotLibraryContext {
+  position: fixed;
+  z-index: 200;
+  display: grid;
+  gap: 2px;
+  width: 200px;
+  padding: 5px;
+  border: 1px solid #b7c7da;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 9px 24px #162e4c38;
+}
+.pilotLibraryContext button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #19334e;
+  text-align: left;
+  cursor: pointer;
+}
+.pilotLibraryContext button:hover:not(:disabled) { background: #cee3ff; }
+.pilotLibraryContext button:disabled { color: #8796a5; cursor: not-allowed; }
+.pilotLibraryEmpty { margin: 12px 4px; color: #50637a; }
+.pilotLibraryManage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid #d3dae3;
+  margin-top: auto;
+}
+.pilotLibraryManage button {
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid #b6c8dc;
+  border-radius: 5px;
+  background: #f6f8fb;
+  color: #19334e;
+  cursor: pointer;
+}
+.pilotLibraryNotice { margin: 0; color: #8b2f40; }
+@media (max-width: 620px) {
+  .pilotLibraryFolderBar { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-inline: contain; }
+  .pilotLibraryTiles { grid-template-columns: repeat(auto-fill, minmax(102px, 1fr)); gap: 7px; }
+  .pilotLibraryTile { min-height: 122px; padding: 9px 5px; }
+  .pilotLibraryTile > .actionSvg { width: 44px; height: 44px; }
+  .pilotLibraryMore { min-width: 44px; min-height: 44px; }
+  .pilotLibraryManage button { min-height: 44px; }
+}
+
 /* v3 cloud base editor: one table per category, no second vertical scroll. */
 .pilotMaterialTableScroll { max-width: 100%; overflow-x: auto; margin: 8px 0; }
 .pilotMaterialPreviewSection > button { min-height: 36px; margin-top: 4px; }
