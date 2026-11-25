@@ -14,6 +14,10 @@
 - Потвърдена публикация преди въвеждането на двата режима: **v2.90**, слят PR #88, commit `82548ab`. При започване на задача сверявай актуалните `main` и `release.json`.
 - Активна продукционна Firebase конфигурация: `kitchen-designer-9d437`. Никога не променяй production правила/данни без изрично разрешение.
 
+## Достъп до самостоятелната legacy v2.96 (v3.0.17 release)
+
+GitHub Pages в `nedkoradev/kitchen-calculator` трябва да публикува v2.96 на `https://nedkoradev.github.io/kitchen-calculator/` независимо от `NEDIQ_V3_AUTO_DEPLOY`. От v3.0.17 `.github/workflows/pages.yml` не прескача `main` push, когато v3 Cloud Run автоматизацията е активна. Pages deployment-ът валидира чрез GitHub API, че `Build type = workflow` и `Custom domain` е празно; при зададен custom domain отказва да обяви v2 за възстановена и предоставя точните стъпки за администратор. Премахването на Pages Custom domain е **отделна административна операция**, не се извършва автоматично и не изисква промяна на DNS, IAM, Firebase или работещия Cloud Run v3. При успешен Pages workflow провери HTTP статуса, липсата на redirect и видимата v2.96 (проверки извън GitHub Actions при необходимост). Историческите данни за Pages в старите документи не заместват актуалната администраторска настройка.
+
 ## v3 първоначален екран и Google вход (v3.0.16)
 
 Публичният HTML на v3 използва v2 renderer като монтажна основа. Преди удостоверяване `<body data-stage-auth="locked">` е зададен сървърно. `release-candidate/panels.css` скрива целия наследен работен интерфейс (основна навигация, „Проект“/„Конструктор“, shell менюта, toolbar, сцена и старите header контроли), като оставя само NED-IQ марката и отделната Google login форма. След `startStagingAuth` и успешна инициализация състоянието става `active` и v3 интерфейсът отново е видим. При изход или грешка `locked` остава защитно състояние. Не се променят v2, Firebase Auth, Firestore или данните.
