@@ -7,7 +7,7 @@ import {join} from 'node:path';
 import {composeRules, start, end} from '../rollout-preflight/composite-rules.mjs';
 import {protectCopy, verifyCopy, writeNewLocalFile} from '../rollout-preflight/archive.mjs';
 import {buildLocalPreview, sheetJsPath} from '../rollout-preflight/staging-html.mjs';
-import {createGoogleAccountChoiceProvider} from '../rollout-preflight/google-account-choice.mjs';
+import {createGoogleAccountChoiceProvider} from '../release-candidate/google-account-choice.mjs';
 
 const repositoryFile = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
 
