@@ -457,7 +457,10 @@ const path = require('node:path');
     assert.deepEqual(await materials.locator('#pilotActiveMaterialBase option').allTextContents(),
       ['Избери база…', 'База A', 'База B']);
     await materials.getByLabel('Активна материална база').selectOption('base_b');
-    await page.waitForFunction(() => document.querySelector('.pilotMaterialBaseStatus')?.textContent.includes('Записаният документ запазва своята материална база'));
+    // The status text can already contain the document-snapshot warning from
+    // Base A. Wait for the selected catalog to finish loading, not stale status.
+    await page.waitForFunction(() => document.querySelector('.pilotMaterialPreviewTitle')?.textContent === 'База B' &&
+      document.querySelector('#pilotActiveMaterialBase')?.value === 'base_b');
     assert.match(await materials.locator('.pilotMaterialPreviewTitle').textContent(), /База B/);
     assert.match(await materials.locator('.pilotMaterialPreviewSection').first().textContent(), /B плоскост/);
     assert.equal(await materials.locator('#projectExtraPane').isVisible(), false,
