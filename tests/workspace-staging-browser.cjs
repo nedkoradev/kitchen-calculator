@@ -164,7 +164,7 @@ const path = require('node:path');
     const groupId = combined.parts[1].part.assembly;
     assert.equal(combined.groups[groupId], 'Долен шкаф');
     assert.ok(combined.parts.slice(1).every(({part}) => part.assembly === groupId));
-    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead'].includes(operation)),
+    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead', 'readModel', 'readProject'].includes(operation)),
       'Object creation must commit locally before any Firestore write');
 
     const scene = page.locator('#view canvas');
@@ -275,7 +275,10 @@ const path = require('node:path');
     await libraryWindow.getByRole('button', {name: 'Рафтове', exact: true}).click();
     const insert = libraryWindow.getByRole('button', {name: 'Добави модел · ' + model.name});
     await insert.waitFor();
-    assert.equal(await insert.locator('svg.actionSvg').count(), 1);
+    await insert.locator('.pilotLibraryThumbnail svg').waitFor();
+    assert.ok(await insert.locator('.pilotLibraryThumbnail polygon').count() > 0,
+      'Library should show the actual saved model panels, not a generic cabinet icon');
+    assert.equal(await insert.locator('svg.actionSvg').count(), 0);
     assert.equal(await libraryWindow.getByRole('button', {name: 'Действия за ' + model.name}).isVisible(), true);
     await insert.click({button: 'right'});
     const modelActions = libraryWindow.getByRole('menu', {name: 'Действия за ' + model.name});
@@ -289,6 +292,9 @@ const path = require('node:path');
     await libraryWindow.getByRole('button', {name: 'Проекти', exact: true}).click();
     const projectTile = libraryWindow.getByRole('button', {name: 'Отвори проект · Контролна кухня'});
     await projectTile.waitFor();
+    await projectTile.locator('.pilotLibraryThumbnail svg').waitFor();
+    assert.ok(await projectTile.locator('.pilotLibraryThumbnail polygon').count() > 0,
+      'Project thumbnail should render the saved scene geometry');
     await projectTile.click({button: 'right'});
     const projectActions = libraryWindow.getByRole('menu', {name: 'Действия за Контролна кухня'});
     for (const name of ['Преименувай', 'Премести в папка', 'Копирай в папка', 'Изтрий']) {
@@ -302,7 +308,7 @@ const path = require('node:path');
     await backend.db.doc('workspace_v3/stage-pilot/documents/' + model.id).delete();
     await backend.db.doc('workspace_v3/stage-pilot/settings/folders').delete();
     await assertScene();
-    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead'].includes(operation)));
+    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead', 'readModel', 'readProject'].includes(operation)));
 
     const settingsButton = page.locator('#settingsButton');
     const settings = page.getByRole('dialog', {name: 'Настройки', exact: true});
@@ -321,7 +327,7 @@ const path = require('node:path');
     await page.keyboard.press('Escape');
     await settings.waitFor({state: 'hidden'});
     await assertScene();
-    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead'].includes(operation)));
+    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead', 'readModel', 'readProject'].includes(operation)));
 
     for (const width of [900, 390, 320]) {
       await page.setViewportSize({width, height: 820});
