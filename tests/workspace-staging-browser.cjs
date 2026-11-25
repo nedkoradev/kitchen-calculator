@@ -560,6 +560,9 @@ const path = require('node:path');
     await materials.getByRole('button', {name: 'Затваряне на прозореца', exact: true}).click();
     await materials.waitFor({state: 'hidden'});
 
+    // Recreate the isolated folder manifest removed by the earlier test section.
+    // The real library list is driven by this manifest, not by the documents.
+    await backend.db.doc('workspace_v3/stage-pilot/settings/folders').set({folders, revision: 1});
     // Model tile primary click reuses insertModel and preserves the current document.
     await backend.db.doc('workspace_v3/stage-pilot/documents/' + model.id).set(model);
     const beforeInsert = await draftDocument(2);
