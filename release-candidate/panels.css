@@ -31,6 +31,24 @@ body[data-stage-auth="locked"] > #staging-auth {
   background: #fff;
   box-shadow: 0 12px 38px #19334e18;
 }
+body.ned-shell[data-stage-auth="locked"]:has(> #welcomeDialog[open]) {
+  overflow-y: auto;
+}
+
+body.ned-shell[data-stage-auth="locked"] > #welcomeDialog[open] {
+  position: relative !important;
+  inset: auto !important;
+  margin: 12px auto 0 !important;
+  flex: none;
+  width: min(440px, calc(100vw - 32px));
+  max-height: clamp(180px, calc(100dvh - 220px), 460px);
+}
+
+body[data-stage-auth="locked"] > #welcomeDialog[open] + #staging-auth {
+  margin: 8px auto 16px;
+  flex: none;
+}
+
 body[data-stage-auth="locked"] > #staging-auth > [role="status"] {
   order: -1;
   font-size: 17px;
