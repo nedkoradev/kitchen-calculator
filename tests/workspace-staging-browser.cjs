@@ -164,7 +164,7 @@ const path = require('node:path');
     const groupId = combined.parts[1].part.assembly;
     assert.equal(combined.groups[groupId], 'Долен шкаф');
     assert.ok(combined.parts.slice(1).every(({part}) => part.assembly === groupId));
-    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead'].includes(operation)),
+    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead', 'readModel', 'readProject'].includes(operation)),
       'Object creation must commit locally before any Firestore write');
 
     const scene = page.locator('#view canvas');
@@ -308,7 +308,7 @@ const path = require('node:path');
     await backend.db.doc('workspace_v3/stage-pilot/documents/' + model.id).delete();
     await backend.db.doc('workspace_v3/stage-pilot/settings/folders').delete();
     await assertScene();
-    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead'].includes(operation)));
+    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead', 'readModel', 'readProject'].includes(operation)));
 
     const settingsButton = page.locator('#settingsButton');
     const settings = page.getByRole('dialog', {name: 'Настройки', exact: true});
@@ -327,7 +327,7 @@ const path = require('node:path');
     await page.keyboard.press('Escape');
     await settings.waitFor({state: 'hidden'});
     await assertScene();
-    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead'].includes(operation)));
+    assert.ok(operations.every(operation => ['pending', 'list', 'materialBases', 'materialBaseRead', 'readModel', 'readProject'].includes(operation)));
 
     for (const width of [900, 390, 320]) {
       await page.setViewportSize({width, height: 820});
