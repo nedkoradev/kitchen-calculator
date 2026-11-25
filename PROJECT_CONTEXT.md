@@ -16,7 +16,7 @@
 
 ## v3 Google вход — избор на акаунт (v3.0.20)
 
-При всяко **изрично** натискане на „Вход с Google“, включително след изход, `rollout-preflight/staging-auth.mjs` създава нов `GoogleAuthProvider` чрез `rollout-preflight/google-account-choice.mjs` и задава OAuth `prompt: 'select_account'` преди `signInWithPopup`. Google, а не браузърът на NED-IQ, показва избора на акаунти; ако акаунтът липсва от списъка, може да се избере „Използване на друг профил“. Не се променят Firebase конфигурация, Auth persistence (`SESSION`), `signOut`, scope/owner UID или Firestore. Нормално презареждане със съществуваща валидна Firebase сесия продължава без нов popup и без загуба на чернова; изборът се изисква при следващ изричен вход. Не се засяга старият `cloud.js` за v2.96.
+При всяко **изрично** натискане на „Вход с Google“, включително след изход, `rollout-preflight/staging-auth.mjs` създава нов `GoogleAuthProvider` чрез `release-candidate/google-account-choice.mjs` и задава OAuth `prompt: 'select_account'` преди `signInWithPopup`. Google, а не браузърът на NED-IQ, показва избора на акаунти; ако акаунтът липсва от списъка, може да се избере „Използване на друг профил“. Не се променят Firebase конфигурация, Auth persistence (`SESSION`), `signOut`, scope/owner UID или Firestore. Нормално презареждане със съществуваща валидна Firebase сесия продължава без нов popup и без загуба на чернова; изборът се изисква при следващ изричен вход. Не се засяга старият `cloud.js` за v2.96.
 
 ## v3 библиотека: папки и иконки (кандидат v3.0.19)
 
