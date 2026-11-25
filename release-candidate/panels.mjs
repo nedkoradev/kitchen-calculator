@@ -402,7 +402,7 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
     section.append(heading, control);
     sections.append(section);
   };
-  addSection('Акаунт', logout);
+  if (logout) addSection('Акаунт', logout);
   if (fallback) addSection('За приложението', fallback);
   const diagnostics = element('div', 'pilotDiagnostics');
   addSection('Диагностика', diagnostics);

@@ -130,7 +130,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
       const sharing = createV3SharingStore(db, () => auth.currentUser);
       openSharing = installSharingUI({sharing, account, personalOnly: true});
     }
-    const panels = installPilotPanels({...views, logout, fallback: back, openSharing,
+    const panels = installPilotPanels({...views, logout: pilot?.public ? null : logout, fallback: back, openSharing,
       canEdit: () => integration?.bridge.state.canAct === true,
       onMaterialApply: () => integration.flush()});
     integration = mountWorkspaceEditor(editor, {store, drafts: createWorkspaceDraftAdapter(localStorage),
@@ -145,24 +145,51 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
     form.hidden = google.hidden = true;
     document.getElementById('cloudStatus').hidden = true;
     logout.hidden = false;
-    status.textContent = pilot?.public ? user.email + ' · Собственик' : 'Профилът е удостоверен';
-    status.title = status.textContent;
-    if (pilot?.public) panel.classList.add('publicProfile');
+    status.textContent = pilot?.public ? '' : 'Профилът е удостоверен';
+    if (pilot?.public) {
+      panel.classList.add('publicProfile');
+      const account = document.createElement('details');
+      account.className = 'publicAccountMenu';
+      const trigger = document.createElement('summary');
+      trigger.textContent = user.email;
+      trigger.title = user.email;
+      account.append(trigger, logout);
+      panel.prepend(account);
+      logout.addEventListener('click', () => {
+        account.open = false;
+        trigger.focus();
+      });
+      account.addEventListener('keydown', event => {
+        if (event.key !== 'Escape' || !account.open) return;
+        account.open = false;
+        trigger.focus();
+        event.stopPropagation();
+      });
+      document.addEventListener('click', event => {
+        if (!account.contains(event.target)) account.open = false;
+      });
+    }
     if (pilot?.public && !pilot.localGoogle) {
       const choose = document.createElement('button');
       choose.type = 'button';
-      choose.textContent = 'Избор на база';
-      panel.append(choose);
+      choose.className = 'publicBaseChoice';
+      const label = document.createElement('span');
+      label.textContent = 'Избор на база';
+      const name = document.createElement('strong');
+      name.textContent = 'Моята база';
+      name.title = name.textContent;
+      choose.append(label, name);
+      status.before(choose);
       async function selectBase(automatic = false) {
         choose.disabled = true;
+        status.textContent = '';
         try {
           const bases = await store.legacyBases({scope});
           if (automatic && !bases.some(base => base.id !== scope.actorUid)) return;
           const base = await integration.chooseWorkspaceBase(bases, user.email);
           if (!base) return;
-          const labels = {owner: 'Собственик', editor: 'Редактор', viewer: 'Наблюдател'};
-          status.textContent = user.email + ' · ' + labels[base.role] + ' · ' + base.name;
-          status.title = status.textContent;
+          name.textContent = base.name;
+          name.title = base.name;
         } catch (error) {
           status.textContent = error.code === 'permission-denied'
             ? 'Достъпът до избраната база е отказан.'

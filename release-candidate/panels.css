@@ -174,7 +174,7 @@ dialog.pilotWindow::backdrop { background: rgba(21, 45, 71, .14); }
   .pilotWindowBody { padding: 8px; }
   .pilotWindowBody .materialSection { padding: 8px; overflow-x: auto; }
   body[data-stage-auth="active"] #staging-auth { max-inline-size: 80px; }
-  body[data-stage-auth="active"] #staging-auth.publicProfile { max-inline-size: 32vw; }
+  body[data-stage-auth="active"] #staging-auth.publicProfile { max-inline-size: 100%; }
 }
 
 /* Pilot-only save dialog: labels and controls occupy separate rows. */
@@ -552,4 +552,76 @@ body.ned-shell dialog.workspaceBaseDialog {
   text-align: start;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+
+#staging-auth.publicProfile [role="status"]:empty {
+  display: none;
+}
+
+.publicAccountMenu {
+  position: relative;
+}
+
+body.ned-shell #staging-auth :is(.publicAccountMenu > summary, .publicBaseChoice) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 8px;
+  color: #fff !important;
+  background: transparent !important;
+  border: 1px solid #70869b !important;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+body.ned-shell #staging-auth :is(.publicAccountMenu > summary, .publicBaseChoice):hover {
+  background: #304b65 !important;
+}
+
+.publicAccountMenu > summary {
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+
+.publicAccountMenu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.publicAccountMenu > summary::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #86efac;
+}
+
+.publicAccountMenu > summary::after,
+.publicBaseChoice::after {
+  content: "";
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.publicAccountMenu > button {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 100%;
+}
+
+.publicBaseChoice > strong {
+  border-inline-start: 1px solid #70869b;
+  padding-inline-start: 8px;
+  max-inline-size: min(24vw, 180px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
