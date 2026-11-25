@@ -1,4 +1,7 @@
 import {nedConfirmAction, nedConfirmDelete} from '../ui-messages.mjs';
+import {validTextureUrl} from '../grain.mjs';
+import {photoOrientation} from '../photo-orientation.mjs';
+import {installMaterialPhotoEditor} from '../material-photo-editor.mjs';
 
 const sections = [
   {key: 'pdcMaterials', title: 'ПДЧ материали', fields: [
@@ -54,6 +57,13 @@ function action(label, handler) {
   node.onclick = handler;
   return node;
 }
+export function materialSupplierLink(raw) {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  try {
+    const url = new URL(raw.trim());
+    return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : null;
+  } catch { return null; }
+}
 function summary(section, material) {
   if (section.key === 'edgeMaterials') return ['—', material.price ?? '—'];
   if (section.key === 'worktops') return [
@@ -80,21 +90,41 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
     popup.setAttribute('aria-label', index === null ? 'Нов материал' : 'Промени материал');
     const form = element('form', 'pilotMaterialEditorForm');
     const title = element('h3', '', index === null ? 'Нов материал' : 'Промени материал');
+    const appearance = element('section', 'materialAppearance pilotMaterialAppearance');
+    appearance.append(element('h4', '', 'Декор и текстура'));
+    // Reuse the verified v2 gallery, GitHub upload guidance and photo validation.
+    // A local file is only a preview: no blob/data URL is ever saved in the catalog.
+    const readPhoto = installMaterialPhotoEditor(appearance, original, popup);
+    // The shared picker can select repository images; expose its validated
+    // local-file workflow as well, without uploading or persisting raw bytes.
+    appearance.querySelector('.materialActions')?.append(action('Снимка от компютъра',
+      () => appearance.querySelector('#materialPhotoUpload')?.click()));
     const inputs = new Map();
     for (const [key, label, kind] of section.fields) {
+      if (key === 'textureUrl') continue; // The shared photo chooser owns this field.
       const row = element('label', 'pilotMaterialEditorField');
       row.append(element('span', '', label));
       const input = document.createElement('input');
-      input.type = kind === 'checkbox' ? 'checkbox' : kind === 'number' ? 'number' : 'text';
+      input.type = key === 'color' ? 'color' : kind === 'checkbox' ? 'checkbox' : kind === 'number' ? 'number' : 'text';
       if (kind === 'number') input.step = 'any';
       if (kind === 'checkbox') input.checked = !!draft[key];
-      else input.value = draft[key] ?? '';
+      else input.value = key === 'color' ? /^#[0-9a-f]{6}$/i.test(draft.color || '') ? draft.color : '#ffffff' : draft[key] ?? '';
       if (key === 'name') input.required = true;
       input.setAttribute('aria-label', label);
       inputs.set(key, input);
       row.append(input);
-      form.append(row);
+      if (key === 'color') {
+        // Keep an actual, keyboard-operable native color picker rather than
+        // a text-only field; preserve existing colors until explicitly changed.
+        input.addEventListener('input', () => {
+          input.dataset.changed = 'true';
+          readPhoto.useColor();
+        });
+        row.append(action('Избери цвят', () => input.click()));
+        appearance.insertBefore(row, appearance.children[1] || null);
+      } else form.append(row);
     }
+    form.prepend(appearance);
     const controls = element('div', 'materialActions');
     const save = action('Запази', () => {});
     save.type = 'submit';
@@ -123,6 +153,7 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
           if (input.checked || Object.hasOwn(draft, key)) draft[key] = input.checked;
           continue;
         }
+        if (key === 'textureUrl' || (key === 'color' && input.dataset.changed !== 'true')) continue;
         if (input.value.trim() === '') {
           delete draft[key];
           continue;
@@ -134,6 +165,16 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
         } else draft[key] = input.value.trim();
       }
       if (!draft.name?.trim()) return;
+      const textureUrl = validTextureUrl(readPhoto());
+      if (textureUrl) {
+        draft.textureUrl = textureUrl;
+        if (textureUrl !== original.textureUrl) {
+          draft.textureGrainDirection = photoOrientation({textureUrl});
+        }
+      } else {
+        delete draft.textureUrl;
+        delete draft.textureGrainDirection;
+      }
       if (index === null) catalog[section.key].push(draft);
       else catalog[section.key][index] = draft;
       popup.close();
@@ -166,7 +207,30 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
       catalog[section.key].forEach((item, index) => {
         const row = body.insertRow();
         const [size, price] = summary(section, item);
-        row.insertCell().textContent = item.name || 'Без име';
+        const materialCell = row.insertCell();
+        const identity = element('span', 'pilotMaterialIdentity');
+        const swatch = element('span', 'pilotMaterialSwatch');
+        swatch.style.backgroundColor = item.color || '#ffffff';
+        swatch.title = 'Цвят на материала';
+        const photo = validTextureUrl(item.textureUrl);
+        if (photo) {
+          const thumbnail = document.createElement('img');
+          thumbnail.className = 'pilotMaterialTextureThumb';
+          thumbnail.src = photo;
+          thumbnail.alt = 'Декор ' + (item.name || 'Без име');
+          thumbnail.loading = 'lazy';
+          thumbnail.onerror = () => thumbnail.replaceWith(swatch);
+          identity.append(thumbnail);
+        } else identity.append(swatch);
+        const supplier = materialSupplierLink(item.url);
+        if (supplier) {
+          const link = element('a', 'pilotMaterialSupplierLink', item.name || 'Без име');
+          link.href = supplier;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          identity.append(link);
+        } else identity.append(document.createTextNode(item.name || 'Без име'));
+        materialCell.append(identity);
         row.insertCell().textContent = size;
         row.insertCell().textContent = String(price);
         const commands = row.insertCell();

@@ -344,3 +344,27 @@ body.ned-shell #shellTools #projectNewCabinet:hover:not(:disabled) {
   .pilotMaterialEditorField { grid-template-columns: minmax(0, 1fr); }
   .pilotMaterialServiceField { flex-wrap: wrap; }
 }
+
+/* v3 cloud material editor: product link, photo/color preview and native picker. */
+.pilotMaterialIdentity { display: inline-flex; gap: 8px; align-items: center; max-width: 100%; }
+.pilotMaterialSwatch, .pilotMaterialTextureThumb {
+  width: 38px; height: 38px; flex: 0 0 38px; border: 1px solid #adbdcd;
+  border-radius: 5px; box-sizing: border-box; object-fit: cover; background: #fff;
+}
+.pilotMaterialSupplierLink { color: #125ba9; text-decoration: underline; overflow-wrap: anywhere; }
+.pilotMaterialSupplierLink:hover { color: #0a467f; }
+.pilotMaterialAppearance { margin: 0 0 10px; }
+.pilotMaterialAppearance .pilotMaterialEditorField {
+  grid-template-columns: minmax(55px, 1fr) 65px minmax(125px, 1fr);
+  margin: 6px 0 12px;
+}
+.pilotMaterialAppearance input[type="color"] {
+  width: 60px; min-width: 60px; height: 42px; padding: 3px; cursor: pointer;
+}
+.pilotMaterialAppearance .materialActions { display: flex; flex-wrap: wrap; gap: 6px; }
+.pilotMaterialAppearance .materialActions button { min-height: 36px; }
+.pilotMaterialAppearance .materialPhotoPreview { max-width: 100%; }
+@media (max-width: 620px) {
+  .pilotMaterialAppearance .pilotMaterialEditorField { grid-template-columns: minmax(0,1fr) 65px; }
+  .pilotMaterialAppearance .pilotMaterialEditorField button { grid-column: 1 / -1; }
+}
