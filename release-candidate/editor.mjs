@@ -765,6 +765,11 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     const build = (panel, done) => {
       if (panels) return renderPilotLibrary(panel, {
         folders, documents, selectedFolderId, notice, onChoose: done,
+        loadPreview: item => {
+          if (bridge.state.scope?.ownerUid !== scope.ownerUid ||
+              bridge.state.scope?.actorUid !== scope.actorUid || !bridge.state.canAct) return null;
+          return (item.type === 'project' ? store.readProject : store.readModel)({scope, id: item.id});
+        },
         canChangeModel: Boolean(store.changeModel),
         canChangeFolder: Boolean(store.changeFolder),
       });
