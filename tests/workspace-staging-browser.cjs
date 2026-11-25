@@ -39,6 +39,8 @@ const path = require('node:path');
       }),
     ]);
     stage = await startLocalStaging({enabled: true});
+    assert.equal((await fetch(stage.origin + '/release-candidate/google-account-choice.mjs')).status, 200,
+      'The v3 Google account choice module must be served by the existing safe asset allowlist');
     assert.equal((await fetch(stage.origin + '/cloud.js')).status, 404);
     assert.equal((await fetch(stage.origin + '/sw.js')).status, 404);
     const disabled = await startLocalStaging();
