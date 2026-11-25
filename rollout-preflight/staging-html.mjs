@@ -56,8 +56,10 @@ function buildPreview(source, {enabled, settings}) {
     document.querySelector('main').inert = true;
     void import('./rollout-preflight/staging-auth.mjs').then(({startStagingAuth}) => startStagingAuth({
       ... ${JSON.stringify(settings).replaceAll('<', '\\u003c')}, materialsReady: stagingMaterialsReady, activate: () => activateMainNavigation('project'),
-      showWelcome() {
-        const body = $('welcomeDialog').querySelector('.nedHelpBody');
+      showWelcome(signInPanel) {
+        const welcomeDialog = $('welcomeDialog');
+        signInPanel.before(welcomeDialog);
+        const body = welcomeDialog.querySelector('.nedHelpBody');
         const footerNote = body.lastElementChild;
         for (const section of body.querySelectorAll(':scope > section')) section.remove();
         const guide = [

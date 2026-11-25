@@ -46,6 +46,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
   }
   let session;
   let signingOut = false;
+  let welcomeShown = false;
 
   function lock() {
     document.body.dataset.stageAuth = 'locked';
@@ -97,9 +98,16 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
   auth.onAuthStateChanged(async user => {
     if (!user) {
       lock();
-      if (session || signingOut) location.reload();
+      if (session || signingOut) {
+        location.reload();
+      } else if (!welcomeShown) {
+        welcomeShown = true;
+        showWelcome?.(panel);
+      }
       return;
     }
+    const welcome = document.getElementById('welcomeDialog');
+    if (welcome?.open) welcome.close();
     if (session) {
       if (session.uid !== user.uid) { lock(); location.reload(); }
       return;
@@ -200,8 +208,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
         }
       }
       choose.onclick = () => void selectBase();
-      await selectBase(true);
+      void selectBase(true);
     }
-    if (auth.currentUser?.uid === user.uid) showWelcome?.();
   });
 }

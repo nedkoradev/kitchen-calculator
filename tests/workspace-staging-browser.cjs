@@ -99,6 +99,14 @@ const path = require('node:path');
       'The NED-IQ brand remains visible before sign-in');
     assert.equal(await page.evaluate(() => document.querySelector('main').inert), true);
     assert.equal(await page.getByLabel('Тестов профил').count(), 0);
+    const welcome = page.getByRole('dialog', {name: 'Добре дошли в NED-IQ'});
+    await welcome.waitFor();
+    assert.deepEqual(await welcome.locator('h3').allTextContents(),
+      ['Работна база', 'Проектиране', 'Библиотека', 'Свойства и материали', 'Справки']);
+    await welcome.getByRole('checkbox', {name: 'Показвай при стартиране'}).uncheck();
+    const welcomeBounds = await welcome.boundingBox();
+    const signInBounds = await panel.boundingBox();
+    assert.ok(welcomeBounds.y + welcomeBounds.height <= signInBounds.y);
     await panel.getByLabel('Имейл').fill('stage-pilot@fixture.invalid');
     await panel.getByLabel('Парола').fill('fixture-password');
     const signIn = page.waitForResponse(response => response.url().includes('accounts:signInWithPassword'));
@@ -112,12 +120,6 @@ const path = require('node:path');
       releaseCatalog();
     }
     await panel.getByText('Профилът е удостоверен').waitFor();
-    const welcome = page.getByRole('dialog', {name: 'Добре дошли в NED-IQ'});
-    await welcome.waitFor();
-    assert.deepEqual(await welcome.locator('h3').allTextContents(),
-      ['Работна база', 'Проектиране', 'Библиотека', 'Свойства и материали', 'Справки']);
-    await welcome.getByRole('checkbox', {name: 'Показвай при стартиране'}).uncheck();
-    await welcome.getByRole('button', {name: 'Започни работа'}).click();
     await welcome.waitFor({state: 'hidden'});
     assert.equal(await page.locator('#shellTools').isVisible(), true,
       'The authenticated v3 tool shell must become visible');
