@@ -34,6 +34,20 @@ function buildPreview(source, {enabled, settings}) {
     '<script type="module">\nimport {v3GroupNameMap} from "./release-candidate/group-names.mjs";');
   html = html.replace('names:Object.fromEntries(projectInstances)',
     'names:Object.fromEntries(document.body.dataset.stageAuth ? v3GroupNameMap(customParts,Object.fromEntries(projectInstances)) : Object.fromEntries(projectInstances))');
+  // The v3 report uses the same cutLayout values as XLSX. Keep the legacy
+  // renderer's combined column on the static v2 site.
+  const cutColumns = [
+    ["long+' × '+short+' мм'+(grainRequired?' ↔':'')", "long+' мм'+(grainRequired?' ↔':''),short+' мм'"],
+    ['table(cutTableHeaders,cutRows)', "table([...cutTableHeaders.slice(0,3),'Размер А (фладер)','Размер Б',...cutTableHeaders.slice(4)],cutRows)"],
+    ['td.colSpan=6;td.textContent=label', 'td.colSpan=7;td.textContent=label'],
+    ["[2,4,6].includes(i)?'center':'left'", "[2,3,4,5,7].includes(i)?'center':'left'"],
+    ["if(i===4)cell.style.whiteSpace='nowrap'", "if([3,4,5].includes(i))cell.style.whiteSpace='nowrap'"],
+    ['const edgeCell=tr.cells[5]', 'const edgeCell=tr.cells[6]'],
+  ];
+  for (const [original, replacement] of cutColumns) {
+    if (html.split(original).length !== 2) throw new Error('Expected one cut report renderer seam');
+    html = html.replace(original, replacement);
+  }
   const css = '<link rel="stylesheet" href="./release-candidate/panels.css">';
   html = html.replace(loadMaterials, '\nconst stagingMaterialsReady = loadDefaultMaterials();');
   html = html.replace(welcome, '').replace('</head>', css + '</head>');
