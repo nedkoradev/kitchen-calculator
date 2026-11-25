@@ -6,6 +6,7 @@ import {mountWorkspaceEditor} from '../release-candidate/editor.mjs';
 import {createWorkspaceHttpClient} from '../release-candidate/client.mjs';
 import {createWorkspaceDraftAdapter} from '../workspace-persistence/drafts.mjs';
 import {prepareNewDocument} from '../workspace-context/context.mjs';
+import {createGoogleAccountChoiceProvider} from './google-account-choice.mjs';
 
 export async function startStagingAuth({authOrigin, pilot, materialsReady, activate, editor, views}) {
   const allowedOrigin = pilot?.localGoogle
@@ -76,7 +77,12 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
     event.preventDefault();
     void authOperation(() => auth.signInWithEmailAndPassword(form.elements.email.value, form.elements.password.value));
   };
-  google.onclick = () => { void authOperation(() => auth.signInWithPopup(new window.firebase.auth.GoogleAuthProvider())); };
+  google.onclick = () => {
+    // Always let the person choose their Google account at each explicit sign-in,
+    // including a new sign-in after logout. Do not force logout on page refresh.
+    void authOperation(() => auth.signInWithPopup(
+      createGoogleAccountChoiceProvider(window.firebase.auth.GoogleAuthProvider)));
+  };
   logout.onclick = async () => {
     const state = session?.bridge.state;
     if (state?.busy || (state && state.gate !== 'ready') || (state?.workspace?.dirty && !['saved', 'restored'].includes(state.workspace.draftStatus))) {
