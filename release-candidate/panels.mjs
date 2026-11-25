@@ -159,6 +159,10 @@ function protectMaterialEditors(onApply) {
   new MutationObserver(records => {
     for (const {target} of records) {
       if (!target.open || observed.has(target) || !target.matches('dialog.materialEditDialog')) continue;
+      // This legacy guard owns only the v2 material forms. The v3 cloud base
+      // editor has its own cancel/dirty confirmation; observing both causes
+      // duplicate confirmation dialogs and can discard the wrong draft.
+      if (target.classList.contains('pilotMaterialEditorDialog')) continue;
       if (!target.querySelector('.materialAppearance,.extraServiceRows')) continue;
       const form = target.querySelector('form');
       if (!form) continue;
