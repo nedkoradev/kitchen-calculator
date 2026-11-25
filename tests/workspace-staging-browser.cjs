@@ -245,6 +245,14 @@ const path = require('node:path');
     await page.locator('#reportsMenu summary').click();
     await page.locator('#navCut').click();
     await reports.locator('#projectCutList tbody tr').first().waitFor();
+    const cutTable = reports.locator('#projectCutList table');
+    assert.deepEqual((await cutTable.locator('thead th').allTextContents()).slice(3, 5),
+      ['Размер А (фладер)', 'Размер Б']);
+    const sizeCells = await cutTable.locator('tbody tr').first().locator('td').allTextContents();
+    assert.equal(sizeCells.length, 8);
+    assert.match(sizeCells[3], /^\d+(?:\.\d+)? мм(?: ↔)?$/);
+    assert.match(sizeCells[4], /^\d+(?:\.\d+)? мм$/);
+    assert.equal(await cutTable.locator('tfoot td').first().getAttribute('colspan'), '7');
     assert.deepEqual(sheetJsRequests, [stage.origin + '/staging-sdk/xlsx-0.20.3.min.js']);
     assert.equal(await page.evaluate(() => XLSX.version), '0.20.3');
     const download = page.waitForEvent('download');
