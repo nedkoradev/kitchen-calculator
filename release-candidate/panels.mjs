@@ -369,12 +369,18 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
     for (const [type, button] of reportButtons) button.setAttribute('aria-pressed', String(type === kind));
     reports.show();
   }
-  const reportChoices = element('div', 'materialActions');
+  // Share the library's responsive tab navigation with the reports window.
+  const reportChoices = element('nav', 'pilotLibraryFolderBar');
+  reportChoices.setAttribute('aria-label', 'Вид справка');
   const reportButtons = [
     ['cut', action('Разкрой', null, () => showReport('cut'))],
     ['costs', action('Себестойност', null, () => showReport('costs'))],
   ];
-  reportChoices.append(...reportButtons.map(([, button]) => button));
+  for (const [kind, button] of reportButtons) {
+    button.classList.add('pilotLibraryFolderTab');
+    button.setAttribute('aria-pressed', String(kind === 'cut'));
+    reportChoices.append(button);
+  }
   reports.content.prepend(reportChoices);
   function showMaterials() {
     if (!canEdit()) return;
