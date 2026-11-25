@@ -12,7 +12,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
-    if: github.event_name == 'workflow_dispatch' || vars.NEDIQ_V3_AUTO_DEPLOY != '1'
+    # v2 GitHub Pages and v3 Cloud Run are independent public products.
+    # Deploy the legacy v2.96 site on every main push even when v3 auto deploy is enabled.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,8 +58,13 @@ jobs:
               repo: context.repo.repo
             });
             if (site.data.build_type !== 'workflow') {
-              throw new Error('Select Settings > Pages > Build and deployment > Source: GitHub Actions, then rerun this deployment job. Changing this setting requires repository administration; no personal token is needed.');
+              throw new Error('V2 GitHub Pages requires Settings > Pages > Build and deployment > Source: GitHub Actions. Change this as repository administrator; no admin override is permitted.');
             }
+            if (site.data.cname) {
+              core.error('Legacy v2 cannot be served from nedkoradev.github.io/kitchen-calculator/ while this Pages site has Custom domain: ' + site.data.cname);
+              throw new Error('Remove the Custom domain in kitchen-calculator > Settings > Pages (leave the field blank and Save), while keeping Source = GitHub Actions. Do NOT change nediq.eu DNS or the v3 Cloud Run mapping. Then re-run the Pages workflow. This must be changed by a repository administrator.');
+            }
+            core.info('Legacy Pages has no custom domain; using the default nedkoradev.github.io/kitchen-calculator/ URL.');
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

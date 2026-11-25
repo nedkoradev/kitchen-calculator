@@ -49,6 +49,16 @@ test('local output does not overwrite an existing backup', async () => {
   } finally { await rm(scratch, {recursive: true, force: true}); }
 });
 
+test('legacy v2 Pages publishes independently of v3 and rejects an attached custom domain', async () => {
+  const workflow = await repositoryFile('.github/workflows/pages.yml');
+  assert.match(workflow, /push:\s*\n\s*branches:\s*\[main\]/);
+  assert.doesNotMatch(workflow, /if:\s*github\.event_name == 'workflow_dispatch' \|\| vars\.NEDIQ_V3_AUTO_DEPLOY/);
+  assert.match(workflow, /site\.data\.build_type !== 'workflow'/);
+  assert.match(workflow, /site\.data\.cname/);
+  assert.match(workflow, /Remove the Custom domain/);
+  assert.match(workflow, /actions\/deploy-pages@v4/);
+});
+
 test('staging preview contains no legacy cloud entrypoint, reset or worker even when disabled', async () => {
   const source = await repositoryFile('index.html');
   const {major, minor} = JSON.parse(await repositoryFile('_data/version.json'));
