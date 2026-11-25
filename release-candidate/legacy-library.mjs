@@ -10,19 +10,28 @@ const preferencesId = '_app_preferences';
 
 export const legacyOperations = new Set(['legacyBases', 'legacyList', 'legacyRead', ...materialBaseOperations]);
 
+export async function readSharedRole(db, tx, ownerId, email) {
+  const grant = (await tx.get(db.collection('users').doc(ownerId)
+    .collection('access_grants').doc(email))).data();
+  return grant?.ownerUid === ownerId && roles.includes(grant.role) ? grant.role : null;
+}
+
 export function createLegacyLibrary(db, bundledCatalog) {
   const owners = db.collection('users');
   return ({operation, request, principal}) => db.runTransaction(async tx => {
     const actor = identifier(principal.uid);
     const email = identifier(principal.email.trim().toLowerCase());
+    const sharedRole = ownerId => readSharedRole(db, tx, ownerId, email);
     if (materialBaseOperations.has(operation)) {
       const scope = request?.scope;
-      if (scope?.actorUid !== actor || scope?.ownerUid !== actor) throw fail('permission-denied');
-      return handleMaterialBaseOperation({db, tx, operation, request, uid: actor});
-    }
-    async function sharedRole(ownerId) {
-      const grant = (await tx.get(owners.doc(ownerId).collection('access_grants').doc(email))).data();
-      return grant?.ownerUid === ownerId && roles.includes(grant.role) ? grant.role : null;
+      if (scope?.actorUid !== actor) throw fail('permission-denied');
+      const ownerId = identifier(scope.ownerUid);
+      if (ownerId !== actor) {
+        const role = await sharedRole(ownerId);
+        const read = operation === 'materialBases' || operation === 'materialBaseRead';
+        if (role !== 'editor' && !(read && role === 'viewer')) throw fail('permission-denied');
+      }
+      return handleMaterialBaseOperation({db, tx, operation, request, uid: ownerId});
     }
     if (operation === 'legacyBases') {
       const inbox = db.collection('nediq_access').doc(email).collection('bases');

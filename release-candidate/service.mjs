@@ -12,10 +12,9 @@ const blankLibrary = () => ({revision: 0, folders: [PROJECTS_FOLDER]});
 
 // A trusted process owns writes. The deployment supplies Admin Firestore and
 // a verified Firebase ID-token reader. Neither is available to browser code.
-export function createWorkspaceService({db, verifyToken, newId = () => crypto.randomUUID()}) {
+export function createWorkspaceService({db, verifyToken, newId = () => crypto.randomUUID(), sharedRole}) {
   const sdk = {
     doc: (db, ...segments) => db.doc(segments.join('/')),
-    runTransaction: (db, callback) => db.runTransaction(callback),
   };
 
   return async function dispatch({token, operation, request = {}}) {
@@ -36,10 +35,16 @@ export function createWorkspaceService({db, verifyToken, newId = () => crypto.ra
     }
     async function role(transaction) {
       if (ownerUid === actorUid) return 'owner';
+      if (sharedRole) return sharedRole(transaction, ownerUid);
       return (await transaction.get(owner.collection('grants').doc(actorUid))).data()?.role;
     }
     const store = createFirestorePersistence({
-      sdk, db, namespace, actorUid, readRole: ({transaction}) => role(transaction),
+      sdk: {...sdk, runTransaction: (db, callback) => db.runTransaction(async tx => {
+        // Journal calls belong to the actor but still require a current grant
+        // in public shared namespaces.
+        if (sharedRole && ownerUid !== actorUid && !await role(tx)) throw failure('permission-denied');
+        return callback(tx);
+      })}, db, namespace, actorUid, readRole: ({transaction}) => role(transaction),
       async validatePlacement({transaction, document}) {
         if (document.folderId === null || document.folderId === PROJECTS_FOLDER.id) return true;
         return (await transaction.get(manifest)).data()?.folders.some(folder => folder.id === document.folderId) === true;
