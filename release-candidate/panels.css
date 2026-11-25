@@ -535,3 +535,21 @@ body.ned-shell #shellTools #projectNewCabinet:hover:not(:disabled) {
 
 /* Reports selector reuses the library's responsive tab bar. */
 #pilotReports .pilotLibraryFolderBar { flex: none; }
+
+
+body.ned-shell dialog.workspaceBaseDialog {
+  width: min(440px, calc(100vw - 24px));
+  max-height: 90dvh;
+  padding: 0;
+}
+
+.workspaceBaseDialog > .dialogBody {
+  display: grid;
+  gap: 8px;
+}
+
+.workspaceBaseDialog > .dialogBody > button {
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

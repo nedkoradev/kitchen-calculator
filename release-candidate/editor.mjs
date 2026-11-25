@@ -16,13 +16,12 @@ function folderLabel(folder, folders) {
   return parent ? folderLabel(parent, folders) + ' / ' + name : name;
 }
 
-function dialog(heading, build) {
+function dialog(heading, build, className) {
   const node = document.createElement('dialog');
-  node.className = 'nedConfirmOverlay';
+  node.className = className ?? 'nedConfirmOverlay';
   node.setAttribute('aria-label', heading);
-  const panel = document.createElement('div');
-  panel.className = 'nedConfirmPanel';
-  const title = document.createElement('h3');
+  const panel = className ? node : documentElement('div', 'nedConfirmPanel');
+  const title = documentElement(className ? 'div' : 'h3', className ? 'dialogHead' : '');
   title.textContent = heading;
   panel.append(title);
   const parentFocus = document.activeElement;
@@ -34,7 +33,7 @@ function dialog(heading, build) {
       resolve(value);
     };
     build(panel, done);
-    node.append(panel);
+    if (panel !== node) node.append(panel);
     node.addEventListener('cancel', event => { event.preventDefault(); done(null); });
     document.body.append(node);
     node.showModal();
@@ -666,14 +665,20 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
   async function chooseWorkspaceBase(bases, email) {
     const labels = {owner: 'Собственик', editor: 'Редактор', viewer: 'Наблюдател'};
     const base = await dialog('Избор на база', (panel, done) => {
-      const row = documentElement('div', 'nedConfirmActions');
+      const body = documentElement('div', 'dialogBody');
       for (const base of bases) {
         const name = base.id === initialScope.actorUid ? 'Моята база' : base.name;
-        row.append(button(name + ' · ' + labels[base.role], () => done({...base, name})));
+        const choice = button(name + ' · ' + labels[base.role], () => done({...base, name}));
+        if (base.id === bridge.state.scope?.ownerUid) {
+          choice.classList.add('active');
+          choice.setAttribute('aria-current', 'true');
+        }
+        body.append(choice);
       }
-      row.append(button('Отказ', () => done(null)));
-      panel.append(row);
-    });
+      const footer = documentElement('div', 'dialogFoot');
+      footer.append(button('Отказ', () => done(null)));
+      panel.append(body, footer);
+    }, 'workspaceBaseDialog');
     if (!base) return null;
     if (base.id === bridge.state.scope?.ownerUid) return base;
     if (!await flush()) throw new Error('Изчакай работата да бъде запазена или презареди приложението, ако достъпът е отнет.');
