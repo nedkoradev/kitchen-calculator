@@ -56,6 +56,29 @@ function buildPreview(source, {enabled, settings}) {
     document.querySelector('main').inert = true;
     void import('./rollout-preflight/staging-auth.mjs').then(({startStagingAuth}) => startStagingAuth({
       ... ${JSON.stringify(settings).replaceAll('<', '\\u003c')}, materialsReady: stagingMaterialsReady, activate: () => activateMainNavigation('project'),
+      showWelcome() {
+        const body = $('welcomeDialog').querySelector('.nedHelpBody');
+        const footerNote = body.lastElementChild;
+        for (const section of body.querySelectorAll(':scope > section')) section.remove();
+        const guide = [
+          ['Работна база', 'Изберете лична или достъпна за Вас споделена база.'],
+          ['Проектиране', 'Създавайте мебели и цели проекти. Добавяйте шкафове, отделни детайли и уреди в работното пространство.'],
+          ['Библиотека', 'Съхранявайте проекти и готови модели в папки и ги използвайте повторно.'],
+          ['Свойства и материали', 'Редактирайте размери, материали, кантове и посока на фладера. Управлявайте материалните бази от меню „Материали“.'],
+          ['Справки', 'Получавайте разкрой, количества, калкулация на разходите и експорт на детайлите.'],
+        ];
+        for (const [title, description] of guide) {
+          const section = document.createElement('section');
+          const heading = document.createElement('h3');
+          heading.textContent = title;
+          const text = document.createElement('p');
+          text.textContent = description;
+          section.append(heading, text);
+          footerNote.before(section);
+        }
+        footerNote.textContent = 'Подробни инструкции в меню „Помощ“.';
+        help.showStartup();
+      },
       views: {
         renderMaterials: renderMaterialsPage,
         renderReport(scope) {

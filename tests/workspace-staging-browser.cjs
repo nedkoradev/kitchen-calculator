@@ -112,6 +112,13 @@ const path = require('node:path');
       releaseCatalog();
     }
     await panel.getByText('Профилът е удостоверен').waitFor();
+    const welcome = page.getByRole('dialog', {name: 'Добре дошли в NED-IQ'});
+    await welcome.waitFor();
+    assert.deepEqual(await welcome.locator('h3').allTextContents(),
+      ['Работна база', 'Проектиране', 'Библиотека', 'Свойства и материали', 'Справки']);
+    await welcome.getByRole('checkbox', {name: 'Показвай при стартиране'}).uncheck();
+    await welcome.getByRole('button', {name: 'Започни работа'}).click();
+    await welcome.waitFor({state: 'hidden'});
     assert.equal(await page.locator('#shellTools').isVisible(), true,
       'The authenticated v3 tool shell must become visible');
 
@@ -125,10 +132,10 @@ const path = require('node:path');
       if (request.url().endsWith('/staging-api')) operations.push(request.postDataJSON()?.operation);
     });
     const draftDocument = async partCount => {
-      const handle = await page.waitForFunction(async count => {
-        const {createWorkspaceDraftAdapter} = await import('/workspace-persistence/drafts.mjs');
-        const draft = createWorkspaceDraftAdapter(localStorage).read({ownerUid: 'stage-pilot', actorUid: 'stage-pilot'});
-        const document = draft && JSON.parse(draft).document;
+      const handle = await page.waitForFunction(count => {
+        const key = 'nedIQ.workspace.test.v1:' + JSON.stringify(['stage-pilot', 'stage-pilot']);
+        const draft = JSON.parse(localStorage.getItem(key));
+        const document = draft && JSON.parse(draft.text).document;
         return document?.parts.length === count && document;
       }, partCount, {timeout: 5000});
       try { return await handle.jsonValue(); }

@@ -8,7 +8,7 @@ import {createWorkspaceDraftAdapter} from '../workspace-persistence/drafts.mjs';
 import {prepareNewDocument} from '../workspace-context/context.mjs';
 import {createGoogleAccountChoiceProvider} from '../release-candidate/google-account-choice.mjs';
 
-export async function startStagingAuth({authOrigin, pilot, materialsReady, activate, editor, views}) {
+export async function startStagingAuth({authOrigin, pilot, materialsReady, activate, showWelcome, editor, views}) {
   const allowedOrigin = pilot?.localGoogle
     ? pilot.origin === 'http://localhost:8053' && location.origin === pilot.origin
     : pilot
@@ -169,6 +169,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
         if (!account.contains(event.target)) account.open = false;
       });
     }
+    if (pilot) document.getElementById('appVersion').textContent = pilot.public ? 'v' + pilot.version : 'v3.0';
     if (pilot?.public && !pilot.localGoogle) {
       const choose = document.createElement('button');
       choose.type = 'button';
@@ -199,8 +200,8 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
         }
       }
       choose.onclick = () => void selectBase();
-      void selectBase(true);
+      await selectBase(true);
     }
-    if (pilot) document.getElementById('appVersion').textContent = pilot.public ? 'v' + pilot.version : 'v3.0';
+    if (auth.currentUser?.uid === user.uid) showWelcome?.();
   });
 }
