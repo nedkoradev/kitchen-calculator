@@ -267,7 +267,7 @@ const path = require('node:path');
     await backend.db.doc('workspace_v3/stage-pilot/documents/' + model.id).set(model);
     await openLibrary();
     const libraryWindow = page.getByRole('dialog', {name: 'Обща библиотека', exact: true});
-    assert.equal(await libraryWindow.getByRole('navigation', {name: 'Папки на библиотеката'}).isVisible(), true);
+    await libraryWindow.getByRole('navigation', {name: 'Папки на библиотеката'}).waitFor({state: 'visible'});
     assert.equal(await libraryWindow.locator('.pilotLibraryFolderTab').count(), 2);
     await libraryWindow.getByRole('button', {name: 'Модели', exact: true}).click();
     await libraryWindow.getByRole('button', {name: 'Рафтове', exact: true}).click();
