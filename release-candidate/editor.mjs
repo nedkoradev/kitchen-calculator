@@ -6,6 +6,7 @@ import {applyLegacyMigration, inspectLegacyMigration} from './legacy-migration.m
 import {nedConfirmDelete, nedPromptName} from '../ui-messages.mjs';
 import {decorateAction} from '../icons.mjs';
 import {PROJECTS_FOLDER} from '../document-format/model.mjs';
+import {renderPilotLibrary} from './library-browser.mjs';
 
 const byId = id => document.getElementById(id);
 const isTyping = event => event.target?.matches?.('input, textarea, select, [contenteditable]');
@@ -762,6 +763,11 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     const {folders, documents, revision} = await store.list({scope});
     if (bridge.state.scope.ownerUid !== scope.ownerUid || !bridge.state.canAct) return;
     const build = (panel, done) => {
+      if (panels) return renderPilotLibrary(panel, {
+        folders, documents, selectedFolderId, notice, onChoose: done,
+        canChangeModel: Boolean(store.changeModel),
+        canChangeFolder: Boolean(store.changeFolder),
+      });
       if (notice) {
         const alert = document.createElement('p');
         alert.setAttribute('role', 'alert');
@@ -846,7 +852,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     if (change.action === 'delete' && !await nedConfirmDelete('Да изтрия ли празната папка?')) return;
     if (!bridge.state.canAct || bridge.state.scope.ownerUid !== scope.ownerUid) return;
     await store.changeFolder({scope, change, revision});
-    return openLibrary();
+    return openLibrary(change.action === 'delete' ? null : chosen.folderId ?? null);
   }
 
   // The legacy menu categories are not authoritative in the v3 Pilot.
@@ -871,7 +877,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
             item.setAttribute('role', 'menuitem');
             items.append(item);
           };
-          if (documents.some(item => item.type === 'model' && item.folderId === null)) add('Без папка', '');
+          if (documents.some(item => item.type === 'model' && item.folderId === null)) add('Други', '');
           for (const folder of folders) add(folderLabel(folder, folders), folder.id);
         } catch (error) { report(error); }
       };
