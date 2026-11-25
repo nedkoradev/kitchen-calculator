@@ -101,8 +101,8 @@ const path = require('node:path');
       releaseCatalog();
     }
     await panel.getByText('Профилът е удостоверен').waitFor();
-    assert.equal(await page.locator('#mainNavigation').isVisible(), true,
-      'The authenticated v3 navigation must become visible');
+    assert.equal(await page.locator('#shellTools').isVisible(), true,
+      'The authenticated v3 tool shell must become visible');
 
     const library = page.locator('#libraryMenu summary');
     const openLibrary = async () => {
