@@ -267,19 +267,34 @@ const path = require('node:path');
     await backend.db.doc('workspace_v3/stage-pilot/documents/' + model.id).set(model);
     await openLibrary();
     const libraryWindow = page.getByRole('dialog', {name: 'Обща библиотека', exact: true});
-    await libraryWindow.getByLabel('Папка').selectOption('shelves');
-    const modelActions = libraryWindow.getByRole('group', {name: 'Действия за ' + model.name});
-    for (const name of ['Преименувай', 'Премести', 'Копирай', 'Изтрий']) {
-      assert.equal(await modelActions.getByRole('button', {name, exact: true}).isVisible(), true);
+    assert.equal(await libraryWindow.getByRole('navigation', {name: 'Папки на библиотеката'}).isVisible(), true);
+    assert.equal(await libraryWindow.locator('.pilotLibraryFolderTab').count(), 2);
+    await libraryWindow.getByRole('button', {name: 'Модели', exact: true}).click();
+    await libraryWindow.getByRole('button', {name: 'Рафтове', exact: true}).click();
+    const insert = libraryWindow.getByRole('button', {name: 'Добави модел · ' + model.name});
+    await insert.waitFor();
+    assert.equal(await insert.locator('svg.actionSvg').count(), 1);
+    assert.equal(await libraryWindow.getByRole('button', {name: 'Действия за ' + model.name}).isVisible(), true);
+    await insert.click({button: 'right'});
+    const modelActions = libraryWindow.getByRole('menu', {name: 'Действия за ' + model.name});
+    for (const name of ['Преименувай', 'Премести в папка', 'Копирай в папка', 'Изтрий']) {
+      assert.equal(await modelActions.getByRole('menuitem', {name, exact: true}).isVisible(), true);
     }
-    await libraryWindow.getByLabel('Папка').selectOption('system:projects');
-    await libraryWindow.getByRole('button', {name: 'Отвори проект · Контролна кухня'}).waitFor();
-    const projectActions = libraryWindow.getByRole('group', {name: 'Действия за Контролна кухня'});
-    for (const name of ['Преименувай', 'Премести', 'Копирай', 'Изтрий']) {
-      assert.equal(await projectActions.getByRole('button', {name, exact: true}).isVisible(), true);
+    assert.equal(await modelActions.getByRole('menuitem', {name: 'Копирай в папка'}).isEnabled(), true);
+    await page.keyboard.press('Escape');
+    assert.equal(await modelActions.count(), 0, 'Escape closes the context menu without closing the library');
+    assert.equal(await libraryWindow.isVisible(), true);
+    await libraryWindow.getByRole('button', {name: 'Проекти', exact: true}).click();
+    const projectTile = libraryWindow.getByRole('button', {name: 'Отвори проект · Контролна кухня'});
+    await projectTile.waitFor();
+    await projectTile.click({button: 'right'});
+    const projectActions = libraryWindow.getByRole('menu', {name: 'Действия за Контролна кухня'});
+    for (const name of ['Преименувай', 'Премести в папка', 'Копирай в папка', 'Изтрий']) {
+      assert.equal(await projectActions.getByRole('menuitem', {name, exact: true}).isVisible(), true);
     }
-    assert.equal(await projectActions.getByRole('button', {name: 'Премести'}).isDisabled(), true);
-    assert.equal(await projectActions.getByRole('button', {name: 'Копирай'}).isEnabled(), true);
+    assert.equal(await projectActions.getByRole('menuitem', {name: 'Премести в папка'}).isDisabled(), true);
+    assert.equal(await projectActions.getByRole('menuitem', {name: 'Копирай в папка'}).isEnabled(), true);
+    await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
     await libraryWindow.waitFor({state: 'hidden'});
     await backend.db.doc('workspace_v3/stage-pilot/documents/' + model.id).delete();
@@ -544,6 +559,22 @@ const path = require('node:path');
     assert.equal((await backend.db.doc('users/stage-pilot/materials/base_b').get()).data().name, 'База Beta');
     await materials.getByRole('button', {name: 'Затваряне на прозореца', exact: true}).click();
     await materials.waitFor({state: 'hidden'});
+
+    // Model tile primary click reuses insertModel and preserves the current document.
+    await backend.db.doc('workspace_v3/stage-pilot/documents/' + model.id).set(model);
+    const beforeInsert = await draftDocument(2);
+    await openLibrary();
+    const insertWindow = page.getByRole('dialog', {name: 'Обща библиотека', exact: true});
+    await insertWindow.getByRole('button', {name: 'Модели', exact: true}).click();
+    await insertWindow.getByRole('button', {name: 'Рафтове', exact: true}).click();
+    const insertRequest = awaitOperation('readModel');
+    await insertWindow.getByRole('button', {name: 'Добави модел · ' + model.name}).click();
+    assert.equal((await (await insertRequest).json()).result.id, model.id);
+    await insertWindow.waitFor({state: 'hidden'});
+    const inserted = await draftDocument(3);
+    assert.equal(inserted.id, beforeInsert.id);
+    assert.equal(inserted.parts.length, beforeInsert.parts.length + model.parts.length);
+    await backend.db.doc('workspace_v3/stage-pilot/documents/' + model.id).delete();
 
     await settingsButton.click();
     await settings.getByRole('button', {name: 'Изход', exact: true}).click();
