@@ -132,10 +132,10 @@ const path = require('node:path');
       if (request.url().endsWith('/staging-api')) operations.push(request.postDataJSON()?.operation);
     });
     const draftDocument = async partCount => {
-      const handle = await page.waitForFunction(async count => {
-        const {createWorkspaceDraftAdapter} = await import('/workspace-persistence/drafts.mjs');
-        const draft = createWorkspaceDraftAdapter(localStorage).read({ownerUid: 'stage-pilot', actorUid: 'stage-pilot'});
-        const document = draft && JSON.parse(draft).document;
+      const handle = await page.waitForFunction(count => {
+        const key = 'nedIQ.workspace.test.v1:' + JSON.stringify(['stage-pilot', 'stage-pilot']);
+        const draft = JSON.parse(localStorage.getItem(key));
+        const document = draft && JSON.parse(draft.text).document;
         return document?.parts.length === count && document;
       }, partCount, {timeout: 5000});
       try { return await handle.jsonValue(); }
