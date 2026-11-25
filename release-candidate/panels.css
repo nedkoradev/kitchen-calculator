@@ -174,7 +174,7 @@ dialog.pilotWindow::backdrop { background: rgba(21, 45, 71, .14); }
   .pilotWindowBody { padding: 8px; }
   .pilotWindowBody .materialSection { padding: 8px; overflow-x: auto; }
   body[data-stage-auth="active"] #staging-auth { max-inline-size: 80px; }
-  body[data-stage-auth="active"] #staging-auth.publicProfile { max-inline-size: 100%; }
+  body[data-stage-auth="active"] #staging-auth.publicProfile { max-inline-size: calc(100vw - 76px); }
 }
 
 /* Pilot-only save dialog: labels and controls occupy separate rows. */
@@ -559,8 +559,14 @@ body.ned-shell dialog.workspaceBaseDialog {
   display: none;
 }
 
+body[data-stage-auth="active"] #staging-auth.publicProfile [role="status"]::before {
+  content: none;
+}
+
 .publicAccountMenu {
   position: relative;
+  min-width: 0;
+  max-width: 100%;
 }
 
 body.ned-shell #staging-auth :is(.publicAccountMenu > summary, .publicBaseChoice) {
