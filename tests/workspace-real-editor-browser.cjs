@@ -81,6 +81,7 @@ const {openKitchen} = require('./browser-harness.cjs');
       const http = createWorkspaceHttpClient({endpoint: '/workspace-rc-rpc', getIdToken: scope => tokens[scope.actorUid]});
       const store = createWorkspaceClient(async (operation, request) => {
         if (operation === 'pending' && connection.offline === request.scope.ownerUid) throw Error('Journal offline');
+        if (operation === 'pending' && request.scope.ownerUid === 'shared-fixture') return null;
         if (operation === 'legacyBases') return [
           {id: request.scope.actorUid, name: 'Моята библиотека v2.95', role: 'owner'},
           ...(request.scope.actorUid === 'beta' ? [{id: 'legacy-owner', name: 'Споделена стара база', role: 'editor'}] : []),
@@ -319,6 +320,26 @@ const {openKitchen} = require('./browser-harness.cjs');
       await page.getByRole('button', {name: 'Моята библиотека v2.95 · Собственик', exact: true}).waitFor();
       assert.equal(await page.getByRole('button', {name: /Споделена стара база/}).count(), 0);
       await page.keyboard.press('Escape');
+    }
+    if (e2e) {
+      const personal = await state();
+      const chooseBase = () => page.evaluate(() => {
+        void window.__integration.chooseWorkspaceBase([
+          {id: 'alpha', role: 'owner'},
+          {id: 'shared-fixture', role: 'editor', name: 'Споделена база'},
+        ], 'alpha@example.test');
+      });
+      await chooseBase();
+      await page.getByRole('dialog', {name: 'Избор на база'}).getByRole('button', {name: 'Отказ'}).click();
+      assert.deepEqual((await state()).workspace.document, personal.workspace.document);
+      await chooseBase();
+      await page.getByRole('button', {name: 'Споделена база · Редактор'}).click();
+      await page.waitForFunction(() => window.__integration.bridge.state.scope?.ownerUid === 'shared-fixture');
+      assert.equal((await state()).scope.actorUid, 'alpha');
+      await partCount(0);
+      await chooseBase();
+      await page.getByRole('button', {name: 'Моята база · Собственик'}).click();
+      await page.waitForFunction(() => window.__integration.bridge.state.scope?.ownerUid === 'alpha');
     }
     await page.evaluate(() => { window.__integration.connection.offline = 'beta'; });
     await page.getByLabel('Тестов профил').selectOption('beta');

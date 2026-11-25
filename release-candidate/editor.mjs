@@ -677,12 +677,14 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     if (!base) return null;
     if (base.id === bridge.state.scope?.ownerUid) return base;
     if (!await flush()) throw new Error('Изчакай работата да бъде запазена или презареди приложението, ако достъпът е отнет.');
+    const previousScope = bridge.state.scope;
     const scope = {ownerUid: base.id, actorUid: initialScope.actorUid};
     await store.pending({scope});
     const previousScene = initialScene;
     initialScene = {materials: startingDocument.materials, settings: startingDocument.settings};
     if (!await bridge.initialize(scope)) {
       initialScene = previousScene;
+      await bridge.initialize(previousScope);
       throw new Error('Базата не беше отворена. Текущата работа е запазена.');
     }
     activeMaterialBaseId = '';
