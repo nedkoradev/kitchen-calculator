@@ -143,6 +143,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
     }
     document.body.dataset.stageAuth = 'active';
     form.hidden = google.hidden = true;
+    document.getElementById('cloudStatus').hidden = true;
     logout.hidden = false;
     status.textContent = pilot?.public ? user.email + ' · Собственик' : 'Профилът е удостоверен';
     status.title = status.textContent;
@@ -151,7 +152,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
       const choose = document.createElement('button');
       choose.type = 'button';
       choose.textContent = 'Избор на база';
-      panel.insertBefore(choose, logout);
+      panel.append(choose);
       async function selectBase(automatic = false) {
         choose.disabled = true;
         try {
