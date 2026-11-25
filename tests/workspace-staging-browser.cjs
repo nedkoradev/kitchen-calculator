@@ -353,8 +353,11 @@ const path = require('node:path');
     assert.deepEqual(await draftDocument(14), combined);
 
     const savedName = 'Обекти от пилота';
-    const awaitOperation = operation => page.waitForResponse(response => response.url().endsWith('/staging-api') &&
-      response.request().postDataJSON()?.operation === operation);
+    const awaitOperation = (operation, id) => page.waitForResponse(response => {
+      if (!response.url().endsWith('/staging-api')) return false;
+      const payload = response.request().postDataJSON();
+      return payload?.operation === operation && (id === undefined || payload.request?.id === id);
+    });
     const saveDialog = page.getByRole('dialog', {name: 'Име и папка'});
     const destination = saveDialog.getByLabel('Папка', {exact: true});
     await page.keyboard.press('Control+s');
@@ -382,7 +385,7 @@ const path = require('node:path');
     await status.getByText(/Готово.*Нов проект/).waitFor();
     assert.equal((await draftDocument(0)).parts.length, 0);
     await openLibrary();
-    const read = awaitOperation('readProject');
+    const read = awaitOperation('readProject', saved.id);
     await page.getByRole('button', {name: 'Отвори проект · ' + savedName, exact: true}).click();
     assert.deepEqual((await (await read).json()).result, persisted);
     await status.getByText(/Готово.*Обекти от пилота/).waitFor();
@@ -581,7 +584,7 @@ const path = require('node:path');
     const insertWindow = page.getByRole('dialog', {name: 'Обща библиотека', exact: true});
     await insertWindow.getByRole('button', {name: 'Модели', exact: true}).click();
     await insertWindow.getByRole('button', {name: 'Рафтове', exact: true}).click();
-    const insertRequest = awaitOperation('readModel');
+    const insertRequest = awaitOperation('readModel', model.id);
     await insertWindow.getByRole('button', {name: 'Добави модел · ' + model.name}).click();
     assert.equal((await (await insertRequest).json()).result.id, model.id);
     await insertWindow.waitFor({state: 'hidden'});
