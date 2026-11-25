@@ -1,4 +1,4 @@
-export const version = '3.0.23';
+export const version = '3.0.24';
 export const probeHost = 'release-check---nediq-v3-public-inu5wh5ola-ew.a.run.app';
 
 export function releaseMetadata(env) {
