@@ -30,6 +30,9 @@ for (let attempt = 0; attempt < 30; attempt++) {
 }
 assert.equal(page?.status, 200);
 assert.ok(page.body.includes('<title>NED-IQ v' + version + '</title>'));
+assert.match(page.body, /<body data-stage-auth="locked">/);
+assert.match(page.body, /release-candidate\/panels\.css/);
+assert.doesNotMatch(page.body, /<script[^>]+src="\.\/cloud\.js"/);
 const release = JSON.parse((await probe('/release.json')).body);
 assert.equal(release.version, version);
 assert.equal(release.sha, 'a'.repeat(40));

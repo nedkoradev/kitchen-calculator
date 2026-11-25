@@ -76,6 +76,16 @@ const path = require('node:path');
     await page.goto(stage.origin + '/', {waitUntil: 'domcontentloaded'});
     const panel = page.getByRole('region', {name: 'Вход в локалния преглед'});
     await panel.getByText('Локален тестов вход').waitFor();
+    await page.waitForFunction(() => !document.documentElement.classList.contains('ned-booting'));
+    for (const selector of ['#modeProject', '#modeConstructor', '#mainNavigation',
+      '#shellModes', '#shellMenus', '#shellTools', '#headerRight', 'main']) {
+      const legacy = page.locator(selector);
+      if (await legacy.count()) assert.equal(await legacy.isVisible(), false,
+        'Signed-out v3 must not show the legacy UI: ' + selector);
+    }
+    assert.equal(await panel.getByRole('button', {name: 'Вход с Google'}).isVisible(), true);
+    assert.equal(await page.locator('header strong').first().isVisible(), true,
+      'The NED-IQ brand remains visible before sign-in');
     assert.equal(await page.evaluate(() => document.querySelector('main').inert), true);
     assert.equal(await page.getByLabel('Тестов профил').count(), 0);
     await panel.getByLabel('Имейл').fill('stage-pilot@fixture.invalid');
@@ -91,6 +101,8 @@ const path = require('node:path');
       releaseCatalog();
     }
     await panel.getByText('Профилът е удостоверен').waitFor();
+    assert.equal(await page.locator('#shellTools').isVisible(), true,
+      'The authenticated v3 tool shell must become visible');
 
     const library = page.locator('#libraryMenu summary');
     const openLibrary = async () => {
@@ -486,6 +498,8 @@ const path = require('node:path');
     await settings.getByRole('button', {name: 'Изход', exact: true}).click();
     await panel.getByText('Локален тестов вход').waitFor();
     assert.equal(await page.evaluate(() => document.querySelector('main').inert), true);
+    assert.equal(await page.locator('#mainNavigation').isVisible(), false,
+      'Signing out must restore the same v3 pre-login shield');
     assert.deepEqual(outside, []);
     assert.deepEqual(errors, []);
     console.log('PASS staged Auth, persistent 3D scene, pilot windows, Firestore save/reopen and mobile reload');
