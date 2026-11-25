@@ -49,6 +49,16 @@ test('local output does not overwrite an existing backup', async () => {
   } finally { await rm(scratch, {recursive: true, force: true}); }
 });
 
+test('v3 material supplier links are safe external HTTP(S) URLs', async () => {
+  const {materialSupplierLink} = await import('../release-candidate/material-editor.mjs');
+  assert.equal(materialSupplierLink('https://supplier.example.test/decor'), 'https://supplier.example.test/decor');
+  assert.equal(materialSupplierLink('http://supplier.example.test/decor'), 'http://supplier.example.test/decor');
+  for (const unsafe of ['javascript:alert(1)', 'data:text/html,hi', '/relative/path',
+    'https://user:secret@supplier.example.test/product', '', null]) {
+    assert.equal(materialSupplierLink(unsafe), null);
+  }
+});
+
 test('legacy v2 Pages publishes independently of v3 and rejects an attached custom domain', async () => {
   const workflow = await repositoryFile('.github/workflows/pages.yml');
   assert.match(workflow, /push:\s*\n\s*branches:\s*\[main\]/);
