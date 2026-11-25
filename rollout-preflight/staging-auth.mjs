@@ -6,7 +6,7 @@ import {mountWorkspaceEditor} from '../release-candidate/editor.mjs';
 import {createWorkspaceHttpClient} from '../release-candidate/client.mjs';
 import {createWorkspaceDraftAdapter} from '../workspace-persistence/drafts.mjs';
 import {prepareNewDocument} from '../workspace-context/context.mjs';
-import {createGoogleAccountChoiceProvider} from './google-account-choice.mjs';
+import {createGoogleAccountChoiceProvider} from '../release-candidate/google-account-choice.mjs';
 
 export async function startStagingAuth({authOrigin, pilot, materialsReady, activate, editor, views}) {
   const allowedOrigin = pilot?.localGoogle
