@@ -124,6 +124,23 @@ const path = require('node:path');
     assert.equal(await page.locator('#shellTools').isVisible(), true,
       'The authenticated v3 tool shell must become visible');
 
+    // Exercise the public dropdown layout with the actual authenticated shell.
+    await panel.evaluate(node => {
+      const account = document.createElement('details');
+      account.className = 'publicAccountMenu';
+      const summary = document.createElement('summary');
+      summary.textContent = 'fixture@example.test';
+      const logout = document.createElement('button');
+      logout.textContent = 'Изход';
+      account.append(summary, logout);
+      node.prepend(account);
+    });
+    const accountMenu = panel.locator('.publicAccountMenu');
+    await accountMenu.locator('summary').click();
+    const exit = accountMenu.getByRole('button', {name: 'Изход'});
+    await exit.click({trial: true});
+    await accountMenu.evaluate(node => node.remove());
+
     const library = page.locator('#libraryMenu summary');
     const openLibrary = async () => {
       await library.click();
