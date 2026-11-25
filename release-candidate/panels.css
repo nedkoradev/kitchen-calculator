@@ -581,6 +581,12 @@ body[data-stage-auth="active"] #staging-auth.publicProfile [role="status"]::befo
   content: none;
 }
 
+/* The account dropdown overlaps the workspace menu bar (z-index: 30). */
+body.ned-shell > header:has(.publicAccountMenu[open]) {
+  position: relative;
+  z-index: 31;
+}
+
 .publicAccountMenu {
   position: relative;
   min-width: 0;
