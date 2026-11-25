@@ -84,7 +84,7 @@ const path = require('node:path');
         'Signed-out v3 must not show the legacy UI: ' + selector);
     }
     assert.equal(await panel.getByRole('button', {name: 'Вход с Google'}).isVisible(), true);
-    assert.equal(await page.locator('header strong').isVisible(), true,
+    assert.equal(await page.locator('header strong').first().isVisible(), true,
       'The NED-IQ brand remains visible before sign-in');
     assert.equal(await page.evaluate(() => document.querySelector('main').inert), true);
     assert.equal(await page.getByLabel('Тестов профил').count(), 0);
