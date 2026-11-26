@@ -1,6 +1,8 @@
 import {decorateAction} from '../icons.mjs';
 import {nedConfirmAction, nedConfirmDelete, nedPromptName} from '../ui-messages.mjs';
 import {createPilotMaterialEditor} from './material-editor.mjs';
+import {createTransportReport} from './transport-report.mjs';
+import {inCut} from '../appliance.mjs';
 
 const byId = id => document.getElementById(id);
 const element = (tag, className) => Object.assign(document.createElement(tag), {className});
@@ -183,7 +185,7 @@ function protectMaterialEditors(onApply) {
   }).observe(document.body, {subtree: true, attributes: true, attributeFilter: ['open']});
 }
 
-export function installPilotPanels({renderMaterials, renderReport, logout, fallback, openSharing, onMaterialApply, canEdit}) {
+export function installPilotPanels({renderMaterials, renderReport, transportContext, logout, fallback, openSharing, onMaterialApply, canEdit}) {
   const create = (id, title, existing = byId(id)) => {
     const dialog = existing ?? document.createElement('dialog');
     dialog.id = id;
@@ -360,12 +362,21 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
   // Reuse the report tables without switching the editor out of its 3D tab.
   reports.content.append(results);
   const summaries = ['projectSummary', 'projectCutPane', 'projectCostPane'];
+  const transport = createTransportReport(inCut);
+  reports.content.append(transport.root);
+  reports.dialog.addEventListener('close', () => { if (!reports.dialog.open) transport.hide(); });
   function showReport(kind, scope) {
     if (!canEdit()) return;
-    renderReport(scope);
-    if (results.parentElement !== reports.content) reports.content.append(results);
-    results.hidden = false;
-    for (const id of summaries) byId(id).hidden = id !== 'projectSummary' && id !== (kind === 'costs' ? 'projectCostPane' : 'projectCutPane');
+    if (kind === 'transport') {
+      results.hidden = true;
+      transport.show(transportContext(scope));
+    } else {
+      transport.hide();
+      renderReport(scope);
+      if (results.parentElement !== reports.content) reports.content.append(results);
+      results.hidden = false;
+      for (const id of summaries) byId(id).hidden = id !== 'projectSummary' && id !== (kind === 'costs' ? 'projectCostPane' : 'projectCutPane');
+    }
     for (const [type, button] of reportButtons) button.setAttribute('aria-pressed', String(type === kind));
     reports.show();
   }
@@ -375,6 +386,7 @@ export function installPilotPanels({renderMaterials, renderReport, logout, fallb
   const reportButtons = [
     ['cut', action('Разкрой', null, () => showReport('cut'))],
     ['costs', action('Себестойност', null, () => showReport('costs'))],
+    ['transport', action('Подреждане за транспорт', null, () => showReport('transport'))],
   ];
   for (const [kind, button] of reportButtons) {
     button.classList.add('pilotLibraryFolderTab');

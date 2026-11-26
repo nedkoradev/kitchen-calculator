@@ -9,6 +9,29 @@ import {protectCopy, verifyCopy, writeNewLocalFile} from '../rollout-preflight/a
 import {buildLocalPreview, sheetJsPath} from '../rollout-preflight/staging-html.mjs';
 import {createGoogleAccountChoiceProvider} from '../release-candidate/google-account-choice.mjs';
 
+import {placeStack, planTransport, transferPanel, transportWeight} from '../release-candidate/transport-layout.mjs';
+
+test('transport supports layers and rotation and reports unplaced panels and missing weights', () => {
+  const panel = (id, w, d, kg = null) => ({id, w, d, thickness: 18, kg, group: 'cabinet'});
+  const parts = [panel('base', 700, 1200, 4), panel('upper', 1000, 600, 2),
+    panel('remaining', 450, 400), panel('oversize', 1600, 1500)];
+  const area = {w: 1200, d: 800, height: 36, rotate: true, byGroup: false};
+  const {stacks, remaining} = planTransport(parts, area);
+  assert.equal(stacks.length, 1);
+  assert.deepEqual(stacks[0].layers.map(({id, w, d}) => [id, w, d]), [
+    ['base', 1200, 700], ['upper', 1000, 600],
+  ]);
+  assert.deepEqual(remaining.map(part => part.id), ['oversize', 'remaining']);
+  assert.deepEqual(transportWeight(parts), {kg: 6, known: 2});
+  assert.equal(placeStack(stacks, stacks[0], 0, 100, area), true);
+  assert.equal(placeStack(stacks, stacks[0], 0, 101, area), false);
+  const before = structuredClone(stacks);
+  assert.equal(transferPanel(stacks, null, -1, stacks[0], 2, remaining[1], area), false);
+  assert.deepEqual(stacks, before);
+  assert.equal(transferPanel(stacks, stacks[0], 0, stacks[0], 2, stacks[0].layers[0], area), false);
+  assert.deepEqual(stacks, before);
+});
+
 const repositoryFile = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
 
 test('v3 Google popup requests account choice on every explicit login', async () => {

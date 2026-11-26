@@ -83,6 +83,7 @@ function buildPreview(source, {enabled, settings}) {
       },
       views: {
         renderMaterials: renderMaterialsPage,
+        transportContext: scope => buildReportContext(scope ?? {kind: 'whole'}),
         renderReport(scope) {
           activeReport = null;
           projectRefresh(scope ? buildReportContext(scope) : undefined);
