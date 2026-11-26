@@ -100,7 +100,12 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
     appearance.querySelector('.materialActions')?.append(action('Снимка от компютъра',
       () => appearance.querySelector('#materialPhotoUpload')?.click()));
     const inputs = new Map();
-    for (const [key, label, kind] of section.fields) {
+    const weightFields = section.key === 'edgeMaterials' ? [] : [
+      ['weightKgM2', 'Тегло (кг/м²)', 'number'],
+      ['weightThicknessMm', 'Дебелина, за която важи теглото (мм)', 'number'],
+    ];
+    const fields = [...section.fields, ...weightFields];
+    for (const [key, label, kind] of fields) {
       if (key === 'textureUrl') continue; // The shared photo chooser owns this field.
       const row = element('label', 'pilotMaterialEditorField');
       row.append(element('span', '', label));
@@ -147,7 +152,7 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
     form.append(controls);
     form.onsubmit = event => {
       event.preventDefault();
-      for (const [key, , kind] of section.fields) {
+      for (const [key, , kind] of fields) {
         const input = inputs.get(key);
         if (kind === 'checkbox') {
           if (input.checked || Object.hasOwn(draft, key)) draft[key] = input.checked;
