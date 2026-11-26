@@ -386,6 +386,36 @@ const path = require('node:path');
     await page.keyboard.press('Control+Shift+z');
     assert.deepEqual(await draftDocument(14), combined);
 
+    await page.locator('#groupList [data-tree-kind="group"]').getByText('Долен шкаф', {exact: false}).first().click();
+    for (const axis of ['W', 'H', 'D']) {
+      const lock = page.locator('#lock' + axis);
+      const size = page.locator('#part' + axis);
+      const dimension = await size.inputValue();
+      await lock.check();
+      assert.equal(await size.isDisabled(), true);
+      assert.equal(await size.inputValue(), dimension);
+    }
+    await page.waitForFunction(() => {
+      const key = 'nedIQ.workspace.test.v1:' + JSON.stringify(['stage-pilot', 'stage-pilot']);
+      const draft = JSON.parse(localStorage.getItem(key));
+      const members = JSON.parse(draft.text).document.parts.filter(item => item.part.assembly);
+      return members.length === 13 && members.every(({part}) => {
+        const locks = part.groupSizeLocks?.[part.assemblyStack?.length ?? 0];
+        return locks?.w && locks.h && locks.d;
+      });
+    });
+    const locked = await draftDocument(14);
+    assert.deepEqual(locked.parts.map(({part}) => part.locks), combined.parts.map(({part}) => part.locks));
+    for (const axis of ['W', 'H', 'D']) {
+      await page.locator('#lock' + axis).uncheck();
+      assert.equal(await page.locator('#part' + axis).isEnabled(), true);
+    }
+    await page.waitForFunction(() => {
+      const key = 'nedIQ.workspace.test.v1:' + JSON.stringify(['stage-pilot', 'stage-pilot']);
+      const draft = JSON.parse(localStorage.getItem(key));
+      return JSON.parse(draft.text).document.parts.every(({part}) => !part.groupSizeLocks);
+    });
+
     const savedName = 'Обекти от пилота';
     const awaitOperation = (operation, id) => page.waitForResponse(response => {
       if (!response.url().endsWith('/staging-api')) return false;

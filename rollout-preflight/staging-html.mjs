@@ -48,6 +48,60 @@ function buildPreview(source, {enabled, settings}) {
     if (html.split(original).length !== 2) throw new Error('Expected one cut report renderer seam');
     html = html.replace(original, replacement);
   }
+  // Keep assembly dimension locks separate from each panel's construction locks.
+  // The level follows assemblyStack, so copying or remapping group IDs keeps it.
+  const groupResize = 'function resizeGroupNumeric(members,dim,size){';
+  const groupLocks = [
+    [groupResize, `
+function groupSizeLocked(part,dim){
+ return !!(part.assembly && part.groupSizeLocks?.[part.assemblyStack?.length ?? 0]?.[dim]);
+}
+function setGroupSizeLock(part,dim,locked){
+ const level=part.assemblyStack?.length ?? 0;
+ const levels=part.groupSizeLocks ?? [];
+ const locks={...levels[level]};
+ if(locked)locks[dim]=true;
+ else delete locks[dim];
+ while(levels.length<=level)levels.push(null);
+ levels[level]=Object.keys(locks).length?locks:null;
+ while(levels.at(-1)===null)levels.pop();
+ if(levels.length)part.groupSizeLocks=levels;
+ else delete part.groupSizeLocks;
+}
+` + groupResize + 'if(members.some(p=>groupSizeLocked(p,dim))&&!(members.length===1&&singleMemberSelection))return;'],
+    ["$('lock'+id).checked=isGroup?false:!!custom.locks?.[k];$('lock'+id).disabled=isGroup;$('part'+id).disabled=isGroup?false:!!custom.locks?.[k]",
+      "const locked=isGroup?customParts.some(p=>p.assembly===custom.assembly&&groupSizeLocked(p,k)):!!custom.locks?.[k];$('lock'+id).checked=locked;$('lock'+id).disabled=false;$('part'+id).disabled=locked"],
+    ["if(!p)return;p.locks??={};p.locks[k]=$('lock'+id).checked;$('part'+id).disabled=p.locks[k]", `if(!p)return;
+ const locked=$('lock'+id).checked;
+ rememberHistory();
+ if(p.assembly&&!singleMemberSelection){
+  for(const member of customParts.filter(q=>q.assembly===p.assembly))setGroupSizeLock(member,k,locked);
+ }else{
+  p.locks??={};p.locks[k]=locked;
+ }
+ build(false);updateSelection();`],
+    ['if(!p.assemblyStack?.length)delete p.assemblyStack;', `if(!p.assemblyStack?.length)delete p.assemblyStack;
+  if(p.groupSizeLocks){
+   p.groupSizeLocks.length=Math.min(p.groupSizeLocks.length,(p.assemblyStack?.length ?? 0)+1);
+   if(!p.assembly||!p.groupSizeLocks.some(Boolean))delete p.groupSizeLocks;
+  }`],
+    ['delete clone.constructorCabinet;', 'delete clone.constructorCabinet;\n  if(!newAssembly)delete clone.groupSizeLocks;'],
+    ['if(p.locks){p.locks.w=ld;p.locks.d=lw}', `if(p.locks){p.locks.w=ld;p.locks.d=lw}
+  if(selectedPart.assembly&&!singleMemberSelection){
+   for(const locks of p.groupSizeLocks ?? []){
+    if(!locks)continue;
+    const width=locks.w;
+    if(locks.d)locks.w=true;else delete locks.w;
+    if(width)locks.d=true;else delete locks.d;
+   }
+  }`],
+    ['   const marker=new THREE.Mesh(new THREE.SphereGeometry(13,12,8)', "   if(groupMembers.some(p=>groupSizeLocked(p,{x:'w',y:'h',z:'d'}[axis])))continue;\n   const marker=new THREE.Mesh(new THREE.SphereGeometry(13,12,8)"],
+    ["  const point=new THREE.Vector3(axis==='x'?(sign<0?bounds.x.min:bounds.x.max)", "  if(members.some(p=>groupSizeLocked(p,{x:'w',y:'h',z:'d'}[axis])))continue;\n  const point=new THREE.Vector3(axis==='x'?(sign<0?bounds.x.min:bounds.x.max)"],
+  ];
+  for (const [original, replacement] of groupLocks) {
+    if (html.split(original).length !== 2) throw new Error('Expected one group lock renderer seam');
+    html = html.replace(original, () => replacement);
+  }
   const css = '<link rel="stylesheet" href="./release-candidate/panels.css">';
   html = html.replace(loadMaterials, '\nconst stagingMaterialsReady = loadDefaultMaterials();');
   html = html.replace(welcome, '').replace('</head>', css + '</head>');
