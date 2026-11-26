@@ -85,6 +85,7 @@ export function createTransportReport(includeInCut) {
   status.setAttribute('role', 'status');
   const totals = node('p');
   const loadPicker = node('select');
+  loadPicker.setAttribute('aria-label', 'Товар');
   const loadField = node('label', 'Товар');
   loadField.className = 'transportLoadPicker';
   loadField.append(loadPicker);

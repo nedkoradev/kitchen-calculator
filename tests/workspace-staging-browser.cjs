@@ -319,8 +319,9 @@ const path = require('node:path');
       ['Максимална височина (мм)', testLoad[2]],
     ]) await reports.getByLabel(label).fill(String(value));
     await reports.getByRole('button', {name: 'Подреди автоматично', exact: true}).click();
-    const loadPicker = reports.getByLabel('Товар', {exact: true});
-    assert.ok(await loadPicker.locator('option').count() > 1);
+    const loadPicker = reports.getByRole('combobox', {name: 'Товар', exact: true});
+    await loadPicker.waitFor();
+    assert.ok(await loadPicker.locator('option').count() > 1, await loadPicker.innerText());
     await loadPicker.selectOption('1');
     await reports.getByRole('button', {name: 'Отгоре', exact: true}).click();
     await reports.getByRole('button', {name: 'Етикети', exact: true}).click();
