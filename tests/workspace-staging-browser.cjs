@@ -279,6 +279,17 @@ const path = require('node:path');
     assert.match(sizeCells[3], /^\d+(?:\.\d+)? мм(?: ↔)?$/);
     assert.match(sizeCells[4], /^\d+(?:\.\d+)? мм$/);
     assert.equal(await cutTable.locator('tfoot td').first().getAttribute('colspan'), '7');
+    const testLoad = await cutTable.locator('tbody tr').evaluateAll(rows => {
+      const dimensions = new Map();
+      for (const {cells} of rows) {
+        const sizes = [3, 4, 5].map(index => Number.parseFloat(cells[index].textContent));
+        const key = sizes.join(',');
+        const count = (dimensions.get(key) ?? 0) + Number(cells[2].textContent);
+        if (count > 1) return sizes;
+        dimensions.set(key, count);
+      }
+      throw new Error('Expected two identical panels in the generated cabinet');
+    });
     assert.deepEqual(sheetJsRequests, [stage.origin + '/staging-sdk/xlsx-0.20.3.min.js']);
     assert.equal(await page.evaluate(() => XLSX.version), '0.20.3');
     const download = page.waitForEvent('download');
@@ -301,7 +312,12 @@ const path = require('node:path');
     await transportButton.click();
     await reports.locator('.transportCanvas canvas').waitFor();
     assert.ok((await reports.locator('.transportSidebar').boundingBox()).width >= 300);
-    await reports.getByLabel('Максимална височина (мм)').fill('18');
+    await reports.getByLabel('Разреши завъртане на 90°').uncheck();
+    for (const [label, value] of [
+      ['Ширина на товарната площ (мм)', testLoad[0]],
+      ['Дължина на товарната площ (мм)', testLoad[1]],
+      ['Максимална височина (мм)', testLoad[2]],
+    ]) await reports.getByLabel(label).fill(String(value));
     await reports.getByRole('button', {name: 'Подреди автоматично', exact: true}).click();
     const loadPicker = reports.getByLabel('Товар', {exact: true});
     assert.ok(await loadPicker.locator('option').count() > 1);
