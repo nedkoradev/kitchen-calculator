@@ -53,16 +53,31 @@ export function startStack(stacks, source, index, part, x, z, area) {
   return null;
 }
 
-export function planTransport(parts, area) {
+const byFootprint = (a, b) => b.w * b.d - a.w * a.d;
+const byLongEdge = (a, b) => Math.max(b.w, b.d) - Math.max(a.w, a.d) || byFootprint(a, b);
+
+export function planTransport(parts, area, order = byFootprint, preferRotated = false, fillHighest = false) {
   const stacks = [], remaining = [];
   const ordered = [...parts].sort((a, b) => (area.byGroup ? a.group.localeCompare(b.group) : 0) ||
-    b.w * b.d - a.w * a.d);
+    order(a, b));
   for (const part of ordered) {
     const candidates = orientations(part, area);
-    const target = stacks.find(stack => (!area.byGroup || stack.layers[0].group === part.group) &&
-      candidates.some(candidate => supported([...stack.layers, candidate], area)));
-    if (target) {
-      transferPanel(stacks, null, -1, target, target.layers.length, part, area);
+    if (preferRotated) candidates.reverse();
+    let placement;
+    for (const stack of stacks) {
+      if (area.byGroup && stack.layers[0].group !== part.group) continue;
+      const top = stack.layers.at(-1);
+      const height = stackHeight(stack) + part.thickness;
+      if (height > area.height || (placement && height <= placement.height)) continue;
+      for (const candidate of candidates) {
+        if (candidate.w > top.w || candidate.d > top.d) continue;
+        placement = {stack, candidate, height};
+        break;
+      }
+      if (placement && !fillHighest) break;
+    }
+    if (placement) {
+      placement.stack.layers.push(placement.candidate);
       continue;
     }
     // A feasible edge belongs at the origin or immediately after another stack.
@@ -87,19 +102,36 @@ export function planTransport(parts, area) {
 }
 
 export function planTransportLoads(parts, area) {
-  const loads = [];
   const remaining = [];
-  let pending = parts.filter(part => {
+  const eligible = parts.filter(part => {
     const reason = part.thickness > area.height ? 'Над допустимата височина' :
       orientations(part, area).some(candidate => fits(0, 0, candidate.w, candidate.d, area))
         ? null : 'Извън товарните габарити';
     if (reason) remaining.push({...part, reason});
     return !reason;
   });
-  while (pending.length) {
-    const load = planTransport(pending, area);
-    loads.push(load);
-    pending = load.remaining;
+  // Try two priorities and, when allowed, both starting orientations.
+  // Rank by trip count first, then by volume packed into earlier trips.
+  let loads;
+  let bestScore;
+  for (const [order, preferRotated, fillHighest] of [[byFootprint, false, false],
+    [byFootprint, false, true], [byLongEdge, false, true],
+    ...(area.rotate ? [[byFootprint, true, true], [byLongEdge, true, true]] : [])]) {
+    const candidate = [];
+    let pending = eligible;
+    while (pending.length) {
+      const load = planTransport(pending, area, order, preferRotated, fillHighest);
+      candidate.push(load);
+      pending = load.remaining;
+    }
+    const score = candidate.reduce((total, load, index) => total + (candidate.length - index) *
+      load.stacks.reduce((volume, stack) => volume +
+        stack.layers.reduce((sum, part) => sum + part.w * part.d * part.thickness, 0), 0), 0);
+    if (!loads || candidate.length < loads.length || (candidate.length === loads.length && score > bestScore)) {
+      loads = candidate;
+      bestScore = score;
+    }
+    if (loads.length <= 1) break;
   }
   return {loads, remaining};
 }

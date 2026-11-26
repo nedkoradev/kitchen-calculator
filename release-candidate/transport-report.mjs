@@ -24,9 +24,9 @@ function field(form, text, input) {
   return input;
 }
 
-function number(form, label, value = '', required = true) {
+function number(form, label, value) {
   const input = node('input');
-  Object.assign(input, {type: 'number', min: '1', max: '100000', step: '1', required, value});
+  Object.assign(input, {type: 'number', min: '1', max: '100000', step: '1', required: true, value});
   return field(form, label, input);
 }
 
@@ -75,7 +75,8 @@ export function createTransportReport(includeInCut) {
   form.append(node('h3', 'Параметри'));
   const width = number(form, 'Ширина на товарната площ (мм)', '1200');
   const depth = number(form, 'Дължина на товарната площ (мм)', '800');
-  const height = number(form, 'Максимална височина (мм)', '', false);
+  const defaultHeight = '800';
+  const height = number(form, 'Максимална височина (мм)', defaultHeight);
   const rotate = toggle(form, 'Разреши завъртане на 90°', true);
   const byGroup = toggle(form, 'Подреждай по шкаф');
   const arrange = node('button', 'Подреди автоматично');
@@ -223,7 +224,7 @@ export function createTransportReport(includeInCut) {
 
   function recalculate() {
     area = {w: width.valueAsNumber, d: depth.valueAsNumber,
-      height: height.value ? height.valueAsNumber : Infinity, rotate: rotate.checked, byGroup: byGroup.checked};
+      height: height.valueAsNumber, rotate: rotate.checked, byGroup: byGroup.checked};
     plan = planTransportLoads(source, area);
     layout = plan.loads[0] ?? emptyLoad;
     selected = layout.stacks[0];
@@ -272,7 +273,7 @@ export function createTransportReport(includeInCut) {
       if (!form.checkValidity()) {
         width.value = '1200';
         depth.value = '800';
-        height.value = '';
+        height.value = defaultHeight;
       }
       recalculate();
     } else render(true);
