@@ -1,6 +1,10 @@
+import {canRemoveLayer, placeLayer, positionedLoad} from './transport-layers.mjs';
+
 const fits = (x, z, w, d, area) => x >= 0 && z >= 0 && x + w <= area.w && z + d <= area.d;
 const overlaps = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.z < b.z + b.d && a.z + a.d > b.z;
-export const stackHeight = stack => stack.layers.reduce((total, layer) => total + layer.thickness, 0);
+export const stackHeight = stack => stack.positioned
+  ? Math.max(0, ...stack.layers.map(layer => layer.y + layer.thickness))
+  : stack.layers.reduce((total, layer) => total + layer.thickness, 0);
 
 function orientations(part, area) {
   return area.rotate && part.w !== part.d ? [part, {...part, w: part.d, d: part.w}] : [part];
@@ -23,6 +27,19 @@ export function placeStack(stacks, stack, x, z, area) {
 }
 
 export function transferPanel(stacks, source, index, target, slot, part, area) {
+  if (source?.positioned || target.positioned) {
+    if (source === target || (source?.positioned && !canRemoveLayer(source.layers, index))) return false;
+    if (target.positioned) {
+      const candidate = placeLayer(target.layers, part, {w: target.w, d: target.d,
+        height: area.height, rotate: area.rotate});
+      if (!candidate) return false;
+      target.layers.push(candidate);
+      target.layers.sort((a, b) => a.y - b.y || a.z - b.z || a.x - b.x);
+      if (source) source.layers.splice(index, 1);
+      if (source && !source.layers.length) stacks.splice(stacks.indexOf(source), 1);
+      return true;
+    }
+  }
   const from = source ? [...source.layers] : null;
   if (from) from.splice(index, 1);
   const destination = source === target ? from : [...target.layers];
@@ -101,6 +118,10 @@ export function planTransport(parts, area, order = byFootprint, preferRotated = 
   return {stacks, remaining};
 }
 
+const scoreLoads = candidate => candidate.reduce((total, load, index) => total + (candidate.length - index) *
+      load.stacks.reduce((volume, stack) => volume +
+        stack.layers.reduce((sum, part) => sum + part.w * part.d * part.thickness, 0), 0), 0);
+
 export function planTransportLoads(parts, area) {
   const remaining = [];
   const eligible = parts.filter(part => {
@@ -124,14 +145,42 @@ export function planTransportLoads(parts, area) {
       candidate.push(load);
       pending = load.remaining;
     }
-    const score = candidate.reduce((total, load, index) => total + (candidate.length - index) *
-      load.stacks.reduce((volume, stack) => volume +
-        stack.layers.reduce((sum, part) => sum + part.w * part.d * part.thickness, 0), 0), 0);
+    const score = scoreLoads(candidate);
     if (!loads || candidate.length < loads.length || (candidate.length === loads.length && score > bestScore)) {
       loads = candidate;
       bestScore = score;
     }
     if (loads.length <= 1) break;
+  }
+  if (!area.byGroup && loads.length > 1) {
+    for (const order of [byFootprint, byLongEdge, (a, b) => b.thickness - a.thickness || byFootprint(a, b)]) {
+      const candidate = [];
+      let pending = [...eligible].sort(order);
+      while (pending.length && candidate.length < loads.length) {
+        const load = positionedLoad(pending, area);
+        candidate.push(load);
+        pending = load.remaining;
+      }
+      if (pending.length) continue;
+      // Try to absorb the tail by repacking one earlier load at a time.
+      const tail = candidate.at(-1);
+      if (candidate.length > 1) {
+        const tailParts = tail.stacks[0].layers;
+        for (const load of candidate.slice(0, -1).slice(0, 8)) {
+          const attempt = positionedLoad([...load.stacks[0].layers, ...tailParts].sort(order), area);
+          if (attempt.remaining.length) continue;
+          load.stacks = attempt.stacks;
+          candidate.pop();
+          break;
+        }
+      }
+      const score = scoreLoads(candidate);
+      if (candidate.length < loads.length || (candidate.length === loads.length && score > bestScore)) {
+        loads = candidate;
+        bestScore = score;
+      }
+      if (loads.length === 1) break;
+    }
   }
   return {loads, remaining};
 }

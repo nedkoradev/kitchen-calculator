@@ -36,18 +36,22 @@ function toggle(form, label, checked = false) {
   return field(form, label, input);
 }
 
-function panelsFor(context, include) {
+const normalize = value => String(value ?? '').normalize('NFKC').trim().toLowerCase();
+
+function panelsFor(context, include, liveCatalog) {
   const {customParts, allParts, finishes, selectedBoard, labels} = reportInputs(context);
   const ids = partLabelIndex(allParts);
   return customParts.filter(part => include(part, finishes[part.key])).map(part => {
     const finish = finishes[part.key];
     const material = selectedBoard(finish);
     const {A: w, B: d, thickness} = cutLayout(part, finish, material);
-    const weight = material?.weightKgM2;
-    const applies = !material?.weightThicknessMm || material.weightThicknessMm === thickness;
+    const key = {back: 'backMaterials', worktop: 'worktops'}[finish.materialType] ?? 'pdcMaterials';
+    const matches = (liveCatalog?.[key] ?? []).filter(candidate => material &&
+      (material.id ? candidate.id === material.id : normalize(material.name) && normalize(candidate.name) === normalize(material.name)));
+    const weight = matches.length === 1 ? matches[0].weightKgM2 : !liveCatalog ? material?.weightKgM2 : null;
     return {id: part.key, group: part.assembly ?? part.key, label: ids.get(part.key) ?? labels[part.key],
       w, d, thickness, color: /^#[\da-f]{6}$/i.test(material?.color) ? material.color : '#c4aa86',
-      kg: applies && Number.isFinite(weight) && weight > 0 ? w * d / 1e6 * weight : null};
+      kg: Number.isFinite(weight) && weight > 0 ? w * d / 1e6 * weight : null};
   });
 }
 
@@ -58,7 +62,7 @@ function weightLabel(parts) {
     parts.length ? 'липсват данни' : '0 кг';
 }
 
-export function createTransportReport(includeInCut) {
+export function createTransportReport(includeInCut, loadCatalog) {
   const root = node('section');
   root.className = 'transportReport';
   root.hidden = true;
@@ -85,6 +89,11 @@ export function createTransportReport(includeInCut) {
   const status = node('p');
   status.setAttribute('role', 'status');
   const totals = node('p');
+  const weight = node('section');
+  weight.className = 'transportLoadWeight';
+  const loadWeight = node('strong');
+  const projectWeight = node('p');
+  weight.append(node('h3', 'Тегло на текущия товар'), loadWeight, projectWeight);
   const loadPicker = node('select');
   loadPicker.setAttribute('aria-label', 'Товар');
   const loadField = node('label', 'Товар');
@@ -93,10 +102,10 @@ export function createTransportReport(includeInCut) {
   toolbar.before(loadField);
   const stacksPane = node('section');
   const remainingPane = node('section');
-  aside.append(form, status, totals, stacksPane, remainingPane);
+  aside.append(weight, form, status, totals, stacksPane, remainingPane);
   root.append(visual, aside);
 
-  let view, plan, layout, area, selected, drag, source, contextKey;
+  let view, plan, layout, area, selected, drag, source, contextKey, request = 0;
   const emptyLoad = {stacks: []};
   loadPicker.onchange = () => {
     layout = plan.loads[Number(loadPicker.value)];
@@ -164,8 +173,9 @@ export function createTransportReport(includeInCut) {
       new Option('Товар ' + (index + 1) + ' от ' + plan.loads.length, index)));
     if (layout !== emptyLoad) loadPicker.value = String(plan.loads.indexOf(layout));
     totals.textContent = 'Общо за разкрой: ' + source.length + ' · Подредени: ' + placedCount +
-      ' · Остават: ' + plan.remaining.length + ' · В този товар: ' + placed.length +
-      ' · Тегло на товара: ' + weightLabel(placed) + ' · Общо тегло: ' + weightLabel(source);
+      ' · Остават: ' + plan.remaining.length + ' · В този товар: ' + placed.length;
+    loadWeight.textContent = weightLabel(placed);
+    projectWeight.textContent = 'Общо за детайлите: ' + weightLabel(source);
     const picker = node('select');
     picker.setAttribute('aria-label', 'Избери купчина');
     picker.add(new Option('Избери купчина', ''));
@@ -200,8 +210,8 @@ export function createTransportReport(includeInCut) {
         row.ondrop = event => { event.preventDefault(); transfer(drag, stack, index); };
         const up = button('Нагоре', () => transfer(item, stack, index + 2));
         const down = button('Надолу', () => transfer(item, stack, index - 1));
-        up.disabled = index === stack.layers.length - 1;
-        down.disabled = index === 0;
+        up.disabled = stack.positioned || index === stack.layers.length - 1;
+        down.disabled = stack.positioned || index === 0;
         row.append(up, down);
         layers.append(row);
       }
@@ -277,7 +287,19 @@ export function createTransportReport(includeInCut) {
       }
       recalculate();
     } else render(true);
+    const ticket = ++request;
+    void loadCatalog?.(context.snapshot.materials.activeBase).then(catalog => {
+      if (!catalog || ticket !== request) return;
+      const updated = panelsFor(context, includeInCut, catalog);
+      const weights = new Map(updated.map(part => [part.id, part.kg]));
+      source = updated;
+      for (const part of [...plan.remaining, ...plan.loads.flatMap(load => load.stacks.flatMap(stack => stack.layers))]) {
+        part.kg = weights.get(part.id) ?? null;
+      }
+      render();
+    }).catch(() => {});
   }, hide() {
+    request++;
     root.hidden = true;
     view?.dispose();
     view = null;

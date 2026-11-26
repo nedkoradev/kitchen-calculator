@@ -264,6 +264,16 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     return bridge.state.scope?.ownerUid === scope.ownerUid &&
       bridge.state.scope?.actorUid === scope.actorUid;
   }
+  async function transportCatalog(name) {
+    const scope = materialScope();
+    const {items, defaultBaseId} = await store.materialBases({scope});
+    const named = items.filter(item => item.name === name);
+    const id = name ? named.length === 1 ? named[0].id : null : activeMaterialBaseId || defaultBaseId || (items.length === 1 ? items[0].id : null);
+    if (!id || !sameMaterialScope(scope)) return null;
+    const base = await store.materialBaseRead({scope, id});
+    return sameMaterialScope(scope) ? base.data : null;
+  }
+
   function catalogFromEditor() {
     const materials = editor.capture().materials ?? {};
     return {
@@ -1031,5 +1041,5 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
   document.addEventListener('change', sceneChanged, true);
   editor.onChange(sceneChanged);
   void bridge.initialize(initialScope);
-  return {bridge, flush, ...(legacy ? {chooseWorkspaceBase, openLegacyLibrary} : {})};
+  return {bridge, flush, transportCatalog, ...(legacy ? {chooseWorkspaceBase, openLegacyLibrary} : {})};
 }

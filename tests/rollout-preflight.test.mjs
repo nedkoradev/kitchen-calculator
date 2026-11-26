@@ -9,6 +9,7 @@ import {protectCopy, verifyCopy, writeNewLocalFile} from '../rollout-preflight/a
 import {buildLocalPreview, sheetJsPath} from '../rollout-preflight/staging-html.mjs';
 import {createGoogleAccountChoiceProvider} from '../release-candidate/google-account-choice.mjs';
 
+import {placeLayer} from '../release-candidate/transport-layers.mjs';
 import {placeStack, planTransport, planTransportLoads, stackHeight, startStack, transferPanel, transportWeight} from '../release-candidate/transport-layout.mjs';
 
 test('transport supports layers and rotation and reports unplaced panels and missing weights', () => {
@@ -67,6 +68,20 @@ test('transport picks a denser layout and reapplies a changed height cap', () =>
     assert.deepEqual(stacks.flatMap(stack => stack.layers.map(part => part.id)).sort(),
       parts.map(part => part.id));
   }
+});
+
+test('transport fits adjacent panels on a shared level and rejects incomplete support', () => {
+  const area = {w: 10, d: 10, height: 4, rotate: false, byGroup: false};
+  const part = (id, w, d) => ({id, w, d, thickness: 2});
+  const {loads} = planTransportLoads([part('base', 10, 10), part('left', 10, 5), part('right', 10, 5)], area);
+  assert.equal(loads.length, 1);
+  const [stack] = loads[0].stacks;
+  assert.equal(stackHeight(stack), 4);
+  assert.deepEqual(stack.layers.map(({y, z}) => [y, z]), [[0, 0], [2, 0], [2, 5]]);
+  const left = {...part('a', 10, 5), x: 0, y: 0, z: 0};
+  const right = {...part('b', 10, 5), x: 0, y: 0, z: 5};
+  assert.equal(placeLayer([left, right], part('above', 10, 10), area).y, 2);
+  assert.equal(placeLayer([left, {...right, d: 4}], part('above', 10, 10), area), null);
 });
 
 const repositoryFile = path => readFile(new URL('../' + path, import.meta.url), 'utf8');

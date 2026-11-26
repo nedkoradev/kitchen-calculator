@@ -86,6 +86,7 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
   function openForm(section, index) {
     const original = index === null ? {} : catalog[section.key][index];
     const draft = structuredClone(original);
+    delete draft.weightThicknessMm;
     const popup = element('dialog', 'materialEditDialog pilotMaterialEditorDialog');
     popup.setAttribute('aria-label', index === null ? 'Нов материал' : 'Промени материал');
     const form = element('form', 'pilotMaterialEditorForm');
@@ -102,7 +103,6 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
     const inputs = new Map();
     const weightFields = section.key === 'edgeMaterials' ? [] : [
       ['weightKgM2', 'Тегло (кг/м²)', 'number'],
-      ['weightThicknessMm', 'Дебелина, за която важи теглото (мм)', 'number'],
     ];
     const fields = [...section.fields, ...weightFields];
     for (const [key, label, kind] of fields) {
