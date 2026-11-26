@@ -185,7 +185,7 @@ function protectMaterialEditors(onApply) {
   }).observe(document.body, {subtree: true, attributes: true, attributeFilter: ['open']});
 }
 
-export function installPilotPanels({renderMaterials, renderReport, transportContext, logout, fallback, openSharing, onMaterialApply, canEdit}) {
+export function installPilotPanels({renderMaterials, renderReport, transportContext, transportCatalog, logout, fallback, openSharing, onMaterialApply, canEdit}) {
   const create = (id, title, existing = byId(id)) => {
     const dialog = existing ?? document.createElement('dialog');
     dialog.id = id;
@@ -362,7 +362,7 @@ export function installPilotPanels({renderMaterials, renderReport, transportCont
   // Reuse the report tables without switching the editor out of its 3D tab.
   reports.content.append(results);
   const summaries = ['projectSummary', 'projectCutPane', 'projectCostPane'];
-  const transport = createTransportReport(inCut);
+  const transport = createTransportReport(inCut, transportCatalog);
   reports.content.append(transport.root);
   reports.dialog.addEventListener('close', () => { if (!reports.dialog.open) transport.hide(); });
   function showReport(kind, scope) {

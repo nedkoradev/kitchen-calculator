@@ -311,6 +311,7 @@ const path = require('node:path');
     const transportButton = reports.getByRole('button', {name: 'Подреждане за транспорт', exact: true});
     await transportButton.click();
     await reports.locator('.transportCanvas canvas').waitFor();
+    await reports.getByRole('heading', {name: 'Тегло на текущия товар'}).waitFor();
     assert.ok((await reports.locator('.transportSidebar').boundingBox()).width >= 300);
     assert.equal(await reports.getByLabel('Максимална височина (мм)').inputValue(), '800');
     await reports.getByLabel('Разреши завъртане на 90°').uncheck();

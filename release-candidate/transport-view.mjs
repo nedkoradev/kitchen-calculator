@@ -124,16 +124,19 @@ export function createTransportView(host, onSelect, onMove, onPanelDrop) {
       let y = 0;
       const layerGap = options.layers && stack === selected
         ? Math.min(30, Math.max(area.w, area.d) * .4 / stack.layers.length) : 0;
-      for (const layer of stack.layers) {
-        box(layer.w, layer.thickness, layer.d, stack.x + stack.w / 2, y + layer.thickness / 2,
-          stack.z + stack.d / 2, layer.id === options.partId ? '#f3a248' : stack === selected ? '#a0c9ee' : layer.color, stack);
+      for (const [index, layer] of stack.layers.entries()) {
+        const x = stack.x + (stack.positioned ? layer.x + layer.w / 2 : stack.w / 2);
+        const z = stack.z + (stack.positioned ? layer.z + layer.d / 2 : stack.d / 2);
+        const level = stack.positioned ? layer.y + index * layerGap : y;
+        box(layer.w, layer.thickness, layer.d, x, level + layer.thickness / 2,
+          z, layer.id === options.partId ? '#f3a248' : stack === selected ? '#a0c9ee' : layer.color, stack);
         if (layerGap && options.labels) annotation(layer.label,
-          new THREE.Vector3(stack.x + stack.w / 2 + layer.w / 2, y + layer.thickness / 2, stack.z + stack.d / 2));
+          new THREE.Vector3(x + layer.w / 2, level + layer.thickness / 2, z));
         y += layer.thickness + layerGap;
       }
       const top = stack.layers.at(-1);
       if (options.labels && !layerGap) annotation('Купчина ' + (index + 1) + ' · ' + top.label,
-        new THREE.Vector3(stack.x + stack.w / 2, y, stack.z + stack.d / 2));
+        new THREE.Vector3(stack.x + stack.w / 2, stackHeight(stack), stack.z + stack.d / 2));
     }
     if (options.dimensions && layout.stacks.length) loadDimensions(layout.stacks);
     if (resetCamera) aim();

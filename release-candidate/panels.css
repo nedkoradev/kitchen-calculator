@@ -735,3 +735,21 @@ body.ned-shell #staging-auth :is(.publicAccountMenu > summary, .publicBaseChoice
   gap: 8px;
   margin-block-end: 8px;
 }
+
+.transportLoadWeight {
+  padding: 10px 12px;
+  border: 1px solid var(--nd-border);
+  border-radius: 5px;
+  background: var(--nd-panel);
+}
+
+.transportLoadWeight h3,
+.transportLoadWeight p {
+  margin: 0;
+}
+
+.transportLoadWeight strong {
+  display: block;
+  margin-block: 4px;
+  font-size: 20px;
+}
