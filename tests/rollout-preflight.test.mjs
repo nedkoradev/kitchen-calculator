@@ -9,7 +9,7 @@ import {protectCopy, verifyCopy, writeNewLocalFile} from '../rollout-preflight/a
 import {buildLocalPreview, sheetJsPath} from '../rollout-preflight/staging-html.mjs';
 import {createGoogleAccountChoiceProvider} from '../release-candidate/google-account-choice.mjs';
 
-import {placeStack, planTransport, transferPanel, transportWeight} from '../release-candidate/transport-layout.mjs';
+import {placeStack, planTransport, planTransportLoads, startStack, transferPanel, transportWeight} from '../release-candidate/transport-layout.mjs';
 
 test('transport supports layers and rotation and reports unplaced panels and missing weights', () => {
   const panel = (id, w, d, kg = null) => ({id, w, d, thickness: 18, kg, group: 'cabinet'});
@@ -30,6 +30,25 @@ test('transport supports layers and rotation and reports unplaced panels and mis
   assert.deepEqual(stacks, before);
   assert.equal(transferPanel(stacks, stacks[0], 0, stacks[0], 2, stacks[0].layers[0], area), false);
   assert.deepEqual(stacks, before);
+});
+
+test('extra loads pack all individually feasible parts and preserve oversize exceptions', () => {
+  const parts = [
+    {id: 'wider', w: 10, d: 7, thickness: 2},
+    {id: 'other', w: 7, d: 10, thickness: 2},
+    {id: 'oversize', w: 11, d: 11, thickness: 2},
+  ];
+  const area = {w: 10, d: 10, height: Infinity, rotate: false, byGroup: false};
+  const {loads, remaining} = planTransportLoads(parts, area);
+  assert.deepEqual(loads.map(load => load.stacks.flatMap(stack => stack.layers.map(layer => layer.id))),
+    [['wider'], ['other']]);
+  assert.deepEqual(remaining.map(part => part.id), ['oversize']);
+  assert.equal(startStack(loads[0].stacks, null, -1, parts[1], 0, 0, area), null);
+  const stacks = loads[1].stacks;
+  const previous = stacks[0];
+  assert.ok(startStack(stacks, previous, 0, previous.layers[0], 2, 0, area));
+  assert.equal(stacks.length, 1);
+  assert.equal(stacks[0].x, 2);
 });
 
 const repositoryFile = path => readFile(new URL('../' + path, import.meta.url), 'utf8');

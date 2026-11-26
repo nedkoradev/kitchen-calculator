@@ -77,6 +77,43 @@ export function createTransportView(host, onSelect, onMove, onPanelDrop) {
     boxes.add(mesh);
   }
 
+  function annotation(text, position) {
+    const label = document.createElement('span');
+    label.textContent = text;
+    labels.append(label);
+    annotations.push({node: label, position});
+  }
+
+  function dimension(start, end, length, tick) {
+    const a = new THREE.Vector3(...start);
+    const b = new THREE.Vector3(...end);
+    const vector = b.clone().sub(a);
+    const direction = vector.clone().normalize();
+    const head = Math.min(tick, length / 3);
+    const material = new THREE.LineBasicMaterial({color: '#19334e'});
+    const points = [a, b];
+    const wing = new THREE.Vector3(1, 0, 1);
+    wing.addScaledVector(direction, -wing.dot(direction)).normalize().multiplyScalar(head * .4);
+    for (const [tip, inward] of [[a, 1], [b, -1]]) {
+      const base = tip.clone().addScaledVector(direction, head * inward);
+      points.push(tip, base.clone().add(wing), tip, base.clone().sub(wing));
+    }
+    boxes.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), material));
+    annotation(length + ' мм', a.clone().lerp(b, .5));
+  }
+
+  function loadDimensions(stacks) {
+    const left = Math.min(...stacks.map(stack => stack.x));
+    const front = Math.min(...stacks.map(stack => stack.z));
+    const right = Math.max(...stacks.map(stack => stack.x + stack.w));
+    const back = Math.max(...stacks.map(stack => stack.z + stack.d));
+    const height = Math.max(...stacks.map(stackHeight));
+    const margin = Math.max(right - left, back - front) * .08;
+    dimension([left, 1, back + margin], [right, 1, back + margin], right - left, margin * .4);
+    dimension([left - margin, 1, front], [left - margin, 1, back], back - front, margin * .4);
+    dimension([right + margin, 0, back], [right + margin, height, back], height, margin * .4);
+  }
+
   function update(nextLayout, nextArea, active, options, resetCamera = false) {
     layout = nextLayout;
     area = nextArea;
@@ -85,23 +122,20 @@ export function createTransportView(host, onSelect, onMove, onPanelDrop) {
     box(area.w, 4, area.d, area.w / 2, -2, area.d / 2, '#d0ddeb');
     for (const [index, stack] of layout.stacks.entries()) {
       let y = 0;
+      const layerGap = options.layers && stack === selected
+        ? Math.min(30, Math.max(area.w, area.d) * .4 / stack.layers.length) : 0;
       for (const layer of stack.layers) {
         box(layer.w, layer.thickness, layer.d, stack.x + stack.w / 2, y + layer.thickness / 2,
-          stack.z + stack.d / 2, stack === selected ? '#a0c9ee' : layer.color, stack);
-        y += layer.thickness;
+          stack.z + stack.d / 2, layer.id === options.partId ? '#f3a248' : stack === selected ? '#a0c9ee' : layer.color, stack);
+        if (layerGap && options.labels) annotation(layer.label,
+          new THREE.Vector3(stack.x + stack.w / 2 + layer.w / 2, y + layer.thickness / 2, stack.z + stack.d / 2));
+        y += layer.thickness + layerGap;
       }
       const top = stack.layers.at(-1);
-      const text = [
-        options.labels ? 'Купчина ' + (index + 1) + ' · ' + top.label : '',
-        options.dimensions ? [stack.w, stack.d, y].join(' × ') + ' мм' : '',
-      ].filter(Boolean).join(' | ');
-      if (text) {
-        const node = document.createElement('span');
-        node.textContent = text;
-        labels.append(node);
-        annotations.push({node, position: new THREE.Vector3(stack.x + stack.w / 2, y, stack.z + stack.d / 2)});
-      }
+      if (options.labels && !layerGap) annotation('Купчина ' + (index + 1) + ' · ' + top.label,
+        new THREE.Vector3(stack.x + stack.w / 2, y, stack.z + stack.d / 2));
     }
+    if (options.dimensions && layout.stacks.length) loadDimensions(layout.stacks);
     if (resetCamera) aim();
     else draw();
   }
@@ -113,7 +147,7 @@ export function createTransportView(host, onSelect, onMove, onPanelDrop) {
   }
 
   function hitStack() {
-    return ray.intersectObjects(boxes.children, false).find(hit => hit.object.userData.stack)?.object.userData.stack;
+    return ray.intersectObjects(boxes.children.filter(object => object.isMesh), false).find(hit => hit.object.userData.stack)?.object.userData.stack;
   }
 
   canvas.addEventListener('pointerdown', event => {
@@ -152,15 +186,15 @@ export function createTransportView(host, onSelect, onMove, onPanelDrop) {
   canvas.addEventListener('lostpointercapture', endDrag);
   canvas.addEventListener('dragover', event => {
     cast(event);
-    const stack = hitStack();
-    if (stack) event.preventDefault();
+    if (hitStack() || ray.ray.intersectsPlane(floor)) event.preventDefault();
   });
   canvas.addEventListener('drop', event => {
     cast(event);
     const stack = hitStack();
-    if (stack) {
+    const point = ray.ray.intersectPlane(floor, new THREE.Vector3());
+    if (stack || point) {
       event.preventDefault();
-      onPanelDrop(stack);
+      onPanelDrop(stack, point);
     }
   });
 
