@@ -658,12 +658,12 @@ body.ned-shell #staging-auth :is(.publicAccountMenu > summary, .publicBaseChoice
 
 .transportReport:not([hidden]) {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 28%);
   gap: 12px;
   padding: 8px;
 }
 
-.transportReport > aside {
+.transportSidebar {
   padding-inline: 10px;
   border-inline-start: 1px solid var(--nd-border);
   overflow-wrap: anywhere;
@@ -721,6 +721,17 @@ body.ned-shell #staging-auth :is(.publicAccountMenu > summary, .publicBaseChoice
 
 @media (max-width: 720px) {
   .transportReport:not([hidden]) { grid-template-columns: minmax(0, 1fr); }
-  .transportReport > aside { padding-inline: 0; border-inline-start: 0; }
+  .transportSidebar { padding-inline: 0; border-inline-start: 0; }
   .transportCanvas { height: clamp(200px, 38dvh, 340px); }
+}
+
+.transportSidebar {
+  min-width: 0;
+}
+
+.transportLoadPicker:not([hidden]) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block-end: 8px;
 }

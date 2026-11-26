@@ -1,7 +1,7 @@
 import {cutLayout} from '../grain.mjs';
 import {partLabelIndex} from '../part-labels.mjs';
 import {reportInputs} from '../report-context.mjs';
-import {placeStack, planTransport, stackHeight, transferPanel, transportWeight} from './transport-layout.mjs';
+import {placeStack, planTransportLoads, stackHeight, startStack, transferPanel, transportWeight} from './transport-layout.mjs';
 import {createTransportView} from './transport-view.mjs';
 
 const node = (tag, text) => {
@@ -68,7 +68,8 @@ export function createTransportReport(includeInCut) {
   const host = node('div');
   host.className = 'transportCanvas';
   visual.append(toolbar, host);
-  const aside = node('aside');
+  const aside = node('section');
+  aside.className = 'transportSidebar';
   const form = node('form');
   form.className = 'transportParameters';
   form.append(node('h3', 'Параметри'));
@@ -83,17 +84,31 @@ export function createTransportReport(includeInCut) {
   const status = node('p');
   status.setAttribute('role', 'status');
   const totals = node('p');
+  const loadPicker = node('select');
+  const loadField = node('label', 'Товар');
+  loadField.className = 'transportLoadPicker';
+  loadField.append(loadPicker);
+  toolbar.before(loadField);
   const stacksPane = node('section');
   const remainingPane = node('section');
   aside.append(form, status, totals, stacksPane, remainingPane);
   root.append(visual, aside);
 
-  let view, layout, area, selected, drag, source, contextKey;
+  let view, plan, layout, area, selected, drag, source, contextKey;
+  const emptyLoad = {stacks: []};
+  loadPicker.onchange = () => {
+    layout = plan.loads[Number(loadPicker.value)];
+    selected = layout.stacks[0];
+    options.partId = null;
+    status.textContent = '';
+    render(true);
+    loadPicker.focus();
+  };
   const options = {labels: false, dimensions: false};
   for (const [label, mode] of [['3D', '3d'], ['Отгоре', 'top'], ['Отстрани', 'side']]) {
     toolbar.append(button(label, () => view?.aim(mode)));
   }
-  for (const [label, key] of [['Етикети', 'labels'], ['Размери', 'dimensions']]) {
+  for (const [label, key] of [['Етикети', 'labels'], ['Размери', 'dimensions'], ['Покажи слоевете', 'layers']]) {
     const control = button(label, () => {
       options[key] = !options[key];
       control.setAttribute('aria-pressed', String(options[key]));
@@ -102,7 +117,7 @@ export function createTransportReport(includeInCut) {
     control.setAttribute('aria-pressed', 'false');
     toolbar.append(control);
   }
-  visual.append(node('p', 'Задръжте Shift и плъзнете купчина, за да я преместите.'));
+  visual.append(node('p', 'Плъзнете ред от списъка върху купчина или свободно място. За цяла купчина задръжте Shift.'));
 
   function moveStack(stack, x, z) {
     if (!placeStack(layout.stacks, stack, x, z, area)) {
@@ -121,7 +136,7 @@ export function createTransportReport(includeInCut) {
       status.textContent = 'Плоскостта не се побира или няма цяла опора на това място.';
       return;
     }
-    if (!stack) layout.remaining = layout.remaining.filter(row => row !== part);
+    if (!stack) plan.remaining = plan.remaining.filter(row => row !== part);
     selected = target;
     status.textContent = '';
     render();
@@ -140,8 +155,15 @@ export function createTransportReport(includeInCut) {
   function render(resetCamera = false) {
     stacksPane.replaceChildren(node('h3', 'Купчини'));
     const placed = layout.stacks.flatMap(stack => stack.layers);
-    totals.textContent = 'Подредени: ' + placed.length + ' от ' + source.length +
-      ' · Тегло: ' + weightLabel(placed) + ' · Общо за проекта: ' + weightLabel(source);
+    const placedCount = plan.loads.reduce((sum, load) =>
+      sum + load.stacks.reduce((count, stack) => count + stack.layers.length, 0), 0);
+    loadField.hidden = plan.loads.length === 0;
+    loadPicker.replaceChildren(...plan.loads.map((load, index) =>
+      new Option('Товар ' + (index + 1) + ' от ' + plan.loads.length, index)));
+    if (layout !== emptyLoad) loadPicker.value = String(plan.loads.indexOf(layout));
+    totals.textContent = 'Общо за разкрой: ' + source.length + ' · Подредени: ' + placedCount +
+      ' · Остават: ' + plan.remaining.length + ' · В този товар: ' + placed.length +
+      ' · Тегло на товара: ' + weightLabel(placed) + ' · Общо тегло: ' + weightLabel(source);
     const picker = node('select');
     picker.setAttribute('aria-label', 'Избери купчина');
     picker.add(new Option('Избери купчина', ''));
@@ -149,7 +171,12 @@ export function createTransportReport(includeInCut) {
       picker.add(new Option('Купчина ' + (index + 1) + ' · ' + weightLabel(stack.layers), index));
     }
     picker.value = selected ? String(layout.stacks.indexOf(selected)) : '';
-    picker.onchange = () => { selected = picker.value === '' ? null : layout.stacks[Number(picker.value)]; render(); };
+    picker.onchange = () => {
+      selected = picker.value === '' ? null : layout.stacks[Number(picker.value)];
+      options.partId = null;
+      render();
+      stacksPane.querySelector('select')?.focus();
+    };
     stacksPane.append(picker);
     if (selected) {
       stacksPane.append(node('p', [selected.w, selected.d, stackHeight(selected)].join(' × ') + ' мм · ' +
@@ -158,7 +185,14 @@ export function createTransportReport(includeInCut) {
       const stack = selected;
       for (const [index, part] of stack.layers.entries()) {
         const item = {stack, index, part};
-        const row = node('li', part.label + ' · ' + part.w + ' × ' + part.d + ' мм');
+        const row = node('li');
+        const identify = button(part.label + ' · ' + part.w + ' × ' + part.d + ' × ' + part.thickness + ' мм', () => {
+          options.partId = part.id;
+          render();
+          stacksPane.querySelector('[aria-pressed="true"]')?.focus();
+        });
+        identify.setAttribute('aria-pressed', String(options.partId === part.id));
+        row.append(identify);
         makeDraggable(row, item);
         row.ondragover = event => { if (drag) event.preventDefault(); };
         row.ondrop = event => { event.preventDefault(); transfer(drag, stack, index); };
@@ -171,9 +205,9 @@ export function createTransportReport(includeInCut) {
       }
       stacksPane.append(layers);
     }
-    remainingPane.replaceChildren(node('h3', 'Оставащи детайли (' + layout.remaining.length + ')'));
+    remainingPane.replaceChildren(node('h3', 'Оставащи детайли (' + plan.remaining.length + ')'));
     const remaining = node('ul');
-    for (const part of layout.remaining) {
+    for (const part of plan.remaining) {
       const row = node('li', part.label + ' · ' + part.w + ' × ' + part.d + ' мм · ' + part.reason);
       const item = {stack: null, index: -1, part};
       makeDraggable(row, item);
@@ -189,8 +223,10 @@ export function createTransportReport(includeInCut) {
   function recalculate() {
     area = {w: width.valueAsNumber, d: depth.valueAsNumber,
       height: height.value ? height.valueAsNumber : Infinity, rotate: rotate.checked, byGroup: byGroup.checked};
-    layout = planTransport(source, area);
+    plan = planTransportLoads(source, area);
+    layout = plan.loads[0] ?? emptyLoad;
     selected = layout.stacks[0];
+    options.partId = null;
     status.textContent = '';
     render(true);
   }
@@ -204,8 +240,26 @@ export function createTransportReport(includeInCut) {
     root.hidden = false;
     if (!view) {
       try {
-        view = createTransportView(host, stack => { selected = stack; render(); }, moveStack,
-          stack => transfer(drag, stack, stack.layers.length));
+        view = createTransportView(host, stack => { selected = stack; options.partId = null; render(); }, moveStack,
+          (stack, point) => {
+            if (!drag) return;
+            if (stack) {
+              transfer(drag, stack, stack.layers.length);
+              return;
+            }
+            const {stack: from, index, part} = drag;
+            const created = startStack(layout.stacks, from, index, part,
+              Math.round(point.x), Math.round(point.z), area);
+            if (!created) {
+              status.textContent = 'Няма свободно място за нова купчина на тази позиция.';
+              return;
+            }
+            if (!from) plan.remaining = plan.remaining.filter(row => row !== part);
+            selected = created;
+            options.partId = part.id;
+            status.textContent = '';
+            render();
+          });
       } catch {
         host.textContent = '3D изгледът изисква WebGL.';
       }

@@ -40,6 +40,19 @@ export function transferPanel(stacks, source, index, target, slot, part, area) {
   return false;
 }
 
+export function startStack(stacks, source, index, part, x, z, area) {
+  const obstacles = source?.layers.length === 1 ? stacks.filter(stack => stack !== source) : stacks;
+  for (const candidate of orientations(part, area)) {
+    const stack = {x, z, w: candidate.w, d: candidate.d, layers: []};
+    if (placeStack(obstacles, stack, x, z, area) &&
+        transferPanel(stacks, source, index, stack, 0, candidate, area)) {
+      stacks.push(stack);
+      return stack;
+    }
+  }
+  return null;
+}
+
 export function planTransport(parts, area) {
   const stacks = [], remaining = [];
   const ordered = [...parts].sort((a, b) => (area.byGroup ? a.group.localeCompare(b.group) : 0) ||
@@ -71,6 +84,24 @@ export function planTransport(parts, area) {
         ? 'Няма свободно място или подходяща опора' : 'Извън товарните габарити'});
   }
   return {stacks, remaining};
+}
+
+export function planTransportLoads(parts, area) {
+  const loads = [];
+  const remaining = [];
+  let pending = parts.filter(part => {
+    const reason = part.thickness > area.height ? 'Над допустимата височина' :
+      orientations(part, area).some(candidate => fits(0, 0, candidate.w, candidate.d, area))
+        ? null : 'Извън товарните габарити';
+    if (reason) remaining.push({...part, reason});
+    return !reason;
+  });
+  while (pending.length) {
+    const load = planTransport(pending, area);
+    loads.push(load);
+    pending = load.remaining;
+  }
+  return {loads, remaining};
 }
 
 export function transportWeight(parts) {
