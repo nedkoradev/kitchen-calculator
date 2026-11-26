@@ -9,7 +9,7 @@ import {protectCopy, verifyCopy, writeNewLocalFile} from '../rollout-preflight/a
 import {buildLocalPreview, sheetJsPath} from '../rollout-preflight/staging-html.mjs';
 import {createGoogleAccountChoiceProvider} from '../release-candidate/google-account-choice.mjs';
 
-import {placeStack, planTransport, planTransportLoads, startStack, transferPanel, transportWeight} from '../release-candidate/transport-layout.mjs';
+import {placeStack, planTransport, planTransportLoads, stackHeight, startStack, transferPanel, transportWeight} from '../release-candidate/transport-layout.mjs';
 
 test('transport supports layers and rotation and reports unplaced panels and missing weights', () => {
   const panel = (id, w, d, kg = null) => ({id, w, d, thickness: 18, kg, group: 'cabinet'});
@@ -49,6 +49,24 @@ test('extra loads pack all individually feasible parts and preserve oversize exc
   assert.ok(startStack(stacks, previous, 0, previous.layers[0], 2, 0, area));
   assert.equal(stacks.length, 1);
   assert.equal(stacks[0].x, 2);
+});
+
+test('transport picks a denser layout and reapplies a changed height cap', () => {
+  const parts = [[7, 4], [3, 3], [2, 3], [4, 8], [8, 3], [8, 6], [4, 4], [2, 8]]
+    .map(([w, d], id) => ({id, w, d, thickness: 2}));
+  const area = {w: 10, d: 8, height: 8, rotate: true, byGroup: false};
+  assert.ok(planTransport(parts, area).remaining.length > 0);
+  const dense = planTransportLoads(parts, area);
+  assert.equal(dense.loads.length, 1);
+  assert.equal(dense.remaining.length, 0);
+  const lower = planTransportLoads(parts, {...area, height: 2});
+  assert.ok(lower.loads.length > dense.loads.length);
+  for (const [plan, maxHeight] of [[dense, 8], [lower, 2]]) {
+    const stacks = plan.loads.flatMap(load => load.stacks);
+    assert.ok(stacks.every(stack => stackHeight(stack) <= maxHeight));
+    assert.deepEqual(stacks.flatMap(stack => stack.layers.map(part => part.id)).sort(),
+      parts.map(part => part.id));
+  }
 });
 
 const repositoryFile = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
