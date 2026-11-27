@@ -2064,7 +2064,7 @@ function projectRefresh(context){
    const [name,material,long,short,thick,edges,,grainRequired,note]=JSON.parse(key),count=row.count;
    cutCount+=count;
    const edgeTotal=row.edgeMeters.reduce((sum,[e,len])=>sum+len*count,0);totalEdge+=edgeTotal;
-   cutRows.push([row.labelIds.join(', '),note,count,long+' × '+short+' мм'+(grainRequired?' ↔':''),thick+reportText(' мм'),edges.join(', ')||'няма',meters(edgeTotal)]);
+   cutRows.push([row.labelIds.join(', '),note,count,long+' × '+short+reportText(' мм')+(grainRequired?' ↔':''),thick+reportText(' мм'),edges.join(', ')||'няма',meters(edgeTotal)]);
    const entry=byMaterial.get(material)||{area:0,material:row.material,lengths:[],widths:[]};
    entry.area+=long*short*count/1e6;if(catalogExtra.worktops.includes(row.material)){for(let k=0;k<count;k++){entry.lengths.push(Math.max(long,short));entry.widths.push(Math.min(long,short))}}byMaterial.set(material,entry);
    for(const [e,len] of row.edgeMeters){const edge=byEdge.get(e.name)||{length:0,price:Number(e.price)||0};edge.length+=len*count;byEdge.set(e.name,edge)}
