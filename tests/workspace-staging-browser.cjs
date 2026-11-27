@@ -688,6 +688,7 @@ const path = require('node:path');
 
     await page.getByRole('button', {name: 'English', exact: true}).click();
     await page.getByText('Signed in', {exact: true}).waitFor();
+    await page.waitForFunction(() => !document.querySelector('main').inert);
     await page.locator('#reportsMenu summary').click();
     await page.locator('#navCut').click();
     const englishReports = page.getByRole('dialog', {name: 'Reports', exact: true});

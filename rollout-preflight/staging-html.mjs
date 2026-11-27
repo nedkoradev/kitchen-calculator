@@ -31,15 +31,14 @@ function buildPreview(source, {enabled, settings}) {
     throw new Error('Expected one v3 group-name visualization seam');
   }
   html = html.replace('<script type="module">',
-    '<script type="module">\nimport {v3GroupNameMap} from "./release-candidate/group-names.mjs";\nimport {workspaceHelp} from "./release-candidate/help-content.mjs";\nimport {preferredLanguage, t, translateMarkup} from "./release-candidate/i18n.mjs";\ntry { document.documentElement.lang = preferredLanguage(localStorage); } catch {}\ntranslateMarkup(document);');
+    '<script type="module">\nimport {v3GroupNameMap} from "./release-candidate/group-names.mjs";\nimport {localizeReport} from "./release-candidate/report-language.mjs";\nimport {preferredLanguage, t, translateMarkup} from "./release-candidate/i18n.mjs";\ntry { document.documentElement.lang = preferredLanguage(localStorage); } catch {}\ntranslateMarkup(document);');
   html = html.replace('names:Object.fromEntries(projectInstances)',
     'names:Object.fromEntries(document.body.dataset.stageAuth ? v3GroupNameMap(customParts,Object.fromEntries(projectInstances)) : Object.fromEntries(projectInstances))');
   // The v3 report uses the same cutLayout values as XLSX. Keep the legacy
   // renderer's combined column on the static v2 site.
   const cutColumns = [
-    ['function reportText(text){return text}', 'function reportText(text){return t(text)}'],
-    ["long+' × '+short+reportText(' мм')+(grainRequired?' ↔':'')", "long+reportText(' мм')+(grainRequired?' ↔':''),short+reportText(' мм')"],
-    ['table(cutTableHeaders.map(reportText),cutRows)', "table([...cutTableHeaders.slice(0,3),'Размер А (фладер)','Размер Б',...cutTableHeaders.slice(4)].map(reportText),cutRows)"],
+    ["long+' × '+short+' мм'+(grainRequired?' ↔':'')", "long+' мм'+(grainRequired?' ↔':''),short+' мм'"],
+    ['table(cutTableHeaders,cutRows)', "table([...cutTableHeaders.slice(0,3),'Размер А (фладер)','Размер Б',...cutTableHeaders.slice(4)],cutRows)"],
     ['td.colSpan=6;td.textContent=label', 'td.colSpan=7;td.textContent=label'],
     ["[2,4,6].includes(i)?'center':'left'", "[2,3,4,5,7].includes(i)?'center':'left'"],
     ["if(i===4)cell.style.whiteSpace='nowrap'", "if([3,4,5].includes(i))cell.style.whiteSpace='nowrap'"],
@@ -50,11 +49,22 @@ function buildPreview(source, {enabled, settings}) {
     html = html.replace(original, replacement);
   }
   const css = '<link rel="stylesheet" href="./release-candidate/panels.css">';
+  const helpImport = "import {installHelp} from './help-ui.mjs';";
+  const reportReady = ' cost.append(note);';
+  if (html.split(helpImport).length !== 2 || html.split(reportReady).length !== 2) {
+    throw new Error('Expected one v3 help import and report localisation seam');
+  }
+  html = html.replace(helpImport, "import {installHelp} from './release-candidate/help-ui.mjs';");
+  html = html.replace(reportReady, reportReady + '\n localizeReport({context, root, cut, cost, note, utilizationLabel, unpriced});');
   const shellReady = 'dockedInspector=installInspector(';
-  if (html.split(shellReady).length !== 2 || html.split('const help=installHelp();').length !== 2) throw new Error('Expected one workspace shell localisation seam');
-  html = html.replace('const help=installHelp();', 'const help=installHelp({...workspaceHelp(document.documentElement.lang),text:t});');
-  html = html.replace('installShellMenus({getContext:', 'installShellMenus({reportText,getContext:');
-  html = html.replace(shellReady, "translateMarkup(document.getElementById('shellMenus'));\n" + shellReady);
+  if (html.split(shellReady).length !== 2) throw new Error('Expected one workspace shell localisation seam');
+  html = html.replace(shellReady, `translateMarkup(document.getElementById('shellMenus'));
+    document.getElementById('reportsMenu').addEventListener('toggle', () => {
+      for (const [id, label] of [['navCut', 'Разкрой'], ['navCosts', 'Разходи']]) {
+        $(id).textContent = t(label) + ' — ' + currentDocumentInfo().name;
+      }
+    });
+  ` + shellReady);
   html = html.replace(loadMaterials, '\nconst stagingMaterialsReady = loadDefaultMaterials();');
   html = html.replace(welcome, '').replace('</head>', css + '</head>');
   html = html.replace('<body>', '<body data-stage-auth="locked">');

@@ -23,7 +23,7 @@ function iconText(icon,label,tag='span'){
  node.prepend(iconHolder.firstElementChild);
  return node;
 }
-function dialogFrame(id,text){
+function dialogFrame(id){
  const dialog=element('dialog');
  dialog.id=id;
  dialog.className='nedHelpDialog';
@@ -33,7 +33,7 @@ function dialogFrame(id,text){
  title.id=id+'Title';
  title.tabIndex=-1;
  dialog.setAttribute('aria-labelledby',title.id);
- const close=decorateAction(button('',()=>dialog.close()),'close',text('Затваряне на прозореца'),{iconOnly:true});
+ const close=decorateAction(button('',()=>dialog.close()),'close','Затваряне на прозореца',{iconOnly:true});
  close.classList.add('nedDialogClose');
  if(id==='helpDialog')close.id='helpClose';
  head.append(title,close);
@@ -53,8 +53,8 @@ function dialogFrame(id,text){
  });
  return {dialog,title,body,footer};
 }
-function renderQuick(body,guide){
- for(const [icon,title,description] of guide){
+function renderQuick(body){
+ for(const [icon,title,description] of quickGuide){
   const section=element('section');
   section.append(iconText(icon,title,'h3'),element('p',description));
   body.append(section);
@@ -75,12 +75,12 @@ function renderTopic(topic,heading=true){
  return section;
 }
 
-export function installHelp({guide=quickGuide,topics=helpTopics,text=value=>value}={}){
- const welcome=dialogFrame('welcomeDialog',text);
- welcome.title.textContent=text('Добре дошли в NED-IQ');
- welcome.body.append(element('p',text('Кратко ръководство за начало')));
- renderQuick(welcome.body,guide);
- welcome.body.append(element('p',text('Подробни инструкции в меню „Помощ“')));
+export function installHelp(){
+ const welcome=dialogFrame('welcomeDialog');
+ welcome.title.textContent='Добре дошли в NED-IQ';
+ welcome.body.append(element('p','Кратко ръководство за начало'));
+ renderQuick(welcome.body);
+ welcome.body.append(element('p','Подробни инструкции в меню „Помощ“'));
  let showAtStartup=appStorage.getItem(preference)!=='off';
  const preferences=[];
  function startupPreference(){
@@ -94,36 +94,36 @@ export function installHelp({guide=quickGuide,topics=helpTopics,text=value=>valu
    for(const peer of preferences)peer.checked=showAtStartup;
   };
   preferences.push(checkbox);
-  label.append(checkbox,text('Показвай при стартиране'));
+  label.append(checkbox,'Показвай при стартиране');
   return label;
  }
  const preferenceLabel=startupPreference();
- const start=button(text('Започни работа'),()=>welcome.dialog.close());
+ const start=button('Започни работа',()=>welcome.dialog.close());
  start.className='nedPrimaryButton';
  welcome.footer.append(preferenceLabel,start);
 
- const help=dialogFrame('helpDialog',text);
+ const help=dialogFrame('helpDialog');
  const quickPreference=startupPreference();
- const titles=[text(quickTitle),...topics.map(topic=>topic.title),text(fullTitle)];
+ const titles=[quickTitle,...helpTopics.map(topic=>topic.title),fullTitle];
  let page=0,section=0;
  function render(){
   const full=page===titles.length-1;
-  const titleIcon=page>0&&!full?topics[page-1].icon:'info';
+  const titleIcon=page>0&&!full?helpTopics[page-1].icon:'info';
   help.title.replaceChildren(...iconText(titleIcon,titles[page]).childNodes);
   help.body.replaceChildren();
-  if(page===0)renderQuick(help.body,guide);
+  if(page===0)renderQuick(help.body);
   else if(full){
    const picker=element('select');
-   picker.setAttribute('aria-label',text('Раздел от пълното ръководство'));
-   topics.forEach((topic,index)=>picker.add(new Option(topic.title,index)));
+   picker.setAttribute('aria-label','Раздел от пълното ръководство');
+   helpTopics.forEach((topic,index)=>picker.add(new Option(topic.title,index)));
    picker.value=section;
    picker.onchange=()=>{section=Number(picker.value);render();help.title.focus({preventScroll:true})};
-   help.body.append(picker,renderTopic(topics[section]));
-  }else help.body.append(renderTopic(topics[page-1],false));
+   help.body.append(picker,renderTopic(helpTopics[section]));
+  }else help.body.append(renderTopic(helpTopics[page-1],false));
   help.body.scrollTop=0;
   quickPreference.hidden=page!==0;
   previous.disabled=full?section===0:page===0;
-  next.disabled=full&&section===topics.length-1;
+  next.disabled=full&&section===helpTopics.length-1;
  }
  function turn(delta){
   if(page===titles.length-1)section+=delta;
@@ -131,8 +131,8 @@ export function installHelp({guide=quickGuide,topics=helpTopics,text=value=>valu
   render();
   help.title.focus({preventScroll:true});
  }
- const previous=button(text('Предишна'),()=>turn(-1));
- const next=button(text('Следваща'),()=>turn(1));
+ const previous=button('Предишна',()=>turn(-1));
+ const next=button('Следваща',()=>turn(1));
  help.footer.append(previous,quickPreference,next);
 
  // The startup window leaves the workspace and sign-in available.

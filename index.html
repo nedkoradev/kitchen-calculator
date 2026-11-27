@@ -2028,7 +2028,6 @@ function projectCutDimensions(p){
 }
 let activeReport=null;
 function buildReportContext(scope){const doc=documents.active;return createReportContext({...doc,name:currentDesignMode==='project'?$('projectTitle').value:$('cabinetName').value},captureProjectSnapshot(),scope||(activeReport?.documentId===doc.id?activeReport.scope:{kind:'whole'}))}
-function reportText(text){return text}
 function projectRefresh(context){
 
  if(currentDesignMode==='constructor'&&activeProjectTab==='3d')return;
@@ -2037,11 +2036,11 @@ function projectRefresh(context){
  activeReport=context;$('exportProjectCut').disabled=false;
  const {customParts,allParts,labels,finishes,libraryBoards,libraryEdges,catalogExtra,servicePrices,selectedBoard}=reportInputs(context);
  $('projectResults').dataset.documentId=context.documentId;$('projectResults').dataset.documentRevision=context.revision;$('projectResults').dataset.reportScope=context.scope.kind;
- $('projectCutPane').querySelector('h2').textContent=reportText('Разкрой')+' — '+context.name;
- $('projectCostPane').querySelector('h2').textContent=reportText('Разходи')+' — '+context.name;
+ $('projectCutPane').querySelector('h2').textContent='Разкрой — '+context.name;
+ $('projectCostPane').querySelector('h2').textContent='Разходи — '+context.name;
  const root=$('projectSummary'),cut=$('projectCutList'),cost=$('projectCosts');
  root.replaceChildren();cut.replaceChildren();cost.replaceChildren();
- const money=n=>Number(n).toFixed(2)+' €',sqm=n=>n.toFixed(3)+reportText(' м²'),meters=n=>Number(n).toFixed(1)+reportText(' м');
+ const money=n=>Number(n).toFixed(2)+' €',sqm=n=>n.toFixed(3)+' м²',meters=n=>Number(n).toFixed(1)+' м';
  const labelIndex=partLabelIndex(allParts);
  const eligibleParts=customParts.filter(p=>inCut(p,finishes[p.key]));const groups=[...new Set(eligibleParts.map(p=>p.assembly||p.key))],byMaterial=new Map(),byEdge=new Map(),cutRows=[];
  let totalEdge=0,cutCount=0;
@@ -2064,19 +2063,19 @@ function projectRefresh(context){
    const [name,material,long,short,thick,edges,,grainRequired,note]=JSON.parse(key),count=row.count;
    cutCount+=count;
    const edgeTotal=row.edgeMeters.reduce((sum,[e,len])=>sum+len*count,0);totalEdge+=edgeTotal;
-   cutRows.push([row.labelIds.join(', '),note,count,long+' × '+short+reportText(' мм')+(grainRequired?' ↔':''),thick+reportText(' мм'),edges.join(', ')||'няма',meters(edgeTotal)]);
+   cutRows.push([row.labelIds.join(', '),note,count,long+' × '+short+' мм'+(grainRequired?' ↔':''),thick+' мм',edges.join(', ')||'няма',meters(edgeTotal)]);
    const entry=byMaterial.get(material)||{area:0,material:row.material,lengths:[],widths:[]};
    entry.area+=long*short*count/1e6;if(catalogExtra.worktops.includes(row.material)){for(let k=0;k<count;k++){entry.lengths.push(Math.max(long,short));entry.widths.push(Math.min(long,short))}}byMaterial.set(material,entry);
    for(const [e,len] of row.edgeMeters){const edge=byEdge.get(e.name)||{length:0,price:Number(e.price)||0};edge.length+=len*count;byEdge.set(e.name,edge)}
   }
  }
- root.textContent=(context.scope.kind==='cabinet-set'?reportText('Избрани шкафове: ')+context.scope.cabinetIds.length:context.kind==='project'?reportText('Целият проект'):reportText('Самостоятелен модел'))+' · '+groups.length+reportText(' шкафа / групи')+' · '+cutCount+reportText(' детайла');
- cut.append(table(cutTableHeaders.map(reportText),cutRows));
+ root.textContent=(context.scope.kind==='cabinet-set'?'Избрани шкафове: '+context.scope.cabinetIds.length:context.kind==='project'?'Целият проект':'Самостоятелен модел')+' · '+groups.length+' шкафа / групи · '+cutCount+' детайла';
+ cut.append(table(cutTableHeaders,cutRows));
  const cutTableSummary=cut.querySelector('table');if(cutTableSummary){
   const foot=cutTableSummary.createTFoot();
   const addSummaryRow=(label,value,isTotal=false)=>{const tr=foot.insertRow();const td=tr.insertCell();td.colSpan=6;td.textContent=label;td.style.textAlign='right';td.style.fontWeight=isTotal?'700':'500';const amount=tr.insertCell();amount.textContent=value;amount.style.textAlign='right';amount.style.whiteSpace='nowrap';amount.style.fontWeight=isTotal?'700':'500';if(isTotal){tr.style.background='#2b3e53';tr.style.color='#fff'}};
   for(const [name,item] of byEdge)addSummaryRow(name,meters(item.length));
-  addSummaryRow(reportText('ОБЩО КАНТ'),meters(totalEdge),true);
+  addSummaryRow('ОБЩО КАНТ',meters(totalEdge),true);
  }
  const cutTable=cut.querySelector('table');if(cutTable){
  cutTable.style.width='max-content';cutTable.style.maxWidth='none';cutTable.style.borderCollapse='collapse';cutTable.style.tableLayout='auto';
@@ -2100,15 +2099,13 @@ function projectRefresh(context){
    const rest=entries.filter(e=>!pairs.flat().some(side=>e.startsWith(side+' (')));
    if(rest.length&&rest[0]!=='няма')lines.push(rest);
    edgeCell.replaceChildren();
-   if(entries.length===1&&entries[0]==='няма')edgeCell.textContent=reportText('няма');
-   else for(const line of lines){if(!line.length)continue;const div=document.createElement('div');div.textContent=line.map(entry=>{const end=entry.indexOf(') (');return end<0?entry:reportText(entry.slice(0,end+1))+entry.slice(end+1)}).join(' · ');div.style.whiteSpace='nowrap';edgeCell.append(div)}
+   if(entries.length===1&&entries[0]==='няма')edgeCell.textContent='няма';
+   else for(const line of lines){if(!line.length)continue;const div=document.createElement('div');div.textContent=line.join(' · ');div.style.whiteSpace='nowrap';edgeCell.append(div)}
    edgeCell.style.width='auto';edgeCell.style.whiteSpace='nowrap';edgeCell.style.fontSize='12px';
   }
  });
 }
- const costRows=[],costStyles=new Map();
- const summaryRow=(style,cells)=>{costStyles.set(costRows.length,style);costRows.push(cells)};
- let sheetTotal=0,edgeTotalCost=0,unpriced=false;
+ const costRows=[];let sheetTotal=0,edgeTotalCost=0,unpriced=false;
  for(const [name,item] of byMaterial){
   const m=item.material,area=item.area;
   // Worktops are sold by full, half and quarter lengths; their second
@@ -2124,7 +2121,7 @@ function projectRefresh(context){
     {label:'1/4',length:Number(m?.quarterW),price:Number(m?.quarterPrice)}
    ].filter(o=>o.length>0&&o.price>0&&Number.isFinite(o.price));
    if(!options.length||maxWidth>stockDepth||!stockDepth){
-    unpriced=true;costRows.push([name,(required/1000).toFixed(2)+reportText(' м'),'—','—','—','—',maxWidth>stockDepth?reportText('Недостатъчна широчина'):reportText('Няма цена')]);continue;
+    unpriced=true;costRows.push([name,(required/1000).toFixed(2)+' м','—','—','—','—',maxWidth>stockDepth?'Недостатъчна широчина':'Няма цена']);continue;
    }
    // Whole-millimetre length budgeting, with no 80% area utilization.
    // Each required piece must fit within at least one purchased length.
@@ -2154,14 +2151,14 @@ function projectRefresh(context){
     }
    };
    evaluate(0,[],0,0);
-   if(!best){unpriced=true;costRows.push([name,(required/1000).toFixed(2)+reportText(' м'),'—','—','—','—',reportText('Няма подходящ размер')]);continue}
+   if(!best){unpriced=true;costRows.push([name,(required/1000).toFixed(2)+' м','—','—','—','—','Няма подходящ размер']);continue}
    sheetTotal+=best.price;
-   costRows.push([name,(required/1000).toFixed(2)+reportText(' м'),best.counts.map((n,i)=>n?n+' × '+reportText(options[i].label):'').filter(Boolean).join(' + '),reportText('по дължина'),(best.bought/1000).toFixed(2)+reportText(' м'),((best.bought-required)/1000).toFixed(2)+reportText(' м'),money(best.price)]);
+   costRows.push([name,(required/1000).toFixed(2)+' м',best.counts.map((n,i)=>n?n+' × '+options[i].label:'').filter(Boolean).join(' + '),'по дължина',(best.bought/1000).toFixed(2)+' м',((best.bought-required)/1000).toFixed(2)+' м',money(best.price)]);
    continue;
   }
   const depth=Number(isWorktop?m?.depth:m?.fullH);
   const fullArea=Number(m?.fullW)*depth/1e6;
-  if(!(fullArea>0)||!Number.isFinite(Number(m?.fullPrice))){unpriced=true;costRows.push([name,sqm(area),'—',utilizationLabel,'—','—',reportText('Няма цена')]);continue}
+  if(!(fullArea>0)||!Number.isFinite(Number(m?.fullPrice))){unpriced=true;costRows.push([name,sqm(area),'—',utilizationLabel,'—','—','Няма цена']);continue}
   const options=[
    {label:'пл.',area:fullArea,price:Number(m.fullPrice)},
    {label:'× 1/2',area:Number(m?.halfW)*depth/1e6,price:Number(m?.halfPrice)},
@@ -2184,14 +2181,14 @@ function projectRefresh(context){
    }
   };
   search(0,max,[],0,0);
-  if(!best){unpriced=true;costRows.push([name,sqm(area),'—',utilizationLabel,'—','—',reportText('Няма цена')]);continue}
+  if(!best){unpriced=true;costRows.push([name,sqm(area),'—',utilizationLabel,'—','—','Няма цена']);continue}
   sheetTotal+=best.price;
-  costRows.push([name,sqm(area),best.counts.map((n,i)=>n?n+' '+reportText(options[i].label):'').filter(Boolean).join(' + '),utilizationLabel,sqm(best.bought),sqm(best.bought-area),money(best.price)]);
+  costRows.push([name,sqm(area),best.counts.map((n,i)=>n?n+' '+options[i].label:'').filter(Boolean).join(' + '),utilizationLabel,sqm(best.bought),sqm(best.bought-area),money(best.price)]);
  }
- summaryRow('costSubtotal',[reportText('СУМА ПЛОСКОСТИ'),'','','','','',money(sheetTotal)]);
- summaryRow('costSection',[reportText('Кантове'),'','','','','','']);
- for(const [name,e] of byEdge){const price=e.length*e.price;edgeTotalCost+=price;costRows.push([reportText('Кант')+' — '+name,meters(e.length),'—','—','—','—',money(price)])}
- summaryRow('costSection',[reportText('Услуги'),'','','','','','']);
+ costRows.push(['СУМА ПЛОСКОСТИ','','','','','',money(sheetTotal)]);
+ costRows.push(['Кантове','','','','','','']);
+ for(const [name,e] of byEdge){const price=e.length*e.price;edgeTotalCost+=price;costRows.push(['Кант — '+name,meters(e.length),'—','—','—','—',money(price)])}
+ costRows.push(['Услуги','','','','','','']);
  const service=servicePrices;
  const sheets=[...byMaterial.values()].reduce((sum,item)=>{
   const m=item.material;if(!m)return sum;
@@ -2200,20 +2197,16 @@ function projectRefresh(context){
  },0);
  const cutting=sheets*Number(service.cutStart||0)+cutCount*Number(service.cutPart||0);
  const edging=totalEdge*Number(service.edging||0);
- costRows.push([reportText('Разкрой'),sheets.toFixed(1)+' '+reportText('пл.'),cutCount+reportText(' детайла'),'—','—','—',money(cutting)]);
- costRows.push([reportText('Кантиране'),meters(totalEdge),'—','—','—','—',money(edging)]);
- summaryRow('costSubtotal',[reportText('СУМА КАНТОВЕ + УСЛУГИ'),'','','','','',money(edgeTotalCost+cutting+edging)]);
- summaryRow('costGrandTotal',[reportText('ОБЩА СУМА'),'','','','','',money(sheetTotal+edgeTotalCost+cutting+edging)]);
- const costTable=table(['Материал / услуга','Необходима площ/дължина','Влиза в','Използваемост','Закупена площ/дължина','Остатък','Цена'].map(reportText),costRows);
+ costRows.push(['Разкрой',sheets.toFixed(1)+' пл.',cutCount+' детайла','—','—','—',money(cutting)]);
+ costRows.push(['Кантиране',meters(totalEdge),'—','—','—','—',money(edging)]);
+ costRows.push(['СУМА КАНТОВЕ + УСЛУГИ','','','','','',money(edgeTotalCost+cutting+edging)]);
+ costRows.push(['ОБЩА СУМА','','','','','',money(sheetTotal+edgeTotalCost+cutting+edging)]);
+ const costTable=table(['Материал / услуга','Необходима площ/дължина','Влиза в','Използваемост','Закупена площ/дължина','Остатък','Цена'],costRows);
  costTable.classList.add('oldStyleCosts');cost.append(costTable);
- for(const [index,tr] of [...costTable.tBodies[0].rows].entries()){
-  const style=costStyles.get(index);
-  if(style)tr.classList.add(style);
-  for(const cell of tr.cells)cell.style.fontWeight=style==='costGrandTotal'?'800':'400';
- }
+ for(const tr of costTable.rows){const name=tr.cells[0]?.textContent||'';if(tr.parentElement.tagName==='TBODY')for(const cell of tr.cells)cell.style.fontWeight=name==='ОБЩА СУМА'?'800':'400';if(['Кантове','Услуги'].includes(name)){tr.classList.add('costSection')}else if(name==='ОБЩА СУМА'){tr.classList.add('costGrandTotal')}else if(name.startsWith('СУМА ')){tr.classList.add('costSubtotal')}}
 
  const note=document.createElement('p');note.className='projectHint';
- note.textContent=reportText('Изчисление с {usage} използваемост и избор между цели и половин листове по цена; не е оптимизиран геометричен разкрой. ПДЧ/ХДФ: {usage} използваемост по площ. Плотове: по дължина и реално побиране на детайлите, без коефициент за използваемост. Не включва обков.').replaceAll('{usage}',utilizationLabel)+(unpriced?reportText(' Някои материали нямат цена.'):'');
+ note.textContent='Изчисление с '+utilizationLabel+' използваемост и избор между цели и половин листове по цена; не е оптимизиран геометричен разкрой. ПДЧ/ХДФ: '+utilizationLabel+' използваемост по площ. Плотове: по дължина и реално побиране на детайлите, без коефициент за използваемост. Не включва обков.'+(unpriced?' Някои материали нямат цена.':'');
  cost.append(note);
 }
 $('projectRoomSettings').onclick=()=>{
