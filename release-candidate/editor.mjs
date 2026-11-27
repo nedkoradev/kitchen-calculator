@@ -1,3 +1,4 @@
+import {t} from './i18n.mjs';
 import {createWorkspaceBridge} from '../workspace-ui/bridge.mjs';
 import {createWorkspaceController} from '../workspace-context/editor-controller.mjs';
 import {comparableJson} from '../workspace-context/insertion.mjs';
@@ -12,7 +13,7 @@ const byId = id => document.getElementById(id);
 const isTyping = event => event.target?.matches?.('input, textarea, select, [contenteditable]');
 function folderLabel(folder, folders) {
   const parent = folders.find(candidate => candidate.id === folder.parentId);
-  const name = folder.name === 'Импорт от v2.95' ? 'За подреждане' : folder.name;
+  const name = folder.id === PROJECTS_FOLDER.id ? t('Проекти') : folder.name === 'Импорт от v2.95' ? t('За подреждане') : folder.name;
   return parent ? folderLabel(parent, folders) + ' / ' + name : name;
 }
 
@@ -58,7 +59,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
   const status = documentElement('p', 'nedWorkspaceStatus');
   status.id = 'integration-status';
   status.setAttribute('role', 'status');
-  const retry = button('Провери журнала', () => bridge.initialize());
+  const retry = button(t('Провери журнала'), () => bridge.initialize());
   const select = profiles ? document.createElement('select') : null;
   if (select) select.setAttribute('aria-label', 'Тестов профил');
   for (const {scope, label} of profiles ?? []) select.add(new Option(label, scope.ownerUid));
@@ -67,14 +68,14 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     select.onchange = () => bridge.initialize(profiles.find(profile => profile.scope.ownerUid === select.value).scope);
   }
   function report(failure) { status.textContent = failure.message; }
-  const library = panels ? byId('navLibrary') : button('Обща библиотека', () => { void openLibrary().catch(report); });
+  const library = panels ? byId('navLibrary') : button(t('Обща библиотека'), () => { void openLibrary().catch(report); });
   if (panels) {
     panels.diagnostics.append(retry);
     byId('shellBottomTools').after(status);
   } else {
     const controls = documentElement('nav', 'toolIcons');
     controls.setAttribute('aria-label', 'Интеграция NED-IQ');
-    decorateAction(library, 'open', 'Обща библиотека');
+    decorateAction(library, 'open', t('Обща библиотека'));
     controls.append(library, ...(select ? [select] : []), retry);
     document.querySelector('main').before(controls, status);
   }
@@ -89,11 +90,11 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
 
   function render(state) {
     const workspace = state.workspace;
-    const message = state.confirmation ? 'Незаписани промени' : state.error?.message ??
-      (state.gate !== 'ready' ? state.gate : workspace?.dirty ? 'Незаписани промени' : 'Готово');
+    const message = state.confirmation ? t('Незаписани промени') : state.error?.message ??
+      (state.gate !== 'ready' ? state.gate : workspace?.dirty ? t('Незаписани промени') : t('Готово'));
     status.textContent = [visualError ?? captureError ?? message, workspace?.document.name,
-      workspace?.draftStatus === 'restored' ? 'Възстановена чернова' : '',
-      workspace?.reconciledDocument ? 'Сверен запис' : ''].filter(Boolean).join(' · ');
+      workspace?.draftStatus === 'restored' ? t('Възстановена чернова') : '',
+      workspace?.reconciledDocument ? t('Сверен запис') : ''].filter(Boolean).join(' · ');
     document.querySelector('main').inert = !state.canAct || !!visualError;
     retry.disabled = state.busy;
     if (select) select.disabled = state.busy;
@@ -152,7 +153,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       bridge.state.scope?.actorUid === scope.actorUid;
     let {folders, revision} = await store.list({scope});
     if (!sameScope()) return null;
-    return dialog('Име и папка', (panel, done) => {
+    return dialog(t('Име и папка'), (panel, done) => {
       const form = document.createElement('form');
       form.className = 'pilotSaveFolderForm';
       const field = (label, input) => {
@@ -170,23 +171,23 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       destination.required = true;
       const hint = document.createElement('p');
       const refresh = (selected = '') => {
-        destination.replaceChildren(new Option('Избери папка…', ''), ...folders.map(folder =>
+        destination.replaceChildren(new Option(t('Избери папка…'), ''), ...folders.map(folder =>
           new Option(folderLabel(folder, folders), folder.id)));
         destination.value = selected;
-        hint.textContent = folders.length === 1 ? '„Проекти“ е единствената налична папка.' : '';
+        hint.textContent = folders.length === 1 ? t('„Проекти“ е единствената налична папка.') : '';
       };
-      field('Име на документа', name);
-      field('Папка', destination);
+      field(t('Име на документа'), name);
+      field(t('Папка'), destination);
       refresh();
       const feedback = document.createElement('p');
       feedback.setAttribute('role', 'status');
       const actions = documentElement('div', 'nedConfirmActions');
-      const cancel = button('Отказ', () => done(null));
-      const confirm = button('Запази');
+      const cancel = button(t('Отказ'), () => done(null));
+      const confirm = button(t('Запази'));
       confirm.type = 'submit';
       if (store.changeFolder) {
-        const create = button('Нова папка', async () => {
-          const folderName = await nedPromptName('Име на папката');
+        const create = button(t('Нова папка'), async () => {
+          const folderName = await nedPromptName(t('Име на папката'));
           if (!folderName || !form.isConnected || !sameScope()) return;
           create.disabled = confirm.disabled = true;
           try {
@@ -195,7 +196,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
             ({folders, revision} = await store.changeFolder({scope, revision,
               change: {action: 'create', name: folderName, parentId}}));
             refresh(folders.find(folder => !existing.has(folder.id))?.id);
-            feedback.textContent = 'Папката е създадена.';
+            feedback.textContent = t('Папката е създадена.');
             destination.focus();
           } catch (error) {
             feedback.textContent = error.message;
@@ -235,9 +236,9 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
         },
       }}),
     async confirmDiscard({document}) {
-      const action = await dialog('Незаписани промени', (panel, done) => {
+      const action = await dialog(t('Незаписани промени'), (panel, done) => {
         const row = documentElement('div', 'nedConfirmActions');
-        for (const [label, value] of [['Отказ', 'cancel'], ['Запази и продължи', 'save'], ['Отхвърли', 'discard']]) {
+        for (const [label, value] of [[t('Отказ'), 'cancel'], [t('Запази и продължи'), 'save'], [t('Отхвърли'), 'discard']]) {
           row.append(button(label, () => done(value)));
         }
         panel.append(row);
@@ -364,8 +365,8 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     let name = activeMaterialBaseName;
     if (!id) {
       name = await nedPromptName('Име на новата материална база', '', {
-        heading: 'Нова материална база',
-        okLabel: 'Създай',
+        heading: t('Нова материална база'),
+        okLabel: t('Създай'),
       });
       if (!name) throw Error('Операцията е отказана.');
     }
@@ -621,7 +622,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       const feedback = document.createElement('p');
       feedback.setAttribute('role', 'status');
       const actions = documentElement('div', 'nedConfirmActions');
-      const cancel = button('Отказ', () => done(null));
+      const cancel = button(t('Отказ'), () => done(null));
       const confirm = button('Провери съвместимостта', () => {
         if (models.length && !folder.value) {
           feedback.textContent = 'Избери или създай папка за моделите.';
@@ -653,7 +654,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       panel.append(summary);
       migrationReport(panel, plan.rows);
       const actions = documentElement('div', 'nedConfirmActions');
-      actions.append(button('Отказ', () => done(false)));
+      actions.append(button(t('Отказ'), () => done(false)));
       if (ready) actions.append(button(`Мигрирай ${ready} съвместими документа`, () => done(true)));
       panel.append(actions);
     });
@@ -668,16 +669,16 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       summary.textContent = `Добавени: ${imported} · Вече съществуват: ${skipped} · Нерешени: ${failed}. Оригиналите v2.95 са запазени. При неясен резултат повторната проверка не създава дубликати.`;
       panel.append(summary);
       migrationReport(panel, result.rows);
-      panel.append(button('Затвори', () => done(true)));
+      panel.append(button(t('Затвори'), () => done(true)));
     });
   }
 
   async function chooseWorkspaceBase(bases, email) {
-    const labels = {owner: 'Собственик', editor: 'Редактор', viewer: 'Наблюдател'};
-    const base = await dialog('Избор на база', (panel, done) => {
+    const labels = {owner: t('Собственик'), editor: t('Редактор'), viewer: t('Наблюдател')};
+    const base = await dialog(t('Избор на база'), (panel, done) => {
       const body = documentElement('div', 'dialogBody');
       for (const base of bases) {
-        const name = base.id === initialScope.actorUid ? 'Моята база' : base.name;
+        const name = base.id === initialScope.actorUid ? t('Моята база') : base.name;
         const choice = button(name + ' · ' + labels[base.role], () => done({...base, name}));
         if (base.id === bridge.state.scope?.ownerUid) {
           choice.classList.add('active');
@@ -686,12 +687,12 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
         body.append(choice);
       }
       const footer = documentElement('div', 'dialogFoot');
-      footer.append(button('Отказ', () => done(null)));
+      footer.append(button(t('Отказ'), () => done(null)));
       panel.append(body, footer);
     }, 'workspaceBaseDialog');
     if (!base) return null;
     if (base.id === bridge.state.scope?.ownerUid) return base;
-    if (!await flush()) throw new Error('Изчакай работата да бъде запазена или презареди приложението, ако достъпът е отнет.');
+    if (!await flush()) throw new Error(t('Изчакай работата да бъде запазена или презареди приложението, ако достъпът е отнет.'));
     const previousScope = bridge.state.scope;
     const scope = {ownerUid: base.id, actorUid: initialScope.actorUid};
     await store.pending({scope});
@@ -700,7 +701,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     if (!await bridge.initialize(scope)) {
       initialScene = previousScene;
       await bridge.initialize(previousScope);
-      throw new Error('Базата не беше отворена. Текущата работа е запазена.');
+      throw new Error(t('Базата не беше отворена. Текущата работа е запазена.'));
     }
     activeMaterialBaseId = '';
     activeMaterialBaseName = '';
@@ -716,8 +717,8 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     const scope = bridge.state.scope;
     const bases = await store.legacyBases({scope});
     const owner = await dialog('Библиотеки v2.95', (panel, done) => {
-      for (const base of bases) panel.append(button(base.name + ' · ' + ({owner: 'Собственик', editor: 'Редактор', viewer: 'Наблюдател'}[base.role] ?? ''), () => done(base.id)));
-      panel.append(button('Отказ', () => done(null)));
+      for (const base of bases) panel.append(button(base.name + ' · ' + ({owner: t('Собственик'), editor: t('Редактор'), viewer: t('Наблюдател')}[base.role] ?? ''), () => done(base.id)));
+      panel.append(button(t('Отказ'), () => done(null)));
     });
     if (!owner || bridge.state.scope?.actorUid !== scope.actorUid || !bridge.state.canAct) return;
     const {documents, catalogs, folders = []} = await store.legacyList({scope, legacyOwnerId: owner});
@@ -732,11 +733,11 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       for (const folder of folders) select.add(new Option(folder.label, folder.id));
       const refresh = () => listing.replaceChildren(...documents
         .filter(item => !select.value || item.folderId === select.value)
-        .map(item => button((item.type === 'project' ? 'Отвори проект · ' : 'Добави модел · ') + item.name,
+        .map(item => button((item.type === 'project' ? t('Отвори проект · ') : t('Добави модел · ')) + item.name,
           () => done(item))));
       select.onchange = refresh;
       refresh();
-      panel.append(select, listing, button('Отказ', () => done(null)));
+      panel.append(select, listing, button(t('Отказ'), () => done(null)));
       if (owner === scope.ownerUid && scope.actorUid === scope.ownerUid && documents.length) {
         panel.append(button('Мигрирай всички мои документи в v3…',
           () => done({migration: true})));
@@ -753,7 +754,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
         hint.textContent = 'Избери базата, с която е записан документът. Старият запис не съдържа тази информация.';
         panel.append(hint);
         for (const catalog of catalogs) panel.append(button(catalog.name, () => done(catalog.id)));
-        panel.append(button('Отказ', () => done(null)));
+        panel.append(button(t('Отказ'), () => done(null)));
       });
       if (catalogId === null) return;
     }
@@ -768,18 +769,18 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       (isProject ? 'проекта' : 'модела') + ' „' + item.name + '“ от библиотеката?')) return;
     if (isProject && action === 'move') return 'Проектите могат да бъдат само в папка „Проекти“.';
     if (!isProject && (action === 'move' || action === 'copy')) {
-      request.folderId = await dialog('Целева папка', (panel, done) => {
+      request.folderId = await dialog(t('Целева папка'), (panel, done) => {
         for (const folder of folders.filter(folder => folder.id !== PROJECTS_FOLDER.id && folder.id !== item.folderId)) {
           panel.append(button(folderLabel(folder, folders), () => done(folder.id)));
         }
-        panel.append(button('Отказ', () => done(null)));
+        panel.append(button(t('Отказ'), () => done(null)));
       });
       if (!request.folderId) return;
     }
     if (isProject && action === 'copy') request.folderId = PROJECTS_FOLDER.id;
     const naming = action === 'rename' || action === 'copy';
     let name = action === 'copy' ? (item.name.slice(0, 90) + ' – копие') : item.name;
-    let prompt = isProject ? 'Име на проекта' : 'Име на модела';
+    let prompt = isProject ? t('Име на проекта') : t('Име на модела');
     while (bridge.state.canAct && bridge.state.scope?.ownerUid === scope.ownerUid &&
            bridge.state.scope?.actorUid === scope.actorUid) {
       if (naming) {
@@ -794,16 +795,16 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
         return;
       } catch (error) {
         if (naming && error.code === 'name-conflict') {
-          prompt = 'Името е заето. Въведи друго име.';
+          prompt = t('Името е заето. Въведи друго име.');
           continue;
         }
         return {
-          'revision-conflict': 'Моделът е променен в друг прозорец. Провери обновения списък.',
-          'not-found': 'Моделът вече не е в библиотеката.',
-          'permission-denied': 'Нямаш право да променяш този модел.',
-          'folder-not-found': 'Целевата папка вече не е налична.',
-          'invalid-name': 'Въведи име до 100 знака, без „/“.',
-        }[error.code] ?? 'Промяната не е потвърдена. Провери обновения списък.';
+          'revision-conflict': t('Моделът е променен в друг прозорец. Провери обновения списък.'),
+          'not-found': t('Моделът вече не е в библиотеката.'),
+          'permission-denied': t('Нямаш право да променяш този модел.'),
+          'folder-not-found': t('Целевата папка вече не е налична.'),
+          'invalid-name': t('Въведи име до 100 знака, без „/“.'),
+        }[error.code] ?? t('Промяната не е потвърдена. Провери обновения списък.');
       }
     }
   }
@@ -831,9 +832,9 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
         panel.append(alert);
       }
       const select = document.createElement('select');
-      select.setAttribute('aria-label', 'Папка');
+      select.setAttribute('aria-label', t('Папка'));
       if (documents.some(item => item.type === 'model' && item.folderId === null)) {
-        select.add(new Option('Без папка', ''));
+        select.add(new Option(t('Без папка'), ''));
       }
       for (const folder of folders) select.add(new Option(folderLabel(folder, folders), folder.id));
       if ([...select.options].some(option => option.value === selectedFolderId)) select.value = selectedFolderId;
@@ -842,14 +843,14 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       const refresh = () => {
         listing.replaceChildren(...documents.filter(item => item.folderId === (select.value || null))
           .map(item => {
-            const open = button(item.type === 'project' ? 'Отвори проект · ' + item.name : item.name, () => done({item}));
+            const open = button(item.type === 'project' ? t('Отвори проект · ') + item.name : item.name, () => done({item}));
             if (!['model', 'project'].includes(item.type) || !store.changeModel) return open;
             const row = documentElement('div', 'libraryModelRow');
             const actions = documentElement('div', 'libraryModelActions');
             actions.setAttribute('role', 'group');
-            actions.setAttribute('aria-label', 'Действия за ' + item.name);
-            for (const [label, action] of [['Преименувай', 'rename'], ['Премести', 'move'],
-              ['Копирай', 'copy'], ['Изтрий', 'delete']]) {
+            actions.setAttribute('aria-label', t('Действия за ') + item.name);
+            for (const [label, action] of [[t('Преименувай'), 'rename'], ['Премести', 'move'],
+              [t('Копирай'), 'copy'], [t('Изтрий'), 'delete']]) {
               const control = button(label, () => done({documentChange: {item, action}, folderId: select.value}));
               if (action === 'move' && item.type === 'project') {
                 control.disabled = true;
@@ -864,10 +865,10 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
           }));
         if (!store.changeFolder) return;
         const id = select.value;
-        folderActions.replaceChildren(button('Нова папка', () => done({change: {action: 'create',
+        folderActions.replaceChildren(button(t('Нова папка'), () => done({change: {action: 'create',
           parentId: !id || id === PROJECTS_FOLDER.id ? null : id}})));
         if (id && id !== PROJECTS_FOLDER.id) {
-          for (const [label, action] of [['Преименувай', 'rename'], ['Премести', 'move'], ['Изтрий празна папка', 'delete']]) {
+          for (const [label, action] of [[t('Преименувай'), 'rename'], ['Премести', 'move'], [t('Изтрий празна папка'), 'delete']]) {
             folderActions.append(button(label, () => done({change: {action, id}})));
           }
         }
@@ -875,9 +876,9 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
       select.onchange = refresh;
       refresh();
       panel.append(select, listing, folderActions);
-      panel.append(button('Отказ', () => done(null)));
+      panel.append(button(t('Отказ'), () => done(null)));
     };
-    const chosen = await (panels ? panels.library(build) : dialog('Обща библиотека', build));
+    const chosen = await (panels ? panels.library(build) : dialog(t('Обща библиотека'), build));
     if (!chosen) return;
     if (chosen.documentChange) {
       const notice = await changeLibraryDocument(scope, chosen.documentChange.item, chosen.documentChange.action, folders);
@@ -892,7 +893,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     }
     const change = chosen.change;
     if (['create', 'rename'].includes(change.action)) {
-      change.name = await nedPromptName('Име на папката', folders.find(folder => folder.id === change.id)?.name ?? '');
+      change.name = await nedPromptName(t('Име на папката'), folders.find(folder => folder.id === change.id)?.name ?? '');
       if (!change.name) return;
     }
     if (change.action === 'move') {
@@ -933,7 +934,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
             item.setAttribute('role', 'menuitem');
             items.append(item);
           };
-          if (documents.some(item => item.type === 'model' && item.folderId === null)) add('Други', '');
+          if (documents.some(item => item.type === 'model' && item.folderId === null)) add(t('Други'), '');
           for (const folder of folders) add(folderLabel(folder, folders), folder.id);
         } catch (error) { report(error); }
       };
@@ -963,7 +964,7 @@ export function mountWorkspaceEditor(editor, {store, drafts, profiles, initialSc
     if (settingsSections) {
       const section = document.createElement('section');
       const heading = document.createElement('h3');
-      heading.textContent = 'Папки в библиотеката';
+      heading.textContent = t('Папки в библиотеката');
       const description = document.createElement('p');
       description.textContent = 'Управлявай папките или добави липсващите стандартни категории. Съществуващите папки и модели се запазват.';
       const manage = button('Управление на папките', () => {

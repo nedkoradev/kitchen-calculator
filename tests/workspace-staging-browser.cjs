@@ -87,6 +87,12 @@ const path = require('node:path');
     await page.goto(stage.origin + '/', {waitUntil: 'domcontentloaded'});
     const panel = page.getByRole('region', {name: 'Вход в локалния преглед'});
     await panel.getByText('Локален тестов вход').waitFor();
+    await panel.getByRole('button', {name: 'English', exact: true}).click();
+    await page.getByRole('button', {name: 'Sign in with Google', exact: true}).waitFor();
+    assert.equal(await page.locator('html').getAttribute('lang'), 'en');
+    await page.getByRole('button', {name: 'Български', exact: true}).click();
+    await panel.getByText('Локален тестов вход').waitFor();
+    assert.equal(await page.locator('html').getAttribute('lang'), 'bg');
     await page.waitForFunction(() => !document.documentElement.classList.contains('ned-booting'));
     for (const selector of ['#modeProject', '#modeConstructor', '#mainNavigation',
       '#shellModes', '#shellMenus', '#shellTools', '#headerRight', 'main']) {
@@ -121,6 +127,13 @@ const path = require('node:path');
     }
     await panel.getByText('Профилът е удостоверен').waitFor();
     await welcome.waitFor({state: 'hidden'});
+    await page.locator('#integration-status').getByText(/Готово/).waitFor();
+    await page.getByRole('button', {name: 'English', exact: true}).click();
+    await page.locator('#integration-status').getByText(/Done/).waitFor();
+    assert.equal(await page.locator('#fileMenu summary').textContent(), 'File');
+    assert.equal(await page.locator('#libraryMenu summary').textContent(), 'Library');
+    await page.getByRole('button', {name: 'Български', exact: true}).click();
+    await panel.getByText('Профилът е удостоверен').waitFor();
     assert.equal(await page.locator('#shellTools').isVisible(), true,
       'The authenticated v3 tool shell must become visible');
 

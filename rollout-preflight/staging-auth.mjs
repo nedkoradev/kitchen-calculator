@@ -1,3 +1,4 @@
+import {installLanguageControl, installWorkspaceLanguage, t, translateMarkup} from '../release-candidate/i18n.mjs';
 import {createV3SharingStore} from '../release-candidate/sharing.mjs';
 import {installSharingUI} from '../sharing-ui.mjs';
 import {fallbackUrl} from '../pilot/config.mjs';
@@ -15,7 +16,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
       ? location.protocol === 'https:' && location.origin === pilot.origin
       : location.hostname === '127.0.0.1' && /^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(authOrigin);
   if (!allowedOrigin) throw new Error('Unexpected authentication origin');
-  document.getElementById('projectNewCabinet').title = 'Нов шкаф';
+  document.getElementById('projectNewCabinet').title = t('Нов шкаф');
   const app = window.firebase.initializeApp(pilot
     ? {apiKey: pilot.apiKey, authDomain: pilot.authDomain, projectId: pilot.localGoogle ? pilot.projectId : 'kitchen-designer-9d437'}
     : {apiKey: 'demo-emulator-key', authDomain: 'demo-nediq-v3-release.firebaseapp.com', projectId: 'demo-nediq-v3-release'},
@@ -25,18 +26,19 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
   await auth.setPersistence(window.firebase.auth.Auth.Persistence.SESSION);
   const panel = document.createElement('section');
   panel.id = 'staging-auth';
-  panel.setAttribute('aria-label', 'Вход в локалния преглед');
+  panel.setAttribute('aria-label', t('Вход в локалния преглед'));
   panel.innerHTML = '<form><label>Имейл <input type="email" name="email" autocomplete="username" required></label>' +
     '<label>Парола <input type="password" name="password" autocomplete="current-password" required></label>' +
     '<button type="submit">Вход</button></form><button type="button" data-google>Вход с Google</button>' +
     '<button type="button" data-logout hidden>Изход</button><span role="status" aria-live="polite"></span>';
+  translateMarkup(panel);
   document.querySelector('main').before(panel);
   const form = panel.querySelector('form');
   const google = panel.querySelector('[data-google]');
   const logout = panel.querySelector('[data-logout]');
   for (const id of ['cloudLogin', 'cloudLogout']) document.getElementById(id).hidden = true;
   const status = panel.querySelector('[role=status]');
-  status.textContent = pilot?.localGoogle ? 'Локален тестов вход' : pilot?.public ? 'Вход в NED-IQ' : pilot ? 'Пилотен вход' : 'Локален тестов вход';
+  status.textContent = pilot?.localGoogle ? t('Локален тестов вход') : pilot?.public ? t('Вход в NED-IQ') : pilot ? t('Пилотен вход') : t('Локален тестов вход');
   form.hidden = !!pilot;
   const back = pilot && !pilot.public ? document.createElement('a') : null;
   if (back) {
@@ -47,6 +49,19 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
   let session;
   let signingOut = false;
   let welcomeShown = false;
+  const language = installLanguageControl({
+    async beforeChange() {
+      if (!session) return auth.currentUser == null;
+      const captured = await session.flush();
+      const workspace = session.bridge.state.workspace;
+      if (captured && (!workspace?.dirty || ['saved', 'restored'].includes(workspace.draftStatus))) return true;
+      status.textContent = t('Запази работата си, преди да смениш езика.');
+      return false;
+    },
+    report: message => { status.textContent = message; },
+  });
+  panel.append(language);
+  installWorkspaceLanguage();
 
   function lock() {
     document.body.dataset.stageAuth = 'locked';
@@ -67,7 +82,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
     form.querySelector('button').disabled = true;
     google.disabled = true;
     try { await callback(); }
-    catch { status.textContent = 'Входът не е потвърден.'; }
+    catch { status.textContent = t('Входът не е потвърден.'); }
     finally {
       form.elements.password.value = '';
       form.querySelector('button').disabled = false;
@@ -87,12 +102,12 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
   logout.onclick = async () => {
     const state = session?.bridge.state;
     if (state?.busy || (state && state.gate !== 'ready') || (state?.workspace?.dirty && !['saved', 'restored'].includes(state.workspace.draftStatus))) {
-      status.textContent = 'Изчакай проверката на журнала или запази работата преди изход.';
+      status.textContent = t('Изчакай проверката на журнала или запази работата преди изход.');
       return;
     }
     signingOut = true;
     try { await auth.signOut(); }
-    catch { signingOut = false; status.textContent = 'Изходът не е потвърден.'; }
+    catch { signingOut = false; status.textContent = t('Изходът не е потвърден.'); }
   };
 
   auth.onAuthStateChanged(async user => {
@@ -120,7 +135,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
     if (pilot) {
       try { await store.pending({scope}); }
       catch {
-        status.textContent = 'Пилотният достъп или журналът е недостъпен.';
+        status.textContent = t('Пилотният достъп или журналът е недостъпен.');
         logout.hidden = false;
         return;
       }
@@ -153,7 +168,7 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
     form.hidden = google.hidden = true;
     document.getElementById('cloudStatus').hidden = true;
     logout.hidden = false;
-    status.textContent = pilot?.public ? '' : 'Профилът е удостоверен';
+    status.textContent = pilot?.public ? '' : t('Профилът е удостоверен');
     if (pilot?.public) {
       panel.classList.add('publicProfile');
       const account = document.createElement('details');
@@ -183,9 +198,9 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
       choose.type = 'button';
       choose.className = 'publicBaseChoice';
       const label = document.createElement('span');
-      label.textContent = 'Избор на база';
+      label.textContent = t('Избор на база');
       const name = document.createElement('strong');
-      name.textContent = 'Моята база';
+      name.textContent = t('Моята база');
       name.title = name.textContent;
       choose.append(label, name);
       status.before(choose);
@@ -201,8 +216,8 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
           name.title = base.name;
         } catch (error) {
           status.textContent = error.code === 'permission-denied'
-            ? 'Достъпът до избраната база е отказан.'
-            : 'Базата не може да се отвори. Опитай отново или презареди приложението.';
+            ? t('Достъпът до избраната база е отказан.')
+            : t('Базата не може да се отвори. Опитай отново или презареди приложението.');
         } finally {
           choose.disabled = false;
         }

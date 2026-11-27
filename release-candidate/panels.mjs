@@ -1,3 +1,4 @@
+import {t} from './i18n.mjs';
 import {decorateAction} from '../icons.mjs';
 import {nedConfirmAction, nedConfirmDelete, nedPromptName} from '../ui-messages.mjs';
 import {createPilotMaterialEditor} from './material-editor.mjs';
@@ -48,7 +49,7 @@ function fitWindow(dialog, title) {
   // Keep the existing shared dialog close action and drag handle.
   let close = head.querySelector('button');
   if (!close) {
-    close = action('Затваряне на прозореца', 'close', () => dialog.requestClose());
+    close = action(t('Затваряне на прозореца'), 'close', () => dialog.requestClose());
     head.append(close);
   }
   const maximize = action('Разгъни прозореца', 'room', toggle);
@@ -191,24 +192,24 @@ export function installPilotPanels({renderMaterials, renderReport, transportCont
     dialog.id = id;
     return fitWindow(dialog, title);
   };
-  const materials = create('pilotMaterials', 'Материали');
-  const reports = create('pilotReports', 'Справки');
-  const library = create('pilotLibrary', 'Обща библиотека');
-  const settings = create('settingsDialog', 'Настройки');
-  const space = create('nedSpaceDialog', 'Информация за хранилището');
-  const photos = create('nedPhotosDialog', 'Снимки за фладер');
-  create('helpDialog', 'Помощ');
-  create('uiCatalogDialog', 'UI каталог');
+  const materials = create('pilotMaterials', t('Материали'));
+  const reports = create('pilotReports', t('Справки'));
+  const library = create('pilotLibrary', t('Обща библиотека'));
+  const settings = create('settingsDialog', t('Настройки'));
+  const space = create('nedSpaceDialog', t('Информация за хранилището'));
+  const photos = create('nedPhotosDialog', t('Снимки за фладер'));
+  create('helpDialog', t('Помощ'));
+  create('uiCatalogDialog', t('UI каталог'));
   const extra = byId('projectExtraPane');
   const baseBar = element('section', 'pilotMaterialBaseBar');
   baseBar.hidden = true;
   const baseField = document.createElement('label');
   baseField.className = 'pilotMaterialBaseField';
   const baseLabel = document.createElement('span');
-  baseLabel.textContent = 'Активна материална база';
+  baseLabel.textContent = t('Активна материална база');
   const baseSelect = document.createElement('select');
   baseSelect.id = 'pilotActiveMaterialBase';
-  baseSelect.setAttribute('aria-label', 'Активна материална база');
+  baseSelect.setAttribute('aria-label', t('Активна материална база'));
   baseField.append(baseLabel, baseSelect);
   const baseActions = element('div', 'pilotMaterialBaseActions');
   const baseStatus = document.createElement('p');
@@ -255,10 +256,10 @@ export function installPilotPanels({renderMaterials, renderReport, transportCont
       decorateAction(node, icon, label);
       return node;
     };
-    const create = textAction('Нова база', 'horizontal', async () => {
+    const create = textAction(t('Нова база'), 'horizontal', async () => {
       const name = await nedPromptName('Име на новата материална база', '', {
-        heading: 'Нова материална база',
-        okLabel: 'Създай',
+        heading: t('Нова материална база'),
+        okLabel: t('Създай'),
       });
       if (!name) return;
       create.disabled = save.disabled = true;
@@ -273,7 +274,7 @@ export function installPilotPanels({renderMaterials, renderReport, transportCont
         create.disabled = save.disabled = false;
       }
     });
-    const save = textAction('Запази базата', 'save', async () => {
+    const save = textAction(t('Запази базата'), 'save', async () => {
       save.disabled = create.disabled = true;
       try {
         const result = await api.save({id: baseEditor.id, data: baseEditor.getData()});
@@ -286,7 +287,7 @@ export function installPilotPanels({renderMaterials, renderReport, transportCont
         save.disabled = create.disabled = false;
       }
     });
-    const rename = textAction('Преименувай', 'edit', async () => {
+    const rename = textAction(t('Преименувай'), 'edit', async () => {
       const current = baseSelect.dataset.activeName;
       if (!baseSelect.dataset.activeId) {
         setBaseStatus('Избери база за преименуване.', true);
@@ -294,7 +295,7 @@ export function installPilotPanels({renderMaterials, renderReport, transportCont
       }
       const name = await nedPromptName('Ново име на материалната база', current, {
         heading: 'Преименуване',
-        okLabel: 'Преименувай',
+        okLabel: t('Преименувай'),
       });
       if (!name) return;
       rename.disabled = true;
@@ -311,7 +312,7 @@ export function installPilotPanels({renderMaterials, renderReport, transportCont
         rename.disabled = false;
       }
     });
-    const remove = textAction('Изтрий базата', 'trash', async () => {
+    const remove = textAction(t('Изтрий базата'), 'trash', async () => {
       const id = baseSelect.dataset.activeId;
       const name = baseSelect.dataset.activeName;
       if (!id) {
@@ -384,9 +385,9 @@ export function installPilotPanels({renderMaterials, renderReport, transportCont
   const reportChoices = element('nav', 'pilotLibraryFolderBar');
   reportChoices.setAttribute('aria-label', 'Вид справка');
   const reportButtons = [
-    ['cut', action('Разкрой', null, () => showReport('cut'))],
-    ['costs', action('Себестойност', null, () => showReport('costs'))],
-    ['transport', action('Подреждане за транспорт', null, () => showReport('transport'))],
+    ['cut', action(t('Разкрой'), null, () => showReport('cut'))],
+    ['costs', action(t('Себестойност'), null, () => showReport('costs'))],
+    ['transport', action(t('Подреждане за транспорт'), null, () => showReport('transport'))],
   ];
   for (const [kind, button] of reportButtons) {
     button.classList.add('pilotLibraryFolderTab');

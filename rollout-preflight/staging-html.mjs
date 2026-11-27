@@ -31,7 +31,7 @@ function buildPreview(source, {enabled, settings}) {
     throw new Error('Expected one v3 group-name visualization seam');
   }
   html = html.replace('<script type="module">',
-    '<script type="module">\nimport {v3GroupNameMap} from "./release-candidate/group-names.mjs";');
+    '<script type="module">\nimport {v3GroupNameMap} from "./release-candidate/group-names.mjs";\nimport {preferredLanguage, t, translateMarkup} from "./release-candidate/i18n.mjs";\ntry { document.documentElement.lang = preferredLanguage(localStorage); } catch {}\ntranslateMarkup(document);');
   html = html.replace('names:Object.fromEntries(projectInstances)',
     'names:Object.fromEntries(document.body.dataset.stageAuth ? v3GroupNameMap(customParts,Object.fromEntries(projectInstances)) : Object.fromEntries(projectInstances))');
   // The v3 report uses the same cutLayout values as XLSX. Keep the legacy
@@ -49,6 +49,9 @@ function buildPreview(source, {enabled, settings}) {
     html = html.replace(original, replacement);
   }
   const css = '<link rel="stylesheet" href="./release-candidate/panels.css">';
+  const shellReady = 'dockedInspector=installInspector(';
+  if (html.split(shellReady).length !== 2) throw new Error('Expected one workspace shell localisation seam');
+  html = html.replace(shellReady, "translateMarkup(document.getElementById('shellMenus'));\n" + shellReady);
   html = html.replace(loadMaterials, '\nconst stagingMaterialsReady = loadDefaultMaterials();');
   html = html.replace(welcome, '').replace('</head>', css + '</head>');
   html = html.replace('<body>', '<body data-stage-auth="locked">');
@@ -72,13 +75,15 @@ function buildPreview(source, {enabled, settings}) {
         for (const [title, description] of guide) {
           const section = document.createElement('section');
           const heading = document.createElement('h3');
-          heading.textContent = title;
+          heading.textContent = t(title);
           const text = document.createElement('p');
-          text.textContent = description;
+          text.textContent = t(description);
           section.append(heading, text);
           footerNote.before(section);
         }
-        footerNote.textContent = 'Подробни инструкции в меню „Помощ“.';
+        footerNote.textContent = t('Подробни инструкции в меню „Помощ“.');
+        body.firstElementChild.textContent = t('Кратко ръководство за начало');
+        translateMarkup(welcomeDialog);
         help.showStartup();
       },
       views: {
