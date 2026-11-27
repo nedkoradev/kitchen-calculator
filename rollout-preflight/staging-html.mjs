@@ -31,7 +31,7 @@ function buildPreview(source, {enabled, settings}) {
     throw new Error('Expected one v3 group-name visualization seam');
   }
   html = html.replace('<script type="module">',
-    '<script type="module">\nimport {v3GroupNameMap} from "./release-candidate/group-names.mjs";\nimport {preferredLanguage, t, translateMarkup} from "./release-candidate/i18n.mjs";\ntry { document.documentElement.lang = preferredLanguage(localStorage); } catch {}\ntranslateMarkup(document);');
+    '<script type="module">\nimport {v3GroupNameMap} from "./release-candidate/group-names.mjs";\nimport {localizeReport} from "./release-candidate/report-language.mjs";\nimport {preferredLanguage, t, translateMarkup} from "./release-candidate/i18n.mjs";\ntry { document.documentElement.lang = preferredLanguage(localStorage); } catch {}\ntranslateMarkup(document);');
   html = html.replace('names:Object.fromEntries(projectInstances)',
     'names:Object.fromEntries(document.body.dataset.stageAuth ? v3GroupNameMap(customParts,Object.fromEntries(projectInstances)) : Object.fromEntries(projectInstances))');
   // The v3 report uses the same cutLayout values as XLSX. Keep the legacy
@@ -49,9 +49,22 @@ function buildPreview(source, {enabled, settings}) {
     html = html.replace(original, replacement);
   }
   const css = '<link rel="stylesheet" href="./release-candidate/panels.css">';
+  const helpImport = "import {installHelp} from './help-ui.mjs';";
+  const reportReady = ' cost.append(note);';
+  if (html.split(helpImport).length !== 2 || html.split(reportReady).length !== 2) {
+    throw new Error('Expected one v3 help import and report localisation seam');
+  }
+  html = html.replace(helpImport, "import {installHelp} from './release-candidate/help-ui.mjs';");
+  html = html.replace(reportReady, reportReady + '\n localizeReport({context, root, cut, cost, note, utilizationLabel, unpriced});');
   const shellReady = 'dockedInspector=installInspector(';
   if (html.split(shellReady).length !== 2) throw new Error('Expected one workspace shell localisation seam');
-  html = html.replace(shellReady, "translateMarkup(document.getElementById('shellMenus'));\n" + shellReady);
+  html = html.replace(shellReady, `translateMarkup(document.getElementById('shellMenus'));
+    document.getElementById('reportsMenu').addEventListener('toggle', () => {
+      for (const [id, label] of [['navCut', 'Разкрой'], ['navCosts', 'Разходи']]) {
+        $(id).textContent = t(label) + ' — ' + currentDocumentInfo().name;
+      }
+    });
+  ` + shellReady);
   html = html.replace(loadMaterials, '\nconst stagingMaterialsReady = loadDefaultMaterials();');
   html = html.replace(welcome, '').replace('</head>', css + '</head>');
   html = html.replace('<body>', '<body data-stage-auth="locked">');
@@ -62,28 +75,6 @@ function buildPreview(source, {enabled, settings}) {
       showWelcome(signInPanel) {
         const welcomeDialog = $('welcomeDialog');
         signInPanel.before(welcomeDialog);
-        const body = welcomeDialog.querySelector('.nedHelpBody');
-        const footerNote = body.lastElementChild;
-        for (const section of body.querySelectorAll(':scope > section')) section.remove();
-        const guide = [
-          ['Работна база', 'Изберете лична или достъпна за Вас споделена база.'],
-          ['Проектиране', 'Създавайте мебели и цели проекти. Добавяйте шкафове, отделни детайли и уреди в работното пространство.'],
-          ['Библиотека', 'Съхранявайте проекти и готови модели в папки и ги използвайте повторно.'],
-          ['Свойства и материали', 'Редактирайте размери, материали, кантове и посока на фладера. Управлявайте материалните бази от меню „Материали“.'],
-          ['Справки', 'Получавайте разкрой, количества, калкулация на разходите и експорт на детайлите.'],
-        ];
-        for (const [title, description] of guide) {
-          const section = document.createElement('section');
-          const heading = document.createElement('h3');
-          heading.textContent = t(title);
-          const text = document.createElement('p');
-          text.textContent = t(description);
-          section.append(heading, text);
-          footerNote.before(section);
-        }
-        footerNote.textContent = t('Подробни инструкции в меню „Помощ“.');
-        body.firstElementChild.textContent = t('Кратко ръководство за начало');
-        translateMarkup(welcomeDialog);
         help.showStartup();
       },
       views: {

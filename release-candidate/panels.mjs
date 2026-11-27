@@ -383,7 +383,7 @@ export function installPilotPanels({renderMaterials, renderReport, transportCont
   }
   // Share the library's responsive tab navigation with the reports window.
   const reportChoices = element('nav', 'pilotLibraryFolderBar');
-  reportChoices.setAttribute('aria-label', 'Вид справка');
+  reportChoices.setAttribute('aria-label', t('Вид справка'));
   const reportButtons = [
     ['cut', action(t('Разкрой'), null, () => showReport('cut'))],
     ['costs', action(t('Себестойност'), null, () => showReport('costs'))],
