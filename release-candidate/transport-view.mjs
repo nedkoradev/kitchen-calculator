@@ -1,3 +1,4 @@
+import {t} from './i18n.mjs';
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {placeStack, stackHeight} from './transport-layout.mjs';
@@ -9,7 +10,7 @@ export function createTransportView(host, onSelect, onMove, onPanelDrop) {
   const renderer = new THREE.WebGLRenderer({antialias: true});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const canvas = renderer.domElement;
-  canvas.setAttribute('aria-label', '3D изглед на транспортната подредба');
+  canvas.setAttribute('aria-label', t('3D изглед на транспортната подредба'));
   host.append(canvas);
   const labels = document.createElement('div');
   labels.className = 'transportCanvasLabels';
@@ -99,7 +100,7 @@ export function createTransportView(host, onSelect, onMove, onPanelDrop) {
       points.push(tip, base.clone().add(wing), tip, base.clone().sub(wing));
     }
     boxes.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), material));
-    annotation(length + ' мм', a.clone().lerp(b, .5));
+    annotation(length + t(' мм'), a.clone().lerp(b, .5));
   }
 
   function loadDimensions(stacks) {
@@ -135,7 +136,7 @@ export function createTransportView(host, onSelect, onMove, onPanelDrop) {
         y += layer.thickness + layerGap;
       }
       const top = stack.layers.at(-1);
-      if (options.labels && !layerGap) annotation('Купчина ' + (index + 1) + ' · ' + top.label,
+      if (options.labels && !layerGap) annotation(t('Купчина ') + (index + 1) + ' · ' + top.label,
         new THREE.Vector3(stack.x + stack.w / 2, stackHeight(stack), stack.z + stack.d / 2));
     }
     if (options.dimensions && layout.stacks.length) loadDimensions(layout.stacks);
