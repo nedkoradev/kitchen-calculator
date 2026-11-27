@@ -49,6 +49,15 @@ export async function startStagingAuth({authOrigin, pilot, materialsReady, activ
   let session;
   let signingOut = false;
   let welcomeShown = false;
+  // Keep the sign-in panel in place while its controls receive a click.
+  // The shared welcome otherwise dismisses on pointerdown and shifts the panel.
+  for (const type of ['pointerdown', 'focusin']) {
+    window.addEventListener(type, event => {
+      if (document.getElementById('welcomeDialog')?.open && panel.contains(event.target)) {
+        event.stopPropagation();
+      }
+    }, true);
+  }
   const language = installLanguageControl({
     async beforeChange() {
       if (!session) return auth.currentUser == null;
