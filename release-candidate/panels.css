@@ -753,3 +753,9 @@ body.ned-shell #staging-auth :is(.publicAccountMenu > summary, .publicBaseChoice
   margin-block: 4px;
   font-size: 20px;
 }
+
+body.ned-shell header #staging-auth .v3LanguageChoice {
+  flex: none;
+  min-width: 36px;
+  padding-inline: 6px;
+}

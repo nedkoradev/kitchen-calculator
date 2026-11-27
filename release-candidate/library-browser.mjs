@@ -1,9 +1,10 @@
+import {t} from './i18n.mjs';
 import {decorateAction} from '../icons.mjs';
 import {PROJECTS_FOLDER} from '../document-format/model.mjs';
 import {cabinetPreviewSvg} from './library-preview.mjs';
 
 const OTHER = '__other__'; // UI-only: never persisted as a folder ID.
-const folderName = folder => folder.name === 'Импорт от v2.95' ? 'За подреждане' : folder.name;
+const folderName = folder => folder.id === PROJECTS_FOLDER.id ? t('Проекти') : folder.name === 'Импорт от v2.95' ? t('За подреждане') : folder.name;
 const node = (tag, className = '', text) => {
   const result = document.createElement(tag);
   if (className) result.className = className;
@@ -59,17 +60,17 @@ export function renderPilotLibrary(panel, {folders, documents, selectedFolderId 
     panel.append(alert);
   }
   const foldersBar = node('nav', 'pilotLibraryFolderBar');
-  foldersBar.setAttribute('aria-label', 'Папки на библиотеката');
+  foldersBar.setAttribute('aria-label', t('Папки на библиотеката'));
   const pathBar = node('div', 'pilotLibraryPath');
   const subfolders = node('div', 'pilotLibrarySubfolders');
   subfolders.setAttribute('role', 'group');
-  subfolders.setAttribute('aria-label', 'Подпапки');
+  subfolders.setAttribute('aria-label', t('Подпапки'));
   const grid = node('div', 'pilotLibraryTiles');
   grid.setAttribute('role', 'group');
-  grid.setAttribute('aria-label', 'Модели и проекти в папката');
+  grid.setAttribute('aria-label', t('Модели и проекти в папката'));
   const manage = node('div', 'pilotLibraryManage');
   manage.setAttribute('role', 'group');
-  manage.setAttribute('aria-label', 'Управление на папки');
+  manage.setAttribute('aria-label', t('Управление на папки'));
   panel.append(foldersBar, pathBar, subfolders, grid, manage);
 
   function closeContext() {
@@ -104,11 +105,11 @@ export function renderPilotLibrary(panel, {folders, documents, selectedFolderId 
     if (!canChangeModel) return;
     const menu = node('div', 'pilotLibraryContext');
     menu.setAttribute('role', 'menu');
-    menu.setAttribute('aria-label', 'Действия за ' + item.name);
+    menu.setAttribute('aria-label', t('Действия за ') + item.name);
     const canMoveToAnotherFolder = folders.some(folder =>
       folder.id !== PROJECTS_FOLDER.id && folder.id !== item.folderId);
-    for (const [label, key] of [['Преименувай', 'rename'], ['Премести в папка', 'move'],
-      ['Копирай в папка', 'copy'], ['Изтрий', 'delete']]) {
+    for (const [label, key] of [[t('Преименувай'), 'rename'], [t('Премести в папка'), 'move'],
+      [t('Копирай в папка'), 'copy'], [t('Изтрий'), 'delete']]) {
       const control = action(label, () => onChoose({
         documentChange: {item, action: key}, folderId: selected === OTHER ? '' : selected,
       }));
@@ -133,7 +134,7 @@ export function renderPilotLibrary(panel, {folders, documents, selectedFolderId 
   function itemTile(item) {
     const wrap = node('div', 'pilotLibraryTileWrap');
     const isProject = item.type === 'project';
-    const label = (isProject ? 'Отвори проект · ' : 'Добави модел · ') + item.name;
+    const label = (isProject ? t('Отвори проект · ') : t('Добави модел · ')) + item.name;
     const open = action(item.name, () => onChoose({item}), isProject ? 'room' : 'cabinet');
     open.classList.add('pilotLibraryTile');
     open.setAttribute('aria-label', label);
@@ -153,7 +154,7 @@ export function renderPilotLibrary(panel, {folders, documents, selectedFolderId 
       else showContext(item, open);
     });
     more.className = 'pilotLibraryMore';
-    more.setAttribute('aria-label', 'Действия за ' + item.name);
+    more.setAttribute('aria-label', t('Действия за ') + item.name);
     more.title = 'Действия за модела';
     if (!canChangeModel) more.hidden = true;
     wrap.append(open, more);
@@ -180,7 +181,7 @@ export function renderPilotLibrary(panel, {folders, documents, selectedFolderId 
       foldersBar.append(folderButton(folder, 'pilotLibraryFolderTab', root === folder.id));
     }
     if (unassigned) {
-      const other = action('Други', () => switchFolder(OTHER), 'open');
+      const other = action(t('Други'), () => switchFolder(OTHER), 'open');
       other.className += ' pilotLibraryFolderTab';
       other.setAttribute('aria-pressed', String(selected === OTHER));
       foldersBar.append(other);
@@ -192,7 +193,7 @@ export function renderPilotLibrary(panel, {folders, documents, selectedFolderId 
       for (let cursor = current; cursor; cursor = folderById.get(cursor.parentId)) segments.unshift(cursor);
       pathBar.append(node('strong', '', segments.map(folderName).join(' / ')));
       if (current.parentId) pathBar.append(action('← Назад', () => switchFolder(current.parentId)));
-    } else pathBar.append(node('strong', '', 'Други'));
+    } else pathBar.append(node('strong', '', t('Други')));
 
     subfolders.replaceChildren();
     const children = folders.filter(folder => folder.parentId === selected);
@@ -203,23 +204,23 @@ export function renderPilotLibrary(panel, {folders, documents, selectedFolderId 
     const visible = documents.filter(item => item.folderId === (selected === OTHER ? null : selected));
     for (const item of visible) grid.append(itemTile(item));
     if (!visible.length) grid.append(node('p', 'pilotLibraryEmpty', children.length ?
-      'Избери подпапка или добави модел тук.' : 'Няма модели в тази папка.'));
+      t('Избери подпапка или добави модел тук.') : t('Няма модели в тази папка.')));
 
     manage.replaceChildren();
     if (canChangeFolder) {
-      manage.append(action('Нова папка', () => onChoose({change: {
+      manage.append(action(t('Нова папка'), () => onChoose({change: {
         action: 'create', parentId: !current || selected === PROJECTS_FOLDER.id ? null : selected,
       }, folderId: selected === OTHER ? '' : selected})));
       if (current && selected !== PROJECTS_FOLDER.id) {
-        for (const [label, key] of [['Преименувай папка', 'rename'], ['Премести папка', 'move'],
-          ['Изтрий празна папка', 'delete']]) {
+        for (const [label, key] of [[t('Преименувай папка'), 'rename'], [t('Премести папка'), 'move'],
+          [t('Изтрий празна папка'), 'delete']]) {
           manage.append(action(label, () => onChoose({
             change: {action: key, id: selected}, folderId: selected,
           })));
         }
       }
     }
-    manage.append(action('Затвори', () => onChoose(null)));
+    manage.append(action(t('Затвори'), () => onChoose(null)));
   }
   panel.addEventListener('pointerdown', event => {
     if (context && !context.contains(event.target) && !event.target.closest('.pilotLibraryMore')) closeContext();

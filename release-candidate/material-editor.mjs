@@ -1,42 +1,43 @@
+import {t} from './i18n.mjs';
 import {nedConfirmAction, nedConfirmDelete} from '../ui-messages.mjs';
 import {validTextureUrl} from '../grain.mjs';
 import {photoOrientation} from '../photo-orientation.mjs';
 import {installMaterialPhotoEditor} from '../material-photo-editor.mjs';
 
 const sections = [
-  {key: 'pdcMaterials', title: 'ПДЧ материали', fields: [
-    ['name', 'Материал'], ['fullW', 'Ширина на цял лист (мм)', 'number'],
-    ['fullH', 'Височина на цял лист (мм)', 'number'], ['halfW', 'Ширина на половин лист (мм)', 'number'],
-    ['halfH', 'Височина на половин лист (мм)', 'number'], ['fullPrice', 'Цена цял лист (€)', 'number'],
-    ['halfPrice', 'Цена половин лист (€)', 'number'], ['color', 'Цвят'],
-    ['url', 'Връзка към доставчик'], ['textureUrl', 'Текстура (URL)'],
-    ['textureWidthMm', 'Ширина на текстурата (мм)', 'number'],
-    ['textureHeightMm', 'Височина на текстурата (мм)', 'number'],
-    ['grainRequired', 'Посока на фладера е важна', 'checkbox']]},
-  {key: 'backMaterials', title: 'Гръб HDF', fields: [
-    ['name', 'Материал'], ['thick', 'Дебелина (мм)', 'number'],
-    ['fullW', 'Ширина на цял лист (мм)', 'number'], ['fullH', 'Височина на цял лист (мм)', 'number'],
-    ['halfW', 'Ширина на половин лист (мм)', 'number'], ['halfH', 'Височина на половин лист (мм)', 'number'],
-    ['fullPrice', 'Цена цял лист (€)', 'number'], ['halfPrice', 'Цена половин лист (€)', 'number'],
-    ['color', 'Цвят'], ['url', 'Връзка към доставчик'], ['textureUrl', 'Текстура (URL)'],
-    ['textureWidthMm', 'Ширина на текстурата (мм)', 'number'],
-    ['textureHeightMm', 'Височина на текстурата (мм)', 'number'],
-    ['grainRequired', 'Посока на фладера е важна', 'checkbox']]},
-  {key: 'worktops', title: 'Плотове', fields: [
-    ['name', 'Материал'], ['fullW', 'Дължина на цял плот (мм)', 'number'],
-    ['depth', 'Дълбочина (мм)', 'number'], ['halfW', 'Дължина на половин плот (мм)', 'number'],
-    ['quarterW', 'Дължина на 1/4 плот (мм)', 'number'], ['fullPrice', 'Цена цял плот (€)', 'number'],
-    ['halfPrice', 'Цена половин плот (€)', 'number'], ['quarterPrice', 'Цена 1/4 плот (€)', 'number'],
-    ['color', 'Цвят'], ['url', 'Връзка към доставчик'], ['textureUrl', 'Текстура (URL)'],
-    ['textureWidthMm', 'Ширина на текстурата (мм)', 'number'],
-    ['textureHeightMm', 'Височина на текстурата (мм)', 'number'],
-    ['grainRequired', 'Посока на фладера е важна', 'checkbox']]},
-  {key: 'edgeMaterials', title: 'Кантове', fields: [
-    ['name', 'Материал'], ['price', 'Цена за метър (€)', 'number'],
-    ['color', 'Цвят'], ['url', 'Връзка към доставчик'], ['textureUrl', 'Текстура (URL)'],
-    ['textureWidthMm', 'Ширина на текстурата (мм)', 'number'],
-    ['textureHeightMm', 'Височина на текстурата (мм)', 'number'],
-    ['grainRequired', 'Посока на фладера е важна', 'checkbox']]},
+  {key: 'pdcMaterials', title: t('ПДЧ материали'), fields: [
+    ['name', t('Материал')], ['fullW', t('Ширина на цял лист (мм)'), 'number'],
+    ['fullH', t('Височина на цял лист (мм)'), 'number'], ['halfW', t('Ширина на половин лист (мм)'), 'number'],
+    ['halfH', t('Височина на половин лист (мм)'), 'number'], ['fullPrice', t('Цена цял лист (€)'), 'number'],
+    ['halfPrice', t('Цена половин лист (€)'), 'number'], ['color', t('Цвят')],
+    ['url', t('Връзка към доставчик')], ['textureUrl', t('Текстура (URL)')],
+    ['textureWidthMm', t('Ширина на текстурата (мм)'), 'number'],
+    ['textureHeightMm', t('Височина на текстурата (мм)'), 'number'],
+    ['grainRequired', t('Посока на фладера е важна'), 'checkbox']]},
+  {key: 'backMaterials', title: t('Гръб HDF'), fields: [
+    ['name', t('Материал')], ['thick', t('Дебелина (мм)'), 'number'],
+    ['fullW', t('Ширина на цял лист (мм)'), 'number'], ['fullH', t('Височина на цял лист (мм)'), 'number'],
+    ['halfW', t('Ширина на половин лист (мм)'), 'number'], ['halfH', t('Височина на половин лист (мм)'), 'number'],
+    ['fullPrice', t('Цена цял лист (€)'), 'number'], ['halfPrice', t('Цена половин лист (€)'), 'number'],
+    ['color', t('Цвят')], ['url', t('Връзка към доставчик')], ['textureUrl', t('Текстура (URL)')],
+    ['textureWidthMm', t('Ширина на текстурата (мм)'), 'number'],
+    ['textureHeightMm', t('Височина на текстурата (мм)'), 'number'],
+    ['grainRequired', t('Посока на фладера е важна'), 'checkbox']]},
+  {key: 'worktops', title: t('Плотове'), fields: [
+    ['name', t('Материал')], ['fullW', t('Дължина на цял плот (мм)'), 'number'],
+    ['depth', t('Дълбочина (мм)'), 'number'], ['halfW', t('Дължина на половин плот (мм)'), 'number'],
+    ['quarterW', t('Дължина на 1/4 плот (мм)'), 'number'], ['fullPrice', t('Цена цял плот (€)'), 'number'],
+    ['halfPrice', t('Цена половин плот (€)'), 'number'], ['quarterPrice', t('Цена 1/4 плот (€)'), 'number'],
+    ['color', t('Цвят')], ['url', t('Връзка към доставчик')], ['textureUrl', t('Текстура (URL)')],
+    ['textureWidthMm', t('Ширина на текстурата (мм)'), 'number'],
+    ['textureHeightMm', t('Височина на текстурата (мм)'), 'number'],
+    ['grainRequired', t('Посока на фладера е важна'), 'checkbox']]},
+  {key: 'edgeMaterials', title: t('Кантове'), fields: [
+    ['name', t('Материал')], ['price', t('Цена за метър (€)'), 'number'],
+    ['color', t('Цвят')], ['url', t('Връзка към доставчик')], ['textureUrl', t('Текстура (URL)')],
+    ['textureWidthMm', t('Ширина на текстурата (мм)'), 'number'],
+    ['textureHeightMm', t('Височина на текстурата (мм)'), 'number'],
+    ['grainRequired', t('Посока на фладера е важна'), 'checkbox']]},
 ];
 const catalogKeys = [...sections.map(section => section.key), 'servicePrices'];
 function cloneCatalog(value) {
@@ -88,21 +89,21 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
     const draft = structuredClone(original);
     delete draft.weightThicknessMm;
     const popup = element('dialog', 'materialEditDialog pilotMaterialEditorDialog');
-    popup.setAttribute('aria-label', index === null ? 'Нов материал' : 'Промени материал');
+    popup.setAttribute('aria-label', index === null ? t('Нов материал') : t('Промени материал'));
     const form = element('form', 'pilotMaterialEditorForm');
-    const title = element('h3', '', index === null ? 'Нов материал' : 'Промени материал');
+    const title = element('h3', '', index === null ? t('Нов материал') : t('Промени материал'));
     const appearance = element('section', 'materialAppearance pilotMaterialAppearance');
-    appearance.append(element('h4', '', 'Декор и текстура'));
+    appearance.append(element('h4', '', t('Декор и текстура')));
     // Reuse the verified v2 gallery, GitHub upload guidance and photo validation.
     // A local file is only a preview: no blob/data URL is ever saved in the catalog.
     const readPhoto = installMaterialPhotoEditor(appearance, original, popup);
     // The shared picker can select repository images; expose its validated
     // local-file workflow as well, without uploading or persisting raw bytes.
-    appearance.querySelector('.materialActions')?.append(action('Снимка от компютъра',
+    appearance.querySelector('.materialActions')?.append(action(t('Снимка от компютъра'),
       () => appearance.querySelector('#materialPhotoUpload')?.click()));
     const inputs = new Map();
     const weightFields = section.key === 'edgeMaterials' ? [] : [
-      ['weightKgM2', 'Тегло (кг/м²)', 'number'],
+      ['weightKgM2', t('Тегло (кг/м²)'), 'number'],
     ];
     const fields = [...section.fields, ...weightFields];
     for (const [key, label, kind] of fields) {
@@ -125,13 +126,13 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
           input.dataset.changed = 'true';
           readPhoto.useColor();
         });
-        row.append(action('Избери цвят', () => input.click()));
+        row.append(action(t('Избери цвят'), () => input.click()));
         appearance.insertBefore(row, appearance.children[1] || null);
       } else form.append(row);
     }
     form.prepend(appearance);
     const controls = element('div', 'materialActions');
-    const save = action('Запази', () => {});
+    const save = action(t('Запази'), () => {});
     save.type = 'submit';
     save.onclick = null;
     const initialInputs = () => JSON.stringify([...inputs].map(([key, input]) =>
@@ -142,7 +143,7 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
           !await nedConfirmAction('Има незаписани промени. Да ги отхвърля ли?')) return;
       popup.close();
     };
-    const cancel = action('Отказ', () => { void guardedClose(); });
+    const cancel = action(t('Отказ'), () => { void guardedClose(); });
     popup.addEventListener('cancel', event => {
       event.preventDefault();
       void guardedClose();
@@ -165,7 +166,7 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
         }
         if (kind === 'number') {
           const number = Number(input.value);
-          if (!Number.isFinite(number) || number < 0) { input.setCustomValidity('Невалидна стойност'); input.reportValidity(); return; }
+          if (!Number.isFinite(number) || number < 0) { input.setCustomValidity(t('Невалидна стойност')); input.reportValidity(); return; }
           draft[key] = number;
         } else draft[key] = input.value.trim();
       }
@@ -207,7 +208,7 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
       const scroll = element('div', 'pilotMaterialTableScroll');
       const table = element('table', 'pilotMaterialPreviewTable');
       const headers = table.createTHead().insertRow();
-      for (const label of ['Материал', 'Размери', 'Цени', 'Действия']) headers.append(element('th', '', label));
+      for (const label of [t('Материал'), t('Размери'), t('Цени'), t('Действия')]) headers.append(element('th', '', label));
       const body = table.createTBody();
       catalog[section.key].forEach((item, index) => {
         const row = body.insertRow();
@@ -216,33 +217,33 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
         const identity = element('span', 'pilotMaterialIdentity');
         const swatch = element('span', 'pilotMaterialSwatch');
         swatch.style.backgroundColor = item.color || '#ffffff';
-        swatch.title = 'Цвят на материала';
+        swatch.title = t('Цвят на материала');
         const photo = validTextureUrl(item.textureUrl);
         if (photo) {
           const thumbnail = document.createElement('img');
           thumbnail.className = 'pilotMaterialTextureThumb';
           thumbnail.src = photo;
-          thumbnail.alt = 'Декор ' + (item.name || 'Без име');
+          thumbnail.alt = 'Декор ' + (item.name || t('Без име'));
           thumbnail.loading = 'lazy';
           thumbnail.onerror = () => thumbnail.replaceWith(swatch);
           identity.append(thumbnail);
         } else identity.append(swatch);
         const supplier = materialSupplierLink(item.url);
         if (supplier) {
-          const link = element('a', 'pilotMaterialSupplierLink', item.name || 'Без име');
+          const link = element('a', 'pilotMaterialSupplierLink', item.name || t('Без име'));
           link.href = supplier;
           link.target = '_blank';
           link.rel = 'noopener noreferrer';
           identity.append(link);
-        } else identity.append(document.createTextNode(item.name || 'Без име'));
+        } else identity.append(document.createTextNode(item.name || t('Без име')));
         materialCell.append(identity);
         row.insertCell().textContent = size;
         row.insertCell().textContent = String(price);
         const commands = row.insertCell();
         commands.className = 'pilotMaterialRowActions';
-        commands.append(action('Промени', () => openForm(section, index)),
-          action('Изтрий', async () => {
-            if (!await nedConfirmDelete('Да изтрия ли материала „' + (item.name || 'Без име') + '“ от тази база?')) return;
+        commands.append(action(t('Промени'), () => openForm(section, index)),
+          action(t('Изтрий'), async () => {
+            if (!await nedConfirmDelete('Да изтрия ли материала „' + (item.name || t('Без име')) + '“ от тази база?')) return;
             catalog[section.key].splice(index, 1);
             render();
             announce();
@@ -251,14 +252,14 @@ export function createPilotMaterialEditor(container, onDirty = () => {}) {
       if (!catalog[section.key].length) {
         const empty = body.insertRow().insertCell();
         empty.colSpan = 4;
-        empty.textContent = 'Няма материали.';
+        empty.textContent = t('Няма материали.');
       }
       scroll.append(table);
-      block.append(scroll, action('Нов материал', () => openForm(section, null)));
+      block.append(scroll, action(t('Нов материал'), () => openForm(section, null)));
       container.append(block);
     }
     const services = element('section', 'pilotMaterialPreviewSection');
-    services.append(element('h3', '', 'Услуги'));
+    services.append(element('h3', '', t('Услуги')));
     for (const [key, value] of Object.entries(catalog.servicePrices)) {
       const label = element('label', 'pilotMaterialServiceField');
       label.append(element('span', '', key));

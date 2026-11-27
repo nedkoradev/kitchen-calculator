@@ -52,9 +52,9 @@ const path = require('node:path');
       args: ['--no-sandbox', '--enable-unsafe-swiftshader'],
       proxy: process.env.HTTPS_PROXY ? {server: process.env.HTTPS_PROXY, bypass: '127.0.0.1,localhost'} : undefined});
     const page = await browser.newPage({viewport: {width: 390, height: 820}});
-    const sheetJsRequests = [];
+    const sheetJsRequests = new Set();
     page.on('request', request => {
-      if (request.url().includes('xlsx')) sheetJsRequests.push(request.url());
+      if (request.url().includes('xlsx')) sheetJsRequests.add(request.url());
     });
     const outside = [];
     const errors = [];
@@ -87,6 +87,12 @@ const path = require('node:path');
     await page.goto(stage.origin + '/', {waitUntil: 'domcontentloaded'});
     const panel = page.getByRole('region', {name: 'Вход в локалния преглед'});
     await panel.getByText('Локален тестов вход').waitFor();
+    await panel.getByRole('button', {name: 'English', exact: true}).click();
+    await page.getByRole('button', {name: 'Sign in with Google', exact: true}).waitFor();
+    assert.equal(await page.locator('html').getAttribute('lang'), 'en');
+    await page.getByRole('button', {name: 'Български', exact: true}).click();
+    await panel.getByText('Локален тестов вход').waitFor();
+    assert.equal(await page.locator('html').getAttribute('lang'), 'bg');
     await page.waitForFunction(() => !document.documentElement.classList.contains('ned-booting'));
     for (const selector of ['#modeProject', '#modeConstructor', '#mainNavigation',
       '#shellModes', '#shellMenus', '#shellTools', '#headerRight', 'main']) {
@@ -121,6 +127,15 @@ const path = require('node:path');
     }
     await panel.getByText('Профилът е удостоверен').waitFor();
     await welcome.waitFor({state: 'hidden'});
+    await page.locator('#integration-status').getByText(/Готово/).waitFor();
+    await page.getByRole('button', {name: 'English', exact: true}).click();
+    await page.getByText('Signed in', {exact: true}).waitFor();
+    assert.equal(await page.locator('html').getAttribute('lang'), 'en');
+    await page.waitForFunction(() => !document.querySelector('main').inert);
+    assert.equal(await page.locator('#fileMenu summary').textContent(), 'File');
+    assert.equal(await page.locator('#libraryMenu summary').textContent(), 'Library');
+    await page.getByRole('button', {name: 'Български', exact: true}).click();
+    await panel.getByText('Профилът е удостоверен').waitFor();
     assert.equal(await page.locator('#shellTools').isVisible(), true,
       'The authenticated v3 tool shell must become visible');
 
@@ -290,7 +305,7 @@ const path = require('node:path');
       }
       throw new Error('Expected two identical panels in the generated cabinet');
     });
-    assert.deepEqual(sheetJsRequests, [stage.origin + '/staging-sdk/xlsx-0.20.3.min.js']);
+    assert.deepEqual([...sheetJsRequests], [stage.origin + '/staging-sdk/xlsx-0.20.3.min.js']);
     assert.equal(await page.evaluate(() => XLSX.version), '0.20.3');
     const download = page.waitForEvent('download');
     await reports.locator('#exportProjectCut').click();
